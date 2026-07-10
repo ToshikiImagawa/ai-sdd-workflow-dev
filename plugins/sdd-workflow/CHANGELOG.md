@@ -1,0 +1,1092 @@
+# Changelog
+
+All notable changes to this plugin will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+[日本語版 CHANGELOG](CHANGELOG.ja.md)
+
+## [Unreleased]
+
+### Added
+
+#### Agents
+
+- **`cross-prd-reviewer`** - New agent that reviews consistency across multiple PRDs
+    - Checks category boundary consistency (scope-out cross-references), terminology alignment across
+      glossaries, structure and notation style uniformity, CONSTITUTION.md principle reference coverage,
+      and front matter labeling consistency
+    - Findings are classified as [must]/[recommend]/[nits]; single-PRD quality remains prd-reviewer's role
+    - Adds `templates/{en,ja}/cross_prd_review_output.md` output templates
+
+### Changed
+
+#### Hooks
+
+- **`PreToolUse`** (`scripts/pre-tool-use.py`) - Migrated naming-violation blocking from stderr + `exit 2`
+  to JSON Decision Control (`permissionDecision: "deny"` + `permissionDecisionReason`)
+  ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
+- **`PreToolUse`** - Injects `.sdd/CONSTITUTION.md` principles as `additionalContext` when Write/Edit
+  targets implementation source code ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
+    - Injection is limited to source-file edits inside the project, happens at most once per session,
+      and is truncated to 3000 characters to avoid context bloat
+    - Nothing is injected when CONSTITUTION.md does not exist
+
+#### Agents
+
+- **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku` ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))
+    - Rule-based format validation does not require complex reasoning; a lightweight model reduces cost and latency
+    - Other agents (prd-reviewer, spec-reviewer, requirement-analyzer, clarification-assistant) keep `sonnet`
+      because they require cross-document consistency reasoning
+
+#### Skills
+
+- Introduced named skill arguments via the `arguments` frontmatter field (Claude Code v2.1.199+)
+  ([#81](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/81))
+    - 8 skills (`task-breakdown`, `implement`, `clarify`, `check-spec`, `checklist`, `run-checklist`,
+      `task-cleanup`, `plan-refactor`) now declare `feature-name` / `ticket-number` as named positional
+      arguments and reference them via `$name` substitution in the skill body
+    - Free-text-input skills (`generate-spec`, `generate-prd`, etc.) keep interpreting the whole
+      `$ARGUMENTS` string
+    - Each skill body documents a fallback: when a value is empty, unsubstituted, or a positionally
+      captured flag (`--...`), the skill falls back to interpreting the full argument string or asking
+      the user interactively, preserving pre-v2.1.199 behavior
+
+### Added
+
+#### Hooks
+
+- Expanded `hooks.json` beyond `SessionStart` ([#54](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/54))
+    - **`UserPromptSubmit`** (`scripts/user-prompt-submit.py`) - Detects Vibe Coding signals (vague instructions such
+      as "make it nice" / "いい感じに") in the user prompt and injects additional context prompting a vibe-detector
+      style clarification flow (detection only, never blocks)
+    - **`PreToolUse`** (`scripts/pre-tool-use.py`, matcher `Write|Edit|MultiEdit`) - Validates AI-SDD file naming
+      conventions before writing under `.sdd/` (requirement: no suffix, specification: `_spec.md` / `_design.md`
+      required) and blocks violating writes
+    - **`PostToolUse`** (`scripts/post-tool-use.py`, matcher `Write|Edit|MultiEdit`) - Detects potential document
+      update omissions: reminds to run consistency checks after `.sdd/` document edits, and reminds to sync the
+      design doc after editing a source file with a matching `*_design.md`
+    - Added `scripts/hook_common.py` (shared helpers) and `scripts/test-hook-scripts.sh` regression tests (CI `test` job)
+
+#### Agents
+
+- **`requirement-analyzer`** - Added ID numbering validation (`--validate-ids`, also runs as part of `--analyze`)
+    - Naming convention validation via configurable regex patterns (`id_conventions` section in `.sdd-config.json`)
+    - Ascending order validation with move suggestions for out-of-order ID sequences
+    - Numbering gap detection and stale-ID detection after renames
+    - Added "ID Numbering Validation" section to `requirement_analysis_output` templates (en/ja)
+
+#### Documentation
+
+- **`AI-SDD-PRINCIPLES`** - Documented the optional `id_conventions` section of `.sdd-config.json`
+
+#### Skills
+
+- **`check-spec`** (v3.1.0) - Extended consistency check to literal values ([#50](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/50))
+    - Parses the spec's "Value Range / Threshold Registry" (Schema Registry) section when present, with fallback to
+      extracting literal values from spec/design body text
+    - Extracts implementation-side literals from config files, ORM CHECK constraints, validation constraints
+      (e.g., Pydantic), and language-specific enums/constants
+    - Detects value drift across spec / design / implementation and reports it as a Warning
+      (e.g., spec `0.7` vs `config.py` `0.6`)
+    - Verifies enum / CHECK constraint member-set completeness and requirement ID trace completeness
+      (PRD <-> spec <-> design)
+    - Added value drift sections to output templates (en/ja)
+- **`generate-spec`** - Added "Pseudocode Completeness Rules" section to design doc templates (`templates/{en,ja}/design_template.md`)
+    - Language-specific guidance (Python general / Pydantic v2 / SQLAlchemy & alembic) to keep design pseudocode copyable verbatim
+    - Extensible sub-section structure for additional languages (TypeScript / Go / Rust, etc.)
+
+## [3.3.0] - 2026-03-02
+
+### Changed
+
+#### Hooks
+
+- **`session-start`** - Migrated `session-start.sh` (Bash) to `session-start.py` (Python 3.7+)
+    - Eliminated `jq` dependency by using Python's built-in `json` module
+    - Unified script across `sdd-workflow` and `sdd-workflow-ja` via `--default-lang` argument
+    - `sdd-workflow-ja/scripts/` is now a symlink to `sdd-workflow/scripts/` (deduplication)
+    - Added error handling for invalid `.sdd-config.json` (graceful fallback to defaults)
+    - Requires Python 3.7+ (for `dataclasses` and `subprocess.run(capture_output=True)`)
+
+#### Documentation
+
+- Added `README.ja.md` as the Japanese README for `sdd-workflow` plugin
+- Removed standalone `sdd-workflow-ja/README.md` (now symlinked to `sdd-workflow/README.ja.md`)
+- Added CI badge and license badge to root `README.md`
+
+## [3.2.1] - 2026-02-26
+
+### Fixed
+
+#### Hooks
+
+- **`hooks.json`** - Workaround for Claude Code Issue [#24529](https://github.com/anthropics/claude-code/issues/24529)
+    - `CLAUDE_PLUGIN_ROOT` is not set as an environment variable during hook execution
+    - Explicitly set `CLAUDE_PLUGIN_ROOT` in the hook command to ensure availability in `session-start.sh`
+    - Before: `source ${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh`
+    - After: `CLAUDE_PLUGIN_ROOT=${CLAUDE_PLUGIN_ROOT} source ${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh`
+
+## [3.2.0] - 2026-02-25
+
+### Added
+
+#### Skills
+
+- **`recommend-front-matter`** - New skill to recommend adding YAML front matter to existing documents
+    - Scans all AI-SDD documents (PRD, spec, design, task) for front matter presence
+    - Generates recommendations with inferred metadata (id, title, type, status, depends-on, tags, category)
+    - Supports automatic application with `--apply` option after user confirmation
+    - Provides bilingual report templates (en/ja)
+    - Includes document scanning script (`scan-documents.sh`)
+
+#### Agents
+
+- **`front-matter-reviewer`** - New agent for validating YAML front matter in AI-SDD documents
+    - Checks field formats, dependency direction, status values, and type-specific fields
+    - Validates cross-reference integrity and id uniqueness
+    - Use after document generation or during consistency checks
+
+#### Shared References
+
+- **`shared/references/`** - Added YAML front matter reference documents
+    - `front_matter_reference.md` - Comprehensive front matter field reference
+    - `front_matter_prd.md` - PRD-specific front matter guide
+    - `front_matter_spec_design.md` - Spec/design-specific front matter guide
+    - `front_matter_task.md` - Task-specific front matter guide
+    - `front_matter_impl.md` - Implementation log-specific front matter guide
+
+### Removed
+
+#### Skills
+
+- **`sdd-migrate`** - Legacy migration skill removed (v1.x → v2.0.0 directory structure migration)
+    - Migration functionality is no longer needed for current users
+    - Reduces maintenance overhead and code complexity
+
+#### Hooks
+
+- **`session-start.sh`** - Removed legacy directory structure detection and auto-migration logic
+    - Simplified `.sdd-config.json` generation to default values only
+    - Removes lines 29-82 (legacy detection and migration warning)
+
+#### Documentation
+
+- **`sdd-init/SKILL.md`** - Removed reference to v3.0.0 migration (`lang` field addition)
+
+## [3.1.1] - 2026-02-23
+
+### Changed
+
+#### Hooks
+
+- **`session-start.sh`** - Improved POSIX compatibility and robustness
+    - Added `CLAUDE_PLUGIN_ROOT` guard check at script entry
+    - Replaced `&> /dev/null` with POSIX-compatible `>/dev/null 2>&1`
+    - Removed unnecessary `>&2` redirections from echo statements
+    - Simplified `CLAUDE_PLUGIN_ROOT` existence check for principles copy
+
+#### Skills
+
+- **`plan-refactor`** - Fixed template/reference file path references to use snake_case
+    - `refactor-plan-section.md` → `refactor_plan_section.md`
+    - `reverse-design-template.md` → `reverse_design_template.md`
+    - `reverse-spec-template.md` → `reverse_spec_template.md`
+    - `design-doc-integration.md` → `design_doc_integration.md`
+    - Renamed actual files in `templates/` and `references/` to match
+
+## [3.1.0] - 2026-02-15
+
+### Added
+
+- **plan-refactor skill** - New skill to support refactoring planning for existing features
+    - Analyzes current implementation and creates/updates design documents with refactoring plan
+    - Supports two scenarios: Case A (existing documents) and Case B (no documents)
+    - Provides templates, samples, and reference documents in both Japanese and English
+    - Includes refactoring pattern references (Extract Interface, Dependency Injection, etc.)
+    - Implementation file search script (`find-implementation-files.sh`)
+    - Existing document scan script (`scan-existing-docs.sh`)
+- **Agent samples and reference documents** - Improved usability
+    - `clarification-assistant`: Added usage examples and clarification workflow references
+    - `prd-reviewer`: Added usage examples
+    - `requirement-analyzer`: Added usage examples
+    - `spec-reviewer`: Added usage examples
+    - Added stop report format templates (en/ja) for all agents
+    - Added directory structure references and fix proposal flow references
+- **SKILL.md argument-hint** - Added `argument-hint` field to all skills to clarify argument specifications
+
+### Changed
+
+- **/constitution init** - Added context argument for non-interactive mode initialization
+    - Specify `[context]` argument to generate principles based on project context without interaction
+    - Without argument, runs in interactive mode as before
+- **Agent configuration files** - Improved Markdown format to enhance code block extraction accuracy
+    - clarification-assistant: Reduced verbose descriptions for more concise structure (103 lines reduced)
+    - prd-reviewer: Organized workflow descriptions
+    - requirement-analyzer: Improved analysis flow descriptions
+    - spec-reviewer: Organized review process descriptions
+
+### Fixed
+
+- **plan-refactor template language neutralization** - Removed dependency on specific technologies
+    - `reverse-design-template.md`: Removed specific examples like TypeScript, React, PostgreSQL
+    - `reverse-design-template.md`: Removed language-specific code blocks (typescript, sql)
+    - API endpoints section: Simplified by removing sample rows, keeping only table headers
+    - Database schema section: Completely removed as it cannot be reverse-engineered from implementation
+    - Function signatures section: Completely removed due to TypeScript-specific nature
+    - Changed placeholders to descriptive guidance format (e.g., `{e.g., TypeScript}` →
+      `{Programming language used in the project}`)
+
+## [3.0.2] - 2026-02-09
+
+### Fixed
+
+- **`sdd-init`** - Fixed language setting inheritance from `.sdd-config.json`
+    - `update-claude-md.sh` now reads `SDD_LANG` directly from `.sdd-config.json` instead of relying on environment
+      variable
+    - Previously, when `lang: "ja"` was set in `.sdd-config.json`, the `## AI-SDD Instructions` section in `CLAUDE.md`
+      was incorrectly generated in English
+    - Root cause: `CLAUDE_ENV_FILE` writes from `init-structure.sh` were not reflected in the same shell session when
+      `update-claude-md.sh` ran
+
+## [3.0.1] - 2026-02-09
+
+### Added
+
+#### New Skills (PRD Generation Workflow)
+
+- **`/generate-usecase-diagram`** - Use case diagram generation skill
+    - Generates Mermaid flowchart-based use case diagrams from business requirements
+    - `context: fork` for context isolation
+    - Supports Interactive and CI (`--ci`) modes
+    - Returns text only (no file write)
+
+- **`/analyze-requirements`** - Requirements analysis skill
+    - Extracts UR (User Requirements), FR (Functional Requirements), NFR (Non-Functional Requirements)
+    - `context: fork` for context isolation
+    - Supports MoSCoW prioritization and risk assessment
+    - Returns text only (no file write)
+
+- **`/generate-requirements-diagram`** - SysML requirements diagram generation skill
+    - Generates Mermaid requirementDiagram from requirements analysis
+    - `context: fork` for context isolation
+    - Supports requirement relationships (contains, derives, traces)
+    - Returns text only (no file write)
+
+- **`/finalize-prd`** - PRD integration skill
+    - Integrates use case diagram, requirements analysis, and requirements diagram into complete PRD
+    - `context: fork` for context isolation
+    - Follows PRD template structure
+    - Returns text only (no file write)
+
+#### Skills Enhancements
+
+- **`sdd-init`** - Added automatic `.sdd-config.json` `lang` field management
+    - If config file doesn't exist: Create with default settings (including `lang: "en"`)
+    - If config file exists but missing `lang` field (v3.0.0 migration): Add `lang: "en"`
+    - Added step 1.5 "Manage Configuration File" to execution flow
+    - Added shell scripts: `init-structure.sh`, `update-claude-md.sh`
+
+- **`check-spec`** - Added shell script for file scanning
+    - `scripts/find-design-docs.sh` - Pre-scans design documents to reduce Claude's Glob/Grep overhead
+
+- **`constitution`** - Added shell script for validation
+    - `scripts/validate-files.sh` - Pre-scans requirement/spec/design files for validation
+
+- **`generate-spec`** - Added shell script for preparation
+    - `scripts/prepare-spec.sh` - Pre-processes files for spec generation
+
+#### Documentation
+
+- **Added notes to Mermaid notation guides**
+    - Labels containing `<` and `>` (like `<<include>>`) must be escaped using HTML entities
+    - Example: Write `&lt;&lt;include&gt;&gt;` to display `<<include>>`
+
+- **Added reference files for Progressive Disclosure**
+    - `clarify/references/nine_category_analysis.md` - 9-category analysis definitions
+    - `constitution/references/best_practices.md` - Constitution best practices
+    - `constitution/examples/validation_report.md` - Validation report example
+
+### Changed
+
+#### Skills Architecture
+
+- **`generate-prd`** - Refactored to orchestrator pattern
+    - Now orchestrates 4 sub-skills: `/generate-usecase-diagram`, `/analyze-requirements`,
+      `/generate-requirements-diagram`, `/finalize-prd`
+    - Sub-skills run with `context: fork` for context isolation
+    - Sub-skills return text only; `generate-prd` handles file writes
+    - Reduced SKILL.md from 374 lines to 140 lines
+    - Added Progress Checklist for workflow tracking
+
+- **All skills** - Claude Code Skills Best Practices compliance
+    - Added `$ARGUMENTS` placeholder and `## Input` section to all skills
+    - Added `allowed-tools` to frontmatter where missing
+    - Added `Quality Checks` section before output
+    - SKILL.md files kept under 500 lines (Progressive Disclosure pattern)
+    - Detailed content moved to `references/` and `examples/` directories
+
+- **`constitution`** - Reduced from 558 to 392 lines
+    - Moved validation report example to `examples/validation_report.md`
+    - Moved best practices to `references/best_practices.md`
+
+- **`clarify`** - Reduced line count
+    - Moved 9-category analysis to `references/nine_category_analysis.md`
+
+#### Shared References
+
+- **`usecase_diagram_guide.md`** - Fixed use case diagram relationship notation to UML standard
+    - Association: `-->` → `---` (solid line, bidirectional)
+    - Include: `-. include .->` → `-.->|"<<include>>"|` (dotted arrow with stereotype label)
+    - Extend: `-. extend .->` → `-.->|"<<extend>>"|` (dotted arrow with stereotype label)
+    - Updated Common Mistakes table
+    - Updated all Mermaid code examples to new notation
+
+- **`mermaid_notation_rules.md`** - Updated use case diagram notation
+    - Fixed association notation to `---`
+    - Updated Include/Extend label format
+    - Updated Common Mistakes section
+
+#### Templates
+
+- **`generate-prd`** - Fixed use case diagram notation in PRD templates
+    - `templates/en/prd_template.md`: Updated association, Include, Extend notation
+    - `templates/ja/prd_template.md`: Same fixes (keeping Japanese labels `<<包含>>`, `<<拡張>>`)
+
+## [3.0.0] - 2026-02-06
+
+### Added
+
+#### New Skills
+
+- **`/run-checklist`** - Automated quality verification skill
+    - Automatically executes verification commands for checklist items generated by `/checklist`
+    - Runs tests, linters, security scanners, and spec consistency checks
+    - Supports filtering by category (`--category`) and priority (`--priority`)
+    - Integrates with TaskList for progress tracking
+    - Records results directly in checklist file with timestamps
+    - Generates verification report in `.sdd/task/{ticket}/verification_report.md`
+
+#### Shared References
+
+- **`shared/references/`** - Centralized reference documentation
+    - `mermaid_notation_rules.md` - Comprehensive Mermaid syntax guide (1100+ lines)
+        - Flowchart, sequence, class, state, ER, requirement, and Gantt diagram syntax
+        - Escape rules, styling, and common pitfalls
+    - `usecase_diagram_guide.md` - Use case diagram guide for Mermaid (750+ lines)
+        - Actor, use case, system boundary definitions
+        - Relationship types (association, include, extend, generalization)
+        - Styling and layout best practices
+    - `requirements_diagram_components.md` - SysML requirements diagram components (800+ lines)
+        - Requirement element definitions with attributes (id, text, risk, verifyMethod)
+        - Relationship types (containment, derivation, refinement, satisfaction, verification)
+        - Mermaid syntax examples and templates
+    - `document_dependencies.md` - Document dependency chain reference
+    - `prerequisites_directory_paths.md` - SDD environment variable reference
+    - `prerequisites_plugin_update.md` - Plugin update check instructions
+    - `prerequisites_principles.md` - AI-SDD principles reference
+
+#### Agent Structure Improvements
+
+- **Agent output templates** - Language-specific templates for all agents
+    - `agents/templates/en/` - English output templates
+    - `agents/templates/ja/` - Japanese output templates
+    - Templates: `clarification_analysis_output.md`, `clarification_question_template.md`, `prd_review_output.md`,
+      `requirement_analysis_output.md`, `spec_review_output.md`
+- **Agent references** - Reusable reference documentation
+    - `agents/references/ambiguity_patterns.md` - Ambiguous expression patterns
+    - `agents/references/document_link_convention.md` - Markdown link conventions
+    - `agents/references/sysml_requirements_theory.md` - SysML requirements theory
+    - Symlinks to shared references: `mermaid_notation_rules.md`, `requirements_diagram_components.md`,
+      `usecase_diagram_guide.md`
+- **Agent examples** - Usage examples
+    - `agents/examples/clarification_questions.md` - Example clarification questions
+
+#### Skill Structure Improvements
+
+- **Added `references/` directories** to all skills with symlinks to shared references
+    - Enables consistent prerequisite handling across skills
+    - Reduces duplication of prerequisite documentation
+- **Added `examples/` directories** to skills with usage examples
+    - `check-spec/examples/` - scope_confirmation.md, serena_symbol_analysis.md
+    - `checklist/examples/` - checklist_full_example.md
+    - `constitution/examples/` - constitution_as_code.json, constitution_file_structure.md, principle_template.md
+    - `generate-spec/examples/` - compliance_check_design.md, compliance_check_spec.md, prd_reference_section.md
+    - `implement/examples/` - implementation_progress_log.md, input_format.md, option_* files, output_* files
+    - `task-breakdown/examples/` - requirement_coverage.md, serena_analysis.md, task_list_format.md
+    - `task-cleanup/examples/` - scope_confirmation.md
+
+### Changed
+
+#### Skills
+
+- **All skills refactored** to use shared references via symlinks
+    - Prerequisites now reference `references/prerequisites_*.md` symlinks
+    - Reduces maintenance overhead and ensures consistency
+- **`implement` skill** - Added extensive reference and template files
+    - `references/commit_strategy.md`, `five_phases_overview.md`, `tdd_principles.md`, etc.
+    - `templates/{en,ja}/phase_*.md` - Phase execution templates
+    - `templates/{en,ja}/tasklist_patterns.md` - TaskList integration patterns
+- **`generate-prd` skill** - Added Mermaid diagram references
+    - Links to `mermaid_notation_rules.md`, `usecase_diagram_guide.md`, `requirements_diagram_components.md`
+- **`doc-consistency-checker` skill** - Added document dependencies reference
+
+#### Agents
+
+- **All agents refactored** with Progressive Disclosure pattern
+    - Agent markdown files now use `@reference` imports for large content
+    - Output templates externalized to `templates/{en,ja}/`
+- **`spec-reviewer`** - Streamlined from 566 to ~200 lines using references
+- **`prd-reviewer`** - Streamlined from 328 to ~150 lines using references
+- **`requirement-analyzer`** - Streamlined from 420 to ~150 lines using references
+- **`clarification-assistant`** - Streamlined from 626 to ~200 lines using references
+
+### Removed
+
+#### Skills
+
+- **`sdd-templates`** - Merged into shared references and individual skill templates
+- **`output-templates`** - Templates moved to respective skill directories
+
+#### Legacy Commands
+
+- **`commands/` directory fully removed**
+    - `commands/checklist.md` - Migrated to `skills/checklist/SKILL.md`
+    - `commands/implement.md` - Migrated to `skills/implement/SKILL.md`
+    - `commands/sdd_init.md` - Migrated to `skills/sdd-init/SKILL.md`
+
+---
+
+## [3.0.0-alpha] - 2026-02-03
+
+### Breaking Changes
+
+#### Plugin Consolidation
+
+- **Merged `sdd-workflow-ja` and `sdd-workflow` into a single unified plugin** (`sdd-workflow`)
+    - Language selection via `SDD_LANG` environment variable (from `.sdd-config.json` `lang` field, default: `en`)
+    - Templates split by language: `templates/ja/` and `templates/en/`
+    - SKILL.md and agent files are in English only
+    - Removed `sdd-workflow-ja` plugin entirely
+
+#### Commands Converted to Skills
+
+- **All 11 commands migrated to skills** with `user-invocable: true`
+    - `commands/` directory removed entirely
+    - All commands now live under `skills/{name}/SKILL.md`
+
+#### Command Name Changes (Underscore → Hyphen)
+
+| Old (v2.x)        | New (v3.0.0)      |
+|:------------------|:------------------|
+| `/sdd_init`       | `/sdd-init`       |
+| `/generate_spec`  | `/generate-spec`  |
+| `/generate_prd`   | `/generate-prd`   |
+| `/check_spec`     | `/check-spec`     |
+| `/task_breakdown` | `/task-breakdown` |
+| `/task_cleanup`   | `/task-cleanup`   |
+| `/sdd_migrate`    | `/sdd-migrate`    |
+
+### Added
+
+#### Multi-Language Support
+
+- **`SDD_LANG` environment variable** - Controls template language selection
+    - Set via `.sdd-config.json` `lang` field
+    - Supported values: `en` (default), `ja`
+    - `session-start.sh` reads `lang` from config and exports `SDD_LANG`
+
+#### Language-Specific Templates
+
+- All 4 existing skills now have language-separated templates:
+    - `sdd-templates/templates/{en,ja}/`
+    - `vibe-detector/templates/{en,ja}/`
+    - `doc-consistency-checker/templates/{en,ja}/`
+    - `output-templates/templates/{en,ja}/`
+- Japanese templates copied from former `sdd-workflow-ja` plugin
+
+### Changed
+
+#### Skills
+
+- **11 new skills created** from former commands:
+    - `sdd-init`, `constitution`, `generate-spec`, `generate-prd`, `check-spec`
+    - `task-breakdown`, `implement`, `clarify`, `task-cleanup`, `sdd-migrate`, `checklist`
+    - Each skill has appropriate `allowed-tools`, `user-invocable: true`, and optional `disable-model-invocation`
+- **4 existing skills updated** to v3.0.0 with language configuration support
+    - Added `## Language Configuration` section with dynamic `SDD_LANG` context injection
+    - Template path references updated to `templates/en/` format
+
+#### Agents
+
+- **spec-reviewer** - Added `skills` field: `["sdd-workflow:sdd-templates", "sdd-workflow:doc-consistency-checker"]`
+- **prd-reviewer** - Added `skills` field: `["sdd-workflow:sdd-templates"]`
+- All 4 agents updated with hyphenated command name references
+- All agent descriptions updated to reference new command names
+
+#### Configuration
+
+- **`.sdd-config.json`** - Added `lang` field for language configuration
+- **`session-start.sh`** - Added `SDD_LANG` reading and export
+- **`plugin.json`** - Updated to v3.0.0 with unified plugin description
+- **`marketplace.json`** - Removed `sdd-workflow-ja` entry, updated `sdd-workflow` to v3.0.0
+
+#### Documentation
+
+- **`CLAUDE.md`** - Updated repository structure to reflect single plugin with skills
+- **`README.md`** - Added migration guide from v2.x, updated all command references
+
+### Removed
+
+- **`plugins/sdd-workflow-ja/`** - Entire Japanese plugin directory (merged into `sdd-workflow`)
+- **`plugins/sdd-workflow/commands/`** - Entire commands directory (migrated to skills)
+
+## [2.4.2] - 2026-01-26
+
+### Fixed
+
+#### Plugin Manifest
+
+- **Removed skills field from plugin.json** - Fixed plugin installation error
+    - Removed `skills` field as it is not supported in Claude Code's plugin.json schema
+    - Skills are automatically discovered from `skills/` directory
+    - Resolved "Invalid input" error during installation
+
+## [2.4.1] - 2026-01-26
+
+### Fixed
+
+#### Commands
+
+- **argument-hint corrections and argument descriptions** - Fixed argument specifications to match actual usage
+    - Unified `argument-hint` expressions ("file-path" → "feature-name" corrections)
+    - Added argument description tables to each command (argument name, required/optional, description)
+    - Affected commands:
+        - `task_breakdown`: `<design-doc-path>` → `<feature-name> [ticket-number]`
+        - `check_spec`: `<design-doc-path>` → `[feature-name] [--full]`
+        - `checklist`: `<file-path>` → `<feature-name> [ticket-number]`
+        - `clarify`: `[spec-file-path]` → `<feature-name> [--interactive]`
+        - `constitution`: `<init|update|check>` → `<subcommand> [arguments]` (added subcommand details table)
+        - `generate_prd`: `<feature-name> [requirements-description]` → `<requirements-description>`
+        - `generate_spec`: `<feature-name> [prd-file-path]` → `<requirements-description>`
+        - `implement`: `<task-file-path>` → `<feature-name> [ticket-number]`
+        - `task_cleanup`: `<ticket-number>` → `[ticket-number]` (made optional)
+    - Users can now understand correct argument formats when executing commands
+
+## [2.4.0] - 2026-01-25
+
+### Added
+
+#### Documentation
+
+- **PLUGIN.md** - Comprehensive guide for Claude Code plugin and marketplace creation
+    - Plugin basic structure (directory layout, marketplace structure)
+    - Manifest files (plugin.json, marketplace.json details)
+    - Commands, agents, skills implementation (frontmatter, best practices)
+    - MCP server integration (external tool integration)
+    - Hooks implementation (event-driven automation)
+    - Marketplace publishing process (quality standards, distribution model)
+- **CLAUDE.md** - Added reference to PLUGIN.md (similar to PLUGIN_AGENTS.md structure)
+
+#### Skills
+
+- Added `version: 2.3.1` and `license: MIT` fields to all skills
+    - vibe-detector
+    - doc-consistency-checker
+    - sdd-templates
+- **output-templates** - New skill providing command output formats
+    - `init_output.md` - Initialization complete message
+    - `prd_output.md` - PRD generation complete message
+    - `spec_output.md` - Specification & design generation complete message
+    - `breakdown_output.md` - Task breakdown results
+    - `cleanup_output.md` - Cleanup confirmation
+    - `clarification_output.md` - Specification clarification report
+    - `check_spec_output.md` - Consistency check results
+    - `migrate_output.md` - Migration results
+    - `constitution_output.md` - Constitution management results
+
+#### Commands
+
+- Added `argument-hint` field to all commands for improved usability
+    - generate_spec: `<feature-name> [prd-file-path]`
+    - generate_prd: `<feature-name> [requirements-description]`
+    - check_spec: `<design-doc-path>`
+    - task_breakdown: `<design-doc-path> [ticket-number]`
+    - task_cleanup: `<ticket-number>`
+    - constitution: `<init|update|check>`
+    - implement: `<task-file-path>`
+    - clarify: `[spec-file-path]`
+    - checklist: `<file-path>`
+
+### Changed
+
+#### Architecture
+
+- **Output Format Separation** - Separated command output formats into `skills/output-templates/`
+    - Command md files now contain only Claude-facing instructions
+    - Output formats are managed as independent template files
+    - New skill: `output-templates` (includes 9 template files)
+    - Existing `sdd-templates` skill is now dedicated to project document templates
+
+#### Commands
+
+- **implement** - Added TaskList-based progress management
+    - Creates tasks using TaskCreate at the start of each phase
+    - Updates task status using TaskUpdate during phase execution (pending → in_progress → completed)
+    - Sets dependencies to ensure next phase starts only after previous phase completes
+    - Users can check implementation progress using `/tasks` command
+    - Falls back to traditional markdown progress display when TaskList is unavailable
+
+#### Marketplace
+
+- **marketplace.json** improvements
+    - Added `author.url` (creator attribution)
+    - Added `category: "development"` (marketplace filtering)
+    - Added `tags` array (search discoverability)
+        - "specification-driven-development"
+        - "japanese" / "english"
+        - "workflow"
+        - "sysml"
+        - "requirements"
+        - "documentation"
+
+#### Agents
+
+- Improved `description` for all agents with clearer usage scenarios
+    - Changed from functional description style to "when to use" style
+    - Added specific trigger phrases (e.g., "review spec", "check spec")
+    - Made explicit relationships with commands (e.g., after /check_spec or /generate_spec execution)
+    - Specified required input information (e.g., specification file path needed)
+    - Removed self-referential "agent" terminology
+    - Target agents: spec-reviewer, requirement-analyzer, prd-reviewer, clarification-assistant
+
+#### Skills
+
+- Improved `description` for all skills with clearer execution context
+    - Specified execution timing (e.g., automatically executed before implementation, invoked by commands)
+    - Specified detection details (e.g., ambiguous expressions like "make it nice", "somehow")
+    - Made explicit traceability guarantees
+    - Detailed fallback behavior explanation
+    - Target skills: vibe-detector, doc-consistency-checker, sdd-templates
+
+### Fixed
+
+#### Commands
+
+- **Unified Prompt Expressions** - Removed user-facing explanations and unified to clear Claude-facing instructions
+    - Removed "Next Steps" list items (from plain text within "Post-Generation Actions" section)
+    - Removed "Recommended Manual Verification" sections (moved to output templates)
+    - Changed "manually" expressions to Claude-directed instructions (e.g., "recommend manual verification to user")
+    - Unified output format reference method (from file path to skill reference)
+    - Affected commands: `sdd_init`, `generate_prd`, `generate_spec`, `task_breakdown`, `task_cleanup`, `clarify`,
+      `check_spec`, `sdd_migrate`, `constitution`
+
+#### Agents
+
+- **Unified Prompt Expressions** - Changed "recommended" expressions to directive forms
+    - spec-reviewer: "recommended to be added" → "need to be added"
+    - clarification-assistant: "Supplementation recommended" → "Supplementation needed"
+    - clarification-assistant: "Recommended Clarity Scores" → "Clarity Score Evaluation Criteria"
+
+## [2.3.1] - 2026-01-14
+
+### Fixed
+
+#### Hooks
+
+- `session-start.sh` - Improved error handling with temporary file existence check
+    - Fixed `mv: No such file or directory` error when sed command fails
+    - Added `&& [ -f "$TEMP_FILE" ]` to verify temporary file existence before executing mv
+    - Improved fallback process to work properly
+    - Added warning file deletion process (else clause) to English version for consistency with Japanese version
+
+## [2.3.0] - 2026-01-09
+
+### Changed
+
+#### Agents
+
+- **Role Separation**: Renamed `sdd-workflow` agent to `AI-SDD-PRINCIPLES.md`
+    - Separated principle definitions into an independent document
+    - Updated all commands, agents, and skills to reference `../AI-SDD-PRINCIPLES.md`
+    - Centralized AI-SDD principles for better maintainability
+
+- `spec-reviewer` - Added document traceability check functionality
+    - **PRD ↔ spec traceability check**: Verify PRD requirements are properly covered in spec
+        - Requirement ID (UR/FR/NFR) mapping verification
+        - Coverage rate calculation (80% threshold check)
+        - Classification of partial/missing coverage
+    - **spec ↔ design consistency check**: Verify spec content is properly detailed in design
+        - API definition elaboration check
+        - Type definition consistency check
+        - Constraint consideration check
+    - Added `Edit` to `allowed-tools` (for auto-fix support)
+    - Clarified input format and output format (`--summary` option support)
+
+#### Commands
+
+- `/check_spec` - **Specialized for design ↔ implementation consistency check**
+    - **[BREAKING]** Delegated document-to-document consistency checks (PRD↔spec, spec↔design) to `spec-reviewer`
+        - **Before (v2.2.0)**: Performed all consistency checks (CONSTITUTION↔docs, PRD↔spec, spec↔design,
+          design↔implementation)
+        - **After (v2.3.0)**: Performs only design↔implementation consistency check (improved performance)
+        - **Migration**:
+            - If document-to-document consistency checks are needed: Use `/check_spec --full`
+            - If design↔implementation only is sufficient: Keep using `/check_spec` (same command as before)
+        - **Impact**: If using `/check_spec` in CI/CD pipeline, consider adding `--full` option
+    - Added `--full` option: Runs comprehensive review by `spec-reviewer` in addition to consistency check
+    - Limited target documents to `*_design.md`
+    - Simplified output format (focused on design↔implementation)
+
+- `/sdd_init` - Updated reference path
+    - Changed agent reference to `AI-SDD-PRINCIPLES.md`
+
+### Added
+
+#### Documentation
+
+- `AI-SDD-PRINCIPLES.md` - Independent document defining AI-SDD principles
+    - Separated principle definitions previously contained in `sdd-workflow` agent
+    - Commonly referenced by commands, agents, and skills
+
+#### README
+
+- Documented Windows platform incompatibility
+    - Added platform support matrix (macOS/Linux: ✅, Windows: ❌)
+    - Documented alternatives for Windows users (WSL, Git Bash)
+    - Future support plans (PowerShell version, cross-platform implementation under consideration)
+
+## [2.2.0] - 2026-01-06
+
+### Added
+
+#### Agents
+
+- `prd-reviewer` - PRD (Requirements Specification) review agent
+    - CONSTITUTION.md compliance check (most important feature)
+    - Principle category checks (Business, Architecture, Development, Technical Constraints)
+    - Auto-fix flow (attempts auto-fix on violation detection)
+    - SysML requirements diagram format validation
+    - Ambiguous expression detection and improvement suggestions
+
+### Changed
+
+#### Agents
+
+- `spec-reviewer` - Added CONSTITUTION.md compliance check functionality
+    - Added preparation instruction to read CONSTITUTION.md using Read tool
+    - Spec-focused principle category checks (Architecture principles emphasized)
+    - Design-focused principle category checks (Technical constraints emphasized)
+    - Auto-fix flow (attempts auto-fix on violation detection)
+    - Added CONSTITUTION.md compliance check results to review output format
+
+#### Commands
+
+- `/generate_prd` - Added CONSTITUTION.md compliant generation flow
+    - Added CONSTITUTION.md reading step to generation flow (Step 2)
+    - Made prd-reviewer principle compliance check mandatory (Step 6)
+    - Added principle category impact table for PRD
+    - Added check result output template
+
+- `/generate_spec` - Added CONSTITUTION.md compliant generation flow
+    - Added CONSTITUTION.md reading step to generation flow (Step 2)
+    - Made spec-reviewer principle compliance check mandatory (Steps 6, 8)
+    - Added check result output templates for both spec and design doc
+
+## [2.1.1] - 2025-12-23
+
+### Changed
+
+- Removed automatic git commit instructions from all commands and agents
+    - `task_cleanup` - Removed commit step from cleanup workflow
+    - `implement` - Removed commit instruction from continuous verification flow
+    - `generate_spec` - Removed commit step from generation flow
+    - `sdd-workflow` agent - Removed commit steps from workflow phases
+    - `clarify` - Removed commit instructions from integration mode
+    - `task_breakdown` - Removed commit step from post-generation actions
+    - `generate_prd` - Removed commit step from post-generation actions
+    - `sdd_migrate` - Removed commit instructions and commit message examples
+    - `sdd_init` - Removed commit step from initialization flow
+
+## [2.1.0] - 2025-12-12
+
+### Added
+
+#### Commands
+
+- `/clarify` - Specification clarification command
+    - Scans specifications across 9 categories (functional scope, data model, flow, non-functional requirements,
+      integrations, edge cases, constraints, terminology, completion signals)
+    - Classifies unclear items as Clear/Partial/Missing
+    - Generates up to 5 high-impact clarification questions
+    - Incrementally integrates answers into `*_spec.md`
+    - Complementary to `vibe-detector` skill
+- `/implement` - TDD-based implementation execution command
+    - Verifies checklist completion rate in tasks.md
+    - Executes 5 phases in order (Setup→Tests→Core→Integration→Polish)
+    - Test-first (TDD) approach
+    - Auto-marks progress in tasks.md
+    - Completion verification (all tasks done, tests pass, spec consistency)
+- `/checklist` - Quality checklist generation command
+    - Auto-generates checklists from specs and plans across 9 categories
+    - Assigns IDs in CHK-{category-number}{sequence} format
+    - Auto-sets priority levels (P1/P2/P3)
+- `/constitution` - Project constitution management command
+    - Defines non-negotiable project principles (business, architecture, development methodology, technical constraints)
+    - Semantic versioning (MAJOR/MINOR/PATCH)
+    - Sync validation with specifications and design documents
+
+#### Agents
+
+- `clarification-assistant` - Specification clarification assistant agent
+    - Systematically analyzes user requirements across 9 categories
+    - Generates high-impact clarification questions
+    - Integrates answers into specifications
+    - Backend role for `/clarify` command
+
+#### Templates
+
+- `checklist_template.md` - Quality checklist template
+    - 9 categories of quality check items
+    - Priority levels (P1/P2/P3)
+    - Verification methods for each item
+- `constitution_template.md` - Project constitution template
+    - Principle hierarchy (business → architecture → development methodology → technical constraints)
+    - Verification methods, violation examples, compliance examples for each principle
+    - Version history and amendment process
+- `implementation_log_template.md` - Implementation log template
+    - Session-based implementation decision records
+    - Challenges and solutions tracking
+    - Technical discoveries and performance metrics
+
+#### Skills
+
+- `sdd-templates` - Added references to new templates
+
+## [2.0.1] - 2025-12-12
+
+### Added
+
+#### Agents
+
+- Added document link convention to all agents
+    - `sdd-workflow` - Defined markdown link format for files/directories
+    - `spec-reviewer` - Added link convention check points
+    - `requirement-analyzer` - Added link convention for requirement diagrams
+    - File links: `[filename.md](path)` format
+    - Directory links: `[directory-name](path/index.md)` format
+
+### Removed
+
+#### Agents
+
+- `sdd-workflow` - Removed commit message convention section
+    - Changed policy to delegate to Claude Code's standard commit conventions
+
+## [2.0.0] - 2025-12-09
+
+### Breaking Changes
+
+#### Directory Structure Changes
+
+- **Root directory**: `.docs/` → `.sdd/`
+- **Requirement directory**: `requirement-diagram/` → `requirement/`
+- **Task log directory**: `review/` → `task/`
+
+#### Command Rename
+
+- `/review_cleanup` → `/task_cleanup`
+
+#### Migration
+
+Use the `/sdd_migrate` command to migrate from legacy versions (v1.x):
+
+- **Option A**: Rename directories to migrate to new structure
+- **Option B**: Generate `.sdd-config.json` to maintain legacy structure
+
+### Added
+
+#### Commands
+
+- `/sdd_init` - AI-SDD workflow initialization command
+    - Adds AI-SDD Instructions section to project's `CLAUDE.md`
+    - Creates `.sdd/` directory structure (requirement/, specification/, task/)
+    - Generates template files using `sdd-templates` skill
+- `/sdd_migrate` - Migration command from legacy versions
+    - Detects legacy structure (`.docs/`, `requirement-diagram/`, `review/`)
+    - Choose between migrating to new structure or generating compatibility config
+
+#### Agents
+
+- `requirement-analyzer` - Requirement analysis agent
+    - SysML requirements diagram-based analysis
+    - Requirement tracking and verification
+
+#### Skills
+
+- `sdd-templates` - AI-SDD templates skill
+    - Provides fallback templates for PRD, specification, and design documents
+    - Clarifies project template priority rules
+
+#### Hooks
+
+- `session-start` - Session start initialization hook
+    - Loads settings from `.sdd-config.json` and sets environment variables
+    - Auto-detects legacy structure and shows migration guidance
+
+#### Configuration File
+
+- `.sdd-config.json` - Project configuration file support
+    - `root`: Root directory (default: `.sdd`)
+    - `directories.requirement`: Requirement directory (default: `requirement`)
+    - `directories.specification`: Specification directory (default: `specification`)
+    - `directories.task`: Task log directory (default: `task`)
+
+### Changed
+
+#### Plugin Configuration
+
+- `plugin.json` - Enhanced author field
+    - Added `author.url` field
+
+#### Commands
+
+- Added `allowed-tools` field to all commands
+    - Explicitly specifies available tools for each command
+    - Improved security and clarity
+- All commands now support `.sdd-config.json` configuration file
+
+#### Skills
+
+- Improved skill directory structure
+    - Migrated from `skill-name.md` to `skill-name/SKILL.md` + `templates/` structure
+    - Applied Progressive Disclosure pattern
+    - Externalized template files, simplifying SKILL.md
+
+### Removed
+
+#### Hooks
+
+- `check-spec-exists` - Removed
+    - Specification creation is optional, and non-existence is a common valid case
+- `check-commit-prefix` - Removed
+    - Removed because commit message conventions are not used by plugin functionality
+
+## [1.1.0] - 2025-12-06
+
+### Added
+
+#### Commands
+
+- `/sdd_init` - AI-SDD workflow initialization command
+    - Adds AI-SDD Instructions section to project's `CLAUDE.md`
+    - Creates `.docs/` directory structure (requirement-diagram/, specification/, review/)
+    - Generates template files using `sdd-templates` skill
+
+#### Skills
+
+- `sdd-templates` - AI-SDD templates skill
+    - Provides fallback templates for PRD, specification, and design documents
+    - Clarifies project template priority rules
+
+### Changed
+
+#### Plugin Configuration
+
+- `plugin.json` - Enhanced author field
+    - Added `author.url` field
+
+#### Commands
+
+- Added `allowed-tools` field to all commands
+    - Explicitly specifies available tools for each command
+    - Improved security and clarity
+
+#### Skills
+
+- Improved skill directory structure
+    - Migrated from `skill-name.md` to `skill-name/SKILL.md` + `templates/` structure
+    - Applied Progressive Disclosure pattern
+    - Externalized template files, simplifying SKILL.md
+
+## [1.0.1] - 2025-12-04
+
+### Changed
+
+#### Agents
+
+- `spec-reviewer` - Added prerequisites section
+    - Added instruction to read `sdd-workflow:sdd-workflow` agent content before execution
+    - Promotes understanding of AI-SDD principles, document structure, persistence rules, and Vibe Coding prevention
+
+#### Commands
+
+- Added prerequisites section to all commands
+    - `generate_prd`, `generate_spec`, `check_spec`, `task_breakdown`, `review_cleanup`
+    - Added instruction to read `sdd-workflow:sdd-workflow` agent content before execution
+    - Ensures consistent behavior following sdd-workflow agent principles
+
+#### Skills
+
+- Added prerequisites section to all skills
+    - `vibe-detector`, `doc-consistency-checker`
+    - Added instruction to read `sdd-workflow:sdd-workflow` agent content before execution
+
+#### Hooks
+
+- `check-spec-exists.sh` - Improved path resolution
+    - Dynamically retrieves repository root using `git rev-parse --show-toplevel`
+    - Falls back to current directory if not a git repository
+- `check-spec-exists.sh` - Extended test file exclusion patterns
+    - Jest: `__tests__/`, `__mocks__/`
+    - Storybook: `*.stories.*`
+    - E2E: `/e2e/`, `/cypress/`
+- `settings.example.json` - Added setup instructions as comments
+    - Fixed path to `./hooks/` format
+
+#### Skills
+
+- `vibe-detector` - Added `AskUserQuestion` to `allowed-tools`
+    - Supports user confirmation flow
+- `doc-consistency-checker` - Added `Bash` to `allowed-tools`
+    - Supports directory structure verification
+
+## [1.0.0] - 2024-12-03
+
+### Added
+
+#### Agents
+
+- `sdd-workflow` - AI-SDD development flow management agent
+    - Phase determination (Specify → Plan → Tasks → Implement & Review)
+    - Vibe Coding prevention (detection of vague instructions and promotion of clarification)
+    - Document consistency checks
+- `spec-reviewer` - Specification quality review agent
+    - Ambiguous description detection
+    - Missing section identification
+    - SysML compliance checks
+
+#### Commands
+
+- `/generate_prd` - Generate PRD (Requirements Specification) in SysML requirements diagram format from business
+  requirements
+- `/generate_spec` - Generate abstract specification and technical design document from input
+    - PRD consistency review feature
+- `/check_spec` - Check consistency between implementation code and specifications
+    - Multi-layer check: PRD ↔ spec ↔ design ↔ implementation
+- `/task_breakdown` - Break down tasks from technical design document
+    - Requirement coverage verification
+- `/review_cleanup` - Clean up review/ directory after implementation
+
+#### Skills
+
+- `vibe-detector` - Automatic detection of Vibe Coding (vague instructions)
+- `doc-consistency-checker` - Automatic consistency check between documents
+
+#### Integration
+
+- Serena MCP optional integration
+    - Enhanced functionality through semantic code analysis
+    - Support for 30+ programming languages
+    - Text-based search fallback when not configured
