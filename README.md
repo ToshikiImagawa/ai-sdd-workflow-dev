@@ -18,8 +18,8 @@ specifications as the source of truth.
 
 ## 利用可能なプラグイン / Available Plugins
 
-| プラグイン / Plugin | 言語 / Language        | 説明 / Description                                                                                  |
-|:---------------|:---------------------|:---------------------------------------------------------------------------------------------------|
+| プラグイン / Plugin | 言語 / Language      | 説明 / Description                                                                       |
+|:---------------|:-------------------|:---------------------------------------------------------------------------------------|
 | `sdd-workflow` | 多言語 / Multilingual | AI-SDD ワークフローを支援する統合プラグイン（`SDD_LANG` で言語切替）/ Unified plugin supporting AI-SDD workflow |
 
 ## インストール / Installation
