@@ -1,0 +1,163 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "バージョン（v プレフィックス不要。例: 1.2.3）"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION. Expected semver (e.g., 1.2.3 or 1.2.3-alpha)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create PR from dev to main
+        id: create-pr
+        run: |
+          VERSION="${{ steps.validate.outputs.version }}"
+          BRANCH="release/v$VERSION"
+
+          # dev から新しい release ブランチを作成
+          git checkout develop
+          git pull origin develop
+          git checkout -b "$BRANCH"
+
+          # PR 作成（draft ではなく通常の PR）
+          PR_OUTPUT=$(gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Release: v$VERSION" \
+            --body "## Version
+          v$VERSION
+
+          ---
+
+          Automated merge from develop to main by \`prepare-release\` workflow.
+
+          Triggered by @${{ github.actor }}" \
+            --draft)
+
+          # PR 番号を抽出（最後の行から）
+          PR_NUMBER=$(echo "$PR_OUTPUT" | grep -oP '#\K\d+' | tail -1)
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "PR created: #$PR_NUMBER"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for CI checks
+        id: wait-ci
+        run: |
+          VERSION="${{ steps.validate.outputs.version }}"
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+          TIMEOUT=600  # 10 minutes
+          ELAPSED=0
+
+          echo "Waiting for CI checks on PR #$PR_NUMBER..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            # Check PR status
+            STATUS=$(gh pr view "$PR_NUMBER" --json commits,reviews,statusCheckRollup --jq '.statusCheckRollup | map(.state) | unique | join(",")')
+
+            # SUCCESS or FAILURE
+            if [[ "$STATUS" =~ "FAILURE" ]]; then
+              echo "::error::CI checks failed on PR #$PR_NUMBER"
+              exit 1
+            fi
+
+            if [[ ! "$STATUS" =~ "PENDING" ]] && [[ ! "$STATUS" =~ "IN_PROGRESS" ]]; then
+              echo "CI checks completed: $STATUS"
+              break
+            fi
+
+            echo "CI in progress... ($ELAPSED/$TIMEOUT seconds)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "::error::CI checks timeout on PR #$PR_NUMBER"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge PR
+        run: |
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+
+          echo "Merging PR #$PR_NUMBER with squash strategy..."
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --auto \
+            --delete-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for merge to complete
+        run: |
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+          TIMEOUT=60
+          ELAPSED=0
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATE=$(gh pr view "$PR_NUMBER" --jq '.state' 2>/dev/null || echo "UNKNOWN")
+            if [ "$STATE" = "MERGED" ]; then
+              echo "PR #$PR_NUMBER merged successfully"
+              break
+            fi
+
+            sleep 2
+            ELAPSED=$((ELAPSED + 2))
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch updated main branch
+        run: |
+          git fetch origin
+          git checkout main
+          git pull origin main
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ steps.validate.outputs.version }}"
+          TAG="v$VERSION"
+
+          echo "Creating tag $TAG..."
+          git tag "$TAG" main
+          git push origin "$TAG"
+
+          echo "Tag $TAG created and pushed successfully"
+
+      - name: Create deployment notification
+        if: success()
+        run: |
+          VERSION="${{ steps.validate.outputs.version }}"
+          PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
+          echo "✅ Release v$VERSION deployed successfully"
+          echo "  - PR merged: #$PR_NUMBER"
+          echo "  - Tag pushed: v$VERSION"
+          echo "  - Release workflow triggered automatically"
