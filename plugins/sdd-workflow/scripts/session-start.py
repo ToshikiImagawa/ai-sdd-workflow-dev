@@ -135,6 +135,36 @@ def sync_principles_file(plugin_root: str, sdd_dir: str, plugin_version: str) ->
         print("[AI-SDD] AI-SDD-PRINCIPLES.md copied (version unknown).")
 
 
+def sync_rules_files(plugin_root: str, project_root: str, cfg: SddConfig, plugin_version: str) -> None:
+    rules_dir = os.path.join(project_root, ".claude", "rules")
+    os.makedirs(rules_dir, exist_ok=True)
+
+    lang = cfg.lang
+    template_filename = "ai_sdd_instructions_rules.md"
+    rules_filename = "ai-sdd-instructions.md" if lang == "ja" else "ai-sdd-instructions-en.md"
+
+    template_path = os.path.join(plugin_root, "skills", "sdd-init", "templates", lang, template_filename)
+    target_path = os.path.join(rules_dir, rules_filename)
+
+    if not os.path.isfile(template_path):
+        print(f"[AI-SDD] Warning: Template not found: {template_path}. Skipping rules sync.", file=sys.stderr)
+        return
+
+    try:
+        with open(template_path, encoding="utf-8") as f:
+            content = f.read()
+        if plugin_version:
+            content = re.sub(r"\{PLUGIN_VERSION\}", plugin_version, content)
+        tmp_path = target_path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp_path, target_path)
+        lang_name = "Japanese" if lang == "ja" else "English"
+        print(f"[AI-SDD] .claude/rules/{rules_filename} ({lang_name}) created.")
+    except OSError as e:
+        print(f"[AI-SDD] Warning: Failed to sync rules file: {e}", file=sys.stderr)
+
+
 def write_env_vars(cfg: SddConfig) -> None:
     env_file = os.environ.get("CLAUDE_ENV_FILE", "")
     if not env_file:
@@ -260,6 +290,7 @@ def main() -> None:
 
     plugin_version = get_plugin_version(plugin_root)
     sync_principles_file(plugin_root, sdd_dir, plugin_version)
+    sync_rules_files(plugin_root, project_root, cfg, plugin_version)
 
     write_env_vars(cfg)
 
