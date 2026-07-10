@@ -24,3 +24,7 @@ __pycache__/
 .ghq-worktree-symlinks
 # AI-SDD skill cache
 .sdd/.cache/
+
+# SSH deploy keys (絶対にコミットしない)
+mirror_key
+mirror_key.pub

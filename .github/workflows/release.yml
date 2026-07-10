@@ -5,16 +5,20 @@ on:
     tags:
       - "v*"
 
+# dev リポ側は読み取りのみ。公開リポへの書き込みは PUBLIC_REPO_TOKEN が担う
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
-  release:
+  publish:
     needs: ci
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_REPO: ToshikiImagawa/ai-sdd-workflow
+      GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -88,11 +92,44 @@ jobs:
             echo "flag=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clone public repo
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${PUBLIC_REPO}.git" public
+
+      - name: Sync distribution files
+        run: |
+          # plugins/ を丸ごと同期（--delete で公開リポの旧 sdd-workflow-ja 等を除去）
+          rsync -a --delete \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            plugins/ public/plugins/
+          cp -f .claude-plugin/marketplace.json public/.claude-plugin/marketplace.json
+          cp -f LICENSE public/LICENSE
+          cp -f dist/README.md public/README.md
+
+      - name: Commit and push distribution to public repo
+        working-directory: public
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No file changes to mirror."
+          else
+            git commit -m "[release] sync distribution from ai-sdd-workflow-dev@${GITHUB_SHA::7} (${GITHUB_REF_NAME})"
+            git push
+          fi
+
+      - name: Tag public repo
+        working-directory: public
+        run: |
+          git tag "$GITHUB_REF_NAME"
+          git push origin "$GITHUB_REF_NAME"
+
+      - name: Create GitHub Release on public repo
         run: |
           gh release create "$GITHUB_REF_NAME" \
+            --repo "$PUBLIC_REPO" \
             --title "$GITHUB_REF_NAME" \
             --notes-file /tmp/release-notes.md \
             ${{ steps.prerelease.outputs.flag }}
