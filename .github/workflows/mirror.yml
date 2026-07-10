@@ -1,0 +1,64 @@
+name: Mirror to Public
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch: {}
+
+# 同一公開リポへの push が重ならないよう直列化する
+concurrency:
+  group: mirror-to-public
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    # 手動起動、または Release ワークフローが成功したときのみ実行する
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      PUBLIC_REPO: git@github.com:ToshikiImagawa/ai-sdd-workflow.git
+      # Release 経由ならリリース対象コミット、手動起動なら現在の ref を同期元にする
+      SRC_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      GIT_SSH_COMMAND: ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes
+    steps:
+      - name: Checkout dev repo (release commit)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Setup SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Clone public repo
+        run: git clone "$PUBLIC_REPO" public
+
+      - name: Sync distribution files
+        run: |
+          # plugins/ を丸ごと同期（--delete で公開リポの旧 sdd-workflow-ja 等を除去）
+          rsync -a --delete \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            plugins/ public/plugins/
+          cp -f .claude-plugin/marketplace.json public/.claude-plugin/marketplace.json
+          cp -f LICENSE public/LICENSE
+          cp -f dist/README.md public/README.md
+
+      - name: Commit and push
+        working-directory: public
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to mirror."
+          else
+            git commit -m "[release] sync distribution from ai-sdd-workflow-dev@${SRC_SHA:0:7}"
+            git push
+          fi
