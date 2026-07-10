@@ -1,6 +1,6 @@
 #!/bin/bash
 # update-claude-md.sh
-# Automatically update CLAUDE.md with AI-SDD Instructions section
+# Automatically update CLAUDE.md and .claude/rules/ with AI-SDD Instructions
 
 set -euo pipefail
 
@@ -70,25 +70,25 @@ main() {
         error_exit "Failed to read version from plugin.json"
     fi
 
-    # 3. Load template and replace version
-    TEMPLATE_FILE="${PLUGIN_ROOT}/skills/sdd-init/templates/${SDD_LANG}/claude_md_template.md"
-    if [ ! -f "$TEMPLATE_FILE" ]; then
-        error_exit "Template file not found at: $TEMPLATE_FILE"
+    # 3. Load CLAUDE.md template and replace version
+    CLAUDE_TEMPLATE="${PLUGIN_ROOT}/skills/sdd-init/templates/${SDD_LANG}/claude_md_template.md"
+    if [ ! -f "$CLAUDE_TEMPLATE" ]; then
+        error_exit "Template file not found at: $CLAUDE_TEMPLATE"
     fi
 
-    CONTENT=$(sed "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" "$TEMPLATE_FILE")
+    CLAUDE_CONTENT=$(sed "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" "$CLAUDE_TEMPLATE")
 
-    # 4. Determine operation
+    # 4. Update CLAUDE.md
     CLAUDE_MD="${PROJECT_ROOT}/CLAUDE.md"
 
     if [ ! -f "$CLAUDE_MD" ]; then
         # Case 1: Create new CLAUDE.md
-        echo "$CONTENT" > "$CLAUDE_MD"
+        echo "$CLAUDE_CONTENT" > "$CLAUDE_MD"
         echo "✓ Created CLAUDE.md with AI-SDD Instructions (v${PLUGIN_VERSION})"
     elif ! grep -q "## AI-SDD Instructions" "$CLAUDE_MD"; then
         # Case 2: Append section
         echo "" >> "$CLAUDE_MD"
-        echo "$CONTENT" >> "$CLAUDE_MD"
+        echo "$CLAUDE_CONTENT" >> "$CLAUDE_MD"
         echo "✓ Appended AI-SDD Instructions section (v${PLUGIN_VERSION})"
     else
         # Case 3: Update existing section
@@ -104,7 +104,7 @@ main() {
             # Replace section (from "## AI-SDD Instructions" to next "## " or EOF)
             # Use a temporary file to store the new content
             TEMP_CONTENT="${CLAUDE_MD}.content.tmp"
-            echo "$CONTENT" > "$TEMP_CONTENT"
+            echo "$CLAUDE_CONTENT" > "$TEMP_CONTENT"
 
             awk '
                 BEGIN { in_section=0; content_printed=0 }
@@ -136,7 +136,50 @@ main() {
         fi
     fi
 
+    # 5. Update .claude/rules/ files
+    update_rules_files
+
     exit 0
+}
+
+update_rules_files() {
+    RULES_DIR="${PROJECT_ROOT}/.claude/rules"
+
+    # Map language to rules file naming
+    case "$SDD_LANG" in
+        ja)
+            RULES_FILE="ai-sdd-instructions.md"
+            ;;
+        *)
+            RULES_FILE="ai-sdd-instructions-en.md"
+            ;;
+    esac
+
+    RULES_PATH="${RULES_DIR}/${RULES_FILE}"
+
+    # Create .claude/rules directory if it doesn't exist
+    if [ ! -d "$RULES_DIR" ]; then
+        mkdir -p "$RULES_DIR"
+    fi
+
+    # For now, rules files are created manually in the repo
+    # This step validates that the rules file exists and updates its version
+    if [ ! -f "$RULES_PATH" ]; then
+        # Don't fail if rules file doesn't exist - it will be created manually
+        return 0
+    fi
+
+    # Verify version in rules file frontmatter
+    CURRENT_RULES_VERSION=$(grep -E "^\s+version:" "$RULES_PATH" | sed 's/.*"\([^"]*\)".*/\1/' | head -n 1)
+
+    if [ -z "$CURRENT_RULES_VERSION" ] || [ "$CURRENT_RULES_VERSION" != "$PLUGIN_VERSION" ]; then
+        # Update version in rules file
+        sed -i.bak "s/version: \"[^\"]*\"/version: \"$PLUGIN_VERSION\"/" "$RULES_PATH"
+        rm -f "${RULES_PATH}.bak"
+        echo "✓ Updated .claude/rules/${RULES_FILE} version (v${PLUGIN_VERSION})"
+    else
+        echo "✓ .claude/rules/${RULES_FILE} version is up to date (v${PLUGIN_VERSION})"
+    fi
 }
 
 # ============================================================================
