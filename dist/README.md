@@ -5,8 +5,8 @@
 
 AI駆動仕様駆動開発（AI-SDD）ワークフローを支援する Claude Code プラグインのマーケットプレイスリポジトリです。
 
-A marketplace repository for Claude Code plugins supporting AI-driven Specification-Driven Development (AI-SDD)
-workflow.
+A marketplace repository for Claude Code plugins supporting
+AI-driven Specification-Driven Development (AI-SDD) workflow.
 
 ## 概要 / Overview
 
@@ -71,15 +71,6 @@ ai-sdd-workflow/
 ├── LICENSE
 └── README.md
 ```
-
-## 開発 / Development
-
-開発は開発用リポジトリ [ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev)
-で行われ、リリースごとに本リポジトリへ配布物が同期されます。
-
-Development happens in the development repository
-[ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev),
-and distribution artifacts are mirrored to this repository on each release.
 
 ## ライセンス / License
 

@@ -16,40 +16,6 @@ workflow.
 This repository contains plugins to prevent Vibe Coding problems and achieve high-quality implementations using
 specifications as the source of truth.
 
-## 利用可能なプラグイン / Available Plugins
-
-| プラグイン / Plugin | 言語 / Language      | 説明 / Description                                                                       |
-|:---------------|:-------------------|:---------------------------------------------------------------------------------------|
-| `sdd-workflow` | 多言語 / Multilingual | AI-SDD ワークフローを支援する統合プラグイン（`SDD_LANG` で言語切替）/ Unified plugin supporting AI-SDD workflow |
-
-## インストール / Installation
-
-### マーケットプレイスを追加 / Add Marketplace
-
-Claude Code で以下を実行 / Run the following in Claude Code:
-
-```
-/plugin marketplace add ToshikiImagawa/ai-sdd-workflow
-```
-
-### プラグインをインストール / Install Plugin
-
-```
-/plugin install sdd-workflow@ToshikiImagawa/ai-sdd-workflow
-```
-
-言語は `.sdd-config.json` の `lang` フィールド（`en` / `ja`）で設定できます。
-The language can be configured via the `lang` field (`en` / `ja`) in `.sdd-config.json`.
-
-## プラグイン詳細 / Plugin Details
-
-プラグインの詳細は README を参照してください。
-
-For plugin details, see the README.
-
-- [sdd-workflow README](./plugins/sdd-workflow/README.md)
-- [sdd-workflow README（日本語）](./plugins/sdd-workflow/README.ja.md)
-
 ## リポジトリ構成 / Repository Structure
 
 Codex と Claude Code は共通のプロジェクト指示として `CLAUDE.md` を使用します。
