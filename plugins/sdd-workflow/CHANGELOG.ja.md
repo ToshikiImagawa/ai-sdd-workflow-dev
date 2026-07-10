@@ -41,6 +41,19 @@
 
 #### Skills
 
+- **`sdd-init`** / **SessionStart フック** - 常時ロードされる `CLAUDE.md` から AI-SDD 詳細ガイドを
+  パススコープ付きルール `.claude/rules/ai-sdd-instructions.md`（`.sdd/**` に触れたときのみロード）へ移行し、
+  `.sdd/` 以外の作業時のコンテキスト消費を削減
+  ([#130](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/130))
+    - `CLAUDE.md` には宣言・トリガー条件・ルールへのポインタのみを残し、約90行のディレクトリ構造・
+      命名規則・リンク規約ブロックをルールファイルへ移動
+    - ルールファイルは SessionStart フック（`session-start.py`）が自動生成・バージョン同期する。
+      `/sdd-init`（`update-claude-md.sh`）は最小化された `CLAUDE.md` セクションのみを管理
+    - ルールは `SDD_LANG` に関わらず英語の単一ファイル（人間向けではなく AI 向けガイダンス）とし、
+      言語別ファイルが同時にロードされる問題を回避
+
+#### Skills
+
 - `arguments` frontmatter フィールドによる名前付きスキル引数を導入（Claude Code v2.1.199+）
   ([#81](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/81))
     - 8スキル（`task-breakdown`, `implement`, `clarify`, `check-spec`, `checklist`, `run-checklist`,

@@ -38,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku` ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))
     - Rule-based format validation does not require complex reasoning; a lightweight model reduces cost and latency
     - Other agents (prd-reviewer, spec-reviewer, requirement-analyzer, clarification-assistant) keep `sonnet`
+
+#### Skills
+
+- **`sdd-init`** / **SessionStart hook** - Moved the detailed AI-SDD guide out of the always-loaded
+  `CLAUDE.md` into a path-scoped rule `.claude/rules/ai-sdd-instructions.md` (loads only under `.sdd/**`)
+  to cut context usage during work that does not touch `.sdd/`
+  ([#130](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/130))
+    - `CLAUDE.md` now keeps only the declaration, trigger conditions, and a pointer to the rule;
+      the ~90-line directory-structure / naming / link-convention block moved to the rule file
+    - The rule file is created and version-synced automatically by the SessionStart hook
+      (`session-start.py`); `/sdd-init` (`update-claude-md.sh`) only maintains the minimal `CLAUDE.md` section
+    - The rule is a single English file (agent-facing guidance, not human-facing) regardless of `SDD_LANG`,
+      so no per-language rule files ever load together
       because they require cross-document consistency reasoning
 
 #### Skills

@@ -1,6 +1,8 @@
 #!/bin/bash
 # update-claude-md.sh
-# Automatically update CLAUDE.md and .claude/rules/ with AI-SDD Instructions
+# Automatically update the minimal AI-SDD Instructions section in CLAUDE.md.
+# (The detailed .claude/rules/ai-sdd-instructions.md guide is managed by the
+#  SessionStart hook, session-start.py, not by this script.)
 
 set -euo pipefail
 
@@ -136,50 +138,11 @@ main() {
         fi
     fi
 
-    # 5. Update .claude/rules/ files
-    update_rules_files
+    # Note: the detailed AI-SDD guide at .claude/rules/ai-sdd-instructions.md is
+    # created and version-synced by the SessionStart hook (session-start.py),
+    # so this script only manages the minimal CLAUDE.md section.
 
     exit 0
-}
-
-update_rules_files() {
-    RULES_DIR="${PROJECT_ROOT}/.claude/rules"
-
-    # Map language to rules file naming
-    case "$SDD_LANG" in
-        ja)
-            RULES_FILE="ai-sdd-instructions.md"
-            ;;
-        *)
-            RULES_FILE="ai-sdd-instructions-en.md"
-            ;;
-    esac
-
-    RULES_PATH="${RULES_DIR}/${RULES_FILE}"
-
-    # Create .claude/rules directory if it doesn't exist
-    if [ ! -d "$RULES_DIR" ]; then
-        mkdir -p "$RULES_DIR"
-    fi
-
-    # For now, rules files are created manually in the repo
-    # This step validates that the rules file exists and updates its version
-    if [ ! -f "$RULES_PATH" ]; then
-        # Don't fail if rules file doesn't exist - it will be created manually
-        return 0
-    fi
-
-    # Verify version in rules file frontmatter
-    CURRENT_RULES_VERSION=$(grep -E "^\s+version:" "$RULES_PATH" | sed 's/.*"\([^"]*\)".*/\1/' | head -n 1)
-
-    if [ -z "$CURRENT_RULES_VERSION" ] || [ "$CURRENT_RULES_VERSION" != "$PLUGIN_VERSION" ]; then
-        # Update version in rules file
-        sed -i.bak "s/version: \"[^\"]*\"/version: \"$PLUGIN_VERSION\"/" "$RULES_PATH"
-        rm -f "${RULES_PATH}.bak"
-        echo "✓ Updated .claude/rules/${RULES_FILE} version (v${PLUGIN_VERSION})"
-    else
-        echo "✓ .claude/rules/${RULES_FILE} version is up to date (v${PLUGIN_VERSION})"
-    fi
 }
 
 # ============================================================================
