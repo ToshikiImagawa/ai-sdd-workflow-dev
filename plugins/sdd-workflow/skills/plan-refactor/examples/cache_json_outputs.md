@@ -1,6 +1,6 @@
 # Cache JSON Output Examples
 
-Example contents of the intermediate JSON files written to `.sdd/.cache/plan-refactor/` by the
+Example contents of the intermediate JSON files written to `${SDD_ROOT}/.cache/plan-refactor/` by the
 `plan-refactor` scripts.
 
 ## existing-docs.json

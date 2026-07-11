@@ -41,6 +41,19 @@
 
 #### Skills
 
+- **`sdd-init`** / **SessionStart フック** - 常時ロードされる `CLAUDE.md` から AI-SDD 詳細ガイドを
+  パススコープ付きルール `.claude/rules/ai-sdd-instructions.md`（`.sdd/**` に触れたときのみロード）へ移行し、
+  `.sdd/` 以外の作業時のコンテキスト消費を削減
+  ([#130](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/130))
+    - `CLAUDE.md` には宣言・トリガー条件・ルールへのポインタのみを残し、約90行のディレクトリ構造・
+      命名規則・リンク規約ブロックをルールファイルへ移動
+    - ルールファイルは SessionStart フック（`session-start.py`）が自動生成・バージョン同期する。
+      `/sdd-init`（`update-claude-md.sh`）は最小化された `CLAUDE.md` セクションのみを管理
+    - ルールは `SDD_LANG` に関わらず英語の単一ファイル（人間向けではなく AI 向けガイダンス）とし、
+      言語別ファイルが同時にロードされる問題を回避
+
+#### Skills
+
 - `arguments` frontmatter フィールドによる名前付きスキル引数を導入（Claude Code v2.1.199+）
   ([#81](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/81))
     - 8スキル（`task-breakdown`, `implement`, `clarify`, `check-spec`, `checklist`, `run-checklist`,
@@ -92,6 +105,19 @@
 - **`generate-spec`** - 設計書テンプレート（`templates/{en,ja}/design_template.md`）に「Pseudocode完全性ルール」セクションを追加
     - 設計書の擬似コードをそのままコピー可能に保つための言語別ガイダンス（Python 汎用 / Pydantic v2 / SQLAlchemy & alembic）
     - 追加言語（TypeScript / Go / Rust 等）向けに拡張可能なサブセクション構造
+
+### Fixed
+
+- **`.sdd-config.json` の `root`（およびディレクトリ名）のカスタム設定がプラグイン全体で尊重されるようになった。** 従来は多くのパスが既定の `.sdd/` にハードコードされており、カスタム root を使うプロジェクトで暗黙的に壊れていた。
+    - `session-start.py` が生成するパススコープ付きルールの `paths:` グロブに設定 root を置換。カスタム root（例: `.ai-docs/`）配下でも `.claude/rules/ai-sdd-instructions.md` が自動ロードされる（グロブが `.sdd/**` 固定だったリグレッションも解消）
+    - `update-claude-md.sh` が生成する `CLAUDE.md` セクションに設定 root を置換
+    - skill/agent プロンプトと出力テンプレートは、リテラル `.sdd/...` ではなく `${SDD_ROOT}` / `${SDD_*_PATH}` で SDD パスを解決
+    - `find-design-docs.sh` / `validate-files.sh` はキャッシュを設定 root 配下に出力。`pre-tool-use.py` の命名違反メッセージは設定ディレクトリパスを表示
+    - **上記の回帰テスト**: 新規 `scripts/test-skill-scripts.sh` が custom root での `find-design-docs.sh` / `validate-files.sh`
+      を検証。`scripts/test-hook-scripts.sh` は default / custom root 両方で `pre-tool-use.py` の命名メッセージを検証。
+      `scripts/test-e2e-sdd-init.sh` に custom root での ja テンプレート描画ステップと default root 解決アサートを追加。
+      `plugin-lint.sh` はプロンプト Markdown 内の全 `${SDD_*}` トークンがエクスポート済み変数であり、
+      `skills/*/templates/` に `.sdd/` ハードコードが無いことを検証
 
 ## [3.3.0] - 2026-03-02
 

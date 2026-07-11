@@ -2,7 +2,7 @@
 
 ### 対象ドキュメント
 
-- `.sdd/specification/[{親機能名}/]{機能名}_design.md`
+- `${SDD_SPECIFICATION_PATH}/[{親機能名}/]{機能名}_design.md`
 
 ※ 階層構造の場合、親機能は `index_design.md`
 
@@ -113,8 +113,8 @@ doSomething(arg: 数値): Result // 引数の型が異なる
 
 | ドキュメント                               | CONSTITUTION準拠 | 完全性    | 明確性    | SysML準拠 | 総合評価           |
 |:-------------------------------------|:---------------|:-------|:-------|:--------|:---------------|
-| `.sdd/specification/{機能名}_spec.md`   | 🟢 準拠 / 🔴 違反  | ✅ / ⚠️ | ✅ / ⚠️ | ✅ / ⚠️  | 🟢 良好 / 🟡 要改善 |
-| `.sdd/specification/{機能名}_design.md` | 🟢 準拠 / 🔴 違反  | ✅ / ⚠️ | ✅ / ⚠️ | -       | 🟢 良好 / 🟡 要改善 |
+| `${SDD_SPECIFICATION_PATH}/{機能名}_spec.md`   | 🟢 準拠 / 🔴 違反  | ✅ / ⚠️ | ✅ / ⚠️ | ✅ / ⚠️  | 🟢 良好 / 🟡 要改善 |
+| `${SDD_SPECIFICATION_PATH}/{機能名}_design.md` | 🟢 準拠 / 🔴 違反  | ✅ / ⚠️ | ✅ / ⚠️ | -       | 🟢 良好 / 🟡 要改善 |
 
 #### 検出された問題
 

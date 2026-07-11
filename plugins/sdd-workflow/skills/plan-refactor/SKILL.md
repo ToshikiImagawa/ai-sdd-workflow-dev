@@ -97,7 +97,7 @@ Run the document scanning script: `bash "${CLAUDE_PLUGIN_ROOT}/skills/plan-refac
 This script:
 
 1. Checks for PRD, spec, and design documents in both flat and hierarchical structures
-2. Exports results to `.sdd/.cache/plan-refactor/existing-docs.json`
+2. Exports results to `${SDD_ROOT}/.cache/plan-refactor/existing-docs.json`
 3. Determines Case A (documents exist) or Case B (no documents)
 
 **Step 1.2: Read Scan Results**
@@ -157,7 +157,7 @@ This script:
 1. Searches for files matching feature name (by filename and content)
 2. Limits search to specified scope if `--scope` is provided
 3. Excludes `node_modules/`, `.git/`, `dist/`, etc.
-4. Exports results to `.sdd/.cache/plan-refactor/implementation-files.json`
+4. Exports results to `${SDD_ROOT}/.cache/plan-refactor/implementation-files.json`
 
 **Step 2.2: Read Implementation File List**
 

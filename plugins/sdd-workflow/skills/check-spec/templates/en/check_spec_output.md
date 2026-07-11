@@ -2,7 +2,7 @@
 
 ### Target
 
-- Design Doc: `.sdd/specification/[{parent}/]{feature}_design.md`
+- Design Doc: `${SDD_SPECIFICATION_PATH}/[{parent}/]{feature}_design.md`
 - Implementation: `{implementation_files}`
 
 ### Consistency Check Results

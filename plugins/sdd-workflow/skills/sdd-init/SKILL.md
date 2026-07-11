@@ -14,9 +14,11 @@ Initialize AI-SDD (AI-driven Specification-Driven Development) workflow in the c
 
 ## What This Command Does
 
-1. **CLAUDE.md Configuration**: Add AI-SDD instructions to project's `CLAUDE.md`
+1. **CLAUDE.md Configuration**: Add the minimal AI-SDD Instructions section (declaration + trigger conditions + a pointer to the detailed rule) to the project's `CLAUDE.md`
 2. **Project Constitution Generation**: Create `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` (if not exist)
 3. **Template Generation**: Create document templates in `${SDD_ROOT}/` directory (if not exist)
+
+> **Note**: The detailed AI-SDD guide (directory structure, file naming, doc-link convention) lives in `.claude/rules/ai-sdd-instructions.md`, a path-scoped rule that loads only when working under `.sdd/`. That file is created and version-synced automatically by the SessionStart hook (`session-start.py`), not by this command, so the always-loaded `CLAUDE.md` stays minimal. It is a single English file (agent-facing guidance, not a human-facing document) regardless of `SDD_LANG`.
 
 ## Input
 

@@ -39,7 +39,7 @@ SPECIFICATION_PATH="${PROJECT_ROOT}/${SDD_ROOT}/${SPECIFICATION_DIR}"
 FEATURE_NAME="${1:-}"
 
 # Output directory
-OUTPUT_DIR="${PROJECT_ROOT}/.sdd/.cache/check-spec"
+OUTPUT_DIR="${PROJECT_ROOT}/${SDD_ROOT}/.cache/check-spec"
 mkdir -p "$OUTPUT_DIR"
 
 # --- Phase 1: Find design documents ---

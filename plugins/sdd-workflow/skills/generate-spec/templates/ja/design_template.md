@@ -16,12 +16,12 @@ risk: "medium"
 
 # 技術設計書テンプレート (Design Doc)
 
-このドキュメントは `.sdd/specification/` 配下の技術設計書（Design Doc）を作成する際のテンプレートです。
+このドキュメントは `${SDD_SPECIFICATION_PATH}/` 配下の技術設計書（Design Doc）を作成する際のテンプレートです。
 ファイル名は `{機能名}_design.md` となります。
 
 > **注意**: このテンプレートはプラグインのフォールバック用です。
 > プロジェクトで使用する際は、プログラミング言語やプロジェクト構成に合わせてカスタマイズし、
-> `.sdd/DESIGN_DOC_TEMPLATE.md` として保存してください。
+> `${SDD_ROOT}/DESIGN_DOC_TEMPLATE.md` として保存してください。
 
 ## 抽象仕様書との違い
 

@@ -6,8 +6,8 @@
 |:------------------|:-----------------------------------------|
 | Feature Name      | {Feature Name}                           |
 | Ticket Number     | {Ticket Number}                          |
-| Specification     | `.sdd/specification/{feature}_spec.md`   |
-| Design Document   | `.sdd/specification/{feature}_design.md` |
+| Specification     | `${SDD_SPECIFICATION_PATH}/{feature}_spec.md`   |
+| Design Document   | `${SDD_SPECIFICATION_PATH}/{feature}_design.md` |
 | Generated Date    | YYYY-MM-DD                               |
 | Checklist Version | 1.0                                      |
 
@@ -515,8 +515,8 @@ All items through P2 should be complete:
 
 ## Reference Documents
 
-- PRD: `.sdd/requirement/[{path}/]{name}.md` (if exists)
-- Abstract Specification: `.sdd/specification/[{path}/]{name}_spec.md`
-- Technical Design: `.sdd/specification/[{path}/]{name}_design.md`
+- PRD: `${SDD_REQUIREMENT_PATH}/[{path}/]{name}.md` (if exists)
+- Abstract Specification: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`
+- Technical Design: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md`
 
 ※ For hierarchical structure, parent features use `index.md`, `index_spec.md`, `index_design.md`

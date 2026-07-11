@@ -1,6 +1,8 @@
 #!/bin/bash
 # update-claude-md.sh
-# Automatically update CLAUDE.md with AI-SDD Instructions section
+# Automatically update the minimal AI-SDD Instructions section in CLAUDE.md.
+# (The detailed .claude/rules/ai-sdd-instructions.md guide is managed by the
+#  SessionStart hook, session-start.py, not by this script.)
 
 set -euo pipefail
 
@@ -20,18 +22,22 @@ if [ -z "$PLUGIN_ROOT" ]; then
     PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 fi
 
-# Read SDD_LANG from .sdd-config.json (priority over environment variable)
+# Read SDD_LANG and SDD_ROOT from .sdd-config.json (priority over environment variable)
 # This ensures consistency with init-structure.sh
 CONFIG_FILE="${PROJECT_ROOT}/.sdd-config.json"
 if [ -f "$CONFIG_FILE" ]; then
     if command -v jq &> /dev/null; then
         CONFIG_LANG=$(jq -r '.lang // empty' "$CONFIG_FILE" 2>/dev/null)
+        CONFIG_ROOT=$(jq -r '.root // empty' "$CONFIG_FILE" 2>/dev/null)
     else
         CONFIG_LANG=$(grep -o '"lang"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
+        CONFIG_ROOT=$(grep -o '"root"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
     fi
     SDD_LANG="${CONFIG_LANG:-${SDD_LANG:-en}}"
+    SDD_ROOT="${CONFIG_ROOT:-${SDD_ROOT:-.sdd}}"
 else
     SDD_LANG="${SDD_LANG:-en}"
+    SDD_ROOT="${SDD_ROOT:-.sdd}"
 fi
 
 # ============================================================================
@@ -70,25 +76,27 @@ main() {
         error_exit "Failed to read version from plugin.json"
     fi
 
-    # 3. Load template and replace version
-    TEMPLATE_FILE="${PLUGIN_ROOT}/skills/sdd-init/templates/${SDD_LANG}/claude_md_template.md"
-    if [ ! -f "$TEMPLATE_FILE" ]; then
-        error_exit "Template file not found at: $TEMPLATE_FILE"
+    # 3. Load CLAUDE.md template and replace version
+    CLAUDE_TEMPLATE="${PLUGIN_ROOT}/skills/sdd-init/templates/${SDD_LANG}/claude_md_template.md"
+    if [ ! -f "$CLAUDE_TEMPLATE" ]; then
+        error_exit "Template file not found at: $CLAUDE_TEMPLATE"
     fi
 
-    CONTENT=$(sed "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" "$TEMPLATE_FILE")
+    # Substitute version and the configured SDD root (root may contain "/",
+    # so use "|" as the sed delimiter for it).
+    CLAUDE_CONTENT=$(sed -e "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" -e "s|{SDD_ROOT}|$SDD_ROOT|g" "$CLAUDE_TEMPLATE")
 
-    # 4. Determine operation
+    # 4. Update CLAUDE.md
     CLAUDE_MD="${PROJECT_ROOT}/CLAUDE.md"
 
     if [ ! -f "$CLAUDE_MD" ]; then
         # Case 1: Create new CLAUDE.md
-        echo "$CONTENT" > "$CLAUDE_MD"
+        echo "$CLAUDE_CONTENT" > "$CLAUDE_MD"
         echo "✓ Created CLAUDE.md with AI-SDD Instructions (v${PLUGIN_VERSION})"
     elif ! grep -q "## AI-SDD Instructions" "$CLAUDE_MD"; then
         # Case 2: Append section
         echo "" >> "$CLAUDE_MD"
-        echo "$CONTENT" >> "$CLAUDE_MD"
+        echo "$CLAUDE_CONTENT" >> "$CLAUDE_MD"
         echo "✓ Appended AI-SDD Instructions section (v${PLUGIN_VERSION})"
     else
         # Case 3: Update existing section
@@ -104,7 +112,7 @@ main() {
             # Replace section (from "## AI-SDD Instructions" to next "## " or EOF)
             # Use a temporary file to store the new content
             TEMP_CONTENT="${CLAUDE_MD}.content.tmp"
-            echo "$CONTENT" > "$TEMP_CONTENT"
+            echo "$CLAUDE_CONTENT" > "$TEMP_CONTENT"
 
             awk '
                 BEGIN { in_section=0; content_printed=0 }
@@ -135,6 +143,10 @@ main() {
             echo "✓ AI-SDD Instructions section is up to date (v${PLUGIN_VERSION})"
         fi
     fi
+
+    # Note: the detailed AI-SDD guide at .claude/rules/ai-sdd-instructions.md is
+    # created and version-synced by the SessionStart hook (session-start.py),
+    # so this script only manages the minimal CLAUDE.md section.
 
     exit 0
 }

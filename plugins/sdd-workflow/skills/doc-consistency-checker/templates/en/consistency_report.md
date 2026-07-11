@@ -10,9 +10,9 @@ This template is the output format for document consistency check results.
 
 | Document | Path                                          | Last Updated |
 |:---------|:----------------------------------------------|:-------------|
-| PRD      | `.sdd/requirement/{feature-name}.md`          | YYYY-MM-DD   |
-| spec     | `.sdd/specification/{feature-name}_spec.md`   | YYYY-MM-DD   |
-| design   | `.sdd/specification/{feature-name}_design.md` | YYYY-MM-DD   |
+| PRD      | `${SDD_REQUIREMENT_PATH}/{feature-name}.md`          | YYYY-MM-DD   |
+| spec     | `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`   | YYYY-MM-DD   |
+| design   | `${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` | YYYY-MM-DD   |
 
 ### Check Results Summary
 

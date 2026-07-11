@@ -54,6 +54,10 @@ jobs:
         run: bash scripts/test-session-start.sh
       - name: Run hook scripts regression tests
         run: bash scripts/test-hook-scripts.sh
+      - name: Run sdd-init end-to-end test
+        run: bash scripts/test-e2e-sdd-init.sh
+      - name: Run skill helper scripts test
+        run: bash scripts/test-skill-scripts.sh
       - name: Install pytest
         run: python3 -m pip install pytest
       - name: Run session-start unit tests

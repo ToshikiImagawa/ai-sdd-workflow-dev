@@ -6,8 +6,8 @@
 |:-------------|:-----------------------------------------------|
 | 機能名          | {機能名}                                          |
 | チケット番号       | {チケット番号}                                       |
-| 対象仕様書        | `.sdd/specification/[{path}/]{name}_spec.md`   |
-| 対象設計書        | `.sdd/specification/[{path}/]{name}_design.md` |
+| 対象仕様書        | `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`   |
+| 対象設計書        | `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md` |
 | 生成日          | YYYY-MM-DD                                     |
 | チェックリストバージョン | 1.0                                            |
 
@@ -517,8 +517,8 @@ P2までのすべての項目が完了している必要があります:
 
 ## 参照ドキュメント
 
-- PRD: `.sdd/requirement/[{path}/]{name}.md`（存在する場合）
-- 抽象仕様書: `.sdd/specification/[{path}/]{name}_spec.md`
-- 技術設計書: `.sdd/specification/[{path}/]{name}_design.md`
+- PRD: `${SDD_REQUIREMENT_PATH}/[{path}/]{name}.md`（存在する場合）
+- 抽象仕様書: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`
+- 技術設計書: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md`
 
 ※ 階層構造の場合、親機能は `index.md`、`index_spec.md`、`index_design.md`

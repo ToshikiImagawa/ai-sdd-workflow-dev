@@ -38,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku` ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))
     - Rule-based format validation does not require complex reasoning; a lightweight model reduces cost and latency
     - Other agents (prd-reviewer, spec-reviewer, requirement-analyzer, clarification-assistant) keep `sonnet`
+
+#### Skills
+
+- **`sdd-init`** / **SessionStart hook** - Moved the detailed AI-SDD guide out of the always-loaded
+  `CLAUDE.md` into a path-scoped rule `.claude/rules/ai-sdd-instructions.md` (loads only under `.sdd/**`)
+  to cut context usage during work that does not touch `.sdd/`
+  ([#130](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/130))
+    - `CLAUDE.md` now keeps only the declaration, trigger conditions, and a pointer to the rule;
+      the ~90-line directory-structure / naming / link-convention block moved to the rule file
+    - The rule file is created and version-synced automatically by the SessionStart hook
+      (`session-start.py`); `/sdd-init` (`update-claude-md.sh`) only maintains the minimal `CLAUDE.md` section
+    - The rule is a single English file (agent-facing guidance, not human-facing) regardless of `SDD_LANG`,
+      so no per-language rule files ever load together
       because they require cross-document consistency reasoning
 
 #### Skills
@@ -96,6 +109,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`generate-spec`** - Added "Pseudocode Completeness Rules" section to design doc templates (`templates/{en,ja}/design_template.md`)
     - Language-specific guidance (Python general / Pydantic v2 / SQLAlchemy & alembic) to keep design pseudocode copyable verbatim
     - Extensible sub-section structure for additional languages (TypeScript / Go / Rust, etc.)
+
+### Fixed
+
+- **Custom `.sdd-config.json` `root` (and directory names) are now honored across the plugin.** Previously
+  many paths were hardcoded to the default `.sdd/`, so projects using a custom root silently broke.
+    - `session-start.py` substitutes the configured root into the generated path-scoped rule's `paths:` glob,
+      so `.claude/rules/ai-sdd-instructions.md` auto-loads under a customized root (e.g. `.ai-docs/`) — this
+      also fixes the regression where the glob was baked to `.sdd/**`
+    - `update-claude-md.sh` substitutes the configured root into the generated `CLAUDE.md` section
+    - Skill/agent prompts and output templates now resolve SDD paths via `${SDD_ROOT}` / `${SDD_*_PATH}`
+      instead of literal `.sdd/...`
+    - `find-design-docs.sh` and `validate-files.sh` write their cache under the configured root; `pre-tool-use.py`
+      naming-violation messages report the configured directory paths
+    - **Regression coverage** for the above: a new `scripts/test-skill-scripts.sh` exercises `find-design-docs.sh`
+      / `validate-files.sh` under a custom root; `scripts/test-hook-scripts.sh` now asserts the `pre-tool-use.py`
+      naming messages under both the default and a custom root; `scripts/test-e2e-sdd-init.sh` gained a ja-template
+      render step under a custom root and a default-root assertion; and `plugin-lint.sh` now verifies every
+      `${SDD_*}` token in prompt Markdown is an exported var and that no `skills/*/templates/` file hardcodes `.sdd/`
 
 ## [3.3.0] - 2026-03-02
 
