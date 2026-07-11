@@ -113,6 +113,11 @@
     - `update-claude-md.sh` が生成する `CLAUDE.md` セクションに設定 root を置換
     - skill/agent プロンプトと出力テンプレートは、リテラル `.sdd/...` ではなく `${SDD_ROOT}` / `${SDD_*_PATH}` で SDD パスを解決
     - `find-design-docs.sh` / `validate-files.sh` はキャッシュを設定 root 配下に出力。`pre-tool-use.py` の命名違反メッセージは設定ディレクトリパスを表示
+    - **上記の回帰テスト**: 新規 `scripts/test-skill-scripts.sh` が custom root での `find-design-docs.sh` / `validate-files.sh`
+      を検証。`scripts/test-hook-scripts.sh` は default / custom root 両方で `pre-tool-use.py` の命名メッセージを検証。
+      `scripts/test-e2e-sdd-init.sh` に custom root での ja テンプレート描画ステップと default root 解決アサートを追加。
+      `plugin-lint.sh` はプロンプト Markdown 内の全 `${SDD_*}` トークンがエクスポート済み変数であり、
+      `skills/*/templates/` に `.sdd/` ハードコードが無いことを検証
 
 ## [3.3.0] - 2026-03-02
 

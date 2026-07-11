@@ -14,7 +14,8 @@ paths:
 | `plugin-lint.sh`          | `.claude/skills/plugin-lint/SKILL.md` の検査内容を実装。プロンプトMD内の不適切なコードブロックやファイル命名規則を検証 | `plugin-lint` |
 | `test-session-start.sh`   | `plugins/sdd-workflow/scripts/session-start.py` のゴールデンファイル回帰テスト     | `test`        |
 | `test-hook-scripts.sh`    | `plugins/sdd-workflow/scripts/` のフックスクリプト（pre-tool-use / post-tool-use / user-prompt-submit）の回帰テスト | `test`        |
-| `test-e2e-sdd-init.sh`    | 空プロジェクトでの sdd-init 通しE2E（session-start → init-structure → update-claude-md）。CLAUDE.md 最小化・`.claude/rules/` 生成・レガシー掃除・冪等性を検証 | `test`        |
+| `test-e2e-sdd-init.sh`    | 空プロジェクトでの sdd-init 通しE2E（session-start → init-structure → update-claude-md）。CLAUDE.md 最小化・`.claude/rules/` 生成・レガシー掃除・冪等性・en/ja テンプレート描画・custom root を検証 | `test`        |
+| `test-skill-scripts.sh`   | skill ヘルパースクリプト（check-spec の `find-design-docs.sh` / constitution の `validate-files.sh`）が custom root でキャッシュ・エクスポートを設定 root 配下に生成するか検証 | `test`        |
 
 ## 実装・修正時の注意
 

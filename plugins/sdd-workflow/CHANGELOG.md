@@ -122,6 +122,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       instead of literal `.sdd/...`
     - `find-design-docs.sh` and `validate-files.sh` write their cache under the configured root; `pre-tool-use.py`
       naming-violation messages report the configured directory paths
+    - **Regression coverage** for the above: a new `scripts/test-skill-scripts.sh` exercises `find-design-docs.sh`
+      / `validate-files.sh` under a custom root; `scripts/test-hook-scripts.sh` now asserts the `pre-tool-use.py`
+      naming messages under both the default and a custom root; `scripts/test-e2e-sdd-init.sh` gained a ja-template
+      render step under a custom root and a default-root assertion; and `plugin-lint.sh` now verifies every
+      `${SDD_*}` token in prompt Markdown is an exported var and that no `skills/*/templates/` file hardcodes `.sdd/`
 
 ## [3.3.0] - 2026-03-02
 

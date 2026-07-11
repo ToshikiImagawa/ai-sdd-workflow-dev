@@ -163,6 +163,8 @@ assert_count     "CLAUDE.md has exactly one AI-SDD section"         1 "## AI-SDD
 assert_grep      "CLAUDE.md points to the rules file"               "ai-sdd-instructions.md" "$PROJ/CLAUDE.md"
 assert_not_grep  "CLAUDE.md omits the naming quick-reference body"  "Naming Pattern Quick Reference" "$PROJ/CLAUDE.md"
 assert_not_grep  "CLAUDE.md omits the detailed naming table"        '_design` suffix required'       "$PROJ/CLAUDE.md"
+assert_grep      "CLAUDE.md resolves the default .sdd root"         ".sdd/"                  "$PROJ/CLAUDE.md"
+assert_not_grep  "CLAUDE.md has no leftover {SDD_ROOT} placeholder" '{SDD_ROOT}'             "$PROJ/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
 # STEP 3: Legacy per-language file cleanup on language switch
@@ -220,6 +222,36 @@ if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ2" CLAUDE_ENV_FI
 fi
 assert_grep      "CLAUDE.md references the custom root"             ".ai-docs/"              "$PROJ2/CLAUDE.md"
 assert_not_grep  "CLAUDE.md has no leftover {SDD_ROOT} placeholder" '{SDD_ROOT}'             "$PROJ2/CLAUDE.md"
+
+# ---------------------------------------------------------------------------
+# STEP 6: Japanese CLAUDE.md template renders (lang=ja) with a custom root
+# ---------------------------------------------------------------------------
+# The ja template is otherwise never rendered by any test: STEP 3 only re-runs
+# session-start (English rules file), and STEP 4 hits update-claude-md's
+# "up to date" branch. A fresh ja project forces the ja template through the
+# "create new CLAUDE.md" path, verifying placeholder resolution and body
+# minimization for the Japanese locale under a non-default root.
+printf -- '--- STEP 6: ja CLAUDE.md template + custom root ---\n'
+PROJ3="${TMP_DIR}/project-ja"
+ENV3="${TMP_DIR}/env3"
+mkdir -p "$PROJ3"
+: > "$ENV3"
+printf '%s\n' '{"root":".ai-docs","lang":"ja","directories":{"requirement":"requirement","specification":"specification","task":"task"}}' > "$PROJ3/.sdd-config.json"
+
+if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ3" CLAUDE_ENV_FILE="$ENV3" \
+        bash "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
+    fail "update-claude-md.sh (ja custom root) exited non-zero"
+fi
+assert_file      "ja run creates CLAUDE.md"                         "$PROJ3/CLAUDE.md"
+assert_grep      "ja CLAUDE.md has the AI-SDD Instructions section" "## AI-SDD Instructions" "$PROJ3/CLAUDE.md"
+assert_count     "ja CLAUDE.md has exactly one AI-SDD section"      1 "## AI-SDD Instructions" "$PROJ3/CLAUDE.md"
+assert_grep      "ja CLAUDE.md keeps the Japanese pointer sentence" "詳細なディレクトリ構造・ファイル命名規則・ドキュメントリンク規約は" "$PROJ3/CLAUDE.md"
+assert_grep      "ja CLAUDE.md points to the rules file"            "ai-sdd-instructions.md" "$PROJ3/CLAUDE.md"
+assert_grep      "ja CLAUDE.md resolves the custom root"            ".ai-docs/"              "$PROJ3/CLAUDE.md"
+assert_not_grep  "ja CLAUDE.md has no {SDD_ROOT} placeholder"       '{SDD_ROOT}'             "$PROJ3/CLAUDE.md"
+assert_not_grep  "ja CLAUDE.md has no {PLUGIN_VERSION} placeholder" '{PLUGIN_VERSION}'       "$PROJ3/CLAUDE.md"
+assert_not_grep  "ja CLAUDE.md omits the naming quick-reference"    "命名パターン早見表"          "$PROJ3/CLAUDE.md"
+assert_not_grep  "ja CLAUDE.md omits the directory-structure body"  "### ディレクトリ構造"        "$PROJ3/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
 # Summary
