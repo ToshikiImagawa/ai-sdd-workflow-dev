@@ -39,7 +39,7 @@ locations, principle reference coverage matrix, fix proposal summary)
 
 **Before execution, you must read the AI-SDD principles document.**
 
-AI-SDD principles document path: `.sdd/AI-SDD-PRINCIPLES.md`
+AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
@@ -118,7 +118,7 @@ search outside this scope.
 
 ### Step 1: Collect Targets
 
-Discover target PRDs (from arguments or Glob). Read every target PRD, `.sdd/CONSTITUTION.md` (if present), and the
+Discover target PRDs (from arguments or Glob). Read every target PRD, `${SDD_ROOT}/CONSTITUTION.md` (if present), and the
 project PRD template (`${SDD_ROOT}/PRD_TEMPLATE.md`, if present) — the template is the source of truth for section
 structure and diagram notation conventions; do not flag a style as inconsistent when it follows the template.
 

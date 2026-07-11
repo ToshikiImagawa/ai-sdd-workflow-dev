@@ -37,7 +37,7 @@ REQUIREMENT_PATH="${PROJECT_ROOT}/${SDD_ROOT}/${REQUIREMENT_DIR}"
 SPECIFICATION_PATH="${PROJECT_ROOT}/${SDD_ROOT}/${SPECIFICATION_DIR}"
 
 # Output directory
-OUTPUT_DIR="${PROJECT_ROOT}/.sdd/.cache/constitution"
+OUTPUT_DIR="${PROJECT_ROOT}/${SDD_ROOT}/.cache/constitution"
 mkdir -p "$OUTPUT_DIR"
 
 # --- Phase 1: Scan requirement files ---

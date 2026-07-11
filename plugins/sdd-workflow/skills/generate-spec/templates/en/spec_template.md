@@ -15,12 +15,12 @@ risk: "medium"
 
 # Abstract Specification Template
 
-This document is a template for creating abstract specifications under `.sdd/specification/`.
+This document is a template for creating abstract specifications under `${SDD_SPECIFICATION_PATH}/`.
 The filename should be `{feature-name}_spec.md`.
 
 > **Note**: This template is a fallback for the plugin.
 > When using in a project, customize it according to your programming language and project structure,
-> and save it as `.sdd/SPECIFICATION_TEMPLATE.md`.
+> and save it as `${SDD_ROOT}/SPECIFICATION_TEMPLATE.md`.
 
 ## Difference from Technical Design Doc
 

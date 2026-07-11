@@ -209,9 +209,10 @@ class TestSyncRulesFiles:
         tdir.mkdir(parents=True, exist_ok=True)
         tpl = tdir / "ai_sdd_instructions_rules.md"
         tpl.write_text(
-            '---\npaths:\n  - ".sdd/**"\n---\n'
+            '---\npaths:\n  - "{SDD_ROOT}/**"\n---\n'
             "# AI-SDD Instructions (v{PLUGIN_VERSION})\n"
-            '<!-- sdd-workflow version: "{PLUGIN_VERSION}" -->\n',
+            '<!-- sdd-workflow version: "{PLUGIN_VERSION}" -->\n'
+            "Docs live under {SDD_ROOT}/.\n",
             encoding="utf-8",
         )
         return tpl
@@ -223,14 +224,32 @@ class TestSyncRulesFiles:
         project_root.mkdir()
         self._make_template(plugin_root)
 
-        ss.sync_rules_files(str(plugin_root), str(project_root), "3.3.0")
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
 
         target = project_root / ".claude" / "rules" / "ai-sdd-instructions.md"
         assert target.is_file()
         content = target.read_text(encoding="utf-8")
         assert "{PLUGIN_VERSION}" not in content
+        assert "{SDD_ROOT}" not in content
         assert 'version: "3.3.0"' in content
+        # default root substituted into the path-scoped glob
+        assert '".sdd/**"' in content
         assert "synced (v3.3.0)" in capsys.readouterr().out
+
+    def test_substitutes_custom_root_into_paths_glob(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".ai-docs", "3.3.0")
+
+        content = (project_root / ".claude" / "rules" / "ai-sdd-instructions.md").read_text(encoding="utf-8")
+        assert "{SDD_ROOT}" not in content
+        assert '".ai-docs/**"' in content   # rule loads for the custom root
+        assert ".sdd/" not in content        # no leftover default root
+        assert "Docs live under .ai-docs/." in content
 
     def test_missing_template_skips_without_creating_dir(self, tmp_path, capsys):
         plugin_root = tmp_path / "plugin"
@@ -238,7 +257,7 @@ class TestSyncRulesFiles:
         plugin_root.mkdir()
         project_root.mkdir()
 
-        ss.sync_rules_files(str(plugin_root), str(project_root), "3.3.0")
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
 
         assert not (project_root / ".claude" / "rules").exists()
         assert "Template not found" in capsys.readouterr().err
@@ -250,7 +269,7 @@ class TestSyncRulesFiles:
         project_root.mkdir()
         self._make_template(plugin_root)
 
-        ss.sync_rules_files(str(plugin_root), str(project_root), "")
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "")
 
         target = project_root / ".claude" / "rules" / "ai-sdd-instructions.md"
         assert "{PLUGIN_VERSION}" in target.read_text(encoding="utf-8")
@@ -267,7 +286,7 @@ class TestSyncRulesFiles:
         legacy = rules_dir / "ai-sdd-instructions-en.md"
         legacy.write_text("stale", encoding="utf-8")
 
-        ss.sync_rules_files(str(plugin_root), str(project_root), "3.3.0")
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
 
         assert (rules_dir / "ai-sdd-instructions.md").is_file()
         assert not legacy.exists()
@@ -284,7 +303,7 @@ class TestSyncRulesFiles:
         target = rules_dir / "ai-sdd-instructions.md"
         target.write_text("STALE CONTENT", encoding="utf-8")
 
-        ss.sync_rules_files(str(plugin_root), str(project_root), "3.3.0")
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
 
         # The rule file is plugin-managed and regenerated from the template.
         assert "STALE CONTENT" not in target.read_text(encoding="utf-8")

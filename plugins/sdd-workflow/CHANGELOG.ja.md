@@ -106,6 +106,14 @@
     - 設計書の擬似コードをそのままコピー可能に保つための言語別ガイダンス（Python 汎用 / Pydantic v2 / SQLAlchemy & alembic）
     - 追加言語（TypeScript / Go / Rust 等）向けに拡張可能なサブセクション構造
 
+### Fixed
+
+- **`.sdd-config.json` の `root`（およびディレクトリ名）のカスタム設定がプラグイン全体で尊重されるようになった。** 従来は多くのパスが既定の `.sdd/` にハードコードされており、カスタム root を使うプロジェクトで暗黙的に壊れていた。
+    - `session-start.py` が生成するパススコープ付きルールの `paths:` グロブに設定 root を置換。カスタム root（例: `.ai-docs/`）配下でも `.claude/rules/ai-sdd-instructions.md` が自動ロードされる（グロブが `.sdd/**` 固定だったリグレッションも解消）
+    - `update-claude-md.sh` が生成する `CLAUDE.md` セクションに設定 root を置換
+    - skill/agent プロンプトと出力テンプレートは、リテラル `.sdd/...` ではなく `${SDD_ROOT}` / `${SDD_*_PATH}` で SDD パスを解決
+    - `find-design-docs.sh` / `validate-files.sh` はキャッシュを設定 root 配下に出力。`pre-tool-use.py` の命名違反メッセージは設定ディレクトリパスを表示
+
 ## [3.3.0] - 2026-03-02
 
 ### Changed

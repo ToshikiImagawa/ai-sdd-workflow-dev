@@ -110,6 +110,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Language-specific guidance (Python general / Pydantic v2 / SQLAlchemy & alembic) to keep design pseudocode copyable verbatim
     - Extensible sub-section structure for additional languages (TypeScript / Go / Rust, etc.)
 
+### Fixed
+
+- **Custom `.sdd-config.json` `root` (and directory names) are now honored across the plugin.** Previously
+  many paths were hardcoded to the default `.sdd/`, so projects using a custom root silently broke.
+    - `session-start.py` substitutes the configured root into the generated path-scoped rule's `paths:` glob,
+      so `.claude/rules/ai-sdd-instructions.md` auto-loads under a customized root (e.g. `.ai-docs/`) — this
+      also fixes the regression where the glob was baked to `.sdd/**`
+    - `update-claude-md.sh` substitutes the configured root into the generated `CLAUDE.md` section
+    - Skill/agent prompts and output templates now resolve SDD paths via `${SDD_ROOT}` / `${SDD_*_PATH}`
+      instead of literal `.sdd/...`
+    - `find-design-docs.sh` and `validate-files.sh` write their cache under the configured root; `pre-tool-use.py`
+      naming-violation messages report the configured directory paths
+
 ## [3.3.0] - 2026-03-02
 
 ### Changed

@@ -22,18 +22,22 @@ if [ -z "$PLUGIN_ROOT" ]; then
     PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 fi
 
-# Read SDD_LANG from .sdd-config.json (priority over environment variable)
+# Read SDD_LANG and SDD_ROOT from .sdd-config.json (priority over environment variable)
 # This ensures consistency with init-structure.sh
 CONFIG_FILE="${PROJECT_ROOT}/.sdd-config.json"
 if [ -f "$CONFIG_FILE" ]; then
     if command -v jq &> /dev/null; then
         CONFIG_LANG=$(jq -r '.lang // empty' "$CONFIG_FILE" 2>/dev/null)
+        CONFIG_ROOT=$(jq -r '.root // empty' "$CONFIG_FILE" 2>/dev/null)
     else
         CONFIG_LANG=$(grep -o '"lang"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
+        CONFIG_ROOT=$(grep -o '"root"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
     fi
     SDD_LANG="${CONFIG_LANG:-${SDD_LANG:-en}}"
+    SDD_ROOT="${CONFIG_ROOT:-${SDD_ROOT:-.sdd}}"
 else
     SDD_LANG="${SDD_LANG:-en}"
+    SDD_ROOT="${SDD_ROOT:-.sdd}"
 fi
 
 # ============================================================================
@@ -78,7 +82,9 @@ main() {
         error_exit "Template file not found at: $CLAUDE_TEMPLATE"
     fi
 
-    CLAUDE_CONTENT=$(sed "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" "$CLAUDE_TEMPLATE")
+    # Substitute version and the configured SDD root (root may contain "/",
+    # so use "|" as the sed delimiter for it).
+    CLAUDE_CONTENT=$(sed -e "s/{PLUGIN_VERSION}/$PLUGIN_VERSION/g" -e "s|{SDD_ROOT}|$SDD_ROOT|g" "$CLAUDE_TEMPLATE")
 
     # 4. Update CLAUDE.md
     CLAUDE_MD="${PROJECT_ROOT}/CLAUDE.md"

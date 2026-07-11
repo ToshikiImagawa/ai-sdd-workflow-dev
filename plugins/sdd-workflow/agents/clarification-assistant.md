@@ -158,7 +158,7 @@ Read `templates/${SDD_LANG:-en}/clarification_analysis_output.md` and use it for
 
 **Before execution, you must read the AI-SDD principles document.**
 
-AI-SDD principles document path: `.sdd/AI-SDD-PRINCIPLES.md`
+AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 

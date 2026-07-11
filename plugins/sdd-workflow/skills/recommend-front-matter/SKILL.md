@@ -61,7 +61,7 @@ This script:
 3. Detects Front Matter presence (checks for opening/closing `---`)
 4. Determines document type from file path and naming convention
 5. Extracts title from first `#` heading
-6. Generates JSON report (`.sdd/.cache/recommend-front-matter/scan_result.json`)
+6. Generates JSON report (`${SDD_ROOT}/.cache/recommend-front-matter/scan_result.json`)
 7. Exports environment variables to `$CLAUDE_ENV_FILE`:
    - `RECOMMEND_FM_CACHE_DIR` - Cache directory
    - `RECOMMEND_FM_SCAN_RESULT` - JSON scan result file path

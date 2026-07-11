@@ -197,6 +197,31 @@ assert_same      "CLAUDE.md is unchanged on re-run"                 "${TMP_DIR}/
 assert_count     "CLAUDE.md still has exactly one AI-SDD section"   1 "## AI-SDD Instructions" "$PROJ/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
+# STEP 5: Custom root (.sdd-config.json "root") is honored in generated files
+# ---------------------------------------------------------------------------
+printf -- '--- STEP 5: custom root (.ai-docs) is honored ---\n'
+PROJ2="${TMP_DIR}/project-customroot"
+ENV2="${TMP_DIR}/env2"
+mkdir -p "$PROJ2"
+: > "$ENV2"
+printf '%s\n' '{"root":".ai-docs","lang":"en","directories":{"requirement":"requirement","specification":"specification","task":"task"}}' > "$PROJ2/.sdd-config.json"
+
+if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ2" CLAUDE_ENV_FILE="$ENV2" \
+        python3 "$SESSION_START" --default-lang en >/dev/null 2>&1; then
+    fail "session-start.py (custom root) exited non-zero"
+fi
+assert_grep      "rule paths glob uses the custom root"             '".ai-docs/**"'          "$PROJ2/$RULES_REL"
+assert_not_grep  "rule paths glob has no default-root glob"         '".sdd/**"'              "$PROJ2/$RULES_REL"
+assert_not_grep  "rule has no leftover {SDD_ROOT} placeholder"      '{SDD_ROOT}'             "$PROJ2/$RULES_REL"
+
+if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ2" CLAUDE_ENV_FILE="$ENV2" \
+        bash "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
+    fail "update-claude-md.sh (custom root) exited non-zero"
+fi
+assert_grep      "CLAUDE.md references the custom root"             ".ai-docs/"              "$PROJ2/CLAUDE.md"
+assert_not_grep  "CLAUDE.md has no leftover {SDD_ROOT} placeholder" '{SDD_ROOT}'             "$PROJ2/CLAUDE.md"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n=== Results: %d passed, %d failed ===\n' "$PASS_COUNT" "$FAIL_COUNT"

@@ -34,7 +34,7 @@ traceability check results, fix proposal summary)
 
 **Before execution, you must read the AI-SDD principles document.**
 
-AI-SDD principles document path: `.sdd/AI-SDD-PRINCIPLES.md`
+AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
@@ -99,7 +99,7 @@ search outside this scope.
 
 ### Preparation
 
-Before starting review, **you must read `.sdd/CONSTITUTION.md` using the Read tool**.
+Before starting review, **you must read `${SDD_ROOT}/CONSTITUTION.md` using the Read tool**.
 
 ### If CONSTITUTION.md Does Not Exist
 

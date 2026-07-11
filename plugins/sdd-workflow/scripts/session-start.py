@@ -139,12 +139,12 @@ def sync_principles_file(plugin_root: str, sdd_dir: str, plugin_version: str) ->
 # document, so it is intentionally single-language (English) regardless of
 # SDD_LANG. This keeps exactly one path-scoped rule instead of one per language.
 RULES_FILENAME = "ai-sdd-instructions.md"
-# Per-language filenames written by pre-release builds; cleaned up on sync so
+# Per-language filename written by pre-release builds; cleaned up on sync so
 # that only the single English rule loads for .sdd/** paths.
-LEGACY_RULES_FILENAMES = ("ai-sdd-instructions-en.md",)
+LEGACY_RULES_FILENAME = "ai-sdd-instructions-en.md"
 
 
-def sync_rules_files(plugin_root: str, project_root: str, plugin_version: str) -> None:
+def sync_rules_files(plugin_root: str, project_root: str, sdd_root: str, plugin_version: str) -> None:
     rules_dir = os.path.join(project_root, ".claude", "rules")
     template_path = os.path.join(
         plugin_root, "skills", "sdd-init", "templates", "ai_sdd_instructions_rules.md"
@@ -160,32 +160,32 @@ def sync_rules_files(plugin_root: str, project_root: str, plugin_version: str) -
     try:
         with open(template_path, encoding="utf-8") as f:
             content = f.read()
+        # Substitute the configured SDD root so the path-scoped rule's "paths:"
+        # glob matches the project's actual root (which may be customized via
+        # .sdd-config.json). The glob is consumed by the Claude Code rule loader,
+        # so it must be the literal resolved root, not a "${SDD_ROOT}" env ref.
+        content = content.replace("{SDD_ROOT}", sdd_root)
         if plugin_version:
-            content = re.sub(r"\{PLUGIN_VERSION\}", plugin_version, content)
+            content = content.replace("{PLUGIN_VERSION}", plugin_version)
         else:
             print("[AI-SDD] Warning: Plugin version unknown; rules file keeps the {PLUGIN_VERSION} placeholder.", file=sys.stderr)
         tmp_path = target_path + ".tmp"
-        try:
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            os.replace(tmp_path, target_path)
-        finally:
-            if os.path.isfile(tmp_path):
-                os.remove(tmp_path)
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp_path, target_path)
         print(f"[AI-SDD] .claude/rules/{RULES_FILENAME} synced (v{plugin_version or 'unknown'}).")
     except OSError as e:
         print(f"[AI-SDD] Warning: Failed to sync rules file: {e}", file=sys.stderr)
         return
 
-    # Remove stale per-language rules files left by pre-release builds.
-    for legacy in LEGACY_RULES_FILENAMES:
-        legacy_path = os.path.join(rules_dir, legacy)
-        if os.path.isfile(legacy_path):
-            try:
-                os.remove(legacy_path)
-                print(f"[AI-SDD] Removed legacy rules file .claude/rules/{legacy}.")
-            except OSError:
-                pass
+    # Remove the stale per-language rules file left by pre-release builds.
+    legacy_path = os.path.join(rules_dir, LEGACY_RULES_FILENAME)
+    if os.path.isfile(legacy_path):
+        try:
+            os.remove(legacy_path)
+            print(f"[AI-SDD] Removed legacy rules file .claude/rules/{LEGACY_RULES_FILENAME}.")
+        except OSError:
+            pass
 
 
 def write_env_vars(cfg: SddConfig) -> None:
@@ -313,7 +313,7 @@ def main() -> None:
 
     plugin_version = get_plugin_version(plugin_root)
     sync_principles_file(plugin_root, sdd_dir, plugin_version)
-    sync_rules_files(plugin_root, project_root, plugin_version)
+    sync_rules_files(plugin_root, project_root, cfg.root, plugin_version)
 
     write_env_vars(cfg)
 

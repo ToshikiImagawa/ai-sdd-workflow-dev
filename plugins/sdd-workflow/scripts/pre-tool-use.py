@@ -44,14 +44,14 @@ def validate_naming(rel_path: str, requirement_prefix: str, specification_prefix
         if stem.endswith("_spec") or stem.endswith("_design"):
             return (
                 f"[AI-SDD] Naming violation: '{rel_path}'. "
-                "Files under requirement/ must not have a _spec/_design suffix "
+                f"Files under {requirement_prefix}/ must not have a _spec/_design suffix "
                 "(e.g. user-login.md, index.md)."
             )
     elif rel_path.startswith(specification_prefix + os.sep):
         if not (stem.endswith("_spec") or stem.endswith("_design")):
             return (
                 f"[AI-SDD] Naming violation: '{rel_path}'. "
-                "Files under specification/ require a _spec.md or _design.md suffix "
+                f"Files under {specification_prefix}/ require a _spec.md or _design.md suffix "
                 "(e.g. user-login_spec.md, index_design.md)."
             )
     return ""
