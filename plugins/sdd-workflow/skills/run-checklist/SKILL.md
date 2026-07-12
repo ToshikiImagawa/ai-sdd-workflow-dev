@@ -5,6 +5,7 @@ argument-hint: "<feature-name> [ticket-number]"
 arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
+agent: haiku
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 

@@ -5,6 +5,7 @@ argument-hint: "[ticket-number]"
 arguments: [ticket-number]
 license: MIT
 user-invocable: true
+agent: haiku
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
