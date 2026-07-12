@@ -4,6 +4,7 @@ description: "Scan existing AI-SDD documents and recommend YAML front matter add
 argument-hint: "[--apply]"
 license: MIT
 user-invocable: true
+agent: haiku
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 

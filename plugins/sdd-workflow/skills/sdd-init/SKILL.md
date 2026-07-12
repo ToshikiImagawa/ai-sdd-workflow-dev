@@ -5,6 +5,7 @@ argument-hint: "[--ci]"
 license: MIT
 user-invocable: true
 disable-model-invocation: true
+agent: haiku
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
