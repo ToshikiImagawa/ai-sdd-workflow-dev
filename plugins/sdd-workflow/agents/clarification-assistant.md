@@ -184,6 +184,14 @@ This agent performs specification clarification support based on AI-SDD principl
 2. Check `.sdd-config.json` if environment variables are not set
 3. Use default values if neither exists
 
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Metadata`, `Requirement IDs`, and `Data Models` tables for ambiguity
+detection across the 9 analysis categories. Fall back to raw Read of a specific file only when full
+specification text is needed for detailed ambiguity assessment. When `SDD_INDEX` is unset or `off`,
+use the existing Glob/Grep/Read flow.
+
 ## File Naming Convention (Important)
 
 **⚠️ The presence of suffixes differs between requirement and specification. Do not confuse them.**

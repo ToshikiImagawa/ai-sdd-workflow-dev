@@ -29,22 +29,37 @@ def find_design_doc(spec_dir: str, stem: str) -> str:
     return ""
 
 
-def main() -> None:
-    payload = read_stdin_json()
-    file_path = payload.get("tool_input", {}).get("file_path", "")
-    if not file_path:
-        return
+def try_update_index(project_root: str, rel_path: str) -> None:
+    try:
+        import sdd_index
+        sdd_index.update_one(project_root, rel_path)
+    except Exception as e:  # noqa: BLE001
+        print(f"[AI-SDD] Warning: index update failed for '{rel_path}': {e}",
+              file=sys.stderr)
 
-    project_root = get_project_root(payload)
-    rel_path = relative_to_project(file_path, project_root)
-    if not rel_path:
-        return
 
-    sdd_root, requirement_dir, specification_dir = load_sdd_paths(project_root)
-    requirement_prefix = os.path.join(sdd_root, requirement_dir)
-    specification_prefix = os.path.join(sdd_root, specification_dir)
+def _extract_file_paths(payload: dict) -> list:
+    """Extract file paths from Write, Edit, or MultiEdit tool_input."""
+    tool_input = payload.get("tool_input", {})
+    file_path = tool_input.get("file_path", "")
+    if file_path:
+        return [file_path]
+    edits = tool_input.get("edits", [])
+    seen: set = set()
+    result = []
+    for edit in edits:
+        p = edit.get("file_path", "")
+        if p and p not in seen:
+            seen.add(p)
+            result.append(p)
+    return result
 
+
+def _process_single_file(rel_path: str, project_root: str,
+                         sdd_root: str, requirement_prefix: str,
+                         specification_prefix: str) -> None:
     if rel_path.startswith(specification_prefix + os.sep) and rel_path.endswith(".md"):
+        try_update_index(project_root, rel_path)
         emit_additional_context(
             "PostToolUse",
             f"[AI-SDD] '{rel_path}' was updated. Verify consistency across "
@@ -54,6 +69,7 @@ def main() -> None:
         return
 
     if rel_path.startswith(requirement_prefix + os.sep) and rel_path.endswith(".md"):
+        try_update_index(project_root, rel_path)
         emit_additional_context(
             "PostToolUse",
             f"[AI-SDD] '{rel_path}' (PRD) was updated. Verify that downstream "
@@ -83,6 +99,27 @@ def main() -> None:
             f"[AI-SDD] '{rel_path}' was updated and a matching design document "
             f"'{design_rel}' exists. If the implementation behavior changed, "
             "update the design document to keep it as the source of truth.",
+        )
+
+
+def main() -> None:
+    payload = read_stdin_json()
+    file_paths = _extract_file_paths(payload)
+    if not file_paths:
+        return
+
+    project_root = get_project_root(payload)
+    sdd_root, requirement_dir, specification_dir = load_sdd_paths(project_root)
+    requirement_prefix = os.path.join(sdd_root, requirement_dir)
+    specification_prefix = os.path.join(sdd_root, specification_dir)
+
+    for file_path in file_paths:
+        rel_path = relative_to_project(file_path, project_root)
+        if not rel_path:
+            continue
+        _process_single_file(
+            rel_path, project_root, sdd_root,
+            requirement_prefix, specification_prefix,
         )
 
 

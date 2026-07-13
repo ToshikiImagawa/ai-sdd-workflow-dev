@@ -62,6 +62,14 @@ This agent performs PRD reviews based on AI-SDD principles.
 The following documentation uses default values, but replace with custom values if environment variables or
 configuration file exists.
 
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Metadata`, `Requirement IDs`, and `SysML Relationships` tables for
+traceability and completeness checks. Fall back to raw Read of a specific file only when full section
+text is needed for completeness verification. When `SDD_INDEX` is unset or `off`, use the existing
+Glob/Grep/Read flow.
+
 ## Role
 
 Review the quality of PRD (Requirements Specification) and provide improvement suggestions from the following
