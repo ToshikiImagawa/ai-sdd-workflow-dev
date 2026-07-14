@@ -6,7 +6,7 @@ status: "draft"
 created: "2026-07-07"
 updated: "2026-07-14"
 depends-on: []
-tags: ["initialization", "constitution", "session-config", "front-matter", "index"]
+tags: ["initialization", "constitution", "session-config", "front-matter", "index", "portability"]
 category: "workflow-foundation"
 priority: "high"
 risk: "medium"
@@ -31,6 +31,7 @@ AI-SDD ワークフロー（Specify → Plan → Tasks → Implement & Review）
 - セッション開始時の設定ロードと環境変数初期化
 - 既存ドキュメントへの YAML front matter 推奨・適用
 - ドキュメントの構造化情報を集約した圧縮インデックスの構築・提供（トークン削減）
+- スキルヘルパー・フックスクリプトのクロスプラットフォーム移植性（OS 非依存動作）
 
 ---
 
@@ -78,6 +79,7 @@ flowchart LR
 | セッション設定初期化 | [session-config.md](session-config.md) | FR_003（FR_003_01〜04） |
 | front matter 推奨 | [front-matter-recommend.md](front-matter-recommend.md) | FR_004 |
 | ドキュメントインデックス | [documentation-index.md](documentation-index.md) | FR_005 |
+| クロスプラットフォーム移植性 | [cross-platform-portability.md](cross-platform-portability.md) | NFR_002 |
 
 ---
 
@@ -167,6 +169,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    requirement CrossPlatformPortability {
+        id: NFR_002
+        text: "スクリプトとフックがOS非依存で動作する"
+        risk: medium
+        verifymethod: test
+    }
+
     interfaceRequirement ConfigSchema {
         id: IR_001
         text: "設定ファイルスキーマと環境変数名は全機能カテゴリ共通の契約とする"
@@ -199,7 +208,7 @@ requirementDiagram
     ConstitutionMgmt - derives -> PrincipleGovernance
     SessionInit - derives -> ConsistentSession
     FrontMatterRecommend - derives -> MetadataReadiness
-    BackwardCompatibility - derives -> MetadataReadiness
+    BackwardCompatibility - traces -> MetadataReadiness
     DocumentationIndex - derives -> TokenEfficientReference
     WorkflowFoundation - contains -> PrincipleGovernance
     WorkflowFoundation - contains -> ConsistentSession
@@ -212,6 +221,7 @@ requirementDiagram
     DefaultFallback - traces -> SessionInit
     DefaultFallback - traces -> DocumentationIndex
     LanguageSupport - traces -> SessionInit
+    CrossPlatformPortability - traces -> WorkflowFoundation
 ```
 
 ---
@@ -262,6 +272,15 @@ requirementDiagram
 
 front matter を持たない既存ドキュメントも引き続き有効として扱い、front matter の導入が
 既存ワークフローを破壊しないこと。
+
+**検証方法:** テストによる検証
+
+### NFR_002: クロスプラットフォーム移植性
+
+スキルヘルパー・フックスクリプトは、OS 固有の外部 CLI（`find` / `sed` / `jq` / `grep` / `awk` 等）に
+依存せず Python 標準ライブラリで動作し、パス処理を OS 非依存で行うこと。移植性は複数 OS
+（少なくとも Linux / macOS）を対象とした CI で継続的に検証すること。要求詳細は子 PRD
+[cross-platform-portability.md](cross-platform-portability.md) を参照。
 
 **検証方法:** テストによる検証
 
