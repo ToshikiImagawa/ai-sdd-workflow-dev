@@ -108,10 +108,10 @@ requirementDiagram
         verifymethod: inspection
     }
 
-    NFR_001 - traces -> CrossPlatformPortability
-    NFR_002 - traces -> CrossPlatformPortability
-    NFR_003 - traces -> CrossPlatformPortability
-    DC_001 - traces -> CrossPlatformPortability
+    StdlibOnlyScripts - traces -> CrossPlatformPortability
+    OSAgnosticPaths - traces -> CrossPlatformPortability
+    MultiOSCIVerification - traces -> CrossPlatformPortability
+    RealizedScopeOnly - traces -> CrossPlatformPortability
 ```
 
 **親 PRD との関係**（[index.md](index.md) 参照）:
