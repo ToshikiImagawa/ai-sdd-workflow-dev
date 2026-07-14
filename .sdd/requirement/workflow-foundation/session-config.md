@@ -4,9 +4,9 @@ title: "セッション設定初期化"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-14"
 depends-on: ["prd-workflow-foundation"]
-tags: ["session-config", "hooks", "environment"]
+tags: ["session-config", "hooks", "environment", "index"]
 category: "workflow-foundation"
 priority: "high"
 risk: "high"
@@ -40,12 +40,14 @@ flowchart LR
         ReadConfig([設定ファイルを読み込む])
         GenerateConfig([設定ファイルを生成する])
         SetEnv([環境変数を設定する])
+        BuildIndex([ドキュメントインデックスを構築する])
         UpdatePrinciples([原則ドキュメントを更新する])
     end
 
     HookRuntime --- ReadConfig
     GenerateConfig -.->|"<<拡張>>設定が存在しない場合"| ReadConfig
     SetEnv -.->|"<<包含>>"| ReadConfig
+    BuildIndex -.->|"<<拡張>>index が有効な場合"| ReadConfig
     UpdatePrinciples -.->|"<<包含>>"| ReadConfig
 ```
 
@@ -54,6 +56,7 @@ flowchart LR
 - セッション設定
     - `.sdd-config.json` の読み込み（存在しない場合は生成）
     - `SDD_ROOT` / `SDD_LANG` / ディレクトリパス系環境変数の設定
+    - `.sdd` ドキュメント圧縮インデックスの構築と `SDD_INDEX` 設定（既定で有効）
     - AI-SDD 原則ドキュメントのバージョン追随更新
 
 ---
@@ -94,9 +97,17 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement IndexBuild {
+        id: FR_001_04
+        text: "ドキュメント圧縮インデックスを構築しSDD_INDEXを設定する（既定有効）"
+        risk: low
+        verifymethod: test
+    }
+
     SessionInit - contains -> ConfigLoad
     SessionInit - contains -> EnvExport
     SessionInit - contains -> PrinciplesSync
+    SessionInit - contains -> IndexBuild
 ```
 
 **親 PRD との関係**（[index.md](index.md) 参照）:
@@ -123,6 +134,9 @@ requirementDiagram
 - FR_001_01: 設定ファイル（`.sdd-config.json`）の読み込み。存在しない場合は既定値で生成する
 - FR_001_02: `SDD_ROOT` / `SDD_LANG` / requirement・specification・task の各ディレクトリ名とパスの環境変数設定
 - FR_001_03: AI-SDD 原則ドキュメント（AI-SDD-PRINCIPLES.md）のプラグインバージョンへの追随更新
+- FR_001_04: `.sdd` ドキュメント圧縮インデックス（SQLite → `index.md`）の構築と `SDD_INDEX` 環境変数の設定。
+  `.sdd-config.json` の `index`（真偽値）で制御し、**既定は有効（`true`）**。`index: false` で無効化する。
+  真偽値以外の値は警告のうえ既定（有効）にフォールバックする（[index.md](index.md) の DC_002）
 
 **検証方法:** テストによる検証（ユニットテストを CI で実行）
 
