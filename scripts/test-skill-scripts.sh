@@ -1,8 +1,8 @@
 #!/bin/sh
 # test-skill-scripts.sh
 # Regression test for the skill helper scripts that pre-scan files into a cache:
-#   plugins/sdd-workflow/skills/check-spec/scripts/find-design-docs.sh
-#   plugins/sdd-workflow/skills/constitution/scripts/validate-files.sh
+#   plugins/sdd-workflow/skills/check-spec/scripts/find-design-docs.py
+#   plugins/sdd-workflow/skills/constitution/scripts/validate-files.py
 #   plugins/sdd-workflow/skills/recommend-front-matter/scripts/scan-documents.py
 #
 # Both derive their cache directory from the configured SDD root
@@ -21,8 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PLUGIN_ROOT="${REPO_ROOT}/plugins/sdd-workflow"
 
-FIND_DESIGN="${PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.sh"
-VALIDATE_FILES="${PLUGIN_ROOT}/skills/constitution/scripts/validate-files.sh"
+FIND_DESIGN="${PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py"
+VALIDATE_FILES="${PLUGIN_ROOT}/skills/constitution/scripts/validate-files.py"
 SCAN_DOCUMENTS="${PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.py"
 
 # Non-default custom root; both scripts must derive every path from this.
@@ -94,11 +94,11 @@ SD_CACHE="$PROJ/${ROOT}/.cache/recommend-front-matter"
 printf '=== skill helper scripts custom-root regression (root=%s) ===\n\n' "$ROOT"
 
 # ---------------------------------------------------------------------------
-# find-design-docs.sh (/check-spec)
+# find-design-docs.py (/check-spec)
 # ---------------------------------------------------------------------------
-printf -- '--- find-design-docs.sh ---\n'
-if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" bash "$FIND_DESIGN" >/dev/null 2>&1; then
-    fail "find-design-docs.sh exited non-zero"
+printf -- '--- find-design-docs.py ---\n'
+if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" python3 "$FIND_DESIGN" >/dev/null 2>&1; then
+    fail "find-design-docs.py exited non-zero"
 fi
 assert_file      "find-design-docs writes design_files.txt under the custom root" "$FD_CACHE/design_files.txt"
 assert_file      "find-design-docs writes spec_files.txt under the custom root"   "$FD_CACHE/spec_files.txt"
@@ -109,11 +109,11 @@ assert_grep      "env exports CHECK_SPEC_CACHE_DIR"                             
 assert_grep      "CHECK_SPEC_CACHE_DIR points under the custom root"              "${ROOT}/.cache/check-spec" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
-# validate-files.sh (/constitution validate)
+# validate-files.py (/constitution validate)
 # ---------------------------------------------------------------------------
-printf -- '--- validate-files.sh ---\n'
-if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" bash "$VALIDATE_FILES" >/dev/null 2>&1; then
-    fail "validate-files.sh exited non-zero"
+printf -- '--- validate-files.py ---\n'
+if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" python3 "$VALIDATE_FILES" >/dev/null 2>&1; then
+    fail "validate-files.py exited non-zero"
 fi
 assert_file      "validate-files writes requirement_files.txt under the custom root" "$VF_CACHE/requirement_files.txt"
 assert_file      "validate-files writes spec_files.txt under the custom root"        "$VF_CACHE/spec_files.txt"

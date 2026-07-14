@@ -156,7 +156,7 @@ Verify all specifications and design documents comply with constitution by runni
 
 **Optimized Execution Flow**:
 
-**Phase 1: Shell Script** - Execute `bash "${CLAUDE_PLUGIN_ROOT}/skills/constitution/scripts/validate-files.sh"` to
+**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/constitution/scripts/validate-files.py"` to
 scan file structure.
 
 This script:
