@@ -1,7 +1,7 @@
 #!/bin/sh
 # test-e2e-sdd-init.sh
 # End-to-end regression test for the sdd-init flow in a fresh empty project:
-#   session-start.py (SessionStart hook) -> init-structure.sh -> update-claude-md.sh
+#   session-start.py (SessionStart hook) -> init-structure.py -> update-claude-md.py
 #
 # Verifies the AI-SDD Instructions migration end to end:
 #   - CLAUDE.md is minimized to declaration + trigger + a pointer (no long body)
@@ -19,8 +19,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PLUGIN_ROOT="${REPO_ROOT}/plugins/sdd-workflow"
 
 SESSION_START="${PLUGIN_ROOT}/scripts/session-start.py"
-INIT_STRUCTURE="${PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.sh"
-UPDATE_CLAUDE_MD="${PLUGIN_ROOT}/skills/sdd-init/scripts/update-claude-md.sh"
+INIT_STRUCTURE="${PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py"
+UPDATE_CLAUDE_MD="${PLUGIN_ROOT}/skills/sdd-init/scripts/update-claude-md.py"
 PLUGIN_JSON="${PLUGIN_ROOT}/.claude-plugin/plugin.json"
 
 RULES_REL=".claude/rules/ai-sdd-instructions.md"
@@ -86,16 +86,13 @@ if ! command -v python3 >/dev/null 2>&1; then
     printf 'SKIP: python3 not found\n'
     exit 0
 fi
-if ! command -v jq >/dev/null 2>&1; then
-    printf 'SKIP: jq not found (update-claude-md.sh requires jq)\n'
-    exit 0
-fi
 if [ ! -f "$PLUGIN_JSON" ]; then
     printf 'Error: plugin.json not found at %s\n' "$PLUGIN_JSON" >&2
     exit 1
 fi
 
-VERSION="$(jq -r '.version' "$PLUGIN_JSON")"
+# Read version via python3 (no jq dependency; init/update scripts are now Python)
+VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$PLUGIN_JSON")"
 
 # Isolated temp workspace
 TMP_DIR="$(mktemp -d)"
@@ -122,14 +119,14 @@ run_init_structure() {
     CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" \
         CLAUDE_PROJECT_DIR="$PROJ" \
         CLAUDE_ENV_FILE="$ENV_FILE" \
-        bash "$INIT_STRUCTURE" >/dev/null 2>&1
+        python3 "$INIT_STRUCTURE" >/dev/null 2>&1
 }
 
 run_update_claude_md() {
     CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" \
         CLAUDE_PROJECT_DIR="$PROJ" \
         CLAUDE_ENV_FILE="$ENV_FILE" \
-        bash "$UPDATE_CLAUDE_MD" >/dev/null 2>&1
+        python3 "$UPDATE_CLAUDE_MD" >/dev/null 2>&1
 }
 
 printf '=== sdd-init E2E Regression Test (v%s) ===\n\n' "$VERSION"
@@ -151,12 +148,12 @@ assert_no_file   "session-start does not create CLAUDE.md"          "$PROJ/CLAUD
 assert_file      "session-start writes UPDATE_REQUIRED.md warning"  "$PROJ/.sdd/UPDATE_REQUIRED.md"
 
 # ---------------------------------------------------------------------------
-# STEP 2: sdd-init (init-structure.sh then update-claude-md.sh)
+# STEP 2: sdd-init (init-structure.py then update-claude-md.py)
 # ---------------------------------------------------------------------------
 printf -- '--- STEP 2: init-structure + update-claude-md ---\n'
-if ! run_init_structure; then fail "init-structure.sh exited non-zero"; fi
+if ! run_init_structure; then fail "init-structure.py exited non-zero"; fi
 assert_no_file   "init-structure removes UPDATE_REQUIRED.md"        "$PROJ/.sdd/UPDATE_REQUIRED.md"
-if ! run_update_claude_md; then fail "update-claude-md.sh exited non-zero"; fi
+if ! run_update_claude_md; then fail "update-claude-md.py exited non-zero"; fi
 assert_file      "update-claude-md creates CLAUDE.md"               "$PROJ/CLAUDE.md"
 assert_grep      "CLAUDE.md has the AI-SDD Instructions section"    "## AI-SDD Instructions" "$PROJ/CLAUDE.md"
 assert_count     "CLAUDE.md has exactly one AI-SDD section"         1 "## AI-SDD Instructions" "$PROJ/CLAUDE.md"
@@ -193,7 +190,7 @@ printf -- '--- STEP 4: idempotency ---\n'
 cp "$PROJ/$RULES_REL" "${TMP_DIR}/rules_before"
 cp "$PROJ/CLAUDE.md"  "${TMP_DIR}/claude_before"
 if ! run_session_start en; then fail "session-start.py (re-run) exited non-zero"; fi
-if ! run_update_claude_md; then fail "update-claude-md.sh (re-run) exited non-zero"; fi
+if ! run_update_claude_md; then fail "update-claude-md.py (re-run) exited non-zero"; fi
 assert_same      "rules file is unchanged on re-run"                "${TMP_DIR}/rules_before" "$PROJ/$RULES_REL"
 assert_same      "CLAUDE.md is unchanged on re-run"                 "${TMP_DIR}/claude_before" "$PROJ/CLAUDE.md"
 assert_count     "CLAUDE.md still has exactly one AI-SDD section"   1 "## AI-SDD Instructions" "$PROJ/CLAUDE.md"
@@ -217,8 +214,8 @@ assert_not_grep  "rule paths glob has no default-root glob"         '".sdd/**"' 
 assert_not_grep  "rule has no leftover {SDD_ROOT} placeholder"      '{SDD_ROOT}'             "$PROJ2/$RULES_REL"
 
 if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ2" CLAUDE_ENV_FILE="$ENV2" \
-        bash "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
-    fail "update-claude-md.sh (custom root) exited non-zero"
+        python3 "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
+    fail "update-claude-md.py (custom root) exited non-zero"
 fi
 assert_grep      "CLAUDE.md references the custom root"             ".ai-docs/"              "$PROJ2/CLAUDE.md"
 assert_not_grep  "CLAUDE.md has no leftover {SDD_ROOT} placeholder" '{SDD_ROOT}'             "$PROJ2/CLAUDE.md"
@@ -239,8 +236,8 @@ mkdir -p "$PROJ3"
 printf '%s\n' '{"root":".ai-docs","lang":"ja","directories":{"requirement":"requirement","specification":"specification","task":"task"}}' > "$PROJ3/.sdd-config.json"
 
 if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ3" CLAUDE_ENV_FILE="$ENV3" \
-        bash "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
-    fail "update-claude-md.sh (ja custom root) exited non-zero"
+        python3 "$UPDATE_CLAUDE_MD" >/dev/null 2>&1; then
+    fail "update-claude-md.py (ja custom root) exited non-zero"
 fi
 assert_file      "ja run creates CLAUDE.md"                         "$PROJ3/CLAUDE.md"
 assert_grep      "ja CLAUDE.md has the AI-SDD Instructions section" "## AI-SDD Instructions" "$PROJ3/CLAUDE.md"
