@@ -119,7 +119,7 @@ requirementDiagram
         verifymethod: test
     }
 
-    UR_001 - refines -> DocumentationIndex
+    TokenEfficientReference - refines -> DocumentationIndex
     DocumentationIndex - contains -> IndexBuild
     DocumentationIndex - contains -> IncrementalUpdate
     DocumentationIndex - contains -> DeriveCompactIndex
