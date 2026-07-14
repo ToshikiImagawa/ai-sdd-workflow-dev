@@ -4,9 +4,9 @@ title: "ワークフロー基盤"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-14"
 depends-on: []
-tags: ["initialization", "constitution", "session-config", "front-matter"]
+tags: ["initialization", "constitution", "session-config", "front-matter", "index"]
 category: "workflow-foundation"
 priority: "high"
 risk: "medium"
@@ -30,6 +30,7 @@ AI-SDD ワークフロー（Specify → Plan → Tasks → Implement & Review）
 - プロジェクト原則（CONSTITUTION）の定義・管理・同期検証
 - セッション開始時の設定ロードと環境変数初期化
 - 既存ドキュメントへの YAML front matter 推奨・適用
+- ドキュメントの構造化情報を集約した圧縮インデックスの構築・提供（トークン削減）
 
 ---
 
@@ -55,12 +56,14 @@ flowchart LR
         ManagePrinciples([プロジェクト原則を定義・管理する])
         LoadConfig([セッション設定をロードする])
         RecommendFM([front matter を推奨・適用する])
+        BuildDocIndex([ドキュメントインデックスを構築する])
     end
 
     Developer --- InitProject
     Developer --- ManagePrinciples
     Developer --- RecommendFM
     HookRuntime -.->|"セッション開始時"| LoadConfig
+    HookRuntime -.->|"セッション開始時 / 編集後"| BuildDocIndex
     InitProject -.->|"<<包含>>"| ManagePrinciples
 ```
 
@@ -72,8 +75,9 @@ flowchart LR
 |:-----|:-------|:----------|
 | プロジェクト初期化 | [sdd-init.md](sdd-init.md) | FR_001 |
 | プロジェクト原則管理 | [constitution-management.md](constitution-management.md) | FR_002 |
-| セッション設定初期化 | [session-config.md](session-config.md) | FR_003（FR_003_01〜03） |
+| セッション設定初期化 | [session-config.md](session-config.md) | FR_003（FR_003_01〜04） |
 | front matter 推奨 | [front-matter-recommend.md](front-matter-recommend.md) | FR_004 |
+| ドキュメントインデックス | [documentation-index.md](documentation-index.md) | FR_005 |
 
 ---
 
@@ -114,6 +118,13 @@ requirementDiagram
         verifymethod: inspection
     }
 
+    requirement TokenEfficientReference {
+        id: UR_005
+        text: "エージェントとスキルがドキュメント全体像を低トークンで参照できる"
+        risk: medium
+        verifymethod: test
+    }
+
     functionalRequirement ProjectInit {
         id: FR_001
         text: "ディレクトリ構造とテンプレートとCLAUDE.md設定を初期化する"
@@ -140,6 +151,13 @@ requirementDiagram
         text: "既存ドキュメントをスキャンしfront matter付与を推奨する"
         risk: low
         verifymethod: demonstration
+    }
+
+    functionalRequirement DocumentationIndex {
+        id: FR_005
+        text: "ドキュメントの構造化情報を抽出し圧縮インデックスを構築・提供する"
+        risk: medium
+        verifymethod: test
     }
 
     requirement BackwardCompatibility {
@@ -182,13 +200,17 @@ requirementDiagram
     SessionInit - derives -> ConsistentSession
     FrontMatterRecommend - derives -> MetadataReadiness
     BackwardCompatibility - derives -> MetadataReadiness
+    DocumentationIndex - derives -> TokenEfficientReference
     WorkflowFoundation - contains -> PrincipleGovernance
     WorkflowFoundation - contains -> ConsistentSession
     WorkflowFoundation - contains -> MetadataReadiness
+    WorkflowFoundation - contains -> TokenEfficientReference
     SessionInit - traces -> ConfigSchema
     ProjectInit - traces -> ConfigSchema
+    DocumentationIndex - traces -> ConfigSchema
     StructureSupport - traces -> ProjectInit
     DefaultFallback - traces -> SessionInit
+    DefaultFallback - traces -> DocumentationIndex
     LanguageSupport - traces -> SessionInit
 ```
 
@@ -225,6 +247,14 @@ requirementDiagram
 推奨・適用でき、機械的な検索・フィルタリング・整合性検証を可能にできること。
 
 **検証方法:** インスペクションによる検証
+
+### UR_005: トークン効率的なドキュメント参照
+
+エージェント・スキルは、`.sdd/` ドキュメントの全体像（メタデータ・要求 ID・依存関係・SysML 関係・
+データモデル・API シグネチャ）を、多数の Glob / Grep / Read を行わずに参照できること。参照精度を
+落とさずにトークン消費を削減できること。要求詳細は子 PRD [documentation-index.md](documentation-index.md) を参照。
+
+**検証方法:** テストによる検証
 
 ## 4.2. 非機能要求
 
@@ -307,6 +337,7 @@ index / 子機能、中〜大規模）の両方をサポートすること。
 |------------------|-----------------------------------------------------------------|
 | Constitution     | プロジェクトの譲れない最上位原則を定義するドキュメント（CONSTITUTION.md）      |
 | .sdd-config.json | プロジェクトルートに置く AI-SDD 設定ファイル（ルート・言語・ディレクトリ名等）      |
-| SDD_* 環境変数       | セッション初期化が設定する共通環境変数群（SDD_ROOT / SDD_LANG / SDD_*_PATH 等） |
+| SDD_* 環境変数       | セッション初期化が設定する共通環境変数群（SDD_ROOT / SDD_LANG / SDD_*_PATH / SDD_INDEX 等） |
 | フラット構造 / 階層構造    | `.sdd/` 配下のドキュメント配置方式。規模に応じて選択する                        |
 | front matter     | ドキュメント冒頭の YAML メタデータ（id / type / status / depends-on 等）     |
+| ドキュメントインデックス  | `.sdd/` ドキュメントの構造化情報を集約した派生成果物。消費側の参照コストを下げる（`SDD_INDEX` で制御） |
