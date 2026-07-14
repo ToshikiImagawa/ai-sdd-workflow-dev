@@ -92,7 +92,7 @@ When adding a refactoring plan to an existing design doc:
 
 **Step 1.1: Scan for Existing Documents**
 
-Run the document scanning script: `bash "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/scan-existing-docs.sh" "${FEATURE_NAME}"`
+Run the document scanning script: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/scan-existing-docs.py" "${FEATURE_NAME}"`
 
 This script:
 
@@ -150,7 +150,7 @@ Parse the user's refactoring goal and extract:
 **Step 2.1: Find Implementation Files**
 
 Run the implementation file search script. Set `SCOPE_DIR` from the `--scope` argument (or leave empty), then run
-`bash "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/find-implementation-files.sh" "${FEATURE_NAME}" "${SCOPE_DIR}"`.
+`python3 "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/find-implementation-files.py" "${FEATURE_NAME}" "${SCOPE_DIR}"`.
 
 This script:
 
