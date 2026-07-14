@@ -1,0 +1,6 @@
+# .claude/tests/ is the Issue #16 Step1 A/B measurement harness (local only).
+# Only harness/ code, RUNBOOK.md and this file are tracked (see repo .gitignore).
+# Generated fixtures, run artifacts and captured stdout are never committed.
+fixtures/
+runs/
+*.out
