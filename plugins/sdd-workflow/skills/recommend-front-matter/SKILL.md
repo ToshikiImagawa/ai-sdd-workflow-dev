@@ -54,7 +54,7 @@ $ARGUMENTS
 
 ### Phase 1: Shell Script - Scan Documents
 
-Execute `bash "${CLAUDE_PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.sh"` to scan AI-SDD documents.
+Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.py"` to scan AI-SDD documents.
 
 This script:
 1. Loads `.sdd-config.json` to resolve directory paths
