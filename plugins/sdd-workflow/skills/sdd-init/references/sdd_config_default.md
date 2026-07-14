@@ -1,6 +1,6 @@
 # Default .sdd-config.json
 
-Default configuration created by `init-structure.sh` when `.sdd-config.json` does not exist:
+Default configuration created by `init-structure.py` when `.sdd-config.json` does not exist:
 
 ```json
 {
