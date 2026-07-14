@@ -23,7 +23,7 @@ class SddConfig:
     requirement_dir: str = "requirement"
     specification_dir: str = "specification"
     task_dir: str = "task"
-    index: str = "off"
+    index: bool = True
 
 
 def get_plugin_root() -> str:
@@ -61,6 +61,7 @@ def load_or_create_config(config_path: str, default_lang: str) -> Dict[str, Any]
                 "specification": "specification",
                 "task": "task",
             },
+            "index": True,
         }
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(default_config, f, indent=2, ensure_ascii=False)
@@ -76,6 +77,25 @@ def load_or_create_config(config_path: str, default_lang: str) -> Dict[str, Any]
             return {}
 
 
+def parse_index_flag(value: Any, default: bool = True) -> bool:
+    """Normalize the .sdd-config.json "index" value to a boolean.
+
+    The setting is boolean-only (true/false). An absent key falls back to the
+    default (on). Any non-boolean value (e.g. a legacy "on"/"off" string) is
+    rejected with a warning and treated as the default.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    print(
+        "[AI-SDD] Warning: 'index' in .sdd-config.json must be a boolean "
+        f"(true/false), got {value!r}. Using default (on).",
+        file=sys.stderr,
+    )
+    return default
+
+
 def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
     cfg = SddConfig(lang=default_lang)
     if raw.get("root"):
@@ -89,8 +109,7 @@ def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
         cfg.specification_dir = dirs["specification"]
     if dirs.get("task"):
         cfg.task_dir = dirs["task"]
-    if raw.get("index"):
-        cfg.index = raw["index"]
+    cfg.index = parse_index_flag(raw.get("index"))
     return cfg
 
 
@@ -212,8 +231,8 @@ def write_env_vars(cfg: SddConfig) -> None:
         f'export SDD_LANG="{cfg.lang}"',
     ]
 
-    if cfg.index and cfg.index != "off":
-        env_entries.append(f'export SDD_INDEX="{cfg.index}"')
+    if cfg.index:
+        env_entries.append('export SDD_INDEX="on"')
 
     tmp_path = env_file + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
@@ -332,7 +351,7 @@ def main() -> None:
 
     write_env_vars(cfg)
 
-    if cfg.index and cfg.index != "off":
+    if cfg.index:
         rebuild_index(project_root)
 
     check_claude_md(project_root, sdd_dir, plugin_version)

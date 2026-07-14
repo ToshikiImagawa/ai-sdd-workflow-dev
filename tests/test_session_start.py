@@ -41,6 +41,8 @@ class TestLoadOrCreateConfig:
             "specification": "specification",
             "task": "task",
         }
+        # index はデフォルト on として明示的に書き込まれる
+        assert result["index"] is True
         # 生成されたファイル自体も同内容であること
         assert json.loads(config_path.read_text(encoding="utf-8")) == result
         assert "auto-generated" in capsys.readouterr().out
@@ -122,6 +124,42 @@ class TestBuildSddConfig:
         assert cfg.requirement_dir == "requirement"
         assert cfg.specification_dir == "specification"
         assert cfg.task_dir == "task"
+
+    def test_index_defaults_on_when_absent(self):
+        # index キー未指定はデフォルト on
+        assert ss.build_sdd_config({}, "en").index is True
+
+    def test_index_false_is_respected(self):
+        assert ss.build_sdd_config({"index": False}, "en").index is False
+
+    def test_index_true_is_respected(self):
+        assert ss.build_sdd_config({"index": True}, "en").index is True
+
+
+class TestParseIndexFlag:
+    """index は boolean 専用・デフォルト on。非 bool は警告して既定に倒す。"""
+
+    def test_absent_defaults_on(self):
+        assert ss.parse_index_flag(None) is True
+
+    def test_true(self):
+        assert ss.parse_index_flag(True) is True
+
+    def test_false(self):
+        assert ss.parse_index_flag(False) is False
+
+    def test_respects_custom_default(self):
+        assert ss.parse_index_flag(None, default=False) is False
+
+    def test_legacy_on_string_warns_and_defaults_on(self, capsys):
+        # 後方互換外の文字列 "on" は既定（on）にフォールバックし警告する
+        assert ss.parse_index_flag("on") is True
+        assert "must be a boolean" in capsys.readouterr().err
+
+    def test_legacy_off_string_warns_and_defaults_on(self, capsys):
+        # 文字列 "off" は非対応。既定 on にフォールバックする。
+        assert ss.parse_index_flag("off") is True
+        assert "must be a boolean" in capsys.readouterr().err
 
 
 class TestEnsureSddDirectory:
@@ -341,6 +379,22 @@ class TestWriteEnvVars:
         assert 'export OTHER_VAR="keep"' in content
         assert 'export SDD_LANG="ja"' in content
         assert 'export SDD_LANG="old"' not in content
+
+    def test_index_on_emits_sdd_index(self, tmp_path, monkeypatch):
+        env_file = tmp_path / "env"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+
+        ss.write_env_vars(ss.SddConfig(index=True))
+
+        assert 'export SDD_INDEX="on"' in env_file.read_text(encoding="utf-8")
+
+    def test_index_off_omits_sdd_index(self, tmp_path, monkeypatch):
+        env_file = tmp_path / "env"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+
+        ss.write_env_vars(ss.SddConfig(index=False))
+
+        assert "SDD_INDEX" not in env_file.read_text(encoding="utf-8")
 
 
 class TestCompareMajorMinor:

@@ -66,7 +66,7 @@ off と on を**別プロジェクト**（別 `cwd` = 別 transcript project-key
 | off（ベースライン） | `sdd-{scale}-off` | マーケットプレイス版（index 未対応） | 生 Glob/Grep/Read |
 | on | `sdd-{scale}-on` | 本実装版（index 対応） | session-start が index 構築 → 消費者が 1 回 Read |
 
-両 fixture とも `.sdd-config.json` に `index: "on"` を設定。マーケットプレイス版はこの設定を無視する。
+両 fixture とも `.sdd-config.json` に `index: true` を設定。マーケットプレイス版はこの設定を無視する。
 
 ### 計測パラメータ
 
@@ -118,7 +118,7 @@ cat .claude/tests/runs/<RUN_ID>/summary.md
 ### index 構築の検証
 
 ```bash
-# .sdd-config.json に "index": "on" を設定した状態で:
+# .sdd-config.json に "index": true を設定した状態で:
 
 # 1. キャッシュを削除してフル構築
 rm -f .sdd/.cache/index.sqlite .sdd/.cache/index.md .sdd/.cache/index.json
@@ -156,7 +156,7 @@ git checkout -- .sdd/requirement/some-file.md
 ```bash
 claude --plugin-dir ./plugins/sdd-workflow
 # session-start 出力に "[AI-SDD] AI-SDD-PRINCIPLES.md updated to v..." が表示されること
-# .sdd/.cache/index.md が生成されること（index: "on" 設定時）
+# .sdd/.cache/index.md が生成されること（index: true 設定時）
 ```
 
 ## 交絡対策（A/B 実測時に守ること）

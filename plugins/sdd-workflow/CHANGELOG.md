@@ -20,7 +20,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Findings are classified as [must]/[recommend]/[nits]; single-PRD quality remains prd-reviewer's role
     - Adds `templates/{en,ja}/cross_prd_review_output.md` output templates
 
+#### Configuration
+
+- **`.sdd-config.json` `index`** - New boolean setting that controls the compressed `.sdd` document index
+  (SQLite → `index.md`) built at session start to reduce token consumption
+  ([#16](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/16))
+    - **Enabled by default** (`true`). Set `"index": false` to opt out
+    - The SessionStart hook (`session-start.py`) builds the index and exports `SDD_INDEX="on"`; agents and
+      the `doc-consistency-checker` skill read the pre-built index once instead of many Glob/Grep/Read calls
+    - Auto-generated `.sdd-config.json` now includes `"index": true` explicitly for discoverability
+
 ### Changed
+
+#### Configuration
+
+- **`.sdd-config.json` `index`** - Value format is now **boolean-only** (`true`/`false`); the previous
+  string form (`"on"`/`"off"`) is no longer supported. A non-boolean value is rejected with a warning and
+  falls back to the default (on)
+    - The default changed from **off to on**, so the token-reduction index is built out of the box
 
 #### Hooks
 

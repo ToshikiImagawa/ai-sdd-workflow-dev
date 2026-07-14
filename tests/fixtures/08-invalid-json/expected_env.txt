@@ -1,3 +1,4 @@
+export SDD_INDEX="on"
 export SDD_LANG="en"
 export SDD_REQUIREMENT_DIR="requirement"
 export SDD_REQUIREMENT_PATH=".sdd/requirement"

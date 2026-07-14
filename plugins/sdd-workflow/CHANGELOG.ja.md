@@ -19,7 +19,24 @@
     - 指摘は [must]/[recommend]/[nits] で分類。単一 PRD の品質レビューは従来どおり prd-reviewer が担当
     - 出力テンプレート `templates/{en,ja}/cross_prd_review_output.md` を追加
 
+#### Configuration
+
+- **`.sdd-config.json` の `index`** - セッション開始時に構築される `.sdd` ドキュメント圧縮インデックス
+  （SQLite → `index.md`）を制御する真偽値の設定を追加。トークン消費を削減する
+  ([#16](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/16))
+    - **デフォルトで有効**（`true`）。`"index": false` で無効化できる
+    - SessionStart フック（`session-start.py`）がインデックスを構築し `SDD_INDEX="on"` をエクスポート。
+      各エージェントと `doc-consistency-checker` スキルは、多数の Glob/Grep/Read の代わりに
+      構築済みインデックスを 1 回読む
+    - 自動生成される `.sdd-config.json` にも発見性向上のため `"index": true` を明示的に含める
+
 ### Changed
+
+#### Configuration
+
+- **`.sdd-config.json` の `index`** - 値の形式を**真偽値専用**（`true`/`false`）に統一。従来の文字列形式
+  （`"on"`/`"off"`）は非対応となった。真偽値以外の値は警告を出して既定（on）にフォールバックする
+    - デフォルトを **off から on** に変更。トークン削減インデックスが標準で構築される
 
 #### Hooks
 
