@@ -1,0 +1,10 @@
+Use the requirement-analyzer subagent (via the Task tool) to run ID numbering validation (equivalent to `--validate-ids`) across the `quality-guardrails` requirement documents under .sdd/requirement/quality-guardrails/.
+
+Ask the subagent to:
+1. Collect all requirement IDs (UR/FR/NFR/DC/IR) defined across the quality-guardrails PRDs and their downstream specs/designs.
+2. Validate naming convention, ascending order within each document, and numbering gaps.
+3. Verify traceability: each PRD-defined requirement ID should be referenced in the matching spec and design.
+
+If a pre-built index at ${SDD_ROOT}/.cache/index.md is available (SDD_INDEX=on), instruct the subagent to read it once and use its req-ids(def/ref) and depends-on fields instead of scanning the raw tree.
+
+Return the subagent's report verbatim, ending with the full set of requirement IDs examined.

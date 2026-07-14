@@ -23,6 +23,7 @@ class SddConfig:
     requirement_dir: str = "requirement"
     specification_dir: str = "specification"
     task_dir: str = "task"
+    index: str = "off"
 
 
 def get_plugin_root() -> str:
@@ -88,6 +89,8 @@ def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
         cfg.specification_dir = dirs["specification"]
     if dirs.get("task"):
         cfg.task_dir = dirs["task"]
+    if raw.get("index"):
+        cfg.index = raw["index"]
     return cfg
 
 
@@ -209,6 +212,9 @@ def write_env_vars(cfg: SddConfig) -> None:
         f'export SDD_LANG="{cfg.lang}"',
     ]
 
+    if cfg.index and cfg.index != "off":
+        env_entries.append(f'export SDD_INDEX="{cfg.index}"')
+
     tmp_path = env_file + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.writelines(lines)
@@ -296,6 +302,15 @@ This file will be automatically deleted after running /sdd-init.
             os.remove(warning_file)
 
 
+def rebuild_index(project_root: str) -> None:
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import sdd_index
+        sdd_index.rebuild_all(project_root)
+    except Exception as e:  # noqa: BLE001
+        print(f"[AI-SDD] Warning: failed to rebuild .sdd index: {e}", file=sys.stderr)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AI-SDD session start script")
     parser.add_argument("--default-lang", default="en", help="Default language (en/ja)")
@@ -316,6 +331,9 @@ def main() -> None:
     sync_rules_files(plugin_root, project_root, cfg.root, plugin_version)
 
     write_env_vars(cfg)
+
+    if cfg.index and cfg.index != "off":
+        rebuild_index(project_root)
 
     check_claude_md(project_root, sdd_dir, plugin_version)
 

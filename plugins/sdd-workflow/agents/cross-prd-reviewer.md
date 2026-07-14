@@ -62,6 +62,13 @@ Understand AI-SDD principles, document structure, persistence rules, and Vibe Co
 2. Check `.sdd-config.json` if environment variables are not set
 3. Use default values if neither exists
 
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Metadata` table (filter by `type=prd`) and `Requirement IDs` table for
+cross-PRD consistency checks. Fall back to raw Read of a specific PRD only when glossary text or full
+section content is needed. When `SDD_INDEX` is unset or `off`, use the existing Glob/Grep/Read flow.
+
 ## Role
 
 Review the consistency ACROSS multiple PRDs from the following five perspectives. Do not re-review single-document

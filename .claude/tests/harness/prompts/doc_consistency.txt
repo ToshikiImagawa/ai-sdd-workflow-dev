@@ -1,0 +1,42 @@
+Perform a document consistency check over the `quality-guardrails` feature domain in this project's .sdd/ tree.
+
+For every feature under .sdd/requirement/quality-guardrails/ and its matching .sdd/specification/quality-guardrails/*_spec.md and *_design.md, verify PRD <-> spec <-> design consistency and report:
+
+1. Requirement ID coverage: for each UR/FR/NFR/DC/IR defined in a PRD, is it referenced downstream in the matching spec and design? List any requirement IDs defined upstream but missing downstream.
+2. Data model / API consistency: do data models and API definitions described in spec appear in the corresponding design?
+3. Terminology consistency across the three layers.
+
+If a pre-built index at ${SDD_ROOT}/.cache/index.md is available (SDD_INDEX=on), read it once and answer from its req-ids(def/ref), depends-on, data-model, api, and literals fields instead of scanning the raw documents. Otherwise scan the raw .sdd/ documents with Glob/Grep/Read.
+
+Output your findings in two parts:
+
+## Part 1: Prose summary
+A concise list of findings grouped by feature.
+
+## Part 2: Structured findings (REQUIRED)
+At the END of your response, output a fenced JSON block labeled `json:findings` containing ALL detected findings as an array. Each finding MUST have exactly these fields:
+
+```json:findings
+[
+  {
+    "feature": "constitution-injection",
+    "category": "id_coverage|data_model|api|terminology",
+    "severity": "missing|contradiction|obsolescence|info",
+    "upstream_doc": "requirement/quality-guardrails/constitution-injection.md",
+    "downstream_doc": "specification/quality-guardrails/constitution-injection_spec.md",
+    "detail": "FR_001 defined in PRD but not referenced in spec",
+    "ids_involved": ["FR_001"]
+  }
+]
+```
+
+Rules for findings:
+- One entry per distinct inconsistency (do NOT merge multiple issues into one entry)
+- `category`: `id_coverage` = requirement ID missing/mismatched downstream, `data_model` = data structure mismatch, `api` = API/interface mismatch, `terminology` = terminology inconsistency
+- `severity`: `missing` = exists upstream but absent downstream, `contradiction` = different content across layers, `obsolescence` = downstream changed but upstream not updated, `info` = observation (not a defect)
+- `upstream_doc` / `downstream_doc`: relative paths from .sdd/ root
+- `ids_involved`: list of requirement IDs related to this finding (empty list if not ID-related)
+- Include ALL findings including minor ones; do NOT omit findings for brevity
+- If no inconsistencies are found for a feature, include one entry with severity=info and detail="No inconsistencies detected"
+
+After the JSON block, list the complete set of requirement IDs you examined and the .sdd files you read or consulted.

@@ -30,6 +30,15 @@ Understand AI-SDD principles, document structure, persistence rules, and Vibe Co
 
 See `references/prerequisites_directory_paths.md` for directory path resolution using `SDD_*` environment variables.
 
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use all its tables (`Metadata`, `Requirement IDs`, `SysML Relationships`,
+`Data Models`, `API Signatures`) for cross-document consistency checks. This replaces
+the need for multiple Glob/Grep/Read calls across `.sdd/`. Fall back to raw Read of a specific file
+only when cross-reference verification requires full section text. When `SDD_INDEX` is unset or `off`,
+use the existing Glob/Grep/Read flow.
+
 ## Input
 
 This skill is triggered automatically via hooks during document updates or before implementation. It scans documents based on feature context.
