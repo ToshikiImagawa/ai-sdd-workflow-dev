@@ -3,6 +3,7 @@
 # Regression test for the skill helper scripts that pre-scan files into a cache:
 #   plugins/sdd-workflow/skills/check-spec/scripts/find-design-docs.sh
 #   plugins/sdd-workflow/skills/constitution/scripts/validate-files.sh
+#   plugins/sdd-workflow/skills/recommend-front-matter/scripts/scan-documents.py
 #
 # Both derive their cache directory from the configured SDD root
 # (.sdd-config.json "root"). This test runs them under a NON-default root and
@@ -22,6 +23,7 @@ PLUGIN_ROOT="${REPO_ROOT}/plugins/sdd-workflow"
 
 FIND_DESIGN="${PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.sh"
 VALIDATE_FILES="${PLUGIN_ROOT}/skills/constitution/scripts/validate-files.sh"
+SCAN_DOCUMENTS="${PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.py"
 
 # Non-default custom root; both scripts must derive every path from this.
 ROOT=".ai-docs"
@@ -87,6 +89,7 @@ ENV_FILE="${TMP_DIR}/env_output"
 
 FD_CACHE="$PROJ/${ROOT}/.cache/check-spec"
 VF_CACHE="$PROJ/${ROOT}/.cache/constitution"
+SD_CACHE="$PROJ/${ROOT}/.cache/recommend-front-matter"
 
 printf '=== skill helper scripts custom-root regression (root=%s) ===\n\n' "$ROOT"
 
@@ -119,6 +122,19 @@ assert_file      "validate-files writes scan_summary.json under the custom root"
 assert_no_file   "validate-files creates no bare .sdd/ directory"                    "$PROJ/.sdd"
 assert_grep      "env exports CONSTITUTION_CACHE_DIR"                                "CONSTITUTION_CACHE_DIR" "$ENV_FILE"
 assert_grep      "CONSTITUTION_CACHE_DIR points under the custom root"               "${ROOT}/.cache/constitution" "$ENV_FILE"
+
+# ---------------------------------------------------------------------------
+# scan-documents.py (/recommend-front-matter)
+# ---------------------------------------------------------------------------
+printf -- '--- scan-documents.py ---\n'
+if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" python3 "$SCAN_DOCUMENTS" >/dev/null 2>&1; then
+    fail "scan-documents.py exited non-zero"
+fi
+assert_file      "scan-documents writes scan_result.json under the custom root"   "$SD_CACHE/scan_result.json"
+assert_no_file   "scan-documents creates no bare .sdd/ directory"                 "$PROJ/.sdd"
+assert_grep      "scan_result.json lists the seeded design doc"                   "user-login_design.md" "$SD_CACHE/scan_result.json"
+assert_grep      "env exports RECOMMEND_FM_CACHE_DIR"                             "RECOMMEND_FM_CACHE_DIR" "$ENV_FILE"
+assert_grep      "RECOMMEND_FM_CACHE_DIR points under the custom root"            "${ROOT}/.cache/recommend-front-matter" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
 # Summary
