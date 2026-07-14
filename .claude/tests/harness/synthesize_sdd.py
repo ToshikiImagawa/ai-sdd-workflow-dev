@@ -5,7 +5,7 @@ Generates two sibling fixtures with BYTE-IDENTICAL .sdd bodies and config:
   fixtures/sdd-{scale}-off   marketplace plugin (no index support)
   fixtures/sdd-{scale}-on    local plugin with index support
 
-Both fixtures have index: "on" in .sdd-config.json. The independent variable
+Both fixtures have index: true in .sdd-config.json. The independent variable
 is the plugin version (set via SDD_AB_PLUGIN_OFF/ON env vars in run_ab.sh).
 The marketplace plugin ignores the index setting; the local plugin builds
 the index at session-start.
@@ -33,7 +33,7 @@ def write_config(dest: str) -> None:
         "root": ".sdd",
         "lang": "en",
         "directories": {"requirement": "requirement", "specification": "specification", "task": "task"},
-        "index": "on",
+        "index": True,
     }
     with open(os.path.join(dest, ".sdd-config.json"), "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)

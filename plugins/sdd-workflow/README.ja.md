@@ -505,17 +505,19 @@ CONSTITUTION.md → requirement/ → *_spec.md → *_design.md → task/ → 実
     "requirement": "requirement",
     "specification": "specification",
     "task": "task"
-  }
+  },
+  "index": true
 }
 ```
 
-| 設定                          | デフォルト           | 説明                |
-|:----------------------------|:----------------|:------------------|
-| `root`                      | `.sdd`          | ルートディレクトリ         |
-| `lang`                      | `ja`            | 言語（`en` または `ja`） |
-| `directories.requirement`   | `requirement`   | PRD（要求仕様書）ディレクトリ  |
-| `directories.specification` | `specification` | 仕様書/設計書ディレクトリ     |
-| `directories.task`          | `task`          | 一時タスクログディレクトリ     |
+| 設定                          | デフォルト           | 説明                                                                          |
+|:----------------------------|:----------------|:----------------------------------------------------------------------------|
+| `root`                      | `.sdd`          | ルートディレクトリ                                                                   |
+| `lang`                      | `ja`            | 言語（`en` または `ja`）                                                           |
+| `directories.requirement`   | `requirement`   | PRD（要求仕様書）ディレクトリ                                                            |
+| `directories.specification` | `specification` | 仕様書/設計書ディレクトリ                                                               |
+| `directories.task`          | `task`          | 一時タスクログディレクトリ                                                               |
+| `index`                     | `true`          | 真偽値。セッション開始時に `.sdd` ドキュメントの圧縮インデックス（SQLite → `index.md`）を構築しトークンを削減する。`false` で無効化。 |
 
 **注**:
 
