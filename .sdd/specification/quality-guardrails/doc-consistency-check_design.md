@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-15"
 depends-on: ["spec-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -34,6 +34,7 @@ risk: "high"
 | 出力テンプレート（EN/JA）                 | 🟢     | `templates/{en,ja}/consistency_report.md`                |
 | 参照資料（検出手法・依存関係・構造・パス解決） | 🟢     | `references/*.md` 4 ファイル（うち 2 ファイルは `shared/references/` への symlink） |
 | front matter 検証の委譲              | 🟢     | `front-matter-reviewer` エージェントへ委譲（本スキルは内容整合性のみ）    |
+| 自動起動トリガー（advisory hook）      | 🟡     | `hooks/hooks.json`（`PostToolUse`）→ `scripts/post-tool-use.py` が `${SDD_REQUIREMENT_PATH}` / `${SDD_SPECIFICATION_PATH}` 更新時にヒントを注入。強制起動ではなくベストエフォート（§9.2 参照） |
 
 ---
 
@@ -41,7 +42,7 @@ risk: "high"
 
 - 決定的操作を伴わない「読解・比較・分類・報告」タスクとして、Claude のプロンプト実行に最適な形で実装する。
 - ドキュメント・実装コードへの副作用（書き込み）を構造的に排除し、検出専任の品質ゲートとする（spec NFR-001）。
-- フラット構造・階層構造の両方に対応し、階層構造では親子関係も整合性チェックの対象とする（spec FR-006）。
+- フラット構造・階層構造の両方に対応し、階層構造では親子関係も整合性チェックの対象とする（spec FR-005）。
 - `SDD_LANG` に応じた EN/JA 出力を一貫させる（spec NFR-002 / B-002）。
 - SKILL.md 本体を軽量に保ち、詳細手順は `references/` に外出しして参照時のみ読み込む。
 
@@ -69,12 +70,14 @@ risk: "high"
 
 ```mermaid
 graph TD
-    Trigger[トリガー: ドキュメント更新 / 実装前] --> Skill[doc-consistency-checker SKILL.md]
+    FileEdit[Write/Edit/MultiEdit: .sdd/requirement または .sdd/specification 配下] --> Hook[hooks/hooks.json PostToolUse]
+    Hook --> Script[scripts/post-tool-use.py]
+    Script -->|emit_additional_context| Hint[advisory ヒント]
+    Hint -.ベストエフォート.-> Skill[doc-consistency-checker SKILL.md]
     EnvVars[SDD_* 環境変数] --> Skill
     Skill -->|Read/Glob/Grep| PRD[.sdd/requirement/**]
     Skill -->|Read/Glob/Grep| Spec[.sdd/specification/*_spec.md]
     Skill -->|Read/Glob/Grep| Design[.sdd/specification/*_design.md]
-    Skill -->|Read/Glob/Grep| Impl[実装コード]
     Refs[references/*.md] -.参照.-> Skill
     Skill --> Report[整合性レポート consistency_report.md 形式]
     Skill -.委譲.-> FMReviewer[front-matter-reviewer]
@@ -82,6 +85,8 @@ graph TD
 
 > 図中のパス（`.sdd/requirement/**` 等）は既定値による簡略表記であり、実際のパスは `SDD_*`
 > 環境変数（`SDD_REQUIREMENT_PATH` / `SDD_SPECIFICATION_PATH`）で解決される（§7 NFR-002 参照）。
+> design ↔ 実装コードの整合性チェックは `impl-spec-check`（`/check-spec`）が専任で担うため、
+> 本図には実装コードへの読み取り経路を含めない（§9.1 参照）。
 
 ## 4.2. モジュール分割
 
@@ -109,7 +114,7 @@ graph TD
   },
   "inconsistencies": [
     {
-      "layer": "prd-spec | spec-design | design-impl",
+      "layer": "prd-spec | spec-design",
       "type": "missing | contradiction | obsolescence",
       "title": "不整合の要約",
       "upstream_excerpt": "上流ドキュメントの該当箇所",
@@ -140,8 +145,13 @@ plugins/sdd-workflow/
 ├── shared/references/                        # 複数スキル共有の参照資料
 │   ├── document_dependencies.md
 │   └── prerequisites_directory_paths.md
+├── hooks/hooks.json                           # PostToolUse フック定義（本スキルの起動トリガー）
+├── scripts/post-tool-use.py                   # advisory ヒント注入の実体（他フックスクリプトと共有）
 └── .claude-plugin/plugin.json                # skills への登録（T-002）
 ```
+
+**注記:** `hooks/hooks.json` と `scripts/post-tool-use.py` は `vibe-detector` など他の自動実行スキルとも
+共有される横断的なフック実装であり、本スキル専用のファイルではない。
 
 ---
 
@@ -159,8 +169,9 @@ plugins/sdd-workflow/
 
 | テストレベル       | 対象                                             | カバレッジ目標                                    |
 |--------------|------------------------------------------------|--------------------------------------------|
-| デモンストレーション | PRD ↔ spec ↔ design に意図的な不整合を仕込み、検出・分類・報告を確認 | 欠落・矛盾・陳腐化の 3 種別を各層で検出できること（PRD 検証方法: demonstration） |
+| デモンストレーション | PRD ↔ spec、spec ↔ design に意図的な不整合を仕込み、検出・分類・報告を確認 | 欠落・矛盾・陳腐化の 3 種別を各層（PRD↔spec, spec↔design の 2 層）で検出できること（PRD 検証方法: demonstration） |
 | インスペクション   | SKILL.md の front matter（`user-invocable: false`, `allowed-tools`） | 読み取り専用・自動実行の制約が満たされていること              |
+| 回帰テスト        | `post-tool-use.py` の advisory ヒント注入（`scripts/test-hook-scripts.sh`） | `${SDD_REQUIREMENT_PATH}` / `${SDD_SPECIFICATION_PATH}` 更新時に doc-consistency-checker 実行を促すヒントが出力されること |
 | 構文検証         | plugin.json への登録（plugin-lint / jq）             | スキルが `plugin.json` に登録されていること（T-002）      |
 
 ---
@@ -177,12 +188,26 @@ plugins/sdd-workflow/
 | front matter 検証の扱い | 本スキルで実施 / 別コンポーネントへ委譲            | `front-matter-reviewer` へ委譲    | 責務分離（A-002）。本スキルは本文の内容整合性に専念し、重複検証を避ける                  |
 | 不整合検出時の優先方針      | 一律 spec を正 / 上流優先                       | 上流優先（PRD > spec > design）     | 実装が正で spec が古い場合もあるため、一律 spec を正としない（SKILL.md Notes に明記） |
 | 共通参照資料の配置          | skill ごとに複製 / 共有 + symlink               | `shared/references/` を symlink で参照 | 依存関係・パス解決手順は複数スキルで共通のため、`shared/references/` に一元化し symlink で参照して重複と更新漏れを防ぐ |
+| design ↔ 実装チェックの扱い    | 本スキルでも検出 / `impl-spec-check` に一本化    | `impl-spec-check`（`/check-spec`）に一本化し、本スキルのスコープからは除外 | 親 PRD が design↔実装チェックを明示的にスコープ外（`impl-spec-check.md` の責務）と定義しており、旧 FR-004 はこれと矛盾していた。同じ検出を advisory hook（本スキル）と明示実行（`/check-spec`）の二経路で行う多重防御は責務分離（A-002）に反するため、`impl-spec-check` 側の確実な明示実行に一本化する |
 
-## 9.2. 未解決の課題
+## 9.2. 自動起動トリガーの実現方式
+
+自動起動（PRD FR_001「トリガー方式: 自動」）は、`hooks/hooks.json` の `PostToolUse`（`Write|Edit|MultiEdit` にマッチ）
+から `scripts/post-tool-use.py` が起動され、`${SDD_REQUIREMENT_PATH}` または `${SDD_SPECIFICATION_PATH}` 配下の
+ファイルが更新された際に `emit_additional_context` で advisory ヒントを注入する形で実現されている。これは同一プラグインの
+`vibe-detector`（`user-prompt-submit.py` によるヒント注入）と同一パターンであり、他の自動実行スキルと実装方式が
+揃っている。
+
+**残存リスク（既知の制約）:** この機構は Claude Code のフックが提供する `additionalContext` によるヒント注入に
+限定され、ツール実行を拒否する `permissionDecision: deny` のような強制力を持たない。したがって「ヒントを Claude が
+無視すればスキルは起動しない」というベストエフォート性が残る。これは DC_001（ブロッキングの最小化。ブロッキングは
+命名規則違反のみに限定し他は警告に留める）に整合する意図的な設計であり、確実性を高めるには手動実行の
+`/check-spec` を利用する。
+
+## 9.3. 未解決の課題
 
 | 課題                                        | 影響度 | 対応方針                                                     |
 |-------------------------------------------|-----|------------------------------------------------------------|
-| 自動起動のトリガー実装（フック連携の具体）が本スキル単体では完結しない | 中   | 起動はワークフロー／フック側が担う。本スキルは起動後の検出処理に責務を限定する    |
 | 意味的な用語不統一の検出精度は Claude の判断に依存する      | 低   | パターンマッチではなく LLM の読解に委ねる。将来的に用語集ベースの補助検証を検討    |
 
 ---

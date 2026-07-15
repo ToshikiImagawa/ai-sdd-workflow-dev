@@ -41,7 +41,9 @@ use the existing Glob/Grep/Read flow.
 
 ## Input
 
-This skill is triggered automatically via hooks during document updates or before implementation. It scans documents based on feature context.
+This skill is triggered by an advisory hint from the `PostToolUse` hook (`scripts/post-tool-use.py`) when
+files under `${SDD_REQUIREMENT_PATH}` or `${SDD_SPECIFICATION_PATH}` are edited. It scans documents based on
+feature context.
 
 | Input Source       | Description                                                    |
 |:-------------------|:---------------------------------------------------------------|
@@ -94,13 +96,9 @@ This skill focuses on document content consistency only.
 | **Requirement Reflection in Design Decisions** | Are spec requirements reflected in design decisions? |
 | **Constraint Consideration**                   | Are spec constraints considered in design?           |
 
-### 3. design ↔ Implementation Consistency
-
-| Check Item                     | Description                                                    |
-|:-------------------------------|:---------------------------------------------------------------|
-| **Module Structure Match**     | Does design module structure match actual directory structure? |
-| **Interface Definition Match** | Do design definitions match implementation code?               |
-| **Technology Stack Match**     | Are libraries documented in design actually being used?        |
+**Note**: `design <-> Implementation` consistency (module structure, interface definitions, technology stack) is
+handled exclusively by `/check-spec` (the `impl-spec-check` feature), not by this skill. Checking it here as well
+would duplicate that responsibility.
 
 ## Automatic Detection Patterns
 
@@ -120,13 +118,13 @@ Read `templates/${SDD_LANG:-en}/consistency_report.md` and use it for consistenc
 
 ## Check Execution Timing
 
-| Timing                        | Recommended Check                                  |
-|:------------------------------|:---------------------------------------------------|
-| **Task Start**                | Verify existing document existence and consistency |
-| **Plan Completion**           | spec ↔ design consistency                          |
-| **Implementation Completion** | design ↔ implementation consistency                |
-| **Review**                    | All inter-document consistency                     |
-| **Periodic Check**            | Prevent documentation obsolescence                 |
+| Timing                        | Recommended Check                                                |
+|:-------------------------------|:------------------------------------------------------------------|
+| **Task Start**                | Verify existing document existence and consistency               |
+| **Plan Completion**           | spec ↔ design consistency                                        |
+| **Implementation Completion** | design ↔ implementation consistency (use `/check-spec` instead) |
+| **Review**                    | All inter-document consistency                                   |
+| **Periodic Check**            | Prevent documentation obsolescence                               |
 
 ## Document Update Triggers
 

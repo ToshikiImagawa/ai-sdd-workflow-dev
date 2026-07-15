@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-15"
 depends-on: ["prd-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -39,7 +39,8 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 # 2. 概要
 
 本機能は、ドキュメント更新時・実装前に AI が自動的に起動し、PRD ↔ `*_spec.md` ↔ `*_design.md`
-（および design ↔ 実装）の層間の不整合を検出・報告する品質ゲートである。
+の層間の不整合を検出・報告する品質ゲートである。design ↔ 実装の整合性チェックは
+[impl-spec-check_spec.md](impl-spec-check_spec.md)（`/check-spec`）が専任で担い、本機能はスコープに含めない。
 
 **主要な設計原則:**
 
@@ -65,10 +66,15 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 | FR-001 | ドキュメント更新時・実装前に AI が自動的に整合性チェックを起動する（ユーザー直接呼び出し不可）        | 必須  | PRD FR_001「トリガー方式: 自動」／ 親 UR_001（品質ゲートの自動適用） |
 | FR-002 | PRD ↔ spec 間の要求 ID（UR/FR/NFR 等）参照欠落・機能要求カバレッジ・用語不統一を検出する        | 必須  | PRD FR_001／ 親 UR_003                            |
 | FR-003 | spec ↔ design 間の API 定義齟齬・データモデル不一致・要求の設計判断への反映漏れ・制約考慮漏れを検出する | 必須  | PRD FR_001／ 親 UR_003                            |
-| FR-004 | design ↔ 実装間のモジュール構造・インターフェース定義・技術スタックの齟齬を検出する            | 必須  | 親 UR_003（4 層の整合性維持）                             |
-| FR-005 | 検出した不整合を「欠落 / 矛盾 / 陳腐化」に分類し、上流優先で報告する                       | 必須  | PRD FR_001（不整合検出）／ スコープ外（自動修正しない）              |
-| FR-006 | フラット構造・階層構造の両方に対応し、階層構造では親子（`index` ↔ 子機能）関係も考慮する          | 必須  | 親 前提条件（`.sdd/` ディレクトリ構造）                        |
-| FR-007 | 検出結果を所定の整合性レポート形式で出力する                                        | 必須  | PRD FR_001（不整合を報告する）                            |
+| FR-004 | 検出した不整合を「欠落 / 矛盾 / 陳腐化」に分類し、上流優先で報告する                       | 必須  | PRD FR_001（不整合検出）／ スコープ外（自動修正しない）              |
+| FR-005 | フラット構造・階層構造の両方に対応し、階層構造では親子（`index` ↔ 子機能）関係も考慮する          | 必須  | 親 前提条件（`.sdd/` ディレクトリ構造）                        |
+| FR-006 | 検出結果を所定の整合性レポート形式で出力する                                        | 必須  | PRD FR_001（不整合を報告する）                            |
+
+**スコープ外（意図的な多重防御）:** design ↔ 実装間の整合性検出は
+[impl-spec-check_spec.md](impl-spec-check_spec.md) の FR-003 が専任で担う。本機能は advisory hook
+（`post-tool-use.py`）でベストエフォート起動されるのに対し、`impl-spec-check` は `/check-spec` の
+明示実行で確実に起動されるため、責務の重複を避けて本機能のスコープからは除外する
+（親 PRD [doc-consistency-check.md](../../requirement/quality-guardrails/doc-consistency-check.md) §6 スコープ外にも明記）。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -82,13 +88,14 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 
 | 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                     | 概要                                                       |
 |------------------------------|---------------------------------------------------------------|------------------------|----------------------------------------------------------|
-| skill                        | `skills/doc-consistency-checker/SKILL.md`                     | doc-consistency-checker | PRD ↔ spec ↔ design（+ design ↔ 実装）の内容整合性を自動検出する自動実行スキル |
+| skill                        | `skills/doc-consistency-checker/SKILL.md`                     | doc-consistency-checker | PRD ↔ spec ↔ design の内容整合性を自動検出する自動実行スキル |
 | template                     | `skills/doc-consistency-checker/templates/{en,ja}/consistency_report.md` | consistency_report      | 整合性チェック結果の出力フォーマット（EN/JA）                        |
 | reference                    | `skills/doc-consistency-checker/references/`                  | 参照資料群（detection_method / document_dependencies / directory_structure / prerequisites_directory_paths） | 検出手法・ドキュメント依存関係・ディレクトリ構造・パス解決の詳細補足        |
 
 ## 4.1. 入出力定義
 
-**入力:** 本スキルはフック経由で自動起動される。ユーザー引数による直接呼び出しはできない（`user-invocable: false`）。
+**入力:** 本スキルは `PostToolUse` フック（`scripts/post-tool-use.py`）が注入する advisory ヒントを受けて
+AI が自ら起動する。ユーザー引数による直接呼び出しはできない（`user-invocable: false`）。
 
 | 入力ソース          | 説明                                                          |
 |:----------------|:--------------------------------------------------------------|
@@ -99,7 +106,7 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 **出力:** 整合性レポート（`templates/${SDD_LANG:-en}/consistency_report.md` 形式）。
 
 - チェック対象ドキュメント一覧（PRD / spec / design のパスと最終更新日）
-- チェック結果サマリー（PRD ↔ spec / spec ↔ design / design ↔ 実装 の整合・不整合と件数）
+- チェック結果サマリー（PRD ↔ spec / spec ↔ design の整合・不整合と件数）
 - 不整合の詳細（種別: 欠落 / 矛盾 / 陳腐化、上流・下流の該当箇所、推奨アクション）
 - 整合確認済み項目
 - 優先順位付き推奨アクション
@@ -118,28 +125,31 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 # 6. 使用例
 
 本スキルは自動実行（`user-invocable: false`）のため、ユーザーが直接コマンドとして呼び出す使用例はない。
-次のタイミングでフック経由・またはワークフロー内から自動起動される。
+`${SDD_REQUIREMENT_PATH}` または `${SDD_SPECIFICATION_PATH}` 配下のファイルが `Write`/`Edit`/`MultiEdit` で
+更新されると、`PostToolUse` フック（`scripts/post-tool-use.py`）が advisory ヒントを注入し、AI がこれを
+受けて起動する（強制起動ではなくベストエフォート）。
 
 ```
-# タスク開始時   : 既存ドキュメントの存在と整合性を確認
-# Plan 完了時    : spec ↔ design の整合性を確認
-# 実装完了時     : design ↔ 実装 の整合性を確認
-# レビュー時     : 全ドキュメント間の整合性を確認
+# ${SDD_REQUIREMENT_PATH}/**.md 更新時       : PRD ↔ spec ↔ design の整合性を確認するヒントを注入
+# ${SDD_SPECIFICATION_PATH}/**_spec.md,
+# **_design.md 更新時                        : 同上（併せて .cache/index.md を更新）
 
-# 手動で整合性チェックを行いたい場合は、別スキルを使用する
-/check-spec           # 実装コードと design の整合性を手動チェック
+# design ↔ 実装の整合性チェックは別スキルの責務
+/check-spec           # design ↔ 実装コードの整合性を手動チェック（impl-spec-check）
 ```
 
 # 7. 振る舞い図
 
 ```mermaid
 sequenceDiagram
-    participant Trigger as トリガー（ドキュメント更新／実装前）
+    participant Hook as PostToolUse フック（post-tool-use.py）
+    participant AI as AI（Claude）
     participant Checker as doc-consistency-checker
     participant Docs as .sdd/ ドキュメント群
     participant Dev as 開発者／AI
 
-    Trigger ->> Checker: 自動起動（機能コンテキストを渡す）
+    Hook ->> AI: advisory ヒントを注入（PRD/spec/design ファイル更新時）
+    AI ->> Checker: ヒントを受けて起動（ベストエフォート）
     Checker ->> Docs: PRD / spec / design を読み込み（Read/Glob/Grep）
     Checker ->> Checker: 要素抽出（要求ID・API・型・モジュール構造）
     Checker ->> Checker: 層間で比較し不整合を分類（欠落/矛盾/陳腐化）
@@ -175,8 +185,8 @@ sequenceDiagram
 
 | PRD 要求 ID              | 内容                                        | spec での対応              |
 |:-----------------------|:------------------------------------------|:-----------------------|
-| FR_001（子PRD内スコープ）    | PRD と spec と design 間の要求 ID 参照・用語の不整合を検出 | FR-001〜FR-007          |
-| 親 UR_003              | PRD・仕様書・設計書・実装の整合性維持                   | FR-002〜FR-004          |
+| FR_001（子PRD内スコープ）    | PRD と spec と design 間の要求 ID 参照・用語の不整合を検出 | FR-001〜FR-006          |
+| 親 UR_003              | PRD・仕様書・設計書間の整合性維持（design ↔ 実装は impl-spec-check が担当） | FR-002〜FR-003          |
 | 親 UR_001              | 品質ゲートの自動適用                              | FR-001                 |
 | 親 NFR_001             | フック処理の軽量性                               | NFR-003                |
 | 親 DC_004              | クロスプラットフォーム・多言語対応                       | NFR-002                |
