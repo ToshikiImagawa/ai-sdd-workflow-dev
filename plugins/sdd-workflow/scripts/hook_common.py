@@ -6,6 +6,7 @@ Provides stdin JSON parsing, project root resolution,
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -17,6 +18,29 @@ def read_stdin_json() -> Dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except (json.JSONDecodeError, ValueError):
         return {}
+
+
+def resolve_project_root(preferred: str = "") -> str:
+    """Resolve the project root: preferred value, else CLAUDE_PROJECT_DIR,
+    else the git top-level, else the current working directory.
+
+    Shared by CLI-style scripts (sdd_index, session-start, skill helpers) that
+    need a git fallback. The hook path uses get_project_root() instead, which
+    prefers the payload cwd.
+    """
+    if preferred:
+        return preferred
+    project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
+    if project_dir:
+        return project_dir
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=True,
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return os.getcwd()
 
 
 def get_project_root(payload: Dict[str, Any]) -> str:

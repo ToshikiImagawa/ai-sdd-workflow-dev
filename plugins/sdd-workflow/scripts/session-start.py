@@ -10,11 +10,14 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from env_export import rewrite_exports  # noqa: E402
+from hook_common import resolve_project_root  # noqa: E402
 
 
 @dataclass
@@ -36,17 +39,7 @@ def get_plugin_root() -> str:
 
 
 def get_project_root() -> str:
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
-    if project_dir:
-        return project_dir
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return os.getcwd()
+    return resolve_project_root()
 
 
 def load_or_create_config(config_path: str, default_lang: str) -> Dict[str, Any]:
@@ -207,18 +200,6 @@ def sync_rules_files(plugin_root: str, project_root: str, sdd_root: str, plugin_
 
 
 def write_env_vars(cfg: SddConfig) -> None:
-    env_file = os.environ.get("CLAUDE_ENV_FILE", "")
-    if not env_file:
-        return
-
-    env_path = Path(env_file)
-    lines = []
-    if env_path.is_file():
-        lines = [
-            line for line in env_path.read_text(encoding="utf-8").splitlines(keepends=True)
-            if not line.startswith("export SDD_")
-        ]
-
     env_entries = [
         f'export SDD_ROOT="{cfg.root}"',
         f'export SDD_REQUIREMENT_DIR="{cfg.requirement_dir}"',
@@ -233,10 +214,7 @@ def write_env_vars(cfg: SddConfig) -> None:
     if cfg.index:
         env_entries.append('export SDD_INDEX="on"')
 
-    content = "".join(lines) + "".join(entry + "\n" for entry in env_entries)
-    tmp_path = env_path.with_name(env_path.name + ".tmp")
-    tmp_path.write_text(content, encoding="utf-8")
-    tmp_path.replace(env_path)
+    rewrite_exports("SDD_", env_entries)
 
 
 def compare_major_minor(plugin_version: str, project_version: str) -> bool:

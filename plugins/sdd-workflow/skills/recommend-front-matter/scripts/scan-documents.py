@@ -10,12 +10,18 @@ environment variables are kept identical to the original shell script.
 """
 
 import json
-import os
 import re
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from fm_parser import has_front_matter  # noqa: E402
+from naming import determine_type  # noqa: E402,F401
+from doc_walker import collect_documents  # noqa: E402
+from hook_common import resolve_project_root  # noqa: E402
+from env_export import rewrite_exports  # noqa: E402
 
 
 def log(message: str) -> None:
@@ -25,21 +31,7 @@ def log(message: str) -> None:
 
 def get_project_root() -> Path:
     """Get project root directory"""
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-
-    # Try git root
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+    return Path(resolve_project_root())
 
 
 def read_config(project_root: Path) -> dict:
@@ -71,45 +63,6 @@ def read_lines(file: Path) -> list:
         return []
 
 
-def has_front_matter(lines: list) -> tuple:
-    """Check if the document starts with a Front Matter block.
-
-    Returns (has_fm, closing_index) where closing_index is the 0-based line
-    index of the closing '---'. Mirrors the shell logic: the first line must be
-    '---' and a closing '---' must appear within the first 50 lines.
-    """
-    if not lines or lines[0].rstrip("\r") != "---":
-        return (False, 0)
-
-    for i in range(1, min(50, len(lines))):
-        if lines[i].rstrip("\r") == "---":
-            return (True, i)
-    return (False, 0)
-
-
-def determine_type(
-    filepath: str,
-    basename: str,
-    requirement_dir: str,
-    specification_dir: str,
-    task_dir: str,
-) -> str:
-    """Determine document type from file path and naming convention"""
-    if f"/{requirement_dir}/" in filepath:
-        return "prd"
-    if f"/{specification_dir}/" in filepath:
-        if basename.endswith("_spec"):
-            return "spec"
-        if basename.endswith("_design"):
-            return "design"
-        return "unknown"
-    if f"/{task_dir}/" in filepath:
-        if "implementation_log" in basename or "impl_log" in basename:
-            return "implementation-log"
-        return "task"
-    return "unknown"
-
-
 def extract_title(lines: list, basename: str) -> str:
     """Extract title from the first '# ' heading, skipping Front Matter.
 
@@ -128,56 +81,17 @@ def extract_title(lines: list, basename: str) -> str:
     return basename
 
 
-def collect_documents(config: dict, sdd_dir: Path) -> list:
-    """Collect target markdown documents from requirement/specification/task."""
-    requirement_path = sdd_dir / config["requirement"]
-    specification_path = sdd_dir / config["specification"]
-    task_path = sdd_dir / config["task"]
-
-    documents = []
-
-    # requirement/: all .md files
-    if requirement_path.is_dir():
-        documents.extend(sorted(requirement_path.rglob("*.md")))
-
-    # specification/: only *_spec.md and *_design.md
-    if specification_path.is_dir():
-        for file in sorted(specification_path.rglob("*.md")):
-            basename = file.name[:-3]  # strip .md
-            if basename.endswith("_spec") or basename.endswith("_design"):
-                documents.append(file)
-
-    # task/: all .md files
-    if task_path.is_dir():
-        documents.extend(sorted(task_path.rglob("*.md")))
-
-    return documents
-
-
 def export_env_vars(scan_result: Path, output_dir: Path, sdd_lang: str) -> None:
     """Export metadata to CLAUDE_ENV_FILE"""
-    env_file = os.environ.get("CLAUDE_ENV_FILE")
-    if not env_file:
-        return
-
-    env_file_path = Path(env_file)
-
-    # Remove existing RECOMMEND_FM_* variables
-    if env_file_path.exists():
-        with open(env_file_path, "r", encoding="utf-8") as f:
-            lines = [
-                line for line in f if not line.startswith("export RECOMMEND_FM_")
-            ]
-        with open(env_file_path, "w", encoding="utf-8") as f:
-            f.writelines(lines)
-
-    # Write environment variables
-    with open(env_file_path, "a", encoding="utf-8") as f:
-        f.write(f'export RECOMMEND_FM_CACHE_DIR="{output_dir}"\n')
-        f.write(f'export RECOMMEND_FM_SCAN_RESULT="{scan_result}"\n')
-        f.write(f'export SDD_LANG="{sdd_lang}"\n')
-
-    log("Environment variables exported to CLAUDE_ENV_FILE")
+    # SDD_LANG is not RECOMMEND_FM_-prefixed, so it is appended (not deduped)
+    # each run, matching the original behavior.
+    wrote = rewrite_exports("RECOMMEND_FM_", [
+        f'export RECOMMEND_FM_CACHE_DIR="{output_dir}"',
+        f'export RECOMMEND_FM_SCAN_RESULT="{scan_result}"',
+        f'export SDD_LANG="{sdd_lang}"',
+    ])
+    if wrote:
+        log("Environment variables exported to CLAUDE_ENV_FILE")
 
 
 def main() -> None:
@@ -192,7 +106,9 @@ def main() -> None:
 
         # --- Phase 1: Scan documents ---
         log("Scanning AI-SDD documents...")
-        documents = collect_documents(config, sdd_dir)
+        documents = collect_documents(
+            sdd_dir, config["requirement"], config["specification"], config["task"],
+        )
         total_count = len(documents)
         log(f"Found {total_count} total documents")
 

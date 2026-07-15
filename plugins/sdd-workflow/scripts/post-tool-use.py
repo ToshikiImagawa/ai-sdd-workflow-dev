@@ -18,14 +18,7 @@ from hook_common import (  # noqa: E402
     read_stdin_json,
     relative_to_project,
 )
-
-
-def find_design_doc(spec_dir: str, stem: str) -> str:
-    """Return the path of {stem}_design.md under spec_dir, or ''."""
-    target = f"{stem}_design.md"
-    for match in Path(spec_dir).rglob(target):
-        return str(match)
-    return ""
+from doc_walker import find_design_doc  # noqa: E402,F401
 
 
 def try_update_index(project_root: str, rel_path: str) -> None:

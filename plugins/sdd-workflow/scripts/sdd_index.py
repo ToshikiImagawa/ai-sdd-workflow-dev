@@ -16,16 +16,21 @@ Writer entry points:
 import argparse
 import hashlib
 import json
-import os
 import re
 import sqlite3
-import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from hook_common import load_sdd_paths  # noqa: E402
+from hook_common import load_sdd_paths, resolve_project_root  # noqa: E402,F401
+from fm_parser import (  # noqa: E402,F401
+    LIST_KEYS,
+    _strip_scalar,
+    parse_front_matter,
+    split_front_matter,
+)
+from doc_walker import iter_target_files  # noqa: E402,F401
 
 SCHEMA_VERSION = "2"
 
@@ -46,22 +51,6 @@ def json_path(project_root: str, sdd_root: str) -> str:
 
 def md_path(project_root: str, sdd_root: str) -> str:
     return str(Path(cache_dir(project_root, sdd_root)) / "index.md")
-
-
-def resolve_project_root(cli_value: str) -> str:
-    if cli_value:
-        return cli_value
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
-    if project_dir:
-        return project_dir
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return os.getcwd()
 
 
 # --- schema ---------------------------------------------------------------
@@ -184,59 +173,8 @@ def file_hash(abs_path: str) -> str:
 
 
 # --- front matter ---------------------------------------------------------
-
-def split_front_matter(text: str) -> Tuple[str, str]:
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return "", text
-    for i in range(1, min(len(lines), 50)):
-        if lines[i].strip() == "---":
-            fm = "\n".join(lines[1:i])
-            body = "\n".join(lines[i + 1:])
-            return fm, body
-    return "", text
-
-
-def _strip_scalar(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
-        return value[1:-1]
-    return value
-
-
-LIST_KEYS = {"depends-on", "tags"}
-
-
-def parse_front_matter(fm_text: str) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    current_list_key = ""
-    for raw in fm_text.splitlines():
-        line = raw.rstrip()
-        if not line.strip():
-            continue
-        m_item = re.match(r"^\s+-\s+(.*)$", line)
-        if m_item and current_list_key:
-            result.setdefault(current_list_key, [])
-            result[current_list_key].append(_strip_scalar(m_item.group(1)))
-            continue
-        m = re.match(r"^([A-Za-z][\w-]*):\s*(.*)$", line)
-        if not m:
-            continue
-        key, value = m.group(1), m.group(2).strip()
-        current_list_key = ""
-        if key in LIST_KEYS:
-            if value.startswith("[") and value.endswith("]"):
-                inner = value[1:-1].strip()
-                items = [_strip_scalar(x) for x in inner.split(",") if x.strip()]
-                result[key] = items
-            elif value == "":
-                current_list_key = key
-                result[key] = []
-            else:
-                result[key] = [_strip_scalar(value)]
-        else:
-            result[key] = _strip_scalar(value)
-    return result
+# Parsing lives in fm_parser (shared with the recommend-front-matter skill).
+# Re-exported here so existing callers/tests keep using sdd_index.split_front_matter.
 
 
 # --- body extraction ------------------------------------------------------
@@ -364,23 +302,6 @@ def _collect_api(line: str, section: str, acc: List[Dict[str, Any]]) -> None:
 
 
 # --- per-file + orchestration --------------------------------------------
-
-def iter_target_files(project_root: str, sdd_root: str,
-                      req_dir: str, spec_dir: str) -> List[str]:
-    targets: List[str] = []
-    req_path = Path(project_root) / sdd_root / req_dir
-    spec_path = Path(project_root) / sdd_root / spec_dir
-
-    if req_path.is_dir():
-        for f in req_path.rglob("*.md"):
-            targets.append(str(f))
-    if spec_path.is_dir():
-        for f in spec_path.rglob("*.md"):
-            base = f.name[:-3]
-            if base.endswith("_spec") or base.endswith("_design"):
-                targets.append(str(f))
-    return sorted(targets)
-
 
 def scan_document(abs_path: str, project_root: str, sdd_root: str,
                   precomputed_hash: str = "") -> Dict[str, Any]:

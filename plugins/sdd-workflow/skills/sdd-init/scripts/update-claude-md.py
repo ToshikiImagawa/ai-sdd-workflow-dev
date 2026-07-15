@@ -12,9 +12,12 @@ cross-platform without external tools (sed / jq / grep / awk).
 import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
+
+# Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from hook_common import resolve_project_root  # noqa: E402
 
 SECTION_HEADING = "## AI-SDD Instructions"
 
@@ -27,20 +30,7 @@ def error_exit(message: str) -> None:
 
 def get_project_root() -> Path:
     """Get project root directory (CLAUDE_PROJECT_DIR > git root > cwd)"""
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+    return Path(resolve_project_root())
 
 
 def get_plugin_root() -> Path:

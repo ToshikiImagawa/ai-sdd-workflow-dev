@@ -11,9 +11,13 @@ without external tools (find / sed / jq / grep / awk).
 import json
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
+
+# Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from hook_common import resolve_project_root  # noqa: E402
+from env_export import rewrite_exports  # noqa: E402
 
 
 def log(message: str) -> None:
@@ -23,20 +27,7 @@ def log(message: str) -> None:
 
 def get_project_root() -> Path:
     """Get project root directory (CLAUDE_PROJECT_DIR > git root > cwd)"""
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+    return Path(resolve_project_root())
 
 
 def get_plugin_root() -> Path:
@@ -115,36 +106,23 @@ def copy_templates(sdd_dir: Path, plugin_root: Path, sdd_lang: str) -> None:
 
 def export_env_vars(config: dict) -> None:
     """Export SDD_* environment variables to CLAUDE_ENV_FILE"""
-    env_file = os.environ.get("CLAUDE_ENV_FILE")
-    if not env_file:
-        return
-
-    env_file_path = Path(env_file)
-
-    # Remove existing SDD_* variables to prevent duplicates
-    if env_file_path.exists():
-        with open(env_file_path, "r", encoding="utf-8") as f:
-            lines = [line for line in f if not line.startswith("export SDD_")]
-        with open(env_file_path, "w", encoding="utf-8") as f:
-            f.writelines(lines)
-
     sdd_root = config["root"]
     requirement = config["requirement"]
     specification = config["specification"]
     task = config["task"]
 
-    # Write current values
-    with open(env_file_path, "a", encoding="utf-8") as f:
-        f.write(f'export SDD_ROOT="{sdd_root}"\n')
-        f.write(f'export SDD_REQUIREMENT_DIR="{requirement}"\n')
-        f.write(f'export SDD_SPECIFICATION_DIR="{specification}"\n')
-        f.write(f'export SDD_TASK_DIR="{task}"\n')
-        f.write(f'export SDD_REQUIREMENT_PATH="{sdd_root}/{requirement}"\n')
-        f.write(f'export SDD_SPECIFICATION_PATH="{sdd_root}/{specification}"\n')
-        f.write(f'export SDD_TASK_PATH="{sdd_root}/{task}"\n')
-        f.write(f'export SDD_LANG="{config["lang"]}"\n')
-
-    log("Environment variables exported to CLAUDE_ENV_FILE")
+    wrote = rewrite_exports("SDD_", [
+        f'export SDD_ROOT="{sdd_root}"',
+        f'export SDD_REQUIREMENT_DIR="{requirement}"',
+        f'export SDD_SPECIFICATION_DIR="{specification}"',
+        f'export SDD_TASK_DIR="{task}"',
+        f'export SDD_REQUIREMENT_PATH="{sdd_root}/{requirement}"',
+        f'export SDD_SPECIFICATION_PATH="{sdd_root}/{specification}"',
+        f'export SDD_TASK_PATH="{sdd_root}/{task}"',
+        f'export SDD_LANG="{config["lang"]}"',
+    ])
+    if wrote:
+        log("Environment variables exported to CLAUDE_ENV_FILE")
 
 
 def main() -> None:

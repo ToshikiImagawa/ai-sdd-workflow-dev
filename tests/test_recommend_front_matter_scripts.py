@@ -217,7 +217,9 @@ class TestCollectDocuments:
         (sdd_dir / "specification" / "a_design.md").write_text("# a", encoding="utf-8")
         (sdd_dir / "specification" / "notes.md").write_text("# n", encoding="utf-8")
 
-        docs = sd.collect_documents(self._config(), sdd_dir)
+        docs = sd.collect_documents(
+            sdd_dir, "requirement", "specification", "task",
+        )
         names = sorted(p.name for p in docs)
         assert names == ["a_design.md", "a_spec.md"]
 
@@ -231,7 +233,9 @@ class TestCollectDocuments:
         )
         (sdd_dir / "task" / "log.md").write_text("# l", encoding="utf-8")
 
-        docs = sd.collect_documents(self._config(), sdd_dir)
+        docs = sd.collect_documents(
+            sdd_dir, "requirement", "specification", "task",
+        )
         names = sorted(p.name for p in docs)
         assert names == ["child.md", "index.md", "log.md"]
 
