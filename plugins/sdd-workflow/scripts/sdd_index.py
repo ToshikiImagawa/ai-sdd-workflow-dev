@@ -32,7 +32,7 @@ from fm_parser import (  # noqa: E402,F401
 )
 from doc_walker import iter_target_files  # noqa: E402,F401
 
-SCHEMA_VERSION = "2"
+SCHEMA_VERSION = "3"
 
 
 # --- path helpers ---------------------------------------------------------
@@ -79,6 +79,9 @@ def init_schema(conn: sqlite3.Connection) -> None:
     if existing is not None and existing != SCHEMA_VERSION:
         conn.executescript(
             "DROP TABLE IF EXISTS literals;"
+            "DROP TABLE IF EXISTS data_model_fields;"
+            "DROP TABLE IF EXISTS terminology;"
+            "DROP TABLE IF EXISTS sysml_elements;"
             "DROP TABLE IF EXISTS api_signatures;"
             "DROP TABLE IF EXISTS data_models;"
             "DROP TABLE IF EXISTS sysml_relationships;"
@@ -158,6 +161,33 @@ def init_schema(conn: sqlite3.Connection) -> None:
             signature TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS sysml_elements (
+            path      TEXT NOT NULL REFERENCES documents(path) ON DELETE CASCADE,
+            kind      TEXT NOT NULL,
+            keyword   TEXT,
+            name      TEXT NOT NULL,
+            req_id    TEXT,
+            elem_type TEXT,
+            section   TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_sysml_elem_name ON sysml_elements(name);
+        CREATE INDEX IF NOT EXISTS idx_sysml_elem_req ON sysml_elements(req_id);
+
+        CREATE TABLE IF NOT EXISTS terminology (
+            path       TEXT NOT NULL REFERENCES documents(path) ON DELETE CASCADE,
+            term       TEXT NOT NULL,
+            definition TEXT,
+            section    TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_terminology_term ON terminology(term);
+
+        CREATE TABLE IF NOT EXISTS data_model_fields (
+            path          TEXT NOT NULL REFERENCES documents(path) ON DELETE CASCADE,
+            model_section TEXT,
+            field_name    TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_dmf_field ON data_model_fields(field_name);
+
     """)
     conn.commit()
 
@@ -191,6 +221,38 @@ SYSML_REL_RE = re.compile(
     r"(\S+)\s+-\s+(deriveReqt|refine|satisfy|verify|trace|containment|copy)\s+->\s+(\S+)"
 )
 
+# SysML requirementDiagram node definitions:
+#   requirement "User Login" { id: UR-001; text: ...; risk: high; verifymethod: test }
+#   element component_a { type: simulation; docref: doc.md }
+SYSML_NODE_RE = re.compile(
+    r"(requirement|functionalRequirement|performanceRequirement|"
+    r"interfaceRequirement|physicalRequirement|designConstraint|element)\s+"
+    r'("[^"]*"|[^\s{]+)\s*\{([^}]*)\}',
+    re.DOTALL,
+)
+
+# Terminology / glossary section headings (Terminology / 用語集 / 用語定義 / Glossary ...).
+TERMINOLOGY_HEADING_RE = re.compile(
+    r"(terminology|glossary|用語集|用語定義|用語一覧|用語表)", re.IGNORECASE
+)
+# Markdown table separator row: | --- | :--: |
+TABLE_SEP_RE = re.compile(r"^\|[\s:\-|]+\|$")
+# Definition-list terminology: - **term**: definition
+TERM_LIST_RE = re.compile(r"^\s*[-*]\s+\*\*(.+?)\*\*\s*[:：]\s*(.+?)\s*$")
+TERM_HEADER_TOKENS = {"term", "terms", "用語", "用語名", "名称", "名前"}
+DEF_HEADER_TOKENS = {"definition", "description", "meaning", "定義", "説明", "意味", "内容"}
+
+# Data model field-name extraction (lightweight, per language).
+JSON_KEY_RE = re.compile(r'"([\w][\w -]*)"\s*:')
+TS_FIELD_RE = re.compile(r"^\s*(?:readonly\s+)?([A-Za-z_]\w*)\??\s*:")
+YAML_KEY_RE = re.compile(r"^([A-Za-z_][\w-]*)\s*:")
+SQL_COL_RE = re.compile(r'^\s*["`]?([A-Za-z_]\w*)["`]?\s+[A-Za-z]')
+PY_FIELD_RE = re.compile(r"^\s+([A-Za-z_]\w*)\s*[:=]")
+SQL_NON_COLUMN = {
+    "primary", "foreign", "constraint", "unique", "key", "check",
+    "index", "create", "table",
+}
+
 
 def _clean_heading(text: str) -> str:
     text = re.sub(r"`?<(MUST|OPTIONAL|RECOMMENDED)>`?", "", text)
@@ -200,10 +262,14 @@ def _clean_heading(text: str) -> str:
 def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
     req_ids: Dict[str, Dict[str, Any]] = {}
     data_models: List[Dict[str, Any]] = []
+    data_model_fields: List[Dict[str, Any]] = []
     api_sigs: List[Dict[str, Any]] = []
     sysml_rels: List[Dict[str, Any]] = []
+    sysml_elems: List[Dict[str, Any]] = []
+    terminology: List[Dict[str, Any]] = []
 
     section = ""
+    in_terminology = False
     in_fence = False
     fence_lang = ""
     fence_section = ""
@@ -224,11 +290,18 @@ def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
                     _extract_sysml_relationships(
                         block, fence_section, sysml_rels
                     )
+                    _extract_sysml_elements(
+                        block, fence_section, sysml_elems
+                    )
                 elif fence_lang in DATA_MODEL_LANGS and block.strip():
                     data_models.append({
                         "section": fence_section, "lang": fence_lang,
                         "body": block,
                     })
+                    for fname in _extract_data_model_fields(fence_lang, block):
+                        data_model_fields.append({
+                            "model_section": fence_section, "field_name": fname,
+                        })
                 for fl in fence_lines:
                     _collect_api(fl, fence_section, api_sigs)
                 in_fence = False
@@ -244,17 +317,23 @@ def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
         heading_m = HEADING_RE.match(line)
         if heading_m:
             section = _clean_heading(heading_m.group(2))
+            in_terminology = bool(TERMINOLOGY_HEADING_RE.search(section))
             _collect_req_ids(line, section, idx, req_ids, heading=True)
             continue
 
         _collect_req_ids(line, section, idx, req_ids)
         _collect_api(line, section, api_sigs)
+        if in_terminology:
+            _collect_terminology(line, section, terminology)
 
     return {
         "req_ids": list(req_ids.values()),
         "data_models": data_models,
+        "data_model_fields": data_model_fields,
         "api_signatures": api_sigs,
         "sysml_relationships": sysml_rels,
+        "sysml_elements": sysml_elems,
+        "terminology": terminology,
     }
 
 
@@ -272,6 +351,92 @@ def _extract_sysml_relationships(
                 "target_id": m.group(3),
                 "section": section,
             })
+
+
+def _extract_sysml_elements(
+    block: str, section: str, acc: List[Dict[str, Any]]
+) -> None:
+    if "requirementDiagram" not in block:
+        return
+    for m in SYSML_NODE_RE.finditer(block):
+        keyword = m.group(1)
+        name = m.group(2).strip().strip('"')
+        fields = _parse_node_body(m.group(3))
+        kind = "element" if keyword == "element" else "requirement"
+        acc.append({
+            "kind": kind,
+            "keyword": keyword,
+            "name": name,
+            "req_id": fields.get("id", ""),
+            "elem_type": fields.get("type", ""),
+            "section": section,
+        })
+
+
+def _parse_node_body(body: str) -> Dict[str, str]:
+    fields: Dict[str, str] = {}
+    for raw in re.split(r"[;\n]", body):
+        if ":" in raw:
+            key, _, value = raw.partition(":")
+            key = key.strip().lower()
+            if key:
+                fields[key] = value.strip()
+    return fields
+
+
+def _collect_terminology(line: str, section: str,
+                         acc: List[Dict[str, Any]]) -> None:
+    list_m = TERM_LIST_RE.match(line)
+    if list_m:
+        term = list_m.group(1).strip()
+        definition = list_m.group(2).strip()
+        if term:
+            acc.append({"term": term, "definition": definition, "section": section})
+        return
+
+    stripped = line.strip()
+    if not stripped.startswith("|") or TABLE_SEP_RE.match(stripped):
+        return
+    cells = [c.strip().strip("*").strip() for c in stripped.strip("|").split("|")]
+    if len(cells) < 2 or not cells[0]:
+        return
+    if (cells[0].lower() in TERM_HEADER_TOKENS
+            or cells[1].lower() in DEF_HEADER_TOKENS):
+        return  # header row
+    acc.append({"term": cells[0], "definition": cells[1], "section": section})
+
+
+def _extract_data_model_fields(lang: str, block: str) -> List[str]:
+    fields: List[str] = []
+
+    def add(name: str) -> None:
+        if name and name not in fields:
+            fields.append(name)
+
+    if lang == "json":
+        for m in JSON_KEY_RE.finditer(block):
+            add(m.group(1).strip())
+    elif lang in ("ts", "tsx", "typescript"):
+        for ln in block.splitlines():
+            m = TS_FIELD_RE.match(ln)
+            if m:
+                add(m.group(1))
+    elif lang in ("yaml", "yml"):
+        for ln in block.splitlines():
+            m = YAML_KEY_RE.match(ln)
+            if m:
+                add(m.group(1))
+    elif lang == "sql":
+        for ln in block.splitlines():
+            m = SQL_COL_RE.match(ln)
+            if m and m.group(1).lower() not in SQL_NON_COLUMN:
+                add(m.group(1))
+    elif lang in ("python", "py"):
+        for ln in block.splitlines():
+            m = PY_FIELD_RE.match(ln)
+            if m:
+                add(m.group(1))
+    return fields
 
 
 def _collect_req_ids(line: str, section: str, line_no: int,
@@ -371,10 +536,30 @@ def upsert_document(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
             "INSERT INTO data_models (path, section, lang, body) VALUES (?,?,?,?)",
             (path, d["section"], d["lang"], d["body"]),
         )
+    for f in rec.get("data_model_fields", []):
+        conn.execute(
+            "INSERT INTO data_model_fields (path, model_section, field_name) "
+            "VALUES (?,?,?)",
+            (path, f["model_section"], f["field_name"]),
+        )
     for a in rec["api_signatures"]:
         conn.execute(
             "INSERT INTO api_signatures (path, section, signature) VALUES (?,?,?)",
             (path, a["section"], a["signature"]),
+        )
+    for se in rec.get("sysml_elements", []):
+        conn.execute(
+            "INSERT INTO sysml_elements "
+            "(path, kind, keyword, name, req_id, elem_type, section) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (path, se["kind"], se["keyword"], se["name"], se["req_id"],
+             se["elem_type"], se["section"]),
+        )
+    for t in rec.get("terminology", []):
+        conn.execute(
+            "INSERT INTO terminology (path, term, definition, section) "
+            "VALUES (?,?,?,?)",
+            (path, t["term"], t["definition"], t["section"]),
         )
 
 
@@ -474,7 +659,7 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
     doc_count = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
 
     out: List[str] = []
-    out.append(f"# .sdd Index (v2, {doc_count} docs)")
+    out.append(f"# .sdd Index (v{SCHEMA_VERSION}, {doc_count} docs)")
     out.append("")
     out.append("Structured facts extracted from front matter and body. "
                "Read this instead of raw Glob/Grep/Read over .sdd/.")
@@ -534,6 +719,24 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
             out.append(f"| {src} | {rel} | {tgt} | {label} |")
         out.append("")
 
+    # -- SysML Elements table (requirementDiagram node definitions) --
+    elem_rows = conn.execute(
+        "SELECT e.name, e.kind, e.keyword, e.req_id, e.elem_type, d.doc_id, e.path, e.section "
+        "FROM sysml_elements e JOIN documents d ON e.path = d.path "
+        "ORDER BY e.kind, e.name"
+    ).fetchall()
+    if elem_rows:
+        out.append("## SysML Elements")
+        out.append("| name | kind | keyword | req_id | type | doc_id | section |")
+        out.append("|------|------|---------|--------|------|--------|---------|")
+        for name, kind, keyword, req_id, elem_type, doc_id, path, section in elem_rows:
+            label = doc_id if doc_id else f"({path})"
+            out.append(
+                f"| {name} | {kind} | {keyword or ''} | {req_id or ''} "
+                f"| {elem_type or ''} | {label} | {section or ''} |"
+            )
+        out.append("")
+
     # -- API Signatures table --
     api_rows = conn.execute(
         "SELECT DISTINCT a.signature, d.doc_id, a.path, a.section "
@@ -567,6 +770,36 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
             out.append("```")
             out.append("")
 
+    # -- Data Model Fields table --
+    dmf_rows = conn.execute(
+        "SELECT DISTINCT f.field_name, d.doc_id, f.path, f.model_section "
+        "FROM data_model_fields f JOIN documents d ON f.path = d.path "
+        "ORDER BY f.path, f.model_section, f.field_name"
+    ).fetchall()
+    if dmf_rows:
+        out.append("## Data Model Fields")
+        out.append("| field | doc_id | section |")
+        out.append("|-------|--------|---------|")
+        for field_name, doc_id, path, section in dmf_rows:
+            label = doc_id if doc_id else f"({path})"
+            out.append(f"| {field_name} | {label} | {section or ''} |")
+        out.append("")
+
+    # -- Terminology table --
+    term_rows = conn.execute(
+        "SELECT t.term, t.definition, d.doc_id, t.path "
+        "FROM terminology t JOIN documents d ON t.path = d.path "
+        "ORDER BY t.term"
+    ).fetchall()
+    if term_rows:
+        out.append("## Terminology")
+        out.append("| term | definition | doc_id |")
+        out.append("|------|------------|--------|")
+        for term, definition, doc_id, path in term_rows:
+            label = doc_id if doc_id else f"({path})"
+            out.append(f"| {term} | {definition or ''} | {label} |")
+        out.append("")
+
     # -- JSON form --
     docs_json = []
     for path, doc_id, dtype, status, impl_st, category in rows:
@@ -584,7 +817,8 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
         }
         docs_json.append(d)
 
-    payload = {"schema": "sdd-index/2", "document_count": doc_count, "documents": docs_json}
+    payload = {"schema": f"sdd-index/{SCHEMA_VERSION}",
+               "document_count": doc_count, "documents": docs_json}
     json_target = Path(json_path(project_root, sdd_root))
     tmp = json_target.with_name(json_target.name + ".tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
