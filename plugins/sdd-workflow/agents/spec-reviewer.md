@@ -267,6 +267,7 @@ Specifications support both flat structure (`{feature-name}_spec.md`) and hierar
 | **No Technical Details**   | Are implementation details excluded?                                           |
 | **PRD Mapping**            | Is mapping to requirement IDs clear?                                           |
 | **Hierarchical Structure** | For hierarchical structure, does `index_spec.md` have parent feature overview? |
+| **No Marker Residue**      | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
 
 ### 2. Technical Design Document (`*_design.md`)
 
@@ -282,6 +283,7 @@ Design documents support both flat structure (`{feature-name}_design.md`) and hi
 | **Design Decisions**       | Are important decisions and rationale documented?                                       |
 | **Spec Consistency**       | Is it consistent with abstract specification?                                           |
 | **Hierarchical Structure** | For hierarchical structure, does `index_design.md` have parent feature design overview? |
+| **No Marker Residue**      | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
 
 ## Ambiguity Detection Patterns
 
@@ -310,6 +312,7 @@ When principle violations are detected, generate fix proposals with the followin
 | Incorrect architecture layer   | Propose moving to appropriate layer                   | High     |
 | Missing error handling         | Propose adding error handling according to principles | Medium   |
 | Missing test considerations    | Propose adding test strategy section                  | Low      |
+| Marker residue in headings     | Propose removing `<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>` markers from headings | High     |
 
 ### Non-Proposable Fix Cases
 

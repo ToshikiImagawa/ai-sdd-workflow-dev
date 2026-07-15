@@ -119,6 +119,8 @@ Describe business or technical constraints.
 
 # Section Requirement Legend
 
+> **Note:** These markers are author-facing guides that indicate section requirement levels. Remove them from the generated document — they must not appear in the final output.
+
 | Marker          | Meaning     | Description                            |
 |-----------------|-------------|----------------------------------------|
 | `<MUST>`        | Required    | Must be included in all specifications |
