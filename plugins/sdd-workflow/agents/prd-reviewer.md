@@ -174,6 +174,7 @@ If front matter is absent, note in report: "Front matter not found. Consider add
 | **Non-Functional Requirements** |          | Are performance, security, etc. defined?       |
 | **Constraints**                 |          | Are business/technical constraints documented? |
 | **Priority**                    |          | Is MoSCoW method used for classification?      |
+| **No Marker Residue**           | Yes      | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
 
 ### 2. SysML Requirements Diagram Format Verification
 
@@ -207,6 +208,7 @@ When principle violations are detected, generate fix proposals with the followin
 | SysML attribute uppercase   | Propose converting to lowercase                         | High     |
 | Missing principle reference | Propose adding principle to "Constraints" section       | Medium   |
 | verifymethod not set        | Propose setting default value based on requirement type | Low      |
+| Marker residue in headings  | Propose removing `<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>` markers from headings | High     |
 
 ### Non-Proposable Fix Cases
 

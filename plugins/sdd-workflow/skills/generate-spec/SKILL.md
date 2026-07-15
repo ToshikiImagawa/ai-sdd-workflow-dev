@@ -161,6 +161,7 @@ Follow these steps to prepare the template:
 
 - Replace template placeholders (`{Feature Name}`, etc.) based on input content
 - Sections with `<MUST>` markers are required, `<RECOMMENDED>` are recommended, `<OPTIONAL>` are optional
+- Remove section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) from headings in the final output — they are author-facing guides only and must not appear in the generated document
 - Reference PRD requirement IDs (UR-xxx, FR-xxx, NFR-xxx) in functional requirements
 
 **Save Location**:
@@ -186,6 +187,7 @@ Follow these steps to prepare the template:
 
 - Set implementation status to "Not Implemented" initially
 - Design Goals, Technology Stack, Architecture, and Design Decisions are required sections
+- Remove section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) from headings in the final output — they are author-facing guides only and must not appear in the generated document
 - Ensure consistency with spec
 
 **Save Location**:
@@ -290,6 +292,7 @@ The following verifications are automatically performed during generation:
 - [x] **Principle Compliance Check via spec-reviewer**: Verify compliance with CONSTITUTION.md
 - [x] **PRD Consistency Check**: Confirm requirement ID references and functional requirement coverage
 - [x] **Template Compliance Check**: Verify presence of required sections
+- [x] **No Marker Residue Check**: Confirm `<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>` markers are removed from headings
 
 ### Verification Commands
 
