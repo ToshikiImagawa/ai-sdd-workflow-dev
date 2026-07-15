@@ -32,7 +32,7 @@ from fm_parser import (  # noqa: E402,F401
 )
 from doc_walker import iter_target_files  # noqa: E402,F401
 
-SCHEMA_VERSION = "3"
+SCHEMA_VERSION = "1"
 
 
 # --- path helpers ---------------------------------------------------------
