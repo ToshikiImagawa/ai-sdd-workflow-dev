@@ -50,6 +50,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       and is truncated to 3000 characters to avoid context bloat
     - Nothing is injected when CONSTITUTION.md does not exist
 
+#### Scripts
+
+- **Shared modules** - Extracted logic that was duplicated between hooks and skill helpers into shared
+  leaf modules under `scripts/` (`fm_parser.py`, `naming.py`, `doc_walker.py`, `env_export.py`) plus
+  `hook_common.resolve_project_root()` ([#32](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/32))
+    - Front matter parsing, the file-naming rule, document-target selection, project-root resolution, and
+      the `CLAUDE_ENV_FILE` export routine now have a single source of truth used by both hooks and skill scripts
+    - Behavior is preserved; the front matter delimiter check is unified on `strip()` (tolerates CRLF and
+      incidental surrounding whitespace on the `---` fence)
+- **`pathlib`** - Migrated the hook scripts (`hook_common` / `pre-tool-use` / `post-tool-use` /
+  `session-start`) and `sdd_index.py` from `os.path` to `pathlib.Path` for consistent cross-platform path
+  handling ([#32](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/32)); hook JSON output, atomic
+  writes, and graceful degradation are unchanged
+- **Tests** - Added pytest coverage for the hook scripts and the new shared modules
+
 #### Agents
 
 - **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku` ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))

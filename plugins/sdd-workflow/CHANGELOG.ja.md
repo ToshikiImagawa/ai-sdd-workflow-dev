@@ -49,6 +49,20 @@
       セッションごとに最大1回、3000文字で切り詰めて注入する
     - CONSTITUTION.md が存在しない場合は何も注入しない
 
+#### Scripts
+
+- **共有モジュール** - hooks と skill ヘルパーに重複していたロジックを `scripts/` 配下の共有 leaf モジュール
+  （`fm_parser.py` / `naming.py` / `doc_walker.py` / `env_export.py`）と `hook_common.resolve_project_root()`
+  に集約 ([#32](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/32))
+    - front matter パース、ファイル命名規則、対象ドキュメント選択、プロジェクトルート解決、`CLAUDE_ENV_FILE`
+      への export 処理を単一情報源化し、hooks と skill スクリプトの双方が同一実装を参照する
+    - 挙動は維持。front matter の区切り判定は `strip()` に統一（CRLF と `---` 前後の空白を吸収）
+- **`pathlib`** - フックスクリプト（`hook_common` / `pre-tool-use` / `post-tool-use` / `session-start`）と
+  `sdd_index.py` のパス処理を `os.path` から `pathlib.Path` へ移行し、クロスプラットフォームのパス処理を統一
+  ([#32](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/32))。フックの JSON 出力・原子的書き込み・
+  graceful degradation は不変
+- **テスト** - フックスクリプトと新規共有モジュールの pytest カバレッジを追加
+
 #### Agents
 
 - **`front-matter-reviewer`** - `model` を `sonnet` から `haiku` に変更 ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))

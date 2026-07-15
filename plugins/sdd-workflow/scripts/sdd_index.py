@@ -16,15 +16,21 @@ Writer entry points:
 import argparse
 import hashlib
 import json
-import os
 import re
 import sqlite3
-import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from hook_common import load_sdd_paths  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from hook_common import load_sdd_paths, resolve_project_root  # noqa: E402,F401
+from fm_parser import (  # noqa: E402,F401
+    LIST_KEYS,
+    _strip_scalar,
+    parse_front_matter,
+    split_front_matter,
+)
+from doc_walker import iter_target_files  # noqa: E402,F401
 
 SCHEMA_VERSION = "2"
 
@@ -32,41 +38,25 @@ SCHEMA_VERSION = "2"
 # --- path helpers ---------------------------------------------------------
 
 def cache_dir(project_root: str, sdd_root: str) -> str:
-    return os.path.join(project_root, sdd_root, ".cache")
+    return str(Path(project_root) / sdd_root / ".cache")
 
 
 def db_path(project_root: str, sdd_root: str) -> str:
-    return os.path.join(cache_dir(project_root, sdd_root), "index.sqlite")
+    return str(Path(cache_dir(project_root, sdd_root)) / "index.sqlite")
 
 
 def json_path(project_root: str, sdd_root: str) -> str:
-    return os.path.join(cache_dir(project_root, sdd_root), "index.json")
+    return str(Path(cache_dir(project_root, sdd_root)) / "index.json")
 
 
 def md_path(project_root: str, sdd_root: str) -> str:
-    return os.path.join(cache_dir(project_root, sdd_root), "index.md")
-
-
-def resolve_project_root(cli_value: str) -> str:
-    if cli_value:
-        return cli_value
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
-    if project_dir:
-        return project_dir
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return os.getcwd()
+    return str(Path(cache_dir(project_root, sdd_root)) / "index.md")
 
 
 # --- schema ---------------------------------------------------------------
 
 def connect(db_file: str) -> sqlite3.Connection:
-    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    Path(db_file).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_file)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -183,59 +173,8 @@ def file_hash(abs_path: str) -> str:
 
 
 # --- front matter ---------------------------------------------------------
-
-def split_front_matter(text: str) -> Tuple[str, str]:
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return "", text
-    for i in range(1, min(len(lines), 50)):
-        if lines[i].strip() == "---":
-            fm = "\n".join(lines[1:i])
-            body = "\n".join(lines[i + 1:])
-            return fm, body
-    return "", text
-
-
-def _strip_scalar(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
-        return value[1:-1]
-    return value
-
-
-LIST_KEYS = {"depends-on", "tags"}
-
-
-def parse_front_matter(fm_text: str) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    current_list_key = ""
-    for raw in fm_text.splitlines():
-        line = raw.rstrip()
-        if not line.strip():
-            continue
-        m_item = re.match(r"^\s+-\s+(.*)$", line)
-        if m_item and current_list_key:
-            result.setdefault(current_list_key, [])
-            result[current_list_key].append(_strip_scalar(m_item.group(1)))
-            continue
-        m = re.match(r"^([A-Za-z][\w-]*):\s*(.*)$", line)
-        if not m:
-            continue
-        key, value = m.group(1), m.group(2).strip()
-        current_list_key = ""
-        if key in LIST_KEYS:
-            if value.startswith("[") and value.endswith("]"):
-                inner = value[1:-1].strip()
-                items = [_strip_scalar(x) for x in inner.split(",") if x.strip()]
-                result[key] = items
-            elif value == "":
-                current_list_key = key
-                result[key] = []
-            else:
-                result[key] = [_strip_scalar(value)]
-        else:
-            result[key] = _strip_scalar(value)
-    return result
+# Parsing lives in fm_parser (shared with the recommend-front-matter skill).
+# Re-exported here so existing callers/tests keep using sdd_index.split_front_matter.
 
 
 # --- body extraction ------------------------------------------------------
@@ -364,29 +303,9 @@ def _collect_api(line: str, section: str, acc: List[Dict[str, Any]]) -> None:
 
 # --- per-file + orchestration --------------------------------------------
 
-def iter_target_files(project_root: str, sdd_root: str,
-                      req_dir: str, spec_dir: str) -> List[str]:
-    targets: List[str] = []
-    req_path = os.path.join(project_root, sdd_root, req_dir)
-    spec_path = os.path.join(project_root, sdd_root, spec_dir)
-
-    if os.path.isdir(req_path):
-        for dirpath, _dirs, files in os.walk(req_path):
-            for f in files:
-                if f.endswith(".md"):
-                    targets.append(os.path.join(dirpath, f))
-    if os.path.isdir(spec_path):
-        for dirpath, _dirs, files in os.walk(spec_path):
-            for f in files:
-                base = f[:-3] if f.endswith(".md") else ""
-                if base.endswith("_spec") or base.endswith("_design"):
-                    targets.append(os.path.join(dirpath, f))
-    return sorted(targets)
-
-
 def scan_document(abs_path: str, project_root: str, sdd_root: str,
                   precomputed_hash: str = "") -> Dict[str, Any]:
-    rel = os.path.relpath(abs_path, os.path.join(project_root, sdd_root))
+    rel = str(Path(abs_path).relative_to(Path(project_root) / sdd_root))
     with open(abs_path, "rb") as fb:
         raw = fb.read()
     content_hash = precomputed_hash or hashlib.sha256(raw).hexdigest()
@@ -410,7 +329,7 @@ def scan_document(abs_path: str, project_root: str, sdd_root: str,
         "updated": fm.get("updated", ""),
         "depends_on": fm.get("depends-on", []),
         "tags": fm.get("tags", []),
-        "mtime": os.path.getmtime(abs_path),
+        "mtime": Path(abs_path).stat().st_mtime,
         **extracted,
     }
 
@@ -477,7 +396,7 @@ def rebuild_all(project_root: str) -> None:
 
         for abs_path in target_files:
             try:
-                rel = os.path.relpath(abs_path, os.path.join(project_root, sdd_root))
+                rel = str(Path(abs_path).relative_to(Path(project_root) / sdd_root))
                 current_paths.add(rel)
                 new_hash = file_hash(abs_path)
                 if existing_hashes.get(rel) == new_hash:
@@ -505,16 +424,16 @@ def rebuild_all(project_root: str) -> None:
 def update_one(project_root: str, rel_path: str) -> None:
     sdd_root, _req_dir, _spec_dir = load_sdd_paths(project_root)
     db_file = db_path(project_root, sdd_root)
-    if not os.path.isfile(db_file):
+    if not Path(db_file).is_file():
         return
-    prefix = sdd_root + os.sep
-    sdd_rel = rel_path[len(prefix):] if rel_path.startswith(prefix) else rel_path
-    abs_path = os.path.join(project_root, sdd_root, sdd_rel)
+    rel = Path(rel_path)
+    sdd_rel = str(rel.relative_to(sdd_root)) if rel.is_relative_to(sdd_root) else rel_path
+    abs_path = str(Path(project_root) / sdd_root / sdd_rel)
 
     conn = connect(db_file)
     try:
         init_schema(conn)
-        if not os.path.isfile(abs_path) or not abs_path.endswith(".md"):
+        if not Path(abs_path).is_file() or Path(abs_path).suffix != ".md":
             row = conn.execute(
                 "SELECT 1 FROM documents WHERE path = ?", (sdd_rel,)
             ).fetchone()
@@ -550,7 +469,7 @@ def _truncate_block(body: str, max_lines: int = 12) -> str:
 
 
 def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> None:
-    os.makedirs(cache_dir(project_root, sdd_root), exist_ok=True)
+    Path(cache_dir(project_root, sdd_root)).mkdir(parents=True, exist_ok=True)
 
     doc_count = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
 
@@ -666,15 +585,15 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
         docs_json.append(d)
 
     payload = {"schema": "sdd-index/2", "document_count": doc_count, "documents": docs_json}
-    tmp = json_path(project_root, sdd_root) + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, json_path(project_root, sdd_root))
+    json_target = Path(json_path(project_root, sdd_root))
+    tmp = json_target.with_name(json_target.name + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(json_target)
 
-    tmp_md = md_path(project_root, sdd_root) + ".tmp"
-    with open(tmp_md, "w", encoding="utf-8") as f:
-        f.write("\n".join(out) + "\n")
-    os.replace(tmp_md, md_path(project_root, sdd_root))
+    md_target = Path(md_path(project_root, sdd_root))
+    tmp_md = md_target.with_name(md_target.name + ".tmp")
+    tmp_md.write_text("\n".join(out) + "\n", encoding="utf-8")
+    tmp_md.replace(md_target)
 
 
 # --- CLI ------------------------------------------------------------------

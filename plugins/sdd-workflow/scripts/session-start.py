@@ -10,10 +10,14 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from env_export import rewrite_exports  # noqa: E402
+from hook_common import resolve_project_root  # noqa: E402
 
 
 @dataclass
@@ -35,24 +39,13 @@ def get_plugin_root() -> str:
 
 
 def get_project_root() -> str:
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
-    if project_dir:
-        return project_dir
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return os.getcwd()
+    return resolve_project_root()
 
 
 def load_or_create_config(config_path: str, default_lang: str) -> Dict[str, Any]:
-    if not os.path.isfile(config_path):
-        parent = os.path.dirname(config_path)
-        if parent:
-            os.makedirs(parent, exist_ok=True)
+    path = Path(config_path)
+    if not path.is_file():
+        path.parent.mkdir(parents=True, exist_ok=True)
         default_config = {
             "root": ".sdd",
             "lang": default_lang,
@@ -63,18 +56,18 @@ def load_or_create_config(config_path: str, default_lang: str) -> Dict[str, Any]
             },
             "index": True,
         }
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(default_config, f, indent=2, ensure_ascii=False)
-            f.write("\n")
+        path.write_text(
+            json.dumps(default_config, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
         print("[AI-SDD] .sdd-config.json auto-generated.")
         return default_config
 
-    with open(config_path, encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError as e:
-            print(f"[AI-SDD] Warning: .sdd-config.json is invalid JSON ({e}). Using default values.", file=sys.stderr)
-            return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"[AI-SDD] Warning: .sdd-config.json is invalid JSON ({e}). Using default values.", file=sys.stderr)
+        return {}
 
 
 def parse_index_flag(value: Any, default: bool = True) -> bool:
@@ -114,40 +107,38 @@ def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
 
 
 def ensure_sdd_directory(sdd_dir: str, docs_root: str) -> None:
-    if not os.path.isdir(sdd_dir):
-        os.makedirs(sdd_dir, exist_ok=True)
+    path = Path(sdd_dir)
+    if not path.is_dir():
+        path.mkdir(parents=True, exist_ok=True)
         print(f"[AI-SDD] {docs_root}/ directory created.")
 
 
 def get_plugin_version(plugin_root: str) -> str:
-    plugin_json_path = os.path.join(plugin_root, ".claude-plugin", "plugin.json")
-    if not os.path.isfile(plugin_json_path):
+    plugin_json_path = Path(plugin_root) / ".claude-plugin" / "plugin.json"
+    if not plugin_json_path.is_file():
         return ""
     try:
-        with open(plugin_json_path, encoding="utf-8") as f:
-            data = json.load(f)
+        data = json.loads(plugin_json_path.read_text(encoding="utf-8"))
         return data.get("version", "")
     except (json.JSONDecodeError, OSError):
         return ""
 
 
 def sync_principles_file(plugin_root: str, sdd_dir: str, plugin_version: str) -> None:
-    source = os.path.join(plugin_root, "AI-SDD-PRINCIPLES.source.md")
-    target = os.path.join(sdd_dir, "AI-SDD-PRINCIPLES.md")
+    source = Path(plugin_root) / "AI-SDD-PRINCIPLES.source.md"
+    target = Path(sdd_dir) / "AI-SDD-PRINCIPLES.md"
 
-    if not os.path.isfile(source):
+    if not source.is_file():
         print(f"[AI-SDD] Source file not found: {source}. Skipping auto-sync.", file=sys.stderr)
         return
 
     if plugin_version:
         try:
-            with open(source, encoding="utf-8") as f:
-                content = f.read()
+            content = source.read_text(encoding="utf-8")
             content = re.sub(r"^version:.*$", f'version: "{plugin_version}"', content, flags=re.MULTILINE)
-            tmp_path = target + ".tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            os.replace(tmp_path, target)
+            tmp_path = target.with_name(target.name + ".tmp")
+            tmp_path.write_text(content, encoding="utf-8")
+            tmp_path.replace(target)
             print(f"[AI-SDD] AI-SDD-PRINCIPLES.md updated to v{plugin_version}.")
         except OSError:
             print("[AI-SDD] Warning: Failed to update version. Copying without version info.", file=sys.stderr)
@@ -167,21 +158,20 @@ LEGACY_RULES_FILENAME = "ai-sdd-instructions-en.md"
 
 
 def sync_rules_files(plugin_root: str, project_root: str, sdd_root: str, plugin_version: str) -> None:
-    rules_dir = os.path.join(project_root, ".claude", "rules")
-    template_path = os.path.join(
-        plugin_root, "skills", "sdd-init", "templates", "ai_sdd_instructions_rules.md"
+    rules_dir = Path(project_root) / ".claude" / "rules"
+    template_path = (
+        Path(plugin_root) / "skills" / "sdd-init" / "templates" / "ai_sdd_instructions_rules.md"
     )
-    target_path = os.path.join(rules_dir, RULES_FILENAME)
+    target_path = rules_dir / RULES_FILENAME
 
-    if not os.path.isfile(template_path):
+    if not template_path.is_file():
         print(f"[AI-SDD] Warning: Template not found: {template_path}. Skipping rules sync.", file=sys.stderr)
         return
 
-    os.makedirs(rules_dir, exist_ok=True)
+    rules_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        with open(template_path, encoding="utf-8") as f:
-            content = f.read()
+        content = template_path.read_text(encoding="utf-8")
         # Substitute the configured SDD root so the path-scoped rule's "paths:"
         # glob matches the project's actual root (which may be customized via
         # .sdd-config.json). The glob is consumed by the Claude Code rule loader,
@@ -191,35 +181,25 @@ def sync_rules_files(plugin_root: str, project_root: str, sdd_root: str, plugin_
             content = content.replace("{PLUGIN_VERSION}", plugin_version)
         else:
             print("[AI-SDD] Warning: Plugin version unknown; rules file keeps the {PLUGIN_VERSION} placeholder.", file=sys.stderr)
-        tmp_path = target_path + ".tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp_path, target_path)
+        tmp_path = target_path.with_name(target_path.name + ".tmp")
+        tmp_path.write_text(content, encoding="utf-8")
+        tmp_path.replace(target_path)
         print(f"[AI-SDD] .claude/rules/{RULES_FILENAME} synced (v{plugin_version or 'unknown'}).")
     except OSError as e:
         print(f"[AI-SDD] Warning: Failed to sync rules file: {e}", file=sys.stderr)
         return
 
     # Remove the stale per-language rules file left by pre-release builds.
-    legacy_path = os.path.join(rules_dir, LEGACY_RULES_FILENAME)
-    if os.path.isfile(legacy_path):
+    legacy_path = rules_dir / LEGACY_RULES_FILENAME
+    if legacy_path.is_file():
         try:
-            os.remove(legacy_path)
+            legacy_path.unlink()
             print(f"[AI-SDD] Removed legacy rules file .claude/rules/{LEGACY_RULES_FILENAME}.")
         except OSError:
             pass
 
 
 def write_env_vars(cfg: SddConfig) -> None:
-    env_file = os.environ.get("CLAUDE_ENV_FILE", "")
-    if not env_file:
-        return
-
-    lines = []
-    if os.path.isfile(env_file):
-        with open(env_file, encoding="utf-8") as f:
-            lines = [line for line in f.readlines() if not line.startswith("export SDD_")]
-
     env_entries = [
         f'export SDD_ROOT="{cfg.root}"',
         f'export SDD_REQUIREMENT_DIR="{cfg.requirement_dir}"',
@@ -234,12 +214,7 @@ def write_env_vars(cfg: SddConfig) -> None:
     if cfg.index:
         env_entries.append('export SDD_INDEX="on"')
 
-    tmp_path = env_file + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
-        for entry in env_entries:
-            f.write(entry + "\n")
-    os.replace(tmp_path, env_file)
+    rewrite_exports("SDD_", env_entries)
 
 
 def compare_major_minor(plugin_version: str, project_version: str) -> bool:
@@ -254,21 +229,20 @@ def compare_major_minor(plugin_version: str, project_version: str) -> bool:
 
 
 def check_claude_md(project_root: str, sdd_dir: str, plugin_version: str) -> None:
-    if not os.path.isdir(sdd_dir):
+    if not Path(sdd_dir).is_dir():
         return
 
-    claude_md = os.path.join(project_root, "CLAUDE.md")
+    claude_md = Path(project_root) / "CLAUDE.md"
     show_warning = False
     warning_reason = ""
     claude_version = ""
 
-    if not os.path.isfile(claude_md):
+    if not claude_md.is_file():
         show_warning = True
         warning_reason = "missing"
     elif plugin_version:
         try:
-            with open(claude_md, encoding="utf-8") as f:
-                content = f.read()
+            content = claude_md.read_text(encoding="utf-8")
         except OSError:
             return
 
@@ -282,7 +256,7 @@ def check_claude_md(project_root: str, sdd_dir: str, plugin_version: str) -> Non
                 show_warning = True
                 warning_reason = "outdated"
 
-    warning_file = os.path.join(sdd_dir, "UPDATE_REQUIRED.md")
+    warning_file = Path(sdd_dir) / "UPDATE_REQUIRED.md"
 
     if show_warning:
         messages = {
@@ -312,18 +286,17 @@ This will update the AI-SDD section in CLAUDE.md.
 ---
 This file will be automatically deleted after running /sdd-init.
 """
-        with open(warning_file, "w", encoding="utf-8") as f:
-            f.write(warning_content)
+        warning_file.write_text(warning_content, encoding="utf-8")
 
         print("[AI-SDD] CLAUDE.md update required. Please run /sdd-init.", file=sys.stderr)
     else:
-        if os.path.isfile(warning_file):
-            os.remove(warning_file)
+        if warning_file.is_file():
+            warning_file.unlink()
 
 
 def rebuild_index(project_root: str) -> None:
     try:
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
         import sdd_index
         sdd_index.rebuild_all(project_root)
     except Exception as e:  # noqa: BLE001
@@ -337,12 +310,12 @@ def main() -> None:
 
     plugin_root = get_plugin_root()
     project_root = get_project_root()
-    config_path = os.path.join(project_root, ".sdd-config.json")
+    config_path = str(Path(project_root) / ".sdd-config.json")
 
     raw_config = load_or_create_config(config_path, args.default_lang)
     cfg = build_sdd_config(raw_config, args.default_lang)
 
-    sdd_dir = os.path.join(project_root, cfg.root)
+    sdd_dir = str(Path(project_root) / cfg.root)
     ensure_sdd_directory(sdd_dir, cfg.root)
 
     plugin_version = get_plugin_version(plugin_root)

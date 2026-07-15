@@ -6,10 +6,13 @@ Reduces Claude's Glob/Grep overhead by pre-scanning file structure
 """
 
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
+
+# Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from hook_common import resolve_project_root  # noqa: E402
+from env_export import rewrite_exports  # noqa: E402
 
 
 def log(message: str) -> None:
@@ -19,21 +22,7 @@ def log(message: str) -> None:
 
 def get_project_root() -> Path:
     """Get project root directory"""
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-
-    # Try git root
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+    return Path(resolve_project_root())
 
 
 def read_config(project_root: Path) -> dict:
@@ -169,30 +158,14 @@ def export_env_vars(
     mapping_file: Path,
 ) -> None:
     """Phase 3: export metadata to CLAUDE_ENV_FILE"""
-    env_file = os.environ.get("CLAUDE_ENV_FILE")
-    if not env_file:
-        return
-
-    env_file_path = Path(env_file)
-
-    # Remove existing CHECK_SPEC_* variables
-    if env_file_path.exists():
-        lines = [
-            line
-            for line in env_file_path.read_text(encoding="utf-8").splitlines(
-                keepends=True
-            )
-            if not line.startswith("export CHECK_SPEC_")
-        ]
-        env_file_path.write_text("".join(lines), encoding="utf-8")
-
-    with open(env_file_path, "a", encoding="utf-8") as f:
-        f.write(f'export CHECK_SPEC_CACHE_DIR="{output_dir}"\n')
-        f.write(f'export CHECK_SPEC_DESIGN_FILES="{design_files}"\n')
-        f.write(f'export CHECK_SPEC_SPEC_FILES="{spec_files}"\n')
-        f.write(f'export CHECK_SPEC_MAPPING="{mapping_file}"\n')
-
-    log("Environment variables exported to CLAUDE_ENV_FILE")
+    wrote = rewrite_exports("CHECK_SPEC_", [
+        f'export CHECK_SPEC_CACHE_DIR="{output_dir}"',
+        f'export CHECK_SPEC_DESIGN_FILES="{design_files}"',
+        f'export CHECK_SPEC_SPEC_FILES="{spec_files}"',
+        f'export CHECK_SPEC_MAPPING="{mapping_file}"',
+    ])
+    if wrote:
+        log("Environment variables exported to CLAUDE_ENV_FILE")
 
 
 def main() -> None:

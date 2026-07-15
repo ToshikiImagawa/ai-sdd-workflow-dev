@@ -15,12 +15,12 @@ CONSTITUTION.md principles as additionalContext. To avoid context bloat:
 - the injected text is truncated to CONSTITUTION_MAX_CHARS
 """
 
-import os
 import re
 import sys
 import tempfile
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hook_common import (  # noqa: E402
     SOURCE_EXTENSIONS,
     emit_additional_context,
@@ -30,46 +30,23 @@ from hook_common import (  # noqa: E402
     read_stdin_json,
     relative_to_project,
 )
+from naming import validate_naming  # noqa: E402,F401
 
 CONSTITUTION_MAX_CHARS = 3000
 
 
-def validate_naming(rel_path: str, requirement_prefix: str, specification_prefix: str) -> str:
-    """Return an error message if rel_path violates naming conventions, else ''."""
-    if not rel_path.endswith(".md"):
-        return ""
-    stem = os.path.basename(rel_path)[: -len(".md")]
-
-    if rel_path.startswith(requirement_prefix + os.sep):
-        if stem.endswith("_spec") or stem.endswith("_design"):
-            return (
-                f"[AI-SDD] Naming violation: '{rel_path}'. "
-                f"Files under {requirement_prefix}/ must not have a _spec/_design suffix "
-                "(e.g. user-login.md, index.md)."
-            )
-    elif rel_path.startswith(specification_prefix + os.sep):
-        if not (stem.endswith("_spec") or stem.endswith("_design")):
-            return (
-                f"[AI-SDD] Naming violation: '{rel_path}'. "
-                f"Files under {specification_prefix}/ require a _spec.md or _design.md suffix "
-                "(e.g. user-login_spec.md, index_design.md)."
-            )
-    return ""
-
-
 def session_marker_path(session_id: str) -> str:
     safe_id = re.sub(r"[^A-Za-z0-9_-]", "_", session_id)
-    return os.path.join(tempfile.gettempdir(), f"sdd-constitution-injected-{safe_id}")
+    return str(Path(tempfile.gettempdir()) / f"sdd-constitution-injected-{safe_id}")
 
 
 def load_constitution(project_root: str, sdd_root: str) -> str:
     """Return the CONSTITUTION.md content (truncated), or '' if absent."""
-    path = os.path.join(project_root, sdd_root, "CONSTITUTION.md")
-    if not os.path.isfile(path):
+    path = Path(project_root) / sdd_root / "CONSTITUTION.md"
+    if not path.is_file():
         return ""
     try:
-        with open(path, encoding="utf-8") as f:
-            text = f.read().strip()
+        text = path.read_text(encoding="utf-8").strip()
     except OSError:
         return ""
     if len(text) > CONSTITUTION_MAX_CHARS:
@@ -78,14 +55,13 @@ def load_constitution(project_root: str, sdd_root: str) -> str:
 
 
 def maybe_inject_constitution(rel_path: str, project_root: str, sdd_root: str, session_id: str) -> None:
-    _stem, ext = os.path.splitext(rel_path)
-    if ext not in SOURCE_EXTENSIONS:
+    if Path(rel_path).suffix not in SOURCE_EXTENSIONS:
         return
 
     marker = ""
     if session_id:
         marker = session_marker_path(session_id)
-        if os.path.exists(marker):
+        if Path(marker).exists():
             return
 
     text = load_constitution(project_root, sdd_root)
@@ -94,12 +70,11 @@ def maybe_inject_constitution(rel_path: str, project_root: str, sdd_root: str, s
 
     if marker:
         try:
-            with open(marker, "w", encoding="utf-8") as f:
-                f.write(rel_path)
+            Path(marker).write_text(rel_path, encoding="utf-8")
         except OSError:
             pass
 
-    constitution_rel = os.path.join(sdd_root, "CONSTITUTION.md")
+    constitution_rel = str(Path(sdd_root) / "CONSTITUTION.md")
     emit_additional_context(
         "PreToolUse",
         f"[AI-SDD] You are editing implementation code ('{rel_path}'). "
@@ -119,15 +94,15 @@ def main() -> None:
         return
 
     sdd_root, requirement_dir, specification_dir = load_sdd_paths(project_root)
-    requirement_prefix = os.path.join(sdd_root, requirement_dir)
-    specification_prefix = os.path.join(sdd_root, specification_dir)
+    requirement_prefix = str(Path(sdd_root) / requirement_dir)
+    specification_prefix = str(Path(sdd_root) / specification_dir)
 
     error = validate_naming(rel_path, requirement_prefix, specification_prefix)
     if error:
         emit_permission_deny("PreToolUse", error)
         return
 
-    if not rel_path.startswith(sdd_root + os.sep):
+    if not Path(rel_path).is_relative_to(sdd_root):
         maybe_inject_constitution(rel_path, project_root, sdd_root, payload.get("session_id", ""))
 
 

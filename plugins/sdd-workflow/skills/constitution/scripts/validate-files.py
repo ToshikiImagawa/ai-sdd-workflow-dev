@@ -6,11 +6,14 @@ Reduces Claude's Glob/Grep overhead by pre-scanning file structure
 """
 
 import json
-import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from hook_common import resolve_project_root  # noqa: E402
+from env_export import rewrite_exports  # noqa: E402
 
 
 def log(message: str) -> None:
@@ -20,21 +23,7 @@ def log(message: str) -> None:
 
 def get_project_root() -> Path:
     """Get project root directory"""
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
-    if project_dir:
-        return Path(project_dir)
-
-    # Try git root
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+    return Path(resolve_project_root())
 
 
 def read_config(project_root: Path) -> dict:
@@ -133,30 +122,14 @@ def main() -> None:
         log(f"Summary: {summary_file.read_text(encoding='utf-8').strip()}")
 
         # --- Phase 4: Export to CLAUDE_ENV_FILE ---
-        env_file = os.environ.get("CLAUDE_ENV_FILE")
-        if env_file:
-            env_file_path = Path(env_file)
-
-            # Remove existing CONSTITUTION_* variables
-            if env_file_path.exists():
-                lines = [
-                    line
-                    for line in env_file_path.read_text(
-                        encoding="utf-8"
-                    ).splitlines(keepends=True)
-                    if not line.startswith("export CONSTITUTION_")
-                ]
-                env_file_path.write_text("".join(lines), encoding="utf-8")
-
-            with open(env_file_path, "a", encoding="utf-8") as f:
-                f.write(f'export CONSTITUTION_CACHE_DIR="{output_dir}"\n')
-                f.write(
-                    f'export CONSTITUTION_REQUIREMENT_FILES="{requirement_files}"\n'
-                )
-                f.write(f'export CONSTITUTION_SPEC_FILES="{spec_files}"\n')
-                f.write(f'export CONSTITUTION_DESIGN_FILES="{design_files}"\n')
-                f.write(f'export CONSTITUTION_SUMMARY="{summary_file}"\n')
-
+        wrote = rewrite_exports("CONSTITUTION_", [
+            f'export CONSTITUTION_CACHE_DIR="{output_dir}"',
+            f'export CONSTITUTION_REQUIREMENT_FILES="{requirement_files}"',
+            f'export CONSTITUTION_SPEC_FILES="{spec_files}"',
+            f'export CONSTITUTION_DESIGN_FILES="{design_files}"',
+            f'export CONSTITUTION_SUMMARY="{summary_file}"',
+        ])
+        if wrote:
             log("Environment variables exported to CLAUDE_ENV_FILE")
 
         log("Scan complete")

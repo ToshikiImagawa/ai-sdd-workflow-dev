@@ -6,10 +6,10 @@ Detects potential document update omissions after a file edit:
 - source file edited with a matching *_design.md: reminds to keep the design doc in sync
 """
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hook_common import (  # noqa: E402
     SOURCE_EXTENSIONS,
     emit_additional_context,
@@ -18,15 +18,7 @@ from hook_common import (  # noqa: E402
     read_stdin_json,
     relative_to_project,
 )
-
-
-def find_design_doc(spec_dir: str, stem: str) -> str:
-    """Return the relative path of {stem}_design.md under spec_dir, or ''."""
-    target = f"{stem}_design.md"
-    for dirpath, _dirnames, filenames in os.walk(spec_dir):
-        if target in filenames:
-            return os.path.join(dirpath, target)
-    return ""
+from doc_walker import find_design_doc  # noqa: E402,F401
 
 
 def try_update_index(project_root: str, rel_path: str) -> None:
@@ -58,7 +50,8 @@ def _extract_file_paths(payload: dict) -> list:
 def _process_single_file(rel_path: str, project_root: str,
                          sdd_root: str, requirement_prefix: str,
                          specification_prefix: str) -> None:
-    if rel_path.startswith(specification_prefix + os.sep) and rel_path.endswith(".md"):
+    rel = Path(rel_path)
+    if rel.is_relative_to(specification_prefix) and rel.suffix == ".md":
         try_update_index(project_root, rel_path)
         emit_additional_context(
             "PostToolUse",
@@ -68,7 +61,7 @@ def _process_single_file(rel_path: str, project_root: str,
         )
         return
 
-    if rel_path.startswith(requirement_prefix + os.sep) and rel_path.endswith(".md"):
+    if rel.is_relative_to(requirement_prefix) and rel.suffix == ".md":
         try_update_index(project_root, rel_path)
         emit_additional_context(
             "PostToolUse",
@@ -79,21 +72,19 @@ def _process_single_file(rel_path: str, project_root: str,
         )
         return
 
-    if rel_path.startswith(sdd_root + os.sep):
+    if rel.is_relative_to(sdd_root):
         return
 
-    _root, ext = os.path.splitext(rel_path)
-    if ext not in SOURCE_EXTENSIONS:
+    if rel.suffix not in SOURCE_EXTENSIONS:
         return
 
-    spec_dir = os.path.join(project_root, specification_prefix)
-    if not os.path.isdir(spec_dir):
+    spec_dir = Path(project_root) / specification_prefix
+    if not spec_dir.is_dir():
         return
 
-    stem = os.path.basename(rel_path)[: -len(ext)]
-    design_doc = find_design_doc(spec_dir, stem)
+    design_doc = find_design_doc(str(spec_dir), rel.stem)
     if design_doc:
-        design_rel = os.path.relpath(design_doc, project_root)
+        design_rel = str(Path(design_doc).relative_to(Path(project_root)))
         emit_additional_context(
             "PostToolUse",
             f"[AI-SDD] '{rel_path}' was updated and a matching design document "
@@ -110,8 +101,8 @@ def main() -> None:
 
     project_root = get_project_root(payload)
     sdd_root, requirement_dir, specification_dir = load_sdd_paths(project_root)
-    requirement_prefix = os.path.join(sdd_root, requirement_dir)
-    specification_prefix = os.path.join(sdd_root, specification_dir)
+    requirement_prefix = str(Path(sdd_root) / requirement_dir)
+    specification_prefix = str(Path(sdd_root) / specification_dir)
 
     for file_path in file_paths:
         rel_path = relative_to_project(file_path, project_root)
