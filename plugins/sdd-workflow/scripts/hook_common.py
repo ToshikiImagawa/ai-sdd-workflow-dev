@@ -7,6 +7,7 @@ Provides stdin JSON parsing, project root resolution,
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 
@@ -20,7 +21,7 @@ def read_stdin_json() -> Dict[str, Any]:
 
 def get_project_root(payload: Dict[str, Any]) -> str:
     cwd = payload.get("cwd", "")
-    if cwd and os.path.isdir(cwd):
+    if cwd and Path(cwd).is_dir():
         return cwd
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", "")
     if project_dir:
@@ -33,11 +34,10 @@ def load_sdd_paths(project_root: str) -> Tuple[str, str, str]:
     root = ".sdd"
     requirement_dir = "requirement"
     specification_dir = "specification"
-    config_path = os.path.join(project_root, ".sdd-config.json")
-    if os.path.isfile(config_path):
+    config_path = Path(project_root) / ".sdd-config.json"
+    if config_path.is_file():
         try:
-            with open(config_path, encoding="utf-8") as f:
-                raw = json.load(f)
+            raw = json.loads(config_path.read_text(encoding="utf-8"))
             if raw.get("root"):
                 root = raw["root"]
             dirs = raw.get("directories", {})
@@ -77,8 +77,9 @@ def emit_additional_context(event_name: str, text: str) -> None:
 
 def relative_to_project(file_path: str, project_root: str) -> str:
     """Return file_path relative to project_root, or '' if outside."""
-    abs_path = os.path.abspath(file_path)
-    abs_root = os.path.abspath(project_root)
-    if not abs_path.startswith(abs_root + os.sep):
+    abs_path = Path(file_path).resolve()
+    abs_root = Path(project_root).resolve()
+    try:
+        return str(abs_path.relative_to(abs_root))
+    except ValueError:
         return ""
-    return os.path.relpath(abs_path, abs_root)
