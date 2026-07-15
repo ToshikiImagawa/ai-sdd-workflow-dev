@@ -57,7 +57,8 @@ def _process_single_file(rel_path: str, project_root: str,
             "PostToolUse",
             f"[AI-SDD] '{rel_path}' was updated. Verify consistency across "
             "PRD <-> *_spec.md <-> *_design.md (requirement ID references, data models, "
-            "API definitions). Consider running the doc-consistency-checker skill.",
+            "API definitions). Consider running the doc-consistency-checker skill and "
+            "/constitution validate to check for principle violations.",
         )
         return
 
@@ -68,7 +69,8 @@ def _process_single_file(rel_path: str, project_root: str,
             f"[AI-SDD] '{rel_path}' (PRD) was updated. Verify that downstream "
             "*_spec.md / *_design.md documents reflect the change "
             "(new/changed UR/FR/NFR must propagate). Consider running the "
-            "doc-consistency-checker skill.",
+            "doc-consistency-checker skill and /constitution validate to check for "
+            "principle violations.",
         )
         return
 

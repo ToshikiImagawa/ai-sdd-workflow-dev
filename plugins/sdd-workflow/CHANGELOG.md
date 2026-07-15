@@ -159,6 +159,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       naming messages under both the default and a custom root; `scripts/test-e2e-sdd-init.sh` gained a ja-template
       render step under a custom root and a default-root assertion; and `plugin-lint.sh` now verifies every
       `${SDD_*}` token in prompt Markdown is an exported var and that no `skills/*/templates/` file hardcodes `.sdd/`
+- **`post-tool-use.py`** - The advisory hint shown after editing `.sdd/requirement/` or `.sdd/specification/`
+  files now also suggests `/constitution validate`, not just the `doc-consistency-checker` skill, so
+  CONSTITUTION.md principle violations are more likely to be caught after generation/edits
+  ([#11](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/11))
+    - `scripts/test-hook-scripts.sh` and `tests/test_post_tool_use.py` gained assertions for the new hint text
+- **`doc-consistency-check_design.md`** - Corrected stale documentation: the design doc previously listed its
+  own automatic-trigger mechanism as an "unresolved issue," even though `post-tool-use.py` already implements
+  it as an advisory hint (the same pattern used by `vibe-detector`). The architecture diagram, file layout, and
+  test strategy now reflect the actual hook-based trigger and its best-effort (non-blocking) nature
+- **`doc-consistency-checker`** - Removed the `design ↔ Implementation` check (former spec FR-004), which
+  duplicated `impl-spec-check` (`/check-spec`) and contradicted the parent PRD's explicit scope-out for that
+  check. `design ↔ Implementation` consistency is now handled exclusively by `/check-spec`
 
 ## [3.3.0] - 2026-03-02
 

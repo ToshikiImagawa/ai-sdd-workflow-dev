@@ -169,9 +169,17 @@ run_hook "post: spec edit reminds consistency check" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/auth/user-login_spec.md\"}}" \
     0 "doc-consistency-checker"
 
+run_hook "post: spec edit also suggests constitution validate" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/auth/user-login_spec.md\"}}" \
+    0 "/constitution validate"
+
 run_hook "post: PRD edit reminds downstream propagation" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login.md\"}}" \
     0 "downstream"
+
+run_hook "post: PRD edit also suggests constitution validate" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login.md\"}}" \
+    0 "/constitution validate"
 
 run_hook "post: source edit with matching design doc reminds sync" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-login.py\"}}" \

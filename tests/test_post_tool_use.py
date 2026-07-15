@@ -77,6 +77,7 @@ class TestProcessSingleFile:
         ptu._process_single_file(rel, str(tmp_path), ".sdd", REQ, SPEC)
         out = capsys.readouterr().out
         assert "PRD <-> *_spec.md <-> *_design.md" in out
+        assert "/constitution validate" in out
 
     def test_requirement_md_emits_propagation_reminder(
         self, tmp_path, capsys, monkeypatch
@@ -86,6 +87,7 @@ class TestProcessSingleFile:
         ptu._process_single_file(rel, str(tmp_path), ".sdd", REQ, SPEC)
         out = capsys.readouterr().out
         assert "(PRD) was updated" in out
+        assert "/constitution validate" in out
 
     def test_other_sdd_file_no_output(self, tmp_path, capsys):
         rel = os.path.join(".sdd", "CONSTITUTION.md")

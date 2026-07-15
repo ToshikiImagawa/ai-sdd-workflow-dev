@@ -149,6 +149,18 @@
       `scripts/test-e2e-sdd-init.sh` に custom root での ja テンプレート描画ステップと default root 解決アサートを追加。
       `plugin-lint.sh` はプロンプト Markdown 内の全 `${SDD_*}` トークンがエクスポート済み変数であり、
       `skills/*/templates/` に `.sdd/` ハードコードが無いことを検証
+- **`post-tool-use.py`** - `.sdd/requirement/` または `.sdd/specification/` 配下のファイル編集後に表示される
+  advisory ヒントが、`doc-consistency-checker` スキルに加えて `/constitution validate` の実行も提案するよう
+  になり、生成・編集後に CONSTITUTION.md の原則違反を検知しやすくなった
+  ([#11](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/11))
+    - `scripts/test-hook-scripts.sh` と `tests/test_post_tool_use.py` に新しいヒント文言のアサーションを追加
+- **`doc-consistency-check_design.md`** - 実態と食い違っていたドキュメントを修正。design doc は自動起動の
+  トリガー実装を「未解決の課題」として記載していたが、実際には `post-tool-use.py` が `vibe-detector` と
+  同じパターンの advisory ヒントとしてすでに実現していた。アーキテクチャ図・ファイル構成・テスト戦略を
+  実際のフック連携とそのベストエフォート性（非ブロッキング）に合わせて修正
+- **`doc-consistency-checker`** - `design ↔ 実装` チェック（旧 spec FR-004）を削除。`impl-spec-check`
+  （`/check-spec`）と責務が重複しており、親 PRD が明示的にスコープ外と定義していた領域と矛盾していた。
+  `design ↔ 実装` の整合性チェックは `/check-spec` に一本化される
 
 ## [3.3.0] - 2026-03-02
 
