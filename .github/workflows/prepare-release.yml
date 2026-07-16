@@ -110,10 +110,12 @@ jobs:
         run: |
           PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
 
-          echo "Merging PR #$PR_NUMBER with squash strategy..."
-          # 直前の Wait for CI checks で CI 成功を確認済みのため auto-merge は使わず直接 merge する
+          echo "Merging PR #$PR_NUMBER with merge commit strategy..."
+          # 直前の Wait for CI checks で CI 成功を確認済みのため auto-merge は使わず直接 merge する。
+          # develop -> main は長命ブランチ統合のため squash ではなくマージコミットを使い、
+          # main と develop の履歴を共有させて分岐・back-merge を防ぐ。
           gh pr merge "$PR_NUMBER" \
-            --squash \
+            --merge \
             --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -137,29 +139,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch updated main branch
-        run: |
-          git fetch origin
-          git checkout main
-          git pull origin main
-
-      - name: Create and push tag
-        run: |
-          VERSION="${{ steps.validate.outputs.version }}"
-          TAG="v$VERSION"
-
-          echo "Creating tag $TAG..."
-          git tag "$TAG" main
-          git push origin "$TAG"
-
-          echo "Tag $TAG created and pushed successfully"
-
       - name: Create deployment notification
         if: success()
         run: |
           VERSION="${{ steps.validate.outputs.version }}"
           PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
-          echo "✅ Release v$VERSION deployed successfully"
-          echo "  - PR merged: #$PR_NUMBER"
-          echo "  - Tag pushed: v$VERSION"
-          echo "  - Release workflow triggered automatically"
+          echo "✅ develop -> main のマージが完了しました (PR #$PR_NUMBER)"
+          echo ""
+          echo "📌 次の手動作業が必要です:"
+          echo "  リリースを公開するには、最新の main にタグを打って push してください。"
+          echo "  GITHUB_TOKEN で push したタグは release.yml をトリガーしないため、この作業は人間が行います。"
+          echo ""
+          echo "    git checkout main"
+          echo "    git pull origin main"
+          echo "    git tag v$VERSION"
+          echo "    git push origin v$VERSION"
+          echo ""
+          echo "  タグ push により release.yml が起動し、公開リポへの配布とリリース作成が実行されます。"
