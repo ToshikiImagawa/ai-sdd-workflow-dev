@@ -251,6 +251,57 @@ assert_not_grep  "ja CLAUDE.md omits the naming quick-reference"    "命名パ�
 assert_not_grep  "ja CLAUDE.md omits the directory-structure body"  "### ディレクトリ構造"        "$PROJ3/CLAUDE.md"
 
 # ---------------------------------------------------------------------------
+# STEP 7: Index build (index=on) produces .cache/index.md with extracted facts
+# ---------------------------------------------------------------------------
+# When .sdd-config.json has "index": true, session-start rebuilds the compressed
+# index. Seed a PRD with a requirement ID, a SysML requirementDiagram node, a
+# and a data model block, then verify the derived index.md surfaces each
+# extraction axis (Step2 2-4 additions).
+printf -- '--- STEP 7: index build (index=on) ---\n'
+PROJ4="${TMP_DIR}/project-index"
+ENV4="${TMP_DIR}/env4"
+mkdir -p "$PROJ4/.sdd/requirement"
+: > "$ENV4"
+printf '%s\n' '{"root":".sdd","lang":"en","index":true,"directories":{"requirement":"requirement","specification":"specification","task":"task"}}' > "$PROJ4/.sdd-config.json"
+
+INDEX_PRD="$PROJ4/.sdd/requirement/auth.md"
+{
+    printf '%s\n' '---'
+    printf '%s\n' 'id: prd-auth'
+    printf '%s\n' 'type: prd'
+    printf '%s\n' 'status: approved'
+    printf '%s\n' '---'
+    printf '%s\n' '# UR-001 User Login'
+    printf '%s\n' '```mermaid'
+    printf '%s\n' 'requirementDiagram'
+    printf '%s\n' '    requirement "User Login" {'
+    printf '%s\n' '        id: UR-001'
+    printf '%s\n' '    }'
+    printf '%s\n' '    element login_service {'
+    printf '%s\n' '        type: simulation'
+    printf '%s\n' '    }'
+    printf '%s\n' '    UR-001 - deriveReqt -> FR-001'
+    printf '%s\n' '```'
+    printf '%s\n' '```json'
+    printf '%s\n' '{"user_id": "string"}'
+    printf '%s\n' '```'
+} > "$INDEX_PRD"
+
+if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ4" CLAUDE_ENV_FILE="$ENV4" \
+        python3 "$SESSION_START" --default-lang en >/dev/null 2>&1; then
+    fail "session-start.py (index build) exited non-zero"
+fi
+
+INDEX_MD="$PROJ4/.sdd/.cache/index.md"
+assert_file      "index build writes .cache/index.md"               "$INDEX_MD"
+assert_grep      "index.md has Requirement IDs section"             "## Requirement IDs"      "$INDEX_MD"
+assert_grep      "index.md lists the defined requirement ID"        "UR-001"                  "$INDEX_MD"
+assert_grep      "index.md has SysML Elements section"              "## SysML Elements"       "$INDEX_MD"
+assert_grep      "index.md captures the element node"               "login_service"           "$INDEX_MD"
+assert_grep      "index.md has Data Model Fields section"           "## Data Model Fields"     "$INDEX_MD"
+assert_grep      "index.md captures a data model field"             "user_id"                 "$INDEX_MD"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n=== Results: %d passed, %d failed ===\n' "$PASS_COUNT" "$FAIL_COUNT"

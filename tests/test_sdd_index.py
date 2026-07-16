@@ -182,6 +182,131 @@ class TestExtractApi:
         assert any("POST /api/auth/login" in s["signature"] for s in sigs)
 
 
+class TestExtractSysmlElements:
+    def test_requirement_and_element_nodes(self):
+        body = textwrap.dedent("""\
+            # Requirements
+            ```mermaid
+            requirementDiagram
+                requirement "User Login" {
+                    id: UR-001
+                    text: The user can log in.
+                    risk: high
+                    verifymethod: test
+                }
+                functionalRequirement fr_login {
+                    id: FR-001
+                }
+                element login_service {
+                    type: simulation
+                    docref: design.md
+                }
+                UR-001 - deriveReqt -> FR-001
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        elems = result["sysml_elements"]
+        by_name = {e["name"]: e for e in elems}
+        assert "User Login" in by_name
+        assert by_name["User Login"]["kind"] == "requirement"
+        assert by_name["User Login"]["keyword"] == "requirement"
+        assert by_name["User Login"]["req_id"] == "UR-001"
+        assert by_name["fr_login"]["keyword"] == "functionalRequirement"
+        assert by_name["fr_login"]["req_id"] == "FR-001"
+        assert by_name["login_service"]["kind"] == "element"
+        assert by_name["login_service"]["elem_type"] == "simulation"
+        # relationship extraction stays intact alongside node extraction
+        assert any(r["source_id"] == "UR-001" for r in result["sysml_relationships"])
+
+    def test_semicolon_separated_body(self):
+        body = textwrap.dedent("""\
+            ```mermaid
+            requirementDiagram
+                requirement req_a { id: UR-002; risk: low }
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        elems = result["sysml_elements"]
+        assert len(elems) == 1
+        assert elems[0]["name"] == "req_a"
+        assert elems[0]["req_id"] == "UR-002"
+
+    def test_non_sysml_mermaid_ignored(self):
+        body = "```mermaid\ngraph TD\n  A --> B\n```"
+        result = si.extract_sections_and_scan(body)
+        assert result["sysml_elements"] == []
+
+
+class TestExtractDataModelFields:
+    def test_json_keys(self):
+        body = '```json\n{"user_id": "string", "email": "string"}\n```'
+        result = si.extract_sections_and_scan(body)
+        fields = [f["field_name"] for f in result["data_model_fields"]]
+        assert "user_id" in fields
+        assert "email" in fields
+
+    def test_typescript_properties(self):
+        body = textwrap.dedent("""\
+            ```typescript
+            interface User {
+                id: string;
+                name?: string;
+                readonly createdAt: Date;
+            }
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        fields = [f["field_name"] for f in result["data_model_fields"]]
+        assert "id" in fields
+        assert "name" in fields
+        assert "createdAt" in fields
+
+    def test_yaml_top_level_keys(self):
+        body = textwrap.dedent("""\
+            ```yaml
+            user_id: string
+            profile:
+              name: string
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        fields = [f["field_name"] for f in result["data_model_fields"]]
+        assert "user_id" in fields
+        assert "profile" in fields
+        # nested key is indented -> not a top-level key
+        assert "name" not in fields
+
+    def test_sql_columns(self):
+        body = textwrap.dedent("""\
+            ```sql
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY,
+                email TEXT NOT NULL,
+                PRIMARY KEY (id)
+            );
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        fields = [f["field_name"] for f in result["data_model_fields"]]
+        assert "id" in fields
+        assert "email" in fields
+        # constraint keyword must not be captured as a column
+        assert "PRIMARY" not in fields
+
+    def test_python_attributes(self):
+        body = textwrap.dedent("""\
+            ```python
+            class User:
+                id: int
+                email: str = ""
+            ```
+        """)
+        result = si.extract_sections_and_scan(body)
+        fields = [f["field_name"] for f in result["data_model_fields"]]
+        assert "id" in fields
+        assert "email" in fields
+
+
 # --- schema & hashing ----------------------------------------------------
 
 class TestSchema:
@@ -193,6 +318,8 @@ class TestSchema:
         ).fetchall()]
         assert "documents" in tables
         assert "sysml_relationships" in tables
+        assert "sysml_elements" in tables
+        assert "data_model_fields" in tables
         assert "tags" in tables
         assert "meta" in tables
         version = conn.execute(
@@ -200,10 +327,15 @@ class TestSchema:
         ).fetchone()
         assert version[0] == si.SCHEMA_VERSION
 
-    def test_migration_from_v1(self):
+    def test_migration_on_version_mismatch(self):
+        """旧スキーマ版数のDBは、現行 SCHEMA_VERSION と異なれば
+        全テーブルを再構築（マイグレーション）する。"""
         conn = sqlite3.connect(":memory:")
         conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute("INSERT INTO meta VALUES('schema_version', '1')")
+        conn.execute(
+            "INSERT INTO meta VALUES('schema_version', ?)",
+            (si.SCHEMA_VERSION + "-old",),
+        )
         conn.execute("CREATE TABLE documents (path TEXT PRIMARY KEY, doc_id TEXT)")
         conn.commit()
         si.init_schema(conn)
@@ -379,6 +511,12 @@ class TestDeriveIndexFormat:
             # UR-001 User Login
             ```mermaid
             requirementDiagram
+                requirement "User Login" {
+                    id: UR-001
+                }
+                element login_service {
+                    type: simulation
+                }
                 UR-001 - deriveReqt -> FR-001
             ```
             ```json
@@ -392,12 +530,16 @@ class TestDeriveIndexFormat:
         assert "## Metadata" in content
         assert "## Requirement IDs" in content
         assert "## SysML Relationships" in content
+        assert "## SysML Elements" in content
         assert "## API Signatures" in content
         assert "## Data Models" in content
+        assert "## Data Model Fields" in content
         assert "| prd-auth |" in content
         assert "| UR-001 | def |" in content
         assert "| UR-001 | deriveReqt | FR-001 |" in content
         assert "| POST /api/auth/login |" in content
+        assert "| login_service | element |" in content
+        assert "| user_id |" in content
 
 
 # --- post-tool-use MultiEdit support -------------------------------------
