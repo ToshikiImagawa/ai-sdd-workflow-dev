@@ -29,10 +29,10 @@
       各エージェントと `doc-consistency-checker` スキルは、多数の Glob/Grep/Read の代わりに
       構築済みインデックスを 1 回読む
     - 自動生成される `.sdd-config.json` にも発見性向上のため `"index": true` を明示的に含める
-    - **インデックス抽出の拡充** - SysML `requirementDiagram` の element/type ノード定義、用語集
-      （Terminology）エントリ、データモデルコードブロックのフィールド名も構造化抽出するようになった。
-      `index.md` に `SysML Elements` / `Terminology` / `Data Model Fields` セクションとして出力される
-      （スキーマ v3）。これにより従来は生 Read が必要だった SysML trace 軸もインデックスで補える
+    - **インデックス抽出の拡充** - SysML `requirementDiagram` の element/type ノード定義と、
+      データモデルコードブロックのフィールド名も構造化抽出するようになった。
+      `index.md` に `SysML Elements` / `Data Model Fields` セクションとして出力される
+      （スキーマ v1）。これにより従来は生 Read が必要だった SysML trace 軸もインデックスで補える
       ([#16](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/16))
 
 ### Changed

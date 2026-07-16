@@ -80,7 +80,6 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.executescript(
             "DROP TABLE IF EXISTS literals;"
             "DROP TABLE IF EXISTS data_model_fields;"
-            "DROP TABLE IF EXISTS terminology;"
             "DROP TABLE IF EXISTS sysml_elements;"
             "DROP TABLE IF EXISTS api_signatures;"
             "DROP TABLE IF EXISTS data_models;"
@@ -173,14 +172,6 @@ def init_schema(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_sysml_elem_name ON sysml_elements(name);
         CREATE INDEX IF NOT EXISTS idx_sysml_elem_req ON sysml_elements(req_id);
 
-        CREATE TABLE IF NOT EXISTS terminology (
-            path       TEXT NOT NULL REFERENCES documents(path) ON DELETE CASCADE,
-            term       TEXT NOT NULL,
-            definition TEXT,
-            section    TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_terminology_term ON terminology(term);
-
         CREATE TABLE IF NOT EXISTS data_model_fields (
             path          TEXT NOT NULL REFERENCES documents(path) ON DELETE CASCADE,
             model_section TEXT,
@@ -231,17 +222,6 @@ SYSML_NODE_RE = re.compile(
     re.DOTALL,
 )
 
-# Terminology / glossary section headings (Terminology / 用語集 / 用語定義 / Glossary ...).
-TERMINOLOGY_HEADING_RE = re.compile(
-    r"(terminology|glossary|用語集|用語定義|用語一覧|用語表)", re.IGNORECASE
-)
-# Markdown table separator row: | --- | :--: |
-TABLE_SEP_RE = re.compile(r"^\|[\s:\-|]+\|$")
-# Definition-list terminology: - **term**: definition
-TERM_LIST_RE = re.compile(r"^\s*[-*]\s+\*\*(.+?)\*\*\s*[:：]\s*(.+?)\s*$")
-TERM_HEADER_TOKENS = {"term", "terms", "用語", "用語名", "名称", "名前"}
-DEF_HEADER_TOKENS = {"definition", "description", "meaning", "定義", "説明", "意味", "内容"}
-
 # Data model field-name extraction (lightweight, per language).
 JSON_KEY_RE = re.compile(r'"([\w][\w -]*)"\s*:')
 TS_FIELD_RE = re.compile(r"^\s*(?:readonly\s+)?([A-Za-z_]\w*)\??\s*:")
@@ -266,10 +246,8 @@ def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
     api_sigs: List[Dict[str, Any]] = []
     sysml_rels: List[Dict[str, Any]] = []
     sysml_elems: List[Dict[str, Any]] = []
-    terminology: List[Dict[str, Any]] = []
 
     section = ""
-    in_terminology = False
     in_fence = False
     fence_lang = ""
     fence_section = ""
@@ -317,14 +295,11 @@ def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
         heading_m = HEADING_RE.match(line)
         if heading_m:
             section = _clean_heading(heading_m.group(2))
-            in_terminology = bool(TERMINOLOGY_HEADING_RE.search(section))
             _collect_req_ids(line, section, idx, req_ids, heading=True)
             continue
 
         _collect_req_ids(line, section, idx, req_ids)
         _collect_api(line, section, api_sigs)
-        if in_terminology:
-            _collect_terminology(line, section, terminology)
 
     return {
         "req_ids": list(req_ids.values()),
@@ -333,12 +308,11 @@ def extract_sections_and_scan(body: str) -> Dict[str, List[Dict[str, Any]]]:
         "api_signatures": api_sigs,
         "sysml_relationships": sysml_rels,
         "sysml_elements": sysml_elems,
-        "terminology": terminology,
     }
 
 
 def _extract_sysml_relationships(
-    block: str, section: str, acc: List[Dict[str, Any]]
+        block: str, section: str, acc: List[Dict[str, Any]]
 ) -> None:
     if "requirementDiagram" not in block:
         return
@@ -354,7 +328,7 @@ def _extract_sysml_relationships(
 
 
 def _extract_sysml_elements(
-    block: str, section: str, acc: List[Dict[str, Any]]
+        block: str, section: str, acc: List[Dict[str, Any]]
 ) -> None:
     if "requirementDiagram" not in block:
         return
@@ -382,28 +356,6 @@ def _parse_node_body(body: str) -> Dict[str, str]:
             if key:
                 fields[key] = value.strip()
     return fields
-
-
-def _collect_terminology(line: str, section: str,
-                         acc: List[Dict[str, Any]]) -> None:
-    list_m = TERM_LIST_RE.match(line)
-    if list_m:
-        term = list_m.group(1).strip()
-        definition = list_m.group(2).strip()
-        if term:
-            acc.append({"term": term, "definition": definition, "section": section})
-        return
-
-    stripped = line.strip()
-    if not stripped.startswith("|") or TABLE_SEP_RE.match(stripped):
-        return
-    cells = [c.strip().strip("*").strip() for c in stripped.strip("|").split("|")]
-    if len(cells) < 2 or not cells[0]:
-        return
-    if (cells[0].lower() in TERM_HEADER_TOKENS
-            or cells[1].lower() in DEF_HEADER_TOKENS):
-        return  # header row
-    acc.append({"term": cells[0], "definition": cells[1], "section": section})
 
 
 def _extract_data_model_fields(lang: str, block: str) -> List[str]:
@@ -446,9 +398,9 @@ def _collect_req_ids(line: str, section: str, line_no: int,
     if not matches:
         return
     is_def_ctx = (
-        heading
-        or bool(TABLE_ROW_ID_RE.match(line.strip()))
-        or bool(DEFINE_HINT_RE.search(line))
+            heading
+            or bool(TABLE_ROW_ID_RE.match(line.strip()))
+            or bool(DEFINE_HINT_RE.search(line))
     )
     for rid in matches:
         kind = "def" if is_def_ctx else "ref"
@@ -554,12 +506,6 @@ def upsert_document(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
             "VALUES (?,?,?,?,?,?,?)",
             (path, se["kind"], se["keyword"], se["name"], se["req_id"],
              se["elem_type"], se["section"]),
-        )
-    for t in rec.get("terminology", []):
-        conn.execute(
-            "INSERT INTO terminology (path, term, definition, section) "
-            "VALUES (?,?,?,?)",
-            (path, t["term"], t["definition"], t["section"]),
         )
 
 
@@ -668,7 +614,7 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
     # -- pre-fetch dependencies for reuse --
     deps_by_path: Dict[str, List[str]] = {}
     for dep_path, dep_on in conn.execute(
-        "SELECT path, depends_on FROM dependencies ORDER BY path, depends_on"
+            "SELECT path, depends_on FROM dependencies ORDER BY path, depends_on"
     ).fetchall():
         deps_by_path.setdefault(dep_path, []).append(dep_on)
 
@@ -783,21 +729,6 @@ def derive_index(conn: sqlite3.Connection, project_root: str, sdd_root: str) -> 
         for field_name, doc_id, path, section in dmf_rows:
             label = doc_id if doc_id else f"({path})"
             out.append(f"| {field_name} | {label} | {section or ''} |")
-        out.append("")
-
-    # -- Terminology table --
-    term_rows = conn.execute(
-        "SELECT t.term, t.definition, d.doc_id, t.path "
-        "FROM terminology t JOIN documents d ON t.path = d.path "
-        "ORDER BY t.term"
-    ).fetchall()
-    if term_rows:
-        out.append("## Terminology")
-        out.append("| term | definition | doc_id |")
-        out.append("|------|------------|--------|")
-        for term, definition, doc_id, path in term_rows:
-            label = doc_id if doc_id else f"({path})"
-            out.append(f"| {term} | {definition or ''} | {label} |")
         out.append("")
 
     # -- JSON form --

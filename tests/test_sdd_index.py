@@ -237,44 +237,6 @@ class TestExtractSysmlElements:
         assert result["sysml_elements"] == []
 
 
-class TestExtractTerminology:
-    def test_markdown_table(self):
-        body = textwrap.dedent("""\
-            # Terminology
-            | 用語 | 定義 |
-            |------|------|
-            | セッション | ユーザーのログイン状態を保持する仕組み |
-            | トークン | 認証情報を表す文字列 |
-        """)
-        result = si.extract_sections_and_scan(body)
-        terms = result["terminology"]
-        by_term = {t["term"]: t["definition"] for t in terms}
-        assert "セッション" in by_term
-        assert by_term["セッション"] == "ユーザーのログイン状態を保持する仕組み"
-        assert "トークン" in by_term
-        # header row must be skipped
-        assert "用語" not in by_term
-
-    def test_definition_list(self):
-        body = textwrap.dedent("""\
-            ## Glossary
-            - **Session**: A mechanism that keeps a user logged in.
-            - **Token**: A string representing credentials.
-        """)
-        result = si.extract_sections_and_scan(body)
-        by_term = {t["term"]: t["definition"] for t in result["terminology"]}
-        assert by_term["Session"] == "A mechanism that keeps a user logged in."
-        assert by_term["Token"] == "A string representing credentials."
-
-    def test_ignores_tables_outside_terminology_section(self):
-        body = textwrap.dedent("""\
-            # Requirements
-            | FR-001 | Login | Must |
-        """)
-        result = si.extract_sections_and_scan(body)
-        assert result["terminology"] == []
-
-
 class TestExtractDataModelFields:
     def test_json_keys(self):
         body = '```json\n{"user_id": "string", "email": "string"}\n```'
@@ -357,7 +319,6 @@ class TestSchema:
         assert "documents" in tables
         assert "sysml_relationships" in tables
         assert "sysml_elements" in tables
-        assert "terminology" in tables
         assert "data_model_fields" in tables
         assert "tags" in tables
         assert "meta" in tables
@@ -366,10 +327,15 @@ class TestSchema:
         ).fetchone()
         assert version[0] == si.SCHEMA_VERSION
 
-    def test_migration_from_v1(self):
+    def test_migration_on_version_mismatch(self):
+        """旧スキーマ版数のDBは、現行 SCHEMA_VERSION と異なれば
+        全テーブルを再構築（マイグレーション）する。"""
         conn = sqlite3.connect(":memory:")
         conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute("INSERT INTO meta VALUES('schema_version', '1')")
+        conn.execute(
+            "INSERT INTO meta VALUES('schema_version', ?)",
+            (si.SCHEMA_VERSION + "-old",),
+        )
         conn.execute("CREATE TABLE documents (path TEXT PRIMARY KEY, doc_id TEXT)")
         conn.commit()
         si.init_schema(conn)
@@ -557,10 +523,6 @@ class TestDeriveIndexFormat:
             {"user_id": "string"}
             ```
             POST /api/auth/login
-            ## Terminology
-            | 用語 | 定義 |
-            |------|------|
-            | セッション | ログイン状態を保持する仕組み |
         """))
         si.rebuild_all(str(proj))
 
@@ -572,14 +534,12 @@ class TestDeriveIndexFormat:
         assert "## API Signatures" in content
         assert "## Data Models" in content
         assert "## Data Model Fields" in content
-        assert "## Terminology" in content
         assert "| prd-auth |" in content
         assert "| UR-001 | def |" in content
         assert "| UR-001 | deriveReqt | FR-001 |" in content
         assert "| POST /api/auth/login |" in content
         assert "| login_service | element |" in content
         assert "| user_id |" in content
-        assert "| セッション |" in content
 
 
 # --- post-tool-use MultiEdit support -------------------------------------

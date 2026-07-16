@@ -30,9 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       the `doc-consistency-checker` skill read the pre-built index once instead of many Glob/Grep/Read calls
     - Auto-generated `.sdd-config.json` now includes `"index": true` explicitly for discoverability
     - **Index extraction expansion** - The index now also structures SysML `requirementDiagram`
-      element/type node definitions, terminology (glossary) entries, and per-field names from data model
-      code blocks, surfaced as `SysML Elements` / `Terminology` / `Data Model Fields` sections in
-      `index.md` (schema v3). This lets the index cover the SysML trace axis that previously required raw
+      element/type node definitions and per-field names from data model code blocks, surfaced as
+      `SysML Elements` / `Data Model Fields` sections in `index.md` (schema v1). This lets the index
+      cover the SysML trace axis that previously required raw
       reads ([#16](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/16))
 
 ### Changed

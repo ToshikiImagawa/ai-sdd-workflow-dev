@@ -255,8 +255,8 @@ assert_not_grep  "ja CLAUDE.md omits the directory-structure body"  "### ディ�
 # ---------------------------------------------------------------------------
 # When .sdd-config.json has "index": true, session-start rebuilds the compressed
 # index. Seed a PRD with a requirement ID, a SysML requirementDiagram node, a
-# data model block, and a terminology table, then verify the derived index.md
-# surfaces each extraction axis (Step2 2-4 additions).
+# and a data model block, then verify the derived index.md surfaces each
+# extraction axis (Step2 2-4 additions).
 printf -- '--- STEP 7: index build (index=on) ---\n'
 PROJ4="${TMP_DIR}/project-index"
 ENV4="${TMP_DIR}/env4"
@@ -285,10 +285,6 @@ INDEX_PRD="$PROJ4/.sdd/requirement/auth.md"
     printf '%s\n' '```json'
     printf '%s\n' '{"user_id": "string"}'
     printf '%s\n' '```'
-    printf '%s\n' '## Terminology'
-    printf '%s\n' '| Term | Definition |'
-    printf '%s\n' '|------|------------|'
-    printf '%s\n' '| Session | Keeps a user logged in |'
 } > "$INDEX_PRD"
 
 if ! CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$PROJ4" CLAUDE_ENV_FILE="$ENV4" \
@@ -304,8 +300,6 @@ assert_grep      "index.md has SysML Elements section"              "## SysML El
 assert_grep      "index.md captures the element node"               "login_service"           "$INDEX_MD"
 assert_grep      "index.md has Data Model Fields section"           "## Data Model Fields"     "$INDEX_MD"
 assert_grep      "index.md captures a data model field"             "user_id"                 "$INDEX_MD"
-assert_grep      "index.md has Terminology section"                 "## Terminology"          "$INDEX_MD"
-assert_grep      "index.md captures a terminology entry"            "Session"                 "$INDEX_MD"
 
 # ---------------------------------------------------------------------------
 # Summary
