@@ -4,6 +4,7 @@ description: "Scan existing AI-SDD documents and recommend YAML front matter add
 argument-hint: "[--apply]"
 license: MIT
 user-invocable: true
+agent: haiku
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -53,7 +54,7 @@ $ARGUMENTS
 
 ### Phase 1: Shell Script - Scan Documents
 
-Execute `bash "${CLAUDE_PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.sh"` to scan AI-SDD documents.
+Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.py"` to scan AI-SDD documents.
 
 This script:
 1. Loads `.sdd-config.json` to resolve directory paths
@@ -61,7 +62,7 @@ This script:
 3. Detects Front Matter presence (checks for opening/closing `---`)
 4. Determines document type from file path and naming convention
 5. Extracts title from first `#` heading
-6. Generates JSON report (`.sdd/.cache/recommend-front-matter/scan_result.json`)
+6. Generates JSON report (`${SDD_ROOT}/.cache/recommend-front-matter/scan_result.json`)
 7. Exports environment variables to `$CLAUDE_ENV_FILE`:
    - `RECOMMEND_FM_CACHE_DIR` - Cache directory
    - `RECOMMEND_FM_SCAN_RESULT` - JSON scan result file path

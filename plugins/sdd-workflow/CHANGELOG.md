@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-07-16
+
 ### Added
 
 #### Agents
@@ -20,30 +22,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Findings are classified as [must]/[recommend]/[nits]; single-PRD quality remains prd-reviewer's role
     - Adds `templates/{en,ja}/cross_prd_review_output.md` output templates
 
+#### Configuration
+
+- **`.sdd-config.json` `index`** - New boolean setting that controls the compressed `.sdd` document index
+  built at session start to reduce token consumption
+    - **Enabled by default** (`true`). Set `"index": false` to opt out
+    - Auto-generated `.sdd-config.json` now includes `"index": true` explicitly for discoverability
+    - **Index extraction expansion** - The index now also covers SysML requirement diagrams and data model
+      fields, so the SysML trace axis that previously required raw reads is included in the token-reduction index
+
 ### Changed
+
+#### Configuration
+
+- **`.sdd-config.json` `index`** - Value format is now **boolean-only** (`true`/`false`); the previous
+  string form (`"on"`/`"off"`) is no longer supported. A non-boolean value is rejected with a warning and
+  falls back to the default (on)
+    - The default changed from **off to on**, so the token-reduction index is built out of the box
 
 #### Hooks
 
-- **`PreToolUse`** (`scripts/pre-tool-use.py`) - Migrated naming-violation blocking from stderr + `exit 2`
-  to JSON Decision Control (`permissionDecision: "deny"` + `permissionDecisionReason`)
-  ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
 - **`PreToolUse`** - Injects `.sdd/CONSTITUTION.md` principles as `additionalContext` when Write/Edit
-  targets implementation source code ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
+  targets implementation source code
     - Injection is limited to source-file edits inside the project, happens at most once per session,
       and is truncated to 3000 characters to avoid context bloat
     - Nothing is injected when CONSTITUTION.md does not exist
 
 #### Agents
 
-- **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku` ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))
+- **`front-matter-reviewer`** - Changed `model` from `sonnet` to `haiku`
     - Rule-based format validation does not require complex reasoning; a lightweight model reduces cost and latency
     - Other agents (prd-reviewer, spec-reviewer, requirement-analyzer, clarification-assistant) keep `sonnet`
+
+#### Skills
+
+- **Model tiers** - Reduced the model for mechanical / rule-based skills to cut cost and latency
+    - `generate-requirements-diagram` / `generate-usecase-diagram` - `agent` changed from `sonnet` to `haiku`
+    - `recommend-front-matter` / `run-checklist` / `sdd-init` / `task-cleanup` - now declare `agent: haiku`
+- **`sdd-init`** / **SessionStart hook** - Moved the detailed AI-SDD guide out of the always-loaded
+  `CLAUDE.md` into a path-scoped rule `.claude/rules/ai-sdd-instructions.md` (loads only under `.sdd/**`)
+  to cut context usage during work that does not touch `.sdd/`
+    - `CLAUDE.md` now keeps only the declaration, trigger conditions, and a pointer to the rule;
+      the ~90-line directory-structure / naming / link-convention block moved to the rule file
+    - The rule file is created and version-synced automatically by the SessionStart hook
+      (`session-start.py`); `/sdd-init` (`update-claude-md.sh`) only maintains the minimal `CLAUDE.md` section
+    - The rule is a single English file (agent-facing guidance, not human-facing) regardless of `SDD_LANG`,
+      so no per-language rule files ever load together
       because they require cross-document consistency reasoning
 
 #### Skills
 
 - Introduced named skill arguments via the `arguments` frontmatter field (Claude Code v2.1.199+)
-  ([#81](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/81))
     - 8 skills (`task-breakdown`, `implement`, `clarify`, `check-spec`, `checklist`, `run-checklist`,
       `task-cleanup`, `plan-refactor`) now declare `feature-name` / `ticket-number` as named positional
       arguments and reference them via `$name` substitution in the skill body
@@ -57,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Hooks
 
-- Expanded `hooks.json` beyond `SessionStart` ([#54](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/54))
+- Expanded `hooks.json` beyond `SessionStart`
     - **`UserPromptSubmit`** (`scripts/user-prompt-submit.py`) - Detects Vibe Coding signals (vague instructions such
       as "make it nice" / "いい感じに") in the user prompt and injects additional context prompting a vibe-detector
       style clarification flow (detection only, never blocks)
@@ -67,7 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **`PostToolUse`** (`scripts/post-tool-use.py`, matcher `Write|Edit|MultiEdit`) - Detects potential document
       update omissions: reminds to run consistency checks after `.sdd/` document edits, and reminds to sync the
       design doc after editing a source file with a matching `*_design.md`
-    - Added `scripts/hook_common.py` (shared helpers) and `scripts/test-hook-scripts.sh` regression tests (CI `test` job)
 
 #### Agents
 
@@ -83,7 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Skills
 
-- **`check-spec`** (v3.1.0) - Extended consistency check to literal values ([#50](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/50))
+- **`check-spec`** (v3.1.0) - Extended consistency check to literal values
     - Parses the spec's "Value Range / Threshold Registry" (Schema Registry) section when present, with fallback to
       extracting literal values from spec/design body text
     - Extracts implementation-side literals from config files, ORM CHECK constraints, validation constraints
@@ -96,6 +124,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`generate-spec`** - Added "Pseudocode Completeness Rules" section to design doc templates (`templates/{en,ja}/design_template.md`)
     - Language-specific guidance (Python general / Pydantic v2 / SQLAlchemy & alembic) to keep design pseudocode copyable verbatim
     - Extensible sub-section structure for additional languages (TypeScript / Go / Rust, etc.)
+
+### Fixed
+
+- **Custom `.sdd-config.json` `root` (and directory names) are now honored across the plugin.** Previously
+  many paths were hardcoded to the default `.sdd/`, so projects using a custom root silently broke.
+    - `session-start.py` substitutes the configured root into the generated path-scoped rule's `paths:` glob,
+      so `.claude/rules/ai-sdd-instructions.md` auto-loads under a customized root (e.g. `.ai-docs/`) — this
+      also fixes the regression where the glob was baked to `.sdd/**`
+    - `update-claude-md.sh` substitutes the configured root into the generated `CLAUDE.md` section
+    - Skill/agent prompts and output templates now resolve SDD paths via `${SDD_ROOT}` / `${SDD_*_PATH}`
+      instead of literal `.sdd/...`
+    - `find-design-docs.sh` and `validate-files.sh` write their cache under the configured root; `pre-tool-use.py`
+      naming-violation messages report the configured directory paths
+- **`post-tool-use.py`** - The advisory hint shown after editing `.sdd/requirement/` or `.sdd/specification/`
+  files now also suggests `/constitution validate`, not just the `doc-consistency-checker` skill, so
+  CONSTITUTION.md principle violations are more likely to be caught after generation/edits
+- **`doc-consistency-checker`** - Removed the `design ↔ Implementation` check (former spec FR-004), which
+  duplicated `impl-spec-check` (`/check-spec`) and contradicted the parent PRD's explicit scope-out for that
+  check. `design ↔ Implementation` consistency is now handled exclusively by `/check-spec`
+- **Section requirement markers in generated output** - Prevented author-facing section requirement
+  markers (`<MUST>` / `<RECOMMENDED>` / `<OPTIONAL>`) from leaking into generated documents. `generate-spec`
+  now strips them from headings in the final output, and `prd-reviewer` / `spec-reviewer` gained a
+  "No Marker Residue" check that flags any residual markers
 
 ## [3.3.0] - 2026-03-02
 

@@ -516,17 +516,19 @@ Place a `.sdd-config.json` file in your project root to customize directory name
     "requirement": "requirement",
     "specification": "specification",
     "task": "task"
-  }
+  },
+  "index": true
 }
 ```
 
-| Setting                     | Default         | Description                                |
-|:----------------------------|:----------------|:-------------------------------------------|
-| `root`                      | `.sdd`          | Root directory                             |
-| `lang`                      | `en`            | Language (`en` or `ja`)                    |
-| `directories.requirement`   | `requirement`   | PRD (Requirements Specification) directory |
-| `directories.specification` | `specification` | Specification/design document directory    |
-| `directories.task`          | `task`          | Temporary task logs directory              |
+| Setting                     | Default         | Description                                                                                       |
+|:----------------------------|:----------------|:--------------------------------------------------------------------------------------------------|
+| `root`                      | `.sdd`          | Root directory                                                                                    |
+| `lang`                      | `en`            | Language (`en` or `ja`)                                                                           |
+| `directories.requirement`   | `requirement`   | PRD (Requirements Specification) directory                                                        |
+| `directories.specification` | `specification` | Specification/design document directory                                                           |
+| `directories.task`          | `task`          | Temporary task logs directory                                                                     |
+| `index`                     | `true`          | Boolean. Build a compressed `.sdd` document index (SQLite → `index.md`) at session start for token reduction. Set to `false` to disable. |
 
 **Notes**:
 

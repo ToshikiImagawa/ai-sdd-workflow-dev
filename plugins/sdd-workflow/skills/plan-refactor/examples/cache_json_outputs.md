@@ -1,11 +1,11 @@
 # Cache JSON Output Examples
 
-Example contents of the intermediate JSON files written to `.sdd/.cache/plan-refactor/` by the
+Example contents of the intermediate JSON files written to `${SDD_ROOT}/.cache/plan-refactor/` by the
 `plan-refactor` scripts.
 
 ## existing-docs.json
 
-Written by `scripts/scan-existing-docs.sh`:
+Written by `scripts/scan-existing-docs.py`:
 
 ```json
 {
@@ -22,7 +22,7 @@ Written by `scripts/scan-existing-docs.sh`:
 
 ## implementation-files.json
 
-Written by `scripts/find-implementation-files.sh`:
+Written by `scripts/find-implementation-files.py`:
 
 ```json
 {

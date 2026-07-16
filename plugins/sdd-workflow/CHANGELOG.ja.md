@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-07-16
+
 ### Added
 
 #### Agents
@@ -19,30 +21,56 @@
     - 指摘は [must]/[recommend]/[nits] で分類。単一 PRD の品質レビューは従来どおり prd-reviewer が担当
     - 出力テンプレート `templates/{en,ja}/cross_prd_review_output.md` を追加
 
+#### Configuration
+
+- **`.sdd-config.json` の `index`** - セッション開始時に構築される `.sdd` ドキュメント圧縮インデックスを
+  制御する真偽値の設定を追加。トークン消費を削減する
+    - **デフォルトで有効**（`true`）。`"index": false` で無効化できる
+    - 自動生成される `.sdd-config.json` にも発見性向上のため `"index": true` を明示的に含める
+    - **インデックス抽出の拡充** - インデックスが SysML 要求図とデータモデルのフィールドまでカバー
+      するようになり、従来は生 Read が必要だった SysML trace 軸もトークン削減インデックスの対象になった
+
 ### Changed
+
+#### Configuration
+
+- **`.sdd-config.json` の `index`** - 値の形式を**真偽値専用**（`true`/`false`）に統一。従来の文字列形式
+  （`"on"`/`"off"`）は非対応となった。真偽値以外の値は警告を出して既定（on）にフォールバックする
+    - デフォルトを **off から on** に変更。トークン削減インデックスが標準で構築される
 
 #### Hooks
 
-- **`PreToolUse`** (`scripts/pre-tool-use.py`) - 命名規則違反のブロックを stderr + `exit 2` 方式から
-  JSON Decision Control（`permissionDecision: "deny"` + `permissionDecisionReason`）へ移行
-  ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
 - **`PreToolUse`** - Write/Edit 対象が実装コードの場合に `.sdd/CONSTITUTION.md` の原則を
-  `additionalContext` として注入 ([#82](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/82))
+  `additionalContext` として注入
     - コンテキスト肥大化を防ぐため、注入はプロジェクト内のソースファイル編集に限定し、
       セッションごとに最大1回、3000文字で切り詰めて注入する
     - CONSTITUTION.md が存在しない場合は何も注入しない
 
 #### Agents
 
-- **`front-matter-reviewer`** - `model` を `sonnet` から `haiku` に変更 ([#55](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/55))
+- **`front-matter-reviewer`** - `model` を `sonnet` から `haiku` に変更
     - ルールベースのフォーマット検証は複雑な推論を必要としないため、軽量モデルによりコストとレイテンシを削減
     - 他のエージェント（prd-reviewer, spec-reviewer, requirement-analyzer, clarification-assistant）は
       ドキュメント横断の整合性推論が必要なため `sonnet` を維持
 
 #### Skills
 
+- **モデルティア** - 機械的・ルールベースのスキルのモデルを引き下げ、コストとレイテンシを削減
+    - `generate-requirements-diagram` / `generate-usecase-diagram` - `agent` を `sonnet` から `haiku` に変更
+    - `recommend-front-matter` / `run-checklist` / `sdd-init` / `task-cleanup` - `agent: haiku` を宣言
+- **`sdd-init`** / **SessionStart フック** - 常時ロードされる `CLAUDE.md` から AI-SDD 詳細ガイドを
+  パススコープ付きルール `.claude/rules/ai-sdd-instructions.md`（`.sdd/**` に触れたときのみロード）へ移行し、
+  `.sdd/` 以外の作業時のコンテキスト消費を削減
+    - `CLAUDE.md` には宣言・トリガー条件・ルールへのポインタのみを残し、約90行のディレクトリ構造・
+      命名規則・リンク規約ブロックをルールファイルへ移動
+    - ルールファイルは SessionStart フック（`session-start.py`）が自動生成・バージョン同期する。
+      `/sdd-init`（`update-claude-md.sh`）は最小化された `CLAUDE.md` セクションのみを管理
+    - ルールは `SDD_LANG` に関わらず英語の単一ファイル（人間向けではなく AI 向けガイダンス）とし、
+      言語別ファイルが同時にロードされる問題を回避
+
+#### Skills
+
 - `arguments` frontmatter フィールドによる名前付きスキル引数を導入（Claude Code v2.1.199+）
-  ([#81](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/81))
     - 8スキル（`task-breakdown`, `implement`, `clarify`, `check-spec`, `checklist`, `run-checklist`,
       `task-cleanup`, `plan-refactor`）が `feature-name` / `ticket-number` を名前付き位置引数として宣言し、
       本文で `$name` 置換構文により参照するよう移行
@@ -54,7 +82,7 @@
 
 #### Hooks
 
-- `hooks.json` を `SessionStart` 以外に拡張 ([#54](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/54))
+- `hooks.json` を `SessionStart` 以外に拡張
     - **`UserPromptSubmit`** (`scripts/user-prompt-submit.py`) - ユーザープロンプト中の Vibe Coding 兆候
       （「いい感じに」等の曖昧な指示）を検知し、vibe-detector スタイルの明確化フローを促す追加コンテキストを注入
       （検知のみで、ブロックは行わない）
@@ -64,7 +92,6 @@
     - **`PostToolUse`** (`scripts/post-tool-use.py`, matcher `Write|Edit|MultiEdit`) - ドキュメント更新漏れの
       可能性を検知: `.sdd/` ドキュメント編集後に整合性チェックの実行を促し、対応する `*_design.md` を持つ
       ソースファイル編集後に設計書の同期を促す
-    - `scripts/hook_common.py`（共通ヘルパー）と `scripts/test-hook-scripts.sh` 回帰テスト（CI `test` ジョブ）を追加
 
 #### Agents
 
@@ -80,7 +107,7 @@
 
 #### Skills
 
-- **`check-spec`** (v3.1.0) - 整合性チェックをリテラル値まで拡張 ([#50](https://github.com/ToshikiImagawa/ai-sdd-workflow/issues/50))
+- **`check-spec`** (v3.1.0) - 整合性チェックをリテラル値まで拡張
     - 仕様書の「値域・閾値レジストリ」（Schema Registry）セクションが存在する場合はそれをパースし、ない場合は
       spec/design 本文からのリテラル値抽出にフォールバック
     - 実装側のリテラル値を設定ファイル、ORM の CHECK 制約、バリデーション制約（例: Pydantic）、
@@ -92,6 +119,24 @@
 - **`generate-spec`** - 設計書テンプレート（`templates/{en,ja}/design_template.md`）に「Pseudocode完全性ルール」セクションを追加
     - 設計書の擬似コードをそのままコピー可能に保つための言語別ガイダンス（Python 汎用 / Pydantic v2 / SQLAlchemy & alembic）
     - 追加言語（TypeScript / Go / Rust 等）向けに拡張可能なサブセクション構造
+
+### Fixed
+
+- **`.sdd-config.json` の `root`（およびディレクトリ名）のカスタム設定がプラグイン全体で尊重されるようになった。** 従来は多くのパスが既定の `.sdd/` にハードコードされており、カスタム root を使うプロジェクトで暗黙的に壊れていた。
+    - `session-start.py` が生成するパススコープ付きルールの `paths:` グロブに設定 root を置換。カスタム root（例: `.ai-docs/`）配下でも `.claude/rules/ai-sdd-instructions.md` が自動ロードされる（グロブが `.sdd/**` 固定だったリグレッションも解消）
+    - `update-claude-md.sh` が生成する `CLAUDE.md` セクションに設定 root を置換
+    - skill/agent プロンプトと出力テンプレートは、リテラル `.sdd/...` ではなく `${SDD_ROOT}` / `${SDD_*_PATH}` で SDD パスを解決
+    - `find-design-docs.sh` / `validate-files.sh` はキャッシュを設定 root 配下に出力。`pre-tool-use.py` の命名違反メッセージは設定ディレクトリパスを表示
+- **`post-tool-use.py`** - `.sdd/requirement/` または `.sdd/specification/` 配下のファイル編集後に表示される
+  advisory ヒントが、`doc-consistency-checker` スキルに加えて `/constitution validate` の実行も提案するよう
+  になり、生成・編集後に CONSTITUTION.md の原則違反を検知しやすくなった
+- **`doc-consistency-checker`** - `design ↔ 実装` チェック（旧 spec FR-004）を削除。`impl-spec-check`
+  （`/check-spec`）と責務が重複しており、親 PRD が明示的にスコープ外と定義していた領域と矛盾していた。
+  `design ↔ 実装` の整合性チェックは `/check-spec` に一本化される
+- **生成成果物へのセクション必須度マーカー残留を防止** - 著者向けのセクション必須度マーカー
+  （`<MUST>` / `<RECOMMENDED>` / `<OPTIONAL>`）が生成ドキュメントに残らないようにした。`generate-spec` は
+  最終出力の見出しからこれらを除去し、`prd-reviewer` / `spec-reviewer` に残留マーカーを検出する
+  「No Marker Residue」チェックを追加
 
 ## [3.3.0] - 2026-03-02
 

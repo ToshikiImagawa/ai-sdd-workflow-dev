@@ -14,12 +14,12 @@ risk: "medium"
 
 # PRD (Product Requirements Document) Template
 
-This document is a template for creating PRD (Product Requirements Document) under `.sdd/requirement/`.
+This document is a template for creating PRD (Product Requirements Document) under `${SDD_REQUIREMENT_PATH}/`.
 The filename should be `{feature-name}.md`.
 
 > **Note**: This template is a fallback for the plugin.
 > When using in a project, customize it according to your project structure and
-> save it as `.sdd/PRD_TEMPLATE.md`.
+> save it as `${SDD_ROOT}/PRD_TEMPLATE.md`.
 
 ## Difference from Spec / Design Doc
 

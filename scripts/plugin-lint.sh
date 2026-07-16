@@ -207,6 +207,56 @@ for skill_dir in "$PLUGIN_DIR"/skills/*/; do
 done
 
 # ============================================================
+# Check 3: SDD Path Token Hygiene (error on failure)
+# ============================================================
+printf "=== Check 3: SDD Path Token Hygiene ===\n\n"
+
+# Keep in sync with session-start.py write_env_vars() (the SessionStart hook is
+# the only thing that resolves these ${SDD_*} tokens at runtime).
+ALLOWED_SDD_VARS="SDD_ROOT SDD_LANG SDD_REQUIREMENT_DIR SDD_SPECIFICATION_DIR SDD_TASK_DIR SDD_REQUIREMENT_PATH SDD_SPECIFICATION_PATH SDD_TASK_PATH"
+
+check3_errors_before="$(cat "$ERROR_FILE")"
+
+# --- 3.1 Every ${SDD_*} token in prompt Markdown must be an exported var ---
+# A typo like ${SDD_SPEC_PATH} would silently never resolve at runtime.
+find "$PLUGIN_DIR" -type f -name '*.md' | while IFS= read -r f; do
+    grep -oE '\$\{SDD_[A-Za-z_]+\}' "$f" 2>/dev/null | while IFS= read -r token; do
+        var_name=$(printf '%s' "$token" | sed -e 's/^\${//' -e 's/}$//')
+        allowed=0
+        for allow in $ALLOWED_SDD_VARS; do
+            if [ "$var_name" = "$allow" ]; then
+                allowed=1
+                break
+            fi
+        done
+        if [ "$allowed" -eq 0 ]; then
+            relpath="${f#"$REPO_ROOT"/}"
+            log_error "${relpath} - unknown SDD token \${${var_name}} (not exported by session-start.py write_env_vars)"
+        fi
+    done
+done
+
+# --- 3.2 skills/*/templates/ must not hardcode a default-root SDD path ---
+# Templates are resolved per-project, so they must use ${SDD_*_PATH} tokens.
+# (examples/ and references/ may keep literal paths for illustration.)
+for skill_dir in "$PLUGIN_DIR"/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    templates_dir="${skill_dir}templates"
+    [ -d "$templates_dir" ] || continue
+    find "$templates_dir" -type f -name '*.md' | while IFS= read -r f; do
+        if grep -qE '\.sdd/(specification|requirement|task)' "$f" 2>/dev/null; then
+            relpath="${f#"$REPO_ROOT"/}"
+            log_error "${relpath} - hardcoded .sdd/ path in a template (use \${SDD_*_PATH} tokens so custom roots resolve)"
+        fi
+    done
+done
+
+if [ "$(cat "$ERROR_FILE")" -eq "$check3_errors_before" ]; then
+    log_ok "All \${SDD_*} tokens are exported vars; no hardcoded .sdd/ paths in templates/"
+fi
+printf "\n"
+
+# ============================================================
 # Summary
 # ============================================================
 WARN_COUNT=$(cat "$WARN_FILE")

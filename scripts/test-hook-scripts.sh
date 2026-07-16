@@ -111,6 +111,37 @@ run_hook "pre: invalid stdin is a no-op" "pre-tool-use.py" \
     "not-json" \
     0 ""
 
+# The deny reason embeds the configured path prefix (default .sdd layout).
+# Asserting the full prefix (not just 'specification/') guards against a
+# regression back to a hardcoded, non-configurable message.
+run_hook "pre: deny reason names the .sdd/specification prefix" "pre-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/user-login.md\"}}" \
+    0 "Files under .sdd/specification/"
+
+run_hook "pre: deny reason names the .sdd/requirement prefix" "pre-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login_spec.md\"}}" \
+    0 "Files under .sdd/requirement/"
+
+# Naming validation honors a custom root/dirs from .sdd-config.json.
+# This exercises the load_sdd_paths -> prefix -> message chain under a
+# non-default root, where a config-respect regression would silently either
+# disable enforcement or emit the wrong prefix.
+CUSTOM_DIR="$TMP_DIR/customroot-project"
+mkdir -p "$CUSTOM_DIR"
+printf '%s\n' '{"root":".ai-docs","directories":{"requirement":"requirement","specification":"specification"}}' > "$CUSTOM_DIR/.sdd-config.json"
+
+run_hook "pre: custom-root specification without suffix is denied" "pre-tool-use.py" \
+    "{\"cwd\": \"$CUSTOM_DIR\", \"tool_input\": {\"file_path\": \"$CUSTOM_DIR/.ai-docs/specification/user-login.md\"}}" \
+    0 "Files under .ai-docs/specification/"
+
+run_hook "pre: custom-root requirement with _spec suffix is denied" "pre-tool-use.py" \
+    "{\"cwd\": \"$CUSTOM_DIR\", \"tool_input\": {\"file_path\": \"$CUSTOM_DIR/.ai-docs/requirement/user-login_spec.md\"}}" \
+    0 "Files under .ai-docs/requirement/"
+
+run_hook "pre: custom-root valid spec name passes" "pre-tool-use.py" \
+    "{\"cwd\": \"$CUSTOM_DIR\", \"tool_input\": {\"file_path\": \"$CUSTOM_DIR/.ai-docs/specification/user-login_spec.md\"}}" \
+    0 ""
+
 # Constitution injection tests (separate project with .sdd/CONSTITUTION.md)
 CONST_DIR="$TMP_DIR/const-project"
 mkdir -p "$CONST_DIR/.sdd" "$CONST_DIR/src"
@@ -138,9 +169,17 @@ run_hook "post: spec edit reminds consistency check" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/auth/user-login_spec.md\"}}" \
     0 "doc-consistency-checker"
 
+run_hook "post: spec edit also suggests constitution validate" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/auth/user-login_spec.md\"}}" \
+    0 "/constitution validate"
+
 run_hook "post: PRD edit reminds downstream propagation" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login.md\"}}" \
     0 "downstream"
+
+run_hook "post: PRD edit also suggests constitution validate" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login.md\"}}" \
+    0 "/constitution validate"
 
 run_hook "post: source edit with matching design doc reminds sync" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-login.py\"}}" \

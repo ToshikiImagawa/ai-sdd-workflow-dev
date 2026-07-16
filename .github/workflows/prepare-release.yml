@@ -45,6 +45,9 @@ jobs:
           git pull origin develop
           git checkout -b "$BRANCH"
 
+          # gh pr create は origin 上のブランチを参照するため、先に push する
+          git push -u origin "$BRANCH"
+
           # PR 作成（draft ではなく通常の PR）
           PR_OUTPUT=$(gh pr create \
             --base main \
@@ -57,8 +60,7 @@ jobs:
 
           Automated merge from develop to main by \`prepare-release\` workflow.
 
-          Triggered by @${{ github.actor }}" \
-            --draft)
+          Triggered by @${{ github.actor }}")
 
           # PR 番号を抽出（最後の行から）
           PR_NUMBER=$(echo "$PR_OUTPUT" | grep -oP '#\K\d+' | tail -1)
@@ -109,9 +111,9 @@ jobs:
           PR_NUMBER="${{ steps.create-pr.outputs.pr_number }}"
 
           echo "Merging PR #$PR_NUMBER with squash strategy..."
+          # 直前の Wait for CI checks で CI 成功を確認済みのため auto-merge は使わず直接 merge する
           gh pr merge "$PR_NUMBER" \
             --squash \
-            --auto \
             --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

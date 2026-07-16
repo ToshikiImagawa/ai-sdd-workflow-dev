@@ -59,6 +59,14 @@ status transition rules, and missing front matter policy.
 2. Check `.sdd-config.json` if environment variables are not set
 3. Use default values if neither exists
 
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Metadata` table to identify target files and their `doc_id` values.
+However, front matter format validation requires the raw YAML, so **always Read the target file's
+first 50 lines** for format checks. The index accelerates file discovery but cannot replace raw Read
+for this agent. When `SDD_INDEX` is unset or `off`, use the existing Glob/Grep/Read flow.
+
 ## Role
 
 Validate YAML front matter in AI-SDD documents from the following perspectives:

@@ -16,12 +16,12 @@ risk: "medium"
 
 # Technical Design Document Template (Design Doc)
 
-This document is a template for creating Technical Design Documents under `.sdd/specification/`.
+This document is a template for creating Technical Design Documents under `${SDD_SPECIFICATION_PATH}/`.
 The filename should be `{feature-name}_design.md`.
 
 > **Note**: This template is a fallback for the plugin.
 > When using in a project, customize it according to your programming language and project structure,
-> and save it as `.sdd/DESIGN_DOC_TEMPLATE.md`.
+> and save it as `${SDD_ROOT}/DESIGN_DOC_TEMPLATE.md`.
 
 ## Difference from Abstract Specification
 
@@ -170,6 +170,8 @@ Modify the notation according to your project's programming language.
 ---
 
 # Section Requirement Legend
+
+> **Note:** These markers are author-facing guides that indicate section requirement levels. Remove them from the generated document — they must not appear in the final output.
 
 | Marker          | Meaning     | Description                              |
 |-----------------|-------------|------------------------------------------|

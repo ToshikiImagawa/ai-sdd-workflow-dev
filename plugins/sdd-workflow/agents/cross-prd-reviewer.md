@@ -39,7 +39,7 @@ locations, principle reference coverage matrix, fix proposal summary)
 
 **Before execution, you must read the AI-SDD principles document.**
 
-AI-SDD principles document path: `.sdd/AI-SDD-PRINCIPLES.md`
+AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
@@ -61,6 +61,13 @@ Understand AI-SDD principles, document structure, persistence rules, and Vibe Co
 1. Use `SDD_*` environment variables if set
 2. Check `.sdd-config.json` if environment variables are not set
 3. Use default values if neither exists
+
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Metadata` table (filter by `type=prd`) and `Requirement IDs` table for
+cross-PRD consistency checks. Fall back to raw Read of a specific PRD only when glossary text or full
+section content is needed. When `SDD_INDEX` is unset or `off`, use the existing Glob/Grep/Read flow.
 
 ## Role
 
@@ -118,7 +125,7 @@ search outside this scope.
 
 ### Step 1: Collect Targets
 
-Discover target PRDs (from arguments or Glob). Read every target PRD, `.sdd/CONSTITUTION.md` (if present), and the
+Discover target PRDs (from arguments or Glob). Read every target PRD, `${SDD_ROOT}/CONSTITUTION.md` (if present), and the
 project PRD template (`${SDD_ROOT}/PRD_TEMPLATE.md`, if present) — the template is the source of truth for section
 structure and diagram notation conventions; do not flag a style as inconsistent when it follows the template.
 

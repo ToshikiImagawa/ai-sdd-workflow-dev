@@ -58,7 +58,7 @@ exclude the following directories: `node_modules`, `.git`, `dist`, `build`, `.ne
 
 **Before execution, you must read the AI-SDD principles document.**
 
-AI-SDD principles document path: `.sdd/AI-SDD-PRINCIPLES.md`
+AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
@@ -86,6 +86,14 @@ This agent performs requirement analysis based on AI-SDD principles.
 
 The following documentation uses default values, but replace with custom values if environment variables or
 configuration file exists.
+
+### Index Fast Path
+
+When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
+Read it **once** and use its `Requirement IDs`, `SysML Relationships`, and `Metadata` tables for
+requirement analysis, traceability verification, and gap detection. Fall back to raw Read of a specific file
+only when the index lacks a needed excerpt (e.g., full requirement text for gap analysis prose).
+When `SDD_INDEX` is unset or `off`, use the existing Glob/Grep/Read flow.
 
 ## SysML Requirements Diagram Theory
 
@@ -271,7 +279,7 @@ Default directory structure:
 - Root directory: `.sdd`
 - Requirement directory: `requirement`
 
-For configuration file details, refer to the AI-SDD principles document (`.sdd/AI-SDD-PRINCIPLES.md`).
+For configuration file details, refer to the AI-SDD principles document (`${SDD_ROOT}/AI-SDD-PRINCIPLES.md`).
 
 ### Directory Structure
 

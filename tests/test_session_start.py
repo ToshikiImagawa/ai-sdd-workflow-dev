@@ -41,6 +41,8 @@ class TestLoadOrCreateConfig:
             "specification": "specification",
             "task": "task",
         }
+        # index はデフォルト on として明示的に書き込まれる
+        assert result["index"] is True
         # 生成されたファイル自体も同内容であること
         assert json.loads(config_path.read_text(encoding="utf-8")) == result
         assert "auto-generated" in capsys.readouterr().out
@@ -123,6 +125,42 @@ class TestBuildSddConfig:
         assert cfg.specification_dir == "specification"
         assert cfg.task_dir == "task"
 
+    def test_index_defaults_on_when_absent(self):
+        # index キー未指定はデフォルト on
+        assert ss.build_sdd_config({}, "en").index is True
+
+    def test_index_false_is_respected(self):
+        assert ss.build_sdd_config({"index": False}, "en").index is False
+
+    def test_index_true_is_respected(self):
+        assert ss.build_sdd_config({"index": True}, "en").index is True
+
+
+class TestParseIndexFlag:
+    """index は boolean 専用・デフォルト on。非 bool は警告して既定に倒す。"""
+
+    def test_absent_defaults_on(self):
+        assert ss.parse_index_flag(None) is True
+
+    def test_true(self):
+        assert ss.parse_index_flag(True) is True
+
+    def test_false(self):
+        assert ss.parse_index_flag(False) is False
+
+    def test_respects_custom_default(self):
+        assert ss.parse_index_flag(None, default=False) is False
+
+    def test_legacy_on_string_warns_and_defaults_on(self, capsys):
+        # 後方互換外の文字列 "on" は既定（on）にフォールバックし警告する
+        assert ss.parse_index_flag("on") is True
+        assert "must be a boolean" in capsys.readouterr().err
+
+    def test_legacy_off_string_warns_and_defaults_on(self, capsys):
+        # 文字列 "off" は非対応。既定 on にフォールバックする。
+        assert ss.parse_index_flag("off") is True
+        assert "must be a boolean" in capsys.readouterr().err
+
 
 class TestEnsureSddDirectory:
     def test_creates_directory_when_missing(self, tmp_path, capsys):
@@ -201,6 +239,114 @@ class TestSyncPrinciplesFile:
         assert "version unknown" in capsys.readouterr().out
 
 
+class TestSyncRulesFiles:
+    """sync_rules_files: single English, plugin-managed .claude/rules file."""
+
+    def _make_template(self, plugin_root):
+        tdir = plugin_root / "skills" / "sdd-init" / "templates"
+        tdir.mkdir(parents=True, exist_ok=True)
+        tpl = tdir / "ai_sdd_instructions_rules.md"
+        tpl.write_text(
+            '---\npaths:\n  - "{SDD_ROOT}/**"\n---\n'
+            "# AI-SDD Instructions (v{PLUGIN_VERSION})\n"
+            '<!-- sdd-workflow version: "{PLUGIN_VERSION}" -->\n'
+            "Docs live under {SDD_ROOT}/.\n",
+            encoding="utf-8",
+        )
+        return tpl
+
+    def test_creates_english_rules_file(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
+
+        target = project_root / ".claude" / "rules" / "ai-sdd-instructions.md"
+        assert target.is_file()
+        content = target.read_text(encoding="utf-8")
+        assert "{PLUGIN_VERSION}" not in content
+        assert "{SDD_ROOT}" not in content
+        assert 'version: "3.3.0"' in content
+        # default root substituted into the path-scoped glob
+        assert '".sdd/**"' in content
+        assert "synced (v3.3.0)" in capsys.readouterr().out
+
+    def test_substitutes_custom_root_into_paths_glob(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".ai-docs", "3.3.0")
+
+        content = (project_root / ".claude" / "rules" / "ai-sdd-instructions.md").read_text(encoding="utf-8")
+        assert "{SDD_ROOT}" not in content
+        assert '".ai-docs/**"' in content   # rule loads for the custom root
+        assert ".sdd/" not in content        # no leftover default root
+        assert "Docs live under .ai-docs/." in content
+
+    def test_missing_template_skips_without_creating_dir(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
+
+        assert not (project_root / ".claude" / "rules").exists()
+        assert "Template not found" in capsys.readouterr().err
+
+    def test_empty_version_keeps_placeholder_with_warning(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "")
+
+        target = project_root / ".claude" / "rules" / "ai-sdd-instructions.md"
+        assert "{PLUGIN_VERSION}" in target.read_text(encoding="utf-8")
+        assert "Plugin version unknown" in capsys.readouterr().err
+
+    def test_removes_legacy_en_file(self, tmp_path, capsys):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+        rules_dir = project_root / ".claude" / "rules"
+        rules_dir.mkdir(parents=True)
+        legacy = rules_dir / "ai-sdd-instructions-en.md"
+        legacy.write_text("stale", encoding="utf-8")
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
+
+        assert (rules_dir / "ai-sdd-instructions.md").is_file()
+        assert not legacy.exists()
+        assert "Removed legacy rules file" in capsys.readouterr().out
+
+    def test_regenerates_plugin_managed_file(self, tmp_path):
+        plugin_root = tmp_path / "plugin"
+        project_root = tmp_path / "project"
+        plugin_root.mkdir()
+        project_root.mkdir()
+        self._make_template(plugin_root)
+        rules_dir = project_root / ".claude" / "rules"
+        rules_dir.mkdir(parents=True)
+        target = rules_dir / "ai-sdd-instructions.md"
+        target.write_text("STALE CONTENT", encoding="utf-8")
+
+        ss.sync_rules_files(str(plugin_root), str(project_root), ".sdd", "3.3.0")
+
+        # The rule file is plugin-managed and regenerated from the template.
+        assert "STALE CONTENT" not in target.read_text(encoding="utf-8")
+
+
 class TestWriteEnvVars:
     def test_no_env_file_env_var_does_nothing(self, monkeypatch):
         monkeypatch.delenv("CLAUDE_ENV_FILE", raising=False)
@@ -233,6 +379,22 @@ class TestWriteEnvVars:
         assert 'export OTHER_VAR="keep"' in content
         assert 'export SDD_LANG="ja"' in content
         assert 'export SDD_LANG="old"' not in content
+
+    def test_index_on_emits_sdd_index(self, tmp_path, monkeypatch):
+        env_file = tmp_path / "env"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+
+        ss.write_env_vars(ss.SddConfig(index=True))
+
+        assert 'export SDD_INDEX="on"' in env_file.read_text(encoding="utf-8")
+
+    def test_index_off_omits_sdd_index(self, tmp_path, monkeypatch):
+        env_file = tmp_path / "env"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+
+        ss.write_env_vars(ss.SddConfig(index=False))
+
+        assert "SDD_INDEX" not in env_file.read_text(encoding="utf-8")
 
 
 class TestCompareMajorMinor:

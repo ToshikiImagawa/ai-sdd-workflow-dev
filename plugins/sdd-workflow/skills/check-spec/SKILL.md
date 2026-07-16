@@ -79,7 +79,7 @@ Replace placeholders with actual file names and counts.
 
 **Optimized Execution Flow**:
 
-**Phase 1: Shell Script** - Execute `bash "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.sh" [feature-name]` to scan design documents.
+**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" [feature-name]` to scan design documents.
 
 This script:
 1. Finds all design documents (`*_design.md`) in flat or hierarchical structure

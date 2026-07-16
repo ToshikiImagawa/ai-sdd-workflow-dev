@@ -92,12 +92,12 @@ When adding a refactoring plan to an existing design doc:
 
 **Step 1.1: Scan for Existing Documents**
 
-Run the document scanning script: `bash "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/scan-existing-docs.sh" "${FEATURE_NAME}"`
+Run the document scanning script: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/scan-existing-docs.py" "${FEATURE_NAME}"`
 
 This script:
 
 1. Checks for PRD, spec, and design documents in both flat and hierarchical structures
-2. Exports results to `.sdd/.cache/plan-refactor/existing-docs.json`
+2. Exports results to `${SDD_ROOT}/.cache/plan-refactor/existing-docs.json`
 3. Determines Case A (documents exist) or Case B (no documents)
 
 **Step 1.2: Read Scan Results**
@@ -150,14 +150,14 @@ Parse the user's refactoring goal and extract:
 **Step 2.1: Find Implementation Files**
 
 Run the implementation file search script. Set `SCOPE_DIR` from the `--scope` argument (or leave empty), then run
-`bash "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/find-implementation-files.sh" "${FEATURE_NAME}" "${SCOPE_DIR}"`.
+`python3 "${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/scripts/find-implementation-files.py" "${FEATURE_NAME}" "${SCOPE_DIR}"`.
 
 This script:
 
 1. Searches for files matching feature name (by filename and content)
 2. Limits search to specified scope if `--scope` is provided
 3. Excludes `node_modules/`, `.git/`, `dist/`, etc.
-4. Exports results to `.sdd/.cache/plan-refactor/implementation-files.json`
+4. Exports results to `${SDD_ROOT}/.cache/plan-refactor/implementation-files.json`
 
 **Step 2.2: Read Implementation File List**
 

@@ -60,10 +60,15 @@ ai-sdd-workflow/
 │       │   └── hooks.json         # フック設定（JSON形式）
 │       ├── scripts/
 │       │   ├── session-start.py   # セッション開始時の初期化
-│       │   ├── hook_common.py     # フックスクリプト共通ヘルパー
 │       │   ├── user-prompt-submit.py  # Vibe Coding兆候検知
 │       │   ├── pre-tool-use.py    # .sdd/ ファイル命名規則検証・CONSTITUTION原則注入
-│       │   └── post-tool-use.py   # ドキュメント更新漏れ検知
+│       │   ├── post-tool-use.py   # ドキュメント更新漏れ検知
+│       │   ├── sdd_index.py       # .sdd/ ドキュメントの構造化インデックス生成
+│       │   ├── hook_common.py     # 共通ヘルパー（stdin/stdout・パス解決・.sdd-config読込）
+│       │   ├── fm_parser.py       # 共有: front matter 検出・パース
+│       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
+│       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
+│       │   └── env_export.py      # 共有: CLAUDE_ENV_FILE への export 書き出し
 │       ├── AI-SDD-PRINCIPLES.source.md
 │       ├── LICENSE
 │       ├── README.md
