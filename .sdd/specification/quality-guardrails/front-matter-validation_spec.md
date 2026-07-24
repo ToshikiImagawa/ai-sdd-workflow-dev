@@ -17,7 +17,7 @@ risk: "low"
 
 **関連 Design Doc:** [front-matter-validation_design.md](front-matter-validation_design.md)
 **関連 PRD:** [front-matter-validation.md](../../requirement/quality-guardrails/front-matter-validation.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の A-002（生成と検証の責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 
 ---
 
@@ -170,6 +170,7 @@ sequenceDiagram
 
 | 原則ID  | 原則名                    | 本仕様への適用内容                                                            |
 |-------|------------------------|----------------------------------------------------------------------|
+| A-002 | フックとスクリプトの責務分離 | 責務分離の原則に基づき、生成（生成スキル）と検証（本レビューエージェント）を分離する。front matter 検証を独立したレビューエージェントとして提供し、生成処理と混在させない |
 | B-001 | Vibe Coding 防止         | front matter の機械的整合性を維持し、トレーサビリティ基盤の破綻による仕様乖離を防ぐ         |
 | B-002 | 多言語対応（EN/JA）の一貫性 | 出力レポートを `SDD_LANG` に応じた EN/JA テンプレートで切り替える                     |
 | D-001 | Specification-Driven   | `depends-on` の上流方向を検証し、prd → spec → design のトレーサビリティ連鎖を保証する    |

@@ -32,7 +32,7 @@ category: ""
 
 **関連 Spec:** [xxx_spec.md へのリンク]
 **関連 PRD:** [requirement/{機能名}.md へのリンク]
-**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md) の該当原則ID（例: A-001, T-001）を記載
+**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `vX.Y.Z` を記載）の該当原則ID（例: A-001, T-001）を記載。原則改定時の同期漏れ検知のため、参照した CONSTITUTION のバージョンを明記すること
 
 ---
 
@@ -141,9 +141,10 @@ plugins/sdd-workflow/
 
 ---
 
-# 10. 原則準拠チェックリスト `<RECOMMENDED>`
+# 10. 原則準拠チェックリスト `<MUST>`
 
 [CONSTITUTION.md](../CONSTITUTION.md) の原則に対する準拠状況を確認します。
+（CONSTITUTION.md の「関連ドキュメント」規約により、設計書には原則準拠のチェックリストを必ず含めます）
 
 | 原則ID  | 原則名 | 準拠状況 | 備考   |
 |-------|-----|------|------|

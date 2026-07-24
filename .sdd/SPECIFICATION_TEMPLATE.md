@@ -33,7 +33,7 @@ category: ""
 
 **関連 Design Doc:** [xxx_design.md へのリンク]
 **関連 PRD:** [requirement/{機能名}.md へのリンク]
-**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md) の該当原則ID（例: B-001, D-001）を記載
+**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `vX.Y.Z` を記載）の該当原則ID（例: B-001, D-001）を記載。原則改定時の同期漏れ検知のため、参照した CONSTITUTION のバージョンを明記すること
 
 ---
 
@@ -109,9 +109,10 @@ sequenceDiagram
 
 ビジネス制約や技術的制約を記載します。
 
-# 9. 原則との整合性 `<RECOMMENDED>`
+# 9. 原則との整合性 `<MUST>`
 
 [CONSTITUTION.md](../CONSTITUTION.md) のどの原則に基づいて本仕様が設計されているかを記載します。
+（CONSTITUTION.md の「関連ドキュメント」規約により、仕様書には原則への言及セクションを必ず含めます）
 
 | 原則ID  | 原則名 | 本仕様への適用内容 |
 |-------|-----|-----------|

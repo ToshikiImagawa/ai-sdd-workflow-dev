@@ -17,7 +17,7 @@ risk: "high"
 
 **関連 Design Doc:** [impl-spec-check_design.md](impl-spec-check_design.md)
 **関連 PRD:** [impl-spec-check.md](../../requirement/quality-guardrails/impl-spec-check.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001, A-002, B-002, D-002
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001, A-001, A-002, B-002, D-001, D-002
 
 ---
 
@@ -187,6 +187,8 @@ sequenceDiagram
 | 原則ID | 原則名                          | 本仕様への適用内容                                                                        |
 |-------|-------------------------------|------------------------------------------------------------------------------------|
 | B-001 | Vibe Coding 防止                | 設計書を真実の源とし、実装との乖離を検出することで仕様駆動の開発サイクルを維持する               |
+| A-001 | Skills-First                    | `check-spec` を legacy `commands/` ではなくスキル（`skills/check-spec/`）として提供する          |
 | A-002 | フックとスクリプトの責務分離        | ファイル走査を `find-design-docs.py`（Phase 1）に委譲し、Claude は判断・比較・報告に専念（Phase 2） |
+| D-001 | Specification-Driven            | **例外（記録済み）**。本機能は「実装 ↔ design の乖離検出」機能自体であり実装が先行した特殊ケースのため、既存実装から design を逆算記述した。逆算後は design を真実の源に戻す。CONSTITUTION の例外プロセス（design §9.1 への理由記載・CHANGELOG 記録）に従う |
 | B-002 | 多言語対応（EN/JA）の一貫性        | 出力テンプレートを `templates/{en,ja}/` の両方で提供し、`SDD_LANG` で切り替える              |
 | D-002 | ファイル命名規則の厳守             | `_spec.md` / `_design.md` サフィックスを前提に対象文書を特定する                            |

@@ -17,7 +17,7 @@ risk: "medium"
 # リファクタリング計画 - 技術設計書
 
 **関連 Spec:** [plan-refactor_spec.md](plan-refactor_spec.md)
-**関連 PRD:** [../requirement/spec-design/plan-refactor.md](../requirement/spec-design/plan-refactor.md)
+**関連 PRD:** [plan-refactor.md](../../requirement/spec-design/plan-refactor.md)
 **実装参照:** `plugins/sdd-workflow/skills/plan-refactor/SKILL.md`
 
 ---
@@ -34,7 +34,7 @@ risk: "medium"
 
 ## 1.2. 技術スタック
 
-- **言語**: Markdown（ドキュメント生成）/ Bash（ファイル検索）
+- **言語**: Markdown（ドキュメント生成）/ Python（ファイル検索・スキャン: `python3` で実行）
 - **実行環境**: Claude Code エージェント実行時
 - **出力形式**: Markdown（front matter 付き）
 - **テンプレートエンジン**: 環境変数置換 + プリミティブなテンプレート処理
@@ -49,8 +49,8 @@ risk: "medium"
 plugins/sdd-workflow/skills/plan-refactor/
 ├── SKILL.md                      # スキル定義書（入出力・フロー・ルール）
 ├── scripts/
-│   ├── scan-existing-docs.sh    # Phase 1: 既存ドキュメント検索
-│   └── find-implementation-files.sh  # Phase 2: 実装ファイル検索
+│   ├── scan-existing-docs.py    # Phase 1: 既存ドキュメント検索（python3 実行）
+│   └── find-implementation-files.py  # Phase 2: 実装ファイル検索（python3 実行）
 ├── templates/{en,ja}/
 │   ├── reverse_spec_template.md    # Case B: 逆生成仕様書テンプレート
 │   ├── reverse_design_template.md  # Case B: 逆生成設計書テンプレート
@@ -72,14 +72,14 @@ plugins/sdd-workflow/skills/plan-refactor/
 ユーザー入力
   ↓
 [フェーズ 1: 事前チェック]
-  - scan-existing-docs.sh → .sdd/.cache/plan-refactor/existing-docs.json
+  - scan-existing-docs.py → .sdd/.cache/plan-refactor/existing-docs.json
   - Case A / Case B 判定
   ↓
 [フェーズ 1.5: ユーザー意図の解析]
   - context パラメータを解析（オプション）
   ↓
 [フェーズ 2: 実装ファイル検出]
-  - find-implementation-files.sh → implementation-files.json
+  - find-implementation-files.py → implementation-files.json
   - ファイル数チェック（20+ の場合、ユーザー確認）
   - 実装ファイルを読み込む
   ↓
@@ -111,7 +111,7 @@ plugins/sdd-workflow/skills/plan-refactor/
 
 ### Step 1.1: Scan for Existing Documents
 
-**実装ファイル**: `scripts/scan-existing-docs.sh`
+**実装ファイル**: `scripts/scan-existing-docs.py`
 
 **処理**:
 1. `.sdd/requirement/{feature-name}.md` → PRD を検索
@@ -157,7 +157,7 @@ plugins/sdd-workflow/skills/plan-refactor/
 
 ### Step 2.1: Find Implementation Files
 
-**実装ファイル**: `scripts/find-implementation-files.sh`
+**実装ファイル**: `scripts/find-implementation-files.py`
 
 **処理**:
 1. `feature-name` をパターンマッチング
@@ -395,9 +395,9 @@ tags: ["reverse-engineered"] (if Case B)
 
 ## 6.1. ユニットテスト
 
-- `tests/skills/plan-refactor/` 配下
-- scan-existing-docs.sh の正確性（複数構造・ファイル名パターン）
-- find-implementation-files.sh のマッチング精度
+- 対象スクリプト: `scan-existing-docs.py`（複数構造・ファイル名パターンの正確性）、`find-implementation-files.py`（マッチング精度・除外パターン・スコープ絞り込み）
+- 現状: これら2スクリプトの自動ユニットテストは未整備（リポジトリの `tests/` は現在フックスクリプト・共有モジュールをカバー）。追加する場合はリポジトリ規約に従い `tests/` 配下に配置し、`python3 -m pytest tests/` で自動収集される
+- 当面の検証は §6.2 統合テスト・§6.3 マニュアルテストおよび CI の `plugin-lint` で担保する
 
 ## 6.2. 統合テスト
 
@@ -481,7 +481,7 @@ tags: ["reverse-engineered"] (if Case B)
 
 # 参照
 
-- **親 PRD**: [../requirement/spec-design/index.md](../requirement/spec-design/index.md)
+- **親 PRD**: [spec-design](../../requirement/spec-design/index.md)
 - **AI-SDD 原則**: [../../AI-SDD-PRINCIPLES.md](../../AI-SDD-PRINCIPLES.md)
 - **スキル SKILL.md**: [../../../plugins/sdd-workflow/skills/plan-refactor/SKILL.md](../../../plugins/sdd-workflow/skills/plan-refactor/SKILL.md)
 - **テンプレート**: [../../../plugins/sdd-workflow/skills/plan-refactor/templates/](../../../plugins/sdd-workflow/skills/plan-refactor/templates/)

@@ -18,7 +18,7 @@ risk: "high"
 
 **関連 Spec:** [impl-spec-check_spec.md](impl-spec-check_spec.md)
 **関連 PRD:** [impl-spec-check.md](../../requirement/quality-guardrails/impl-spec-check.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001, A-001, A-002, B-002, D-002, T-002, T-003
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001, A-001, A-002, B-002, D-001, D-002, T-002, T-003
 
 ---
 
@@ -215,6 +215,7 @@ plugins/sdd-workflow/
 | A-001 | Skills-First                    | ✅   | `skills/check-spec/` として実装。legacy `commands/` 不使用           |
 | A-002 | フックとスクリプトの責務分離        | ✅   | Phase 1 を `find-design-docs.py` に委譲、Phase 2 で Claude が判断     |
 | B-001 | Vibe Coding 防止                | ✅   | 設計書を真実の源とし、実装との乖離を検出して仕様駆動を維持              |
+| D-001 | Specification-Driven            | 例外 | 本機能は「実装 ↔ design の乖離検出」機能自体で実装が先行した特殊ケース。既存実装から design を逆算記述し、逆算後は design を真実の源に戻す（§9.1 参照）。CONSTITUTION の例外プロセス（design への理由記載・CHANGELOG 記録）に従う |
 | B-002 | 多言語対応（EN/JA）の一貫性        | ✅   | `templates/{en,ja}/check_spec_output.md` を提供                    |
 | D-002 | ファイル命名規則の厳守             | ✅   | `_spec.md` / `_design.md` サフィックス前提でファイルを特定             |
 | T-002 | plugin.json 登録の徹底            | ✅   | `check-spec` スキルは `plugin.json` に登録済み                       |

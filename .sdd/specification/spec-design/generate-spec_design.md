@@ -18,7 +18,7 @@ risk: "high"
 
 **関連 Spec:** [generate-spec_spec.md](generate-spec_spec.md)
 **関連 PRD:** [generate-spec.md](../../requirement/spec-design/generate-spec.md)（親: [spec-design](../../requirement/spec-design/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-002（ファイル命名規則の厳守）, T-003（日本語出力の文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
 
 ---
 
