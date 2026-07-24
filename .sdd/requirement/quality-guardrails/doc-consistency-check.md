@@ -75,6 +75,8 @@ requirementDiagram
 
 本ファイルの FR_001 は [index.md](index.md) の UR_003（ドキュメント・実装間の整合性維持）から派生する
 （親 PRD の全体要求図では FR_006 として定義）。
+関連する制約として、index.md の DC_004（クロスプラットフォーム対応）・
+DC_005（多言語対応。`SDD_LANG` による EN/JA 出力切替に対応）が本機能に trace する。
 
 ---
 

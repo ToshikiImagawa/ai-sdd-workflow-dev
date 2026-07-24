@@ -5,5 +5,14 @@
     "requirement": "requirement",
     "specification": "specification",
     "task": "task"
+  },
+  "id_conventions": {
+    "prd_user": "^UR_\\d{3}(_\\d{2})?$",
+    "prd_functional": "^FR_\\d{3}(_\\d{2})?$",
+    "prd_nonfunctional": "^NFR_\\d{3}(_\\d{2})?$",
+    "prd_interface": "^IR_\\d{3}(_\\d{2})?$",
+    "prd_constraint": "^DC_\\d{3}(_\\d{2})?$",
+    "spec_functional": "^FR-\\d{3}$",
+    "spec_nonfunctional": "^NFR-\\d{3}$"
   }
 }
