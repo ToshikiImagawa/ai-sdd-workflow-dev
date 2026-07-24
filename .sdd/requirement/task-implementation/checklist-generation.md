@@ -55,7 +55,8 @@ flowchart LR
 # 2. 要求図（SysML Requirements Diagram）
 
 要求 ID は本ファイル内スコープで採番する。本ファイルの FR_001 は、
-[index.md](index.md) の UR_003（体系的な品質検証）から派生する。
+[index.md](index.md) の UR_003（体系的な品質検証）から派生し、
+同 IR_002（チェックリストの保存場所と構造化 ID）にトレースされる。
 また、[run-checklist.md](run-checklist.md) の FR_001（チェックリスト自動検証）が本機能の成果物に
 トレースされる（親 PRD の全体要求図を参照。本図には自ファイル内のノードのみを定義する）。
 
@@ -82,6 +83,12 @@ requirementDiagram
 [index.md](index.md) の UR_003 から派生。
 
 **トリガー方式:** 手動（開発者による `/checklist` スキル呼び出し）
+
+**関連する親インターフェース要求:**
+
+- [index.md](index.md) の IR_002（チェックリストの保存場所と構造化 ID）: 生成したチェックリストは
+  対象チケットの `task/{ticket-number}/checklist.md` に保存し、各項目の構造化 ID は
+  カテゴリ番号と 2 桁連番から成る `CHK-{category}{nn}` 形式とすること。
 
 **検証方法:** デモンストレーションによる検証
 
