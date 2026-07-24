@@ -167,6 +167,13 @@ requirementDiagram
         verifymethod: inspection
     }
 
+    interfaceRequirement ChecklistLayout {
+        id: IR_002
+        text: "チェックリストはtaskディレクトリ配下のchecklist.mdに保存し構造化IDはカテゴリ番号と連番から成るCHK形式とする"
+        risk: low
+        verifymethod: inspection
+    }
+
     designConstraint TestFirst {
         id: DC_001
         text: "実装より先にテストを作成する順序を強制する"
@@ -191,13 +198,16 @@ requirementDiagram
     TaskImplementation - contains -> QualityVerification
     TaskImplementation - contains -> KnowledgePersistence
     TaskBreakdown - traces -> TaskDirLayout
+    TaskCleanup - traces -> TaskDirLayout
     TaskBreakdown - traces -> TaskGranularity
     TaskDirLayout - derives -> TaskImplementation
+    ChecklistLayout - derives -> QualityVerification
     TestFirst - derives -> SpecCompliantImpl
     PersistBeforeDelete - derives -> KnowledgePersistence
     TestFirst - traces -> TddImplement
     PersistBeforeDelete - traces -> TaskCleanup
     ChecklistVerification - traces -> ChecklistGeneration
+    ChecklistGeneration - traces -> ChecklistLayout
 ```
 
 ---
@@ -257,12 +267,22 @@ requirementDiagram
 
 **検証方法:** インスペクションによる検証
 
+### IR_002: チェックリストの保存場所と構造化 ID
+
+チェックリスト生成（[checklist-generation.md](checklist-generation.md)）が出力するチェックリストは、
+対象チケットの task ディレクトリ配下の `task/{ticket-number}/checklist.md` に保存すること。
+各チェックリスト項目に付与する構造化 ID は、カテゴリ番号（1〜9）と 2 桁連番から成る
+`CHK-{category}{nn}` 形式（例: `CHK-101`、`CHK-201`）とし、更新をまたいで安定であること。
+
+**検証方法:** インスペクションによる検証
+
 ## 4.4. 設計制約
 
 ### DC_001: テストファースト
 
 実装（Core 段階）に先立ちテスト（Tests 段階）を作成する順序を、プロセスとして強制すること。
-テストのない実装段階への進行を許容しない。
+テストのない実装段階への進行を許容しない。テストが失敗している間は次段階へ進行させず、
+テストが成功するまで当該タスクを完了として扱わない。
 
 **検証方法:** インスペクションによる検証
 
