@@ -18,7 +18,7 @@ risk: "low"
 
 **関連 Spec:** [front-matter-validation_spec.md](front-matter-validation_spec.md)
 **関連 PRD:** [front-matter-validation.md](../../requirement/quality-guardrails/front-matter-validation.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001（Vibe Coding 防止）, B-002（多言語対応）, D-001（Specification-Driven）, T-002（plugin.json 登録）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の A-002（生成と検証の責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応）, D-001（Specification-Driven）, T-002（plugin.json 登録）
 
 ---
 
@@ -220,6 +220,7 @@ plugins/sdd-workflow/
 
 | 原則ID  | 原則名                    | 準拠状況 | 備考                                                          |
 |-------|------------------------|------|-------------------------------------------------------------|
+| A-002 | フックとスクリプトの責務分離 | ✅   | 責務分離の原則に基づき生成（生成スキル）と検証（本レビューエージェント）を分離。front matter 検証を独立したレビューエージェントとして提供する（§3・§9.1） |
 | B-001 | Vibe Coding 防止         | ✅   | front matter の機械的整合性を検証しトレーサビリティ基盤を維持              |
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅   | `templates/{en,ja}/front_matter_validation_report.md` を用意し `SDD_LANG` で切替 |
 | D-001 | Specification-Driven   | ✅   | `depends-on` の上流方向を検証しトレーサビリティ連鎖を保証                |

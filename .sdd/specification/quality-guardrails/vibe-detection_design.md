@@ -18,7 +18,7 @@ risk: "high"
 
 **関連 Spec:** [vibe-detection_spec.md](vibe-detection_spec.md)
 **関連 PRD:** [vibe-detection.md](../../requirement/quality-guardrails/vibe-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001, B-002, T-003（日本語出力の文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001, B-002, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
 ---
 
@@ -156,8 +156,9 @@ plugins/sdd-workflow/
     └── templates/{en,ja}/        # risk_report(.fallback) / assumed_spec(.fallback)
 ```
 
-本機能はプラグインルートの `hooks.json` にフックが登録済みであり、スキルは `plugin.json` の
-`hooks` フィールド経由で解決される（新規スキル追加ではないため plugin.json 変更は不要 / T-002）。
+本機能はプラグインルートの `hooks.json` にフックが登録済みであり、`vibe-detector` スキルは `plugin.json` の
+`"skills": "./skills"` によりディレクトリ単位で自動登録される。フック・スキルとも `plugin.json` への個別列挙を
+要さないため plugin.json 変更は不要（T-002）。
 
 なお回帰テスト `scripts/test-hook-scripts.sh` は上記ツリー外の**リポジトリルート直下 `scripts/`** に配置され、
 CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。本設計書中の `scripts/` は文脈により

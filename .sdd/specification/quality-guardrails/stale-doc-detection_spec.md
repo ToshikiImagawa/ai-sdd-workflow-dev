@@ -17,7 +17,7 @@ risk: "medium"
 
 **関連 Design Doc:** [stale-doc-detection_design.md](stale-doc-detection_design.md)
 **関連 PRD:** [stale-doc-detection.md](../../requirement/quality-guardrails/stale-doc-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, D-001（Specification-Driven）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）
 
 ---
 
@@ -169,6 +169,7 @@ sequenceDiagram
 
 | 原則ID  | 原則名               | 本仕様への適用内容                                                                 |
 |-------|---------------------|--------------------------------------------------------------------------------|
+| A-002 | フックとスクリプトの責務分離 | 機械的なパス判定（フック）と整合性検証（検証スキル）の責務を分離し、フックは更新漏れの検知・可視化に専念する |
 | B-001 | Vibe Coding 防止     | 更新漏れによる仕様・実装の乖離を編集直後に検知・可視化し、暗黙的な乖離の進行を抑止する         |
 | D-001 | Specification-Driven | 編集後に関連ドキュメント（PRD / spec / design）の同期を促し、仕様書を真実の源とするフローを維持する |
 

@@ -29,11 +29,17 @@ risk: "medium"
 本設計書は既存実装（`scripts/sdd_index.py` / `scripts/session-start.py` / `scripts/post-tool-use.py`）の
 挙動を逆算して記述したものである。スキーマ・抽出内容・キャッシュ方式は実装コードを真実の源とする。
 
+> **逆算記述の経緯（正当化）**: 本機能（インデックスビルダ・SessionStart 全体構築・PostToolUse
+> 増分更新）はトークン削減を目的とした機能として先行実装され、本 spec/design はその後に
+> 要求・設計を明文化した逆算記述である。D-001（Specification-Driven）の原則に対し実装先行という
+> 経緯を、CONSTITUTION.md の例外プロセス（文書化・正当化・レビュー・追跡）に沿って本節に記録する。
+> スキーマバージョン等の数値は実装コード（`sdd_index.py` の `SCHEMA_VERSION`）を唯一の根拠とする。
+
 ## 1.1. 実装進捗
 
 | モジュール/機能            | ステータス | 備考                                                              |
 |--------------------------|--------|-------------------------------------------------------------------|
-| インデックスビルダ           | 🟢     | `scripts/sdd_index.py`（SQLite スキーマ v2・抽出・派生・キャッシュ無効化）    |
+| インデックスビルダ           | 🟢     | `scripts/sdd_index.py`（SQLite スキーマ v1・抽出・派生・キャッシュ無効化）    |
 | 全体構築（SessionStart）    | 🟢     | `scripts/session-start.py` の `rebuild_index()` → `sdd_index.rebuild_all()` |
 | 増分更新（PostToolUse）    | 🟢     | `scripts/post-tool-use.py` の `try_update_index()` → `sdd_index.update_one()`（DB 既存時のみ） |
 | フック登録                 | 🟢     | `hooks/hooks.json` の `PostToolUse`（matcher: `Write\|Edit\|MultiEdit`）  |
@@ -76,7 +82,7 @@ graph TD
     SCAN --> HASH{SHA-256 変更検知}
     HASH -->|変更あり| PARSE[scan_document: front matter / IDs / SysML / data / API 抽出]
     HASH -->|未変更| SKIP[スキップ]
-    PARSE --> DB[(index.sqlite / スキーマ v2)]
+    PARSE --> DB[(index.sqlite / スキーマ v1)]
     UO --> DB
     DB --> DERIVE[derive_index]
     DERIVE --> MD[.cache/index.md テーブル形式]
@@ -99,7 +105,7 @@ graph TD
 
 # 5. データ構造
 
-## 5.1. SQLite スキーマ（`index.sqlite`, `SCHEMA_VERSION = "2"`）
+## 5.1. SQLite スキーマ（`index.sqlite`, `SCHEMA_VERSION = "1"`）
 
 | テーブル               | 役割                                                              |
 |----------------------|-------------------------------------------------------------------|
@@ -124,7 +130,7 @@ graph TD
 ## Data Models         # 言語別のデータ定義
 ```
 
-`index.json`（`{"schema": "sdd-index/2", "document_count": N, "documents": [...]}`）も併せて派生する。
+`index.json`（`{"schema": "sdd-index/1", "document_count": N, "documents": [...]}`）も併せて派生する。
 
 ## 5.3. 走査対象（`iter_target_files`）
 
@@ -147,7 +153,7 @@ plugins/sdd-workflow/
 
 # 生成物（プロジェクト側、真実の源ではない派生キャッシュ）
 ${SDD_ROOT}/.cache/
-├── index.sqlite            # 中間ストア（スキーマ v2）
+├── index.sqlite            # 中間ストア（スキーマ v1）
 ├── index.json              # 構造化データの JSON 派生
 └── index.md                # 消費側が 1 回 Read するテーブル形式インデックス
 
@@ -188,7 +194,7 @@ tests/
 
 | 決定事項              | 選択肢                                  | 決定内容                          | 理由                                                                        |
 |---------------------|----------------------------------------|---------------------------------|---------------------------------------------------------------------------|
-| 中間ストア            | プレーン JSON / SQLite                    | SQLite（スキーマ v2）              | 構造化データの集約・関係表現・部分更新に適し、標準ライブラリのみで動作                    |
+| 中間ストア            | プレーン JSON / SQLite                    | SQLite（スキーマ v1）              | 構造化データの集約・関係表現・部分更新に適し、標準ライブラリのみで動作                    |
 | 消費形式             | SQLite を直接参照 / Markdown 派生          | テーブル形式 Markdown を派生         | 消費側（LLM）は Markdown を 1 回 Read するのが最も低コスト（NFR-001）                 |
 | キャッシュ無効化        | 更新時刻 / コンテンツハッシュ                | SHA-256 コンテンツハッシュ           | 内容変化のみを検知し再現性がある。時刻依存の誤検知を避ける（FR-004）                      |
 | 増分更新のガード        | 設定フラグ参照 / DB 存在チェック             | DB 存在時のみ更新（`update_one` 冒頭で return） | 無効時は DB が無いので自動的に no-op。設定の二重管理を避け off と自然に連動（FR-005）        |
