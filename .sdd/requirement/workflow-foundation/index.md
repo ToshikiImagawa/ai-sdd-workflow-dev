@@ -76,10 +76,14 @@ flowchart LR
 |:-----|:-------|:----------|
 | プロジェクト初期化 | [sdd-init.md](sdd-init.md) | FR_001 |
 | プロジェクト原則管理 | [constitution-management.md](constitution-management.md) | FR_002 |
-| セッション設定初期化 | [session-config.md](session-config.md) | FR_003（本ファイルでは FR_001、サブ要求 FR_001_01〜04） |
+| セッション設定初期化 | [session-config.md](session-config.md) | FR_003 |
 | front matter 推奨 | [front-matter-recommend.md](front-matter-recommend.md) | FR_004 |
 | ドキュメントインデックス | [documentation-index.md](documentation-index.md) | FR_005 |
 | クロスプラットフォーム移植性 | [cross-platform-portability.md](cross-platform-portability.md) | NFR_002 |
+
+> **採番の規約:** 「元要求 ID」列は本ファイル（親 PRD）の全体要求図での ID を示す。各子 PRD は自ファイル内スコープで
+> `FR_001` から採番し直すため、例えばセッション設定初期化は親 `FR_003` が子ファイル内では `FR_001`（サブ要求
+> `FR_001_01〜04`）に対応する。
 
 > **役割境界（インデックス構築）:** [session-config.md](session-config.md) の FR_001_04 はセッション開始時の
 > インデックス構築トリガーと `SDD_INDEX` による有効・無効制御を担い、走査対象・抽出内容・構築成果物そのものの
