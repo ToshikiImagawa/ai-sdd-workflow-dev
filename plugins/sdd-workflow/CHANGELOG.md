@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Plugin Manifest
+
+- **Duplicate hooks load** - Removed the `"hooks": "./hooks/hooks.json"` declaration from `plugin.json`.
+  Claude Code auto-detects `hooks/hooks.json` at the plugin root, and a manifest path supplements the
+  default path rather than replacing it, so declaring the standard path loaded the same file twice and
+  surfaced a `Duplicate hooks file detected` error on plugin load. Hook behavior itself is unchanged
+
 ## [4.0.0] - 2026-07-16
 
 ### Added

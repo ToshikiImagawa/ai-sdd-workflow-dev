@@ -257,6 +257,32 @@ fi
 printf "\n"
 
 # ============================================================
+# Check 4: Plugin Manifest Hygiene (error on failure)
+# ============================================================
+printf "=== Check 4: Plugin Manifest Hygiene ===\n\n"
+
+# Claude Code auto-detects hooks/hooks.json at the plugin root, and a custom
+# manifest path *supplements* the default path instead of replacing it
+# (PLUGIN.md). Declaring the standard path therefore loads the same file twice
+# and the loader rejects it with "Duplicate hooks file detected".
+# agents/ and skills/ are excluded: CONSTITUTION T-002 requires registering them
+# in plugin.json, and the loader dedupes them silently.
+check4_errors_before="$(cat "$ERROR_FILE")"
+
+PLUGIN_MANIFEST="${PLUGIN_DIR}/.claude-plugin/plugin.json"
+if [ -f "$PLUGIN_MANIFEST" ]; then
+    manifest_hooks="$(jq -r '.hooks // empty' "$PLUGIN_MANIFEST")"
+    if [ "$manifest_hooks" = "./hooks/hooks.json" ]; then
+        log_error "plugins/sdd-workflow/.claude-plugin/plugin.json - \"hooks\" declares the standard path ./hooks/hooks.json (auto-detected; declaring it causes a duplicate hooks load)"
+    fi
+fi
+
+if [ "$(cat "$ERROR_FILE")" -eq "$check4_errors_before" ]; then
+    log_ok "plugin.json does not redeclare the auto-detected hooks/hooks.json"
+fi
+printf "\n"
+
+# ============================================================
 # Summary
 # ============================================================
 WARN_COUNT=$(cat "$WARN_FILE")

@@ -9,6 +9,15 @@
 
 ## [Unreleased]
 
+### Fixed
+
+#### Plugin Manifest
+
+- **フックの二重ロード** - `plugin.json` から `"hooks": "./hooks/hooks.json"` の宣言を削除。Claude Code は
+  プラグインルート直下の `hooks/hooks.json` を自動検出し、manifest のパスは既定パスを上書きせず補完するため、
+  標準パスを明示すると同一ファイルが二重にロードされ、プラグイン読み込み時に `Duplicate hooks file detected`
+  エラーが表示されていた。フック自体の動作は変わらない
+
 ## [4.0.0] - 2026-07-16
 
 ### Added

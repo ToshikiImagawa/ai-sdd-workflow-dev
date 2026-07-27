@@ -15,6 +15,5 @@
     "./agents/requirement-analyzer.md",
     "./agents/spec-reviewer.md"
   ],
-  "skills": "./skills",
-  "hooks": "./hooks/hooks.json"
+  "skills": "./skills"
 }

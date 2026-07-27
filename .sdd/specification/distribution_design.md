@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-27"
 depends-on: ["spec-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
 category: "distribution"
@@ -41,7 +41,7 @@ category: "distribution"
 | モジュール/機能              | ステータス | 備考                                                                       |
 |----------------------------|--------|----------------------------------------------------------------------------|
 | マーケットプレイス配布         | 🟢     | `marketplace.json` が `./plugins/sdd-workflow` を登録（version 4.0.0）          |
-| プラグインマニフェスト         | 🟢     | `plugin.json` が agents（6件）・skills（`./skills`）・hooks を登録              |
+| プラグインマニフェスト         | 🟢     | `plugin.json` が agents（6件）・skills（`./skills`）を登録。hooks は自動検出に委ねる |
 | バージョン一元管理            | 🟢     | plugin.json を単一ソースとし、release.yml がタグとの整合を検証（DC_001）          |
 | 多言語テンプレート体系         | 🟢     | 各スキル・エージェントが `templates/{en,ja}/` を保持。CHANGELOG は日英併記         |
 | CI 継続検証                  | 🟢     | `ci.yml` が validate / shellcheck / plugin-lint / test の 4 ジョブを実行         |
@@ -114,7 +114,7 @@ graph TD
 | prepare-release.yml       | develop → main の release ブランチ作成・PR・CI 待機・マージ       | ci.yml / gh CLI     | `.github/workflows/prepare-release.yml`         |
 | release.yml               | バージョン整合検証・公開リポ同期・タグ・Release 作成               | ci.yml（再利用）/ jq / rsync / gh | `.github/workflows/release.yml`       |
 | validate-marketplace.sh   | JSON 構文・必須フィールド・バージョン整合の検証                    | jq                  | `scripts/validate-marketplace.sh`               |
-| plugin-lint.sh            | コードブロック検出・EN/JA 同一性・パストークン検査                 | find / grep         | `scripts/plugin-lint.sh`                        |
+| plugin-lint.sh            | コードブロック検出・EN/JA 同一性・パストークン検査・manifest 衛生検査  | find / grep / jq    | `scripts/plugin-lint.sh`                        |
 | CHANGELOG.md / .ja.md     | バージョンごとの変更履歴（日英）                                | -                   | `plugins/sdd-workflow/CHANGELOG*.md`            |
 
 ---
@@ -142,10 +142,15 @@ graph TD
   "name": "sdd-workflow",
   "version": "4.0.0",
   "agents": ["./agents/clarification-assistant.md", "..."],
-  "skills": "./skills",
-  "hooks": "./hooks/hooks.json"
+  "skills": "./skills"
 }
 ```
+
+`hooks` は manifest で宣言しない。Claude Code はプラグインルート直下の `hooks/hooks.json` を自動検出し、
+manifest のカスタムパスは既定パスを**補完**する（上書きではない）ため、標準パスを明示すると同一ファイルの
+二重ロードとなりローダーが拒否する。一方 `agents` / `skills` は同じく自動検出対象だが、T-002
+（plugin.json 登録の徹底）が明示的に登録を要求する範囲であり、ローダーも静かに重複排除するため宣言を維持する。
+この非対称を機械的に守るため、plugin-lint.sh の Check 4 が `hooks` への標準パス宣言を検出して `log_error` する。
 
 ---
 
@@ -156,7 +161,7 @@ ai-sdd-workflow-dev/
 ├── .claude-plugin/
 │   └── marketplace.json                    # マーケットプレイスメタデータ・バージョン
 ├── plugins/sdd-workflow/
-│   ├── .claude-plugin/plugin.json          # プラグインマニフェスト（agents/skills/hooks/version）
+│   ├── .claude-plugin/plugin.json          # プラグインマニフェスト（agents/skills/version）
 │   ├── skills/*/templates/{en,ja}/         # 多言語テンプレート（EN/JA 同一セット）
 │   ├── CHANGELOG.md                        # 変更履歴（英語）
 │   └── CHANGELOG.ja.md                     # 変更履歴（日本語）
