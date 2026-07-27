@@ -96,12 +96,14 @@ Workflow の返り値（構造化された全レビュー結果）を [batch-rev
 
 ### A3: フロントマターの設計
 
-- 標準フィールド（name, description, model, color, allowed-tools）が適切か
-- 拡張フィールド（tools, skills, hooks）の使用が妥当か
+- 標準フィールド（name, description, model, color, tools）が適切か
+- 拡張フィールド（disallowedTools, skills, hooks）の使用が妥当か
+- `allowed-tools` を使っていないか（サブエージェントでは無効キーのため、書いても警告なく無視され
+  全ツールを継承してしまう。ツール制限は `tools` で行う）
 
-### A4: allowed-tools の設計
+### A4: tools の設計
 
-| エージェントタイプ | 期待される allowed-tools               | 理由                    |
+| エージェントタイプ | 期待される tools                       | 理由                    |
 |:----------|:----------------------------------|:----------------------|
 | レビュー系     | Read, Glob, Grep, AskUserQuestion | 読み取り専用。修正提案を出力しメインが適用 |
 | 分析系       | Read, Glob, Grep, AskUserQuestion | 読み取り専用。分析結果と提案を出力     |
@@ -109,8 +111,8 @@ Workflow の返り値（構造化された全レビュー結果）を [batch-rev
 チェック項目:
 
 - タスクの性質（READ系 or WRITE系）に応じた適切なツール選択か
-- 不要なツール（特にTask）が含まれていないか
-- **レビュー系エージェントはTaskツールを使用しない**（コンテキスト爆発防止）
+- 不要なツール（特に Agent）が含まれていないか
+- **レビュー系エージェントは Agent ツールを使用しない**（コンテキスト爆発防止）
 - **WRITE系はメインエージェントのみ**（サブエージェントは修正提案出力のみ）
 
 ### A5: 前提条件の記述
@@ -122,7 +124,7 @@ Workflow の返り値（構造化された全レビュー結果）を [batch-rev
 ### A6: 再委譲の禁止
 
 - 再委譲を避ける設計意図が明記されているか
-- Task tool で自分自身や他のサブエージェントを呼び出していないか
+- Agent tool で自分自身や他のサブエージェントを呼び出していないか
 
 ### A7: コンテキスト効率
 
@@ -138,7 +140,9 @@ Workflow の返り値（構造化された全レビュー結果）を [batch-rev
 
 - 必須フィールド（name, description）が存在するか
 - `argument-hint` が適切に設定されているか
-- `allowed-tools` がタスクの性質に合っているか
+- `allowed-tools`（許可を尋ねずに使えるツールの事前承認）と `disallowed-tools`（使用禁止）の
+  使い分けが適切か。スキルの `allowed-tools` は制限リストではないため、制限したい場合は
+  `disallowed-tools` を使う
 - `disable-model-invocation` の使用が適切か（Skill自体がプロンプトの場合）
 
 ### S2: 入力設計
@@ -215,13 +219,16 @@ Workflow の返り値（構造化された全レビュー結果）を [batch-rev
 |:--------|:-------------|:----------------|
 | command | シェルコマンド実行    | 非同期実行に注意        |
 | prompt  | LLMへの追加プロンプト | コンテキスト汚染に注意     |
-| agent   | サブエージェント呼び出し | allowed-tools制限 |
+| agent   | サブエージェント呼び出し | `tools` で制限（`allowed-tools` は無効） |
 
 **command タイプの実行方法:**
 
-- 直接実行: `"command": "${CLAUDE_PLUGIN_ROOT}/scripts/example.sh"` （推奨、要 `chmod +x`）
-- source 実行: `"command": "source ${CLAUDE_PLUGIN_ROOT}/scripts/example.sh"` （直接実行が動作しない場合の代替）
-- bash 明示: `"command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/example.sh"`
+- 直接実行: `"command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/example.sh\""` （推奨、要 `chmod +x`）
+- source 実行: `"command": "source \"${CLAUDE_PLUGIN_ROOT}/scripts/example.sh\""` （直接実行が動作しない場合の代替）
+- bash 明示: `"command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/example.sh\""`
+
+`${CLAUDE_PLUGIN_ROOT}` は必ずクォートする。インストールパスに空白が含まれると単語分割され、
+フックが起動しなくなる。
 
 **注意**: `source` や bash スクリプトは **Mac/Linux 専用**。Windows 対応が必要な場合は Python スクリプトを検討。
 

@@ -10,6 +10,8 @@
 | 2.3 言語ディレクトリの完全性 | ✅ パス | 0 件 |
 | 2.4 言語間ファイルセットの一致 | ⚠️ 警告 | 2 件 |
 | 2.5 サポートファイルの拡張子（.md） | ✅ パス | 0 件 |
+| 3.1 allowed-tools のツール名妥当性 | ✅ パス | 0 件 |
+| 3.2 allowed-tools の重複 | ✅ パス | 0 件 |
 
 ---
 
@@ -26,7 +28,7 @@
 | 5 | plugins/sdd-workflow/skills/generate-spec/SKILL.md | 22 | plain |
 | 6 | plugins/sdd-workflow/skills/generate-spec/SKILL.md | 30 | plain |
 
-**推奨事項**: コードブロックを `templates/`、`examples/`、`reference/` ディレクトリに移動し、LLM出力時の混同を防止してください。
+**推奨事項**: コードブロックを `templates/`、`examples/`、`references/` ディレクトリに移動し、LLM出力時の混同を防止してください。
 
 ---
 
@@ -60,6 +62,18 @@ snake_case 規約に従っていないファイル:
 ### 2.5 サポートファイルの拡張子
 
 非 `.md` ファイルはありません。 ✅
+
+---
+
+## チェック3: allowed-tools フィールド
+
+### 3.1 ツール名の妥当性
+
+実在しないツール名はありません。 ✅
+
+### 3.2 ツール名の重複
+
+ツール名の重複はありません。 ✅
 
 ---
 

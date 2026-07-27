@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-front-matter-recommend"]
 tags: ["front-matter", "metadata", "skill", "scan"]
 category: "workflow-foundation"
@@ -44,7 +44,7 @@ risk: "low"
 | 走査スクリプト                       | 🟢     | `scripts/scan-documents.py`（Python 標準ライブラリ + 共有モジュール）        |
 | 共有モジュール利用                    | 🟢     | `fm_parser.has_front_matter` / `naming.determine_type` / `doc_walker.collect_documents` |
 | 言語別テンプレート                    | 🟢     | `recommendation_report.md` / `application_result.md` / `type_specific_fields.md`（en/ja） |
-| plugin.json 登録                    | 🟢     | `"skills": "./skills"` によりディレクトリ一括登録                          |
+| plugin.json 登録                    | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -153,7 +153,7 @@ plugins/sdd-workflow/
 ├── scripts/naming.py                               # determine_type 共有
 ├── scripts/doc_walker.py                           # collect_documents 共有
 ├── scripts/hook_common.py / env_export.py          # ルート解決・env export 共有
-└── .claude-plugin/plugin.json                      # "skills": "./skills"（T-002）
+└── .claude-plugin/plugin.json                      # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 ---
@@ -207,7 +207,7 @@ plugins/sdd-workflow/
 | A-002 | フックとスクリプトの責務分離   | ✅   | 走査を `scan-documents.py` と共有モジュールに委譲                       |
 | B-002 | 多言語対応の一貫性          | ✅   | `templates/{en,ja}/` を用意し `SDD_LANG` に応じて出力                    |
 | D-001 | Specification-Driven     | ⚠️   | 実装先行のため本 spec/design を逆算作成（1 節に例外を文書化・正当化）          |
-| T-002 | plugin.json 登録の徹底     | ✅   | `"skills": "./skills"` によりスキルを登録済み                           |
+| T-002 | plugin.json 登録の徹底     | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 日本語テンプレート・出力で UTF-8 を維持し mojibake を防止                  |
 
 **原則から逸脱する場合**: D-001 について実装先行の経緯を 1 節に文書化し、CONSTITUTION.md の例外プロセスに従う。

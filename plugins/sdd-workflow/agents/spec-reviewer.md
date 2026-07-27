@@ -3,7 +3,7 @@ name: spec-reviewer
 description: "Use this agent when specification review is requested, after running /check-spec or /generate-spec commands when quality checks are needed, or when users say 'review spec', 'check specification', 'review design', or 'check design doc'. Reviews .sdd/specification/*_spec.md or *_design.md files for CONSTITUTION.md compliance, checking for ambiguous descriptions, missing sections, SysML validity, and PRD/spec/design traceability. Generates fix proposals for detected violations. Requires the specification file path to review."
 model: sonnet
 color: blue
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -93,7 +93,7 @@ following perspectives:
 - Using Task tool for recursive exploration causes context explosion
 - Use Read, Glob, and Grep tools to efficiently identify and load necessary files, prioritizing context efficiency
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Load CONSTITUTION.md, specifications, design documents
 - `Glob`: Search for related files

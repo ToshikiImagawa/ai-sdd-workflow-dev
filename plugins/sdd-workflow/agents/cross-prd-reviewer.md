@@ -3,7 +3,7 @@ name: cross-prd-reviewer
 description: "Use this agent when cross-PRD consistency review is requested across multiple PRD files, when users say 'cross-PRD review', 'review all PRDs', 'PRD 横断レビュー', or 'check consistency between PRDs', or after adding or updating a PRD when portfolio-level consistency needs verification. Reviews multiple .sdd/requirement/*.md PRD files for category boundary consistency (scope-out cross-references), terminology alignment across glossaries, structural and notation style uniformity, CONSTITUTION.md principle reference coverage, and front matter labeling consistency. Reports findings classified as [must]/[recommend]/[nits]. Note: single-PRD quality reviews are handled by prd-reviewer, front matter format validation by front-matter-reviewer, and vertical PRD-spec-design consistency by doc-consistency-checker."
 model: sonnet
 color: orange
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -111,7 +111,7 @@ quality — that is prd-reviewer's role.
 - Using Task tool for recursive exploration causes context explosion
 - Use Read, Glob, and Grep tools to efficiently identify and load necessary files, prioritizing context efficiency
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Load PRDs, CONSTITUTION.md, PRD template
 - `Glob`: Discover PRD files under the requirement directory

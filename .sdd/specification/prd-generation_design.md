@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
@@ -165,7 +165,7 @@ plugins/sdd-workflow/
 │   ├── front-matter-reviewer.md             # haiku / read-only
 │   ├── requirement-analyzer.md              # sonnet / read-only
 │   └── cross-prd-reviewer.md                # sonnet / read-only
-└── .claude-plugin/plugin.json               # agents 登録（skills はディレクトリ一括）（T-002）
+└── .claude-plugin/plugin.json               # agents 登録（skills は宣言せず自動検出）（T-002）
 ```
 
 ---
@@ -222,7 +222,7 @@ plugins/sdd-workflow/
 | B-002 | 多言語対応（EN/JA）の一貫性  | ✅   | generate-prd / finalize-prd が `templates/{en,ja}/` を保持し出力言語を統一   |
 | A-001 | Skills-First             | ✅   | 全機能を `skills/{name}/SKILL.md` として実装（legacy commands なし）        |
 | A-002 | フックとスクリプトの責務分離   | ✅   | 準備処理を prepare-prd.py に委譲し、Claude は判断・生成に専念                 |
-| T-002 | plugin.json 登録の徹底     | ✅   | 4 エージェントを plugin.json の agents に登録。skills は `./skills` で一括登録  |
+| T-002 | plugin.json 登録の徹底     | ✅   | 4 エージェントを plugin.json の agents に登録。スキルは標準パス `skills/` の自動検出で読み込む |
 | T-003 | 日本語出力の文字化け防止     | ✅   | ja テンプレートを UTF-8 で維持し mojibake を防止                            |
 
 **原則から逸脱する場合**: D-001（Specification-Driven）に対する実装先行の経緯は「1. 実装ステータス」の

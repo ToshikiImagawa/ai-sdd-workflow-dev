@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["spec-spec-design-generate-spec"]
 tags: ["specification", "design-doc", "generation"]
 category: "spec-design"
@@ -39,7 +39,7 @@ risk: "high"
 | 日英テンプレート              | 🟢     | `skills/generate-spec/templates/{en,ja}/`（spec_template / design_template / spec_output） |
 | 参照ドキュメント群            | 🟢     | `skills/generate-spec/references/`（生成フロー・front matter・既存文書チェック等） |
 | レビュー連携                 | 🟢     | `agents/spec-reviewer.md`・`agents/front-matter-reviewer.md` を生成後に呼び出す |
-| plugin.json 登録            | 🟢     | `.claude-plugin/plugin.json` の `skills` に登録済み（T-002）                   |
+| plugin.json 登録            | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -166,7 +166,7 @@ plugins/sdd-workflow/
 ├── agents/
 │   ├── spec-reviewer.md          # 生成後の原則準拠・トレーサビリティレビュー（外部連携）
 │   └── front-matter-reviewer.md  # 生成後の front matter 検証（外部連携）
-└── .claude-plugin/plugin.json    # skills に generate-spec を登録（T-002）
+└── .claude-plugin/plugin.json    # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 生成先は本プラグイン外の対象プロジェクトの `${SDD_SPECIFICATION_PATH}`（既定 `.sdd/specification/`）である。
@@ -227,7 +227,7 @@ plugins/sdd-workflow/
 | B-002 | 多言語対応（EN/JA）の一貫性       | ✅     | `SDD_LANG` + `templates/{en,ja}/`。プロジェクト優先テンプレートも言語一貫      |
 | D-001 | Specification-Driven          | ✅     | spec / design を生成し Specify → Plan フローを支える中核機能               |
 | D-002 | ファイル命名規則の厳守            | ✅     | `_spec` / `_design` サフィックスと構造別パスを生成フローで強制                 |
-| T-002 | plugin.json 登録の徹底          | ✅     | `skills` に generate-spec を登録済み                                |
+| T-002 | plugin.json 登録の徹底          | ✅     | generate-spec は標準パス `skills/` の自動検出で読み込まれる（`skills` 宣言なし） |
 | T-003 | 日本語出力の文字化け防止           | ✅     | 生成物の UTF-8 維持・mojibake / U+FFFD の混入を出力前に確認                 |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

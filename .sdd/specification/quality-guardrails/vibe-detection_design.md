@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-28"
 depends-on: ["spec-quality-guardrails-vibe-detection"]
 tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
 category: "quality-guardrails"
@@ -156,8 +156,8 @@ plugins/sdd-workflow/
     └── templates/{en,ja}/        # risk_report(.fallback) / assumed_spec(.fallback)
 ```
 
-本機能はプラグインルートの `hooks.json` にフックが登録済みであり、`vibe-detector` スキルは `plugin.json` の
-`"skills": "./skills"` によりディレクトリ単位で自動登録される。フック・スキルとも `plugin.json` への個別列挙を
+本機能はプラグインルートの `hooks.json` にフックが定義済みであり、`vibe-detector` スキルは標準パス
+`skills/` の自動検出で読み込まれる。フック・スキルとも `plugin.json` への宣言を
 要さないため plugin.json 変更は不要（T-002）。
 
 なお回帰テスト `scripts/test-hook-scripts.sh` は上記ツリー外の**リポジトリルート直下 `scripts/`** に配置され、

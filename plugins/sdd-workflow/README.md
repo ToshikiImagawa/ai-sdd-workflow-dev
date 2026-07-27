@@ -588,13 +588,19 @@ sdd-workflow/
 │   └── hooks.json                 # Hooks configuration
 ├── scripts/
 │   ├── session-start.py           # Session start initialization script
-│   ├── hook_common.py             # Shared helpers for hook scripts
 │   ├── user-prompt-submit.py      # Vibe Coding signal detection
-│   ├── pre-tool-use.py            # .sdd/ file naming validation
-│   └── post-tool-use.py           # Document update omission detection
+│   ├── pre-tool-use.py            # .sdd/ file naming validation, CONSTITUTION injection
+│   ├── post-tool-use.py           # Document update omission detection
+│   ├── sdd_index.py               # Structured index generation for .sdd/ documents
+│   ├── hook_common.py             # Shared: stdin/stdout, path resolution, .sdd-config loading
+│   ├── fm_parser.py               # Shared: front matter detection and parsing
+│   ├── naming.py                  # Shared: naming convention validation, document type detection
+│   ├── doc_walker.py              # Shared: target document traversal, design doc lookup
+│   └── env_export.py              # Shared: export writing to CLAUDE_ENV_FILE
 ├── AI-SDD-PRINCIPLES.source.md
 ├── LICENSE
 ├── README.md
+├── README.ja.md
 ├── CHANGELOG.md
 └── CHANGELOG.ja.md
 ```

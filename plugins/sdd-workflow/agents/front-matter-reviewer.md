@@ -3,7 +3,7 @@ name: front-matter-reviewer
 description: "Validates YAML front matter in AI-SDD documents. Checks field formats, dependency direction, status values, type-specific fields, cross-reference integrity, and id uniqueness. Use after document generation or during consistency checks. Pass target document paths as arguments."
 model: haiku
 color: cyan
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -90,7 +90,7 @@ lightweight model is sufficient for accuracy while reducing cost and latency.
 - Using Task tool for recursive exploration causes context explosion
 - Use Read, Glob, and Grep tools to efficiently identify and load necessary files, prioritizing context efficiency
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Load target documents and front matter reference
 - `Glob`: Search for related documents (for cross-reference checks)

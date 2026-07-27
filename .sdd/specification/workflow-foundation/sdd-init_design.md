@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-sdd-init"]
 tags: ["initialization", "template", "claude-md", "skill"]
 category: "workflow-foundation"
@@ -147,7 +147,7 @@ plugins/sdd-workflow/
 │   └── templates/ja/{同上}                         # 日本語版
 ├── scripts/hook_common.py / env_export.py         # ルート解決・env export 共有
 ├── scripts/session-start.py                       # 詳細ルール配置（session-config 側）
-└── .claude-plugin/plugin.json                     # "skills": "./skills"（T-002）
+└── .claude-plugin/plugin.json                     # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 ---
@@ -203,7 +203,7 @@ plugins/sdd-workflow/
 | B-002 | 多言語対応の一貫性          | ✅   | `templates/{en,ja}/` を用意し `SDD_LANG` に応じて EN/JA 同等構成で生成      |
 | D-001 | Specification-Driven     | ⚠️   | 実装先行のため本 spec/design を逆算作成（1 節に例外を文書化・正当化）          |
 | D-002 | ファイル命名規則の厳守       | ✅   | 生成構造・テンプレートが requirement/specification 命名規則に準拠           |
-| T-002 | plugin.json 登録の徹底     | ✅   | `"skills": "./skills"` によりスキルを登録済み                           |
+| T-002 | plugin.json 登録の徹底     | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 日本語テンプレート・出力で UTF-8 を維持し mojibake を防止                  |
 
 **原則から逸脱する場合**: D-001 について実装先行の経緯を 1 節に文書化し、CONSTITUTION.md の例外プロセスに従う。

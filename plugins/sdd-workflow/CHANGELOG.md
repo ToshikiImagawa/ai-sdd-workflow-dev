@@ -11,12 +11,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+#### Agents
+
+- **Tool restrictions were not applied** - All six agents declared their tool allowlist with
+  `allowed-tools:`, which is a skill-only front matter key. Subagents recognize `tools:` /
+  `disallowedTools:`, so the declaration was silently ignored and every agent inherited **all** tools,
+  including `Write` / `Edit` / `Bash`. Renamed the key to `tools:`, restoring the intended read-only
+  scope (`Read`, `Glob`, `Grep`, `AskUserQuestion`)
+
+#### Skills
+
+- **Model selection was not applied** - Eight skills selected a model with `agent: sonnet` / `agent:
+  haiku`. The `agent` field names a *subagent type* and only applies when `context: fork` is set, so a
+  model alias there was silently ignored and fell back to `general-purpose`. Switched to the `model:`
+  field, which applies whether or not the skill forks
+
+#### Hooks
+
+- **Hooks failed when the install path contained a space** - `${CLAUDE_PLUGIN_ROOT}` was unquoted in all
+  four hook commands, so the path was word-split and every hook failed to start under such paths (for
+  example a `$HOME` containing a space). The variable is now quoted
+- **Stale tool name in matchers** - `PreToolUse` / `PostToolUse` matched `Write|Edit|MultiEdit`, but
+  `MultiEdit` is no longer a Claude Code tool. Narrowed the matchers to `Write|Edit`
+
 #### Plugin Manifest
 
 - **Duplicate hooks load** - Removed the `"hooks": "./hooks/hooks.json"` declaration from `plugin.json`.
   Claude Code auto-detects `hooks/hooks.json` at the plugin root, and a manifest path supplements the
   default path rather than replacing it, so declaring the standard path loaded the same file twice and
   surfaced a `Duplicate hooks file detected` error on plugin load. Hook behavior itself is unchanged
+- **Redundant skills declaration** - Removed `"skills": "./skills"`. The default `skills/` directory is
+  always scanned and the `skills` field only *adds* to that scan, so declaring the standard path had no
+  effect. All 19 skills continue to load
+
+#### Documentation
+
+- **Japanese README was out of sync with the English one** - `README.ja.md` listed 5 agents (6 exist) and
+  1 hook (4 exist), documented `ja` as the default for `SDD_LANG` and `.sdd-config.json` `lang` (the
+  default is `en`), and listed 1 of the 10 files under `scripts/`. Both READMEs are now aligned
 
 ## [4.0.0] - 2026-07-16
 

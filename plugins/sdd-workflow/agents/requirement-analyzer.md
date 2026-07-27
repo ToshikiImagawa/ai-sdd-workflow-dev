@@ -3,7 +3,7 @@ name: requirement-analyzer
 description: "Use this agent when requirement analysis is needed, when users say 'analyze requirements', 'check requirements diagram', 'verify traceability', or 'impact analysis', or before/after running /generate-spec or /generate-prd commands when requirement validation is needed. Analyzes .sdd/requirement/*.md SysML requirements diagrams for coverage gaps, dependency conflicts, implementation traceability, and ID numbering (naming convention, ordering, gaps). Generates actionable reports with traceability status and classified proposals ([must]=critical issues, [recommend]=improvements, [nits]=minor suggestions). Requires the requirement file path or feature name to analyze."
 model: sonnet
 color: blue
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -43,7 +43,7 @@ Requirement analysis result report (requirement validity assessment, detected is
 - Using Task tool for recursive exploration risks context explosion
 - Prioritizes context efficiency by using Read, Glob, Grep tools to efficiently identify and read necessary files
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Read AI-SDD principles, PRDs, specifications, design documents
 - `Glob`: Search for requirement files, related documents

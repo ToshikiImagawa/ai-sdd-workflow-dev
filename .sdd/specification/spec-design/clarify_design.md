@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["spec-spec-design-clarify"]
 tags: ["clarification", "ambiguity-analysis", "clarity-score"]
 category: "spec-design"
@@ -37,7 +37,7 @@ risk: "high"
 | clarification-assistant エージェント | 🟢     | `agents/clarification-assistant.md`（`model: sonnet`、Task 不使用）      |
 | 分析ロジック参照資料                   | 🟢     | `skills/clarify/references/`（9 カテゴリ・対象読み込み・検証コマンド等）        |
 | 出力テンプレート                     | 🟢     | `skills/clarify/templates/{en,ja}/clarification_output.md`             |
-| plugin.json 登録                   | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録、`agents` 配列に clarification-assistant を明示登録済み（T-002） |
+| plugin.json 登録                   | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ宣言不要、`agents` 配列に clarification-assistant を明示登録済み（T-002） |
 
 ---
 
@@ -179,11 +179,12 @@ plugins/sdd-workflow/
 │   ├── clarification-assistant.md      # 分析エージェント（読み取り専用・統合提案）
 │   ├── references/clarification_workflow.md   # 分析→回答→再評価のワークフロー
 │   └── examples/                       # clarification_assistant_usage / clarification_questions
-└── .claude-plugin/plugin.json          # skills は "./skills" 参照で自動登録、agents 配列に clarification-assistant を明示登録（T-002）
+└── .claude-plugin/plugin.json          # skills は宣言せず自動検出、agents 配列に clarification-assistant を明示登録（T-002）
 ```
 
-clarify スキルと clarification-assistant エージェントはいずれも実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+clarify スキルは実装済みで標準パス `skills/` の自動検出により読み込まれ、clarification-assistant エージェントは
+`agents` に登録済みである。本設計書は逆算文書であり、新規追加ではないため plugin.json の変更は発生しない
+（`agents` の既存登録の維持を確認する）。
 
 ---
 
@@ -238,5 +239,5 @@ clarify スキルと clarification-assistant エージェントはいずれも�
 | B-001 | Vibe Coding 防止              | ✅     | 実装前に曖昧点を洗い出し、基準未満では実装を推奨しない                     |
 | B-002 | 多言語対応（EN/JA）の一貫性       | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え              |
 | D-001 | Specification-Driven          | ✅     | 仕様書を真実の源とし、回答統合で明確度を高めるフローへ誘導                  |
-| T-002 | plugin.json 登録の徹底         | ✅     | clarify スキル・clarification-assistant エージェントとも登録済み          |
+| T-002 | plugin.json 登録の徹底         | ✅     | clarify スキルは `skills/` の自動検出、clarification-assistant は `agents` に登録済み |
 | T-003 | 日本語出力の文字化け防止          | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない                |

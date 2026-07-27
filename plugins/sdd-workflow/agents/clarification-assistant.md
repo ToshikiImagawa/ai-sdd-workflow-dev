@@ -3,7 +3,7 @@ name: clarification-assistant
 description: "Use this agent when resolving specification ambiguities, when users say 'clarify spec', 'identify unclear points', 'check spec ambiguity', or 'generate questions', or before running /generate-spec command when requirement clarification is needed. Systematically analyzes user requirements or existing specifications (.sdd/specification/*_spec.md) across 9 categories (Functional Scope, Data Model, Flow, Non-Functional Requirements, Integration, Edge Cases, Constraints, Terminology, Completion Criteria), identifies unclear points and ambiguities, and generates up to 5 prioritized questions. Calculates clarity scores and integrates user answers into specifications to achieve 80%+ clarity for implementation-ready specs. Works in coordination with vibe-detector skill to prevent Vibe Coding issues."
 model: sonnet
 color: blue
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -55,7 +55,7 @@ and assist in creating clear specifications with ambiguity eliminated.
 - Using Task tool for recursive exploration risks context explosion
 - Prioritizes context efficiency by using Read, Glob, Grep tools to efficiently identify and read necessary files
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Read AI-SDD principles, specifications, design documents, PRDs
 - `Glob`: Search for specification files

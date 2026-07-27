@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["prd-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
 category: "distribution"
@@ -15,7 +15,7 @@ category: "distribution"
 
 **関連 Design Doc:** [distribution_design.md](distribution_design.md)
 **関連 PRD:** [distribution.md](../requirement/distribution.md)
-**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md) B-002（多言語対応の一貫性）, T-001（JSON/Markdown 構文の正当性）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `v2.0.0`） B-002（多言語対応の一貫性）, T-001（JSON/Markdown 構文の正当性）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
 
 ---
 
@@ -40,7 +40,7 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
   `plugin.json` マニフェスト）に準拠して配布し、利用者が標準手順で導入・更新できる（FR_001 / IR_001）
 - **バージョンの単一ソース**: バージョン番号をマニフェストに一元化し、分散した重複記載による
   不整合を防ぐ。変更履歴は日英併記で提供する（FR_002 / DC_001）
-- **日英の機能同等性**: すべてのスキル・エージェントのテンプレートを `templates/{en,ja}/` の
+- **日英の機能同等性**: 出力テンプレートを持つスキル・エージェントのテンプレートを `templates/{en,ja}/` の
   二言語体系で提供し、両言語のファイルセットを同一に保つ（FR_003 / DC_003 / B-002）
 - **クロスプラットフォーム**: スクリプト・フックは macOS / Linux で同一の動作を保証する（NFR_001）
 - **継続検証**: 変更のマージ前に、構造・構文・リント・静的解析・回帰テストを CI で自動実行し、
@@ -55,9 +55,9 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 
 | ID     | 要件                                                                                   | 優先度 | 根拠（上流要求）        |
 |--------|----------------------------------------------------------------------------------------|-----|----------------------|
-| FR-001 | マーケットプレイスメタデータとプラグインマニフェストで配布し、スキル・エージェント・フックを登録する | 必須  | PRD FR_001 / UR_001   |
+| FR-001 | マーケットプレイスメタデータとプラグインマニフェストで配布し、エージェントを登録する（スキル・フックは標準パスの自動検出に委ねる） | 必須  | PRD FR_001 / UR_001   |
 | FR-002 | バージョン番号を単一ソースで管理し、変更履歴（CHANGELOG）を日英併記で提供する                 | 必須  | PRD FR_002 / DC_001   |
-| FR-003 | 全スキル・エージェントの出力テンプレートを日英二言語体系で提供する                            | 必須  | PRD FR_003 / UR_002   |
+| FR-003 | 出力テンプレートを持つスキル・エージェントのテンプレートを日英二言語体系で提供する                 | 必須  | PRD FR_003 / UR_002   |
 | FR-004 | 構造検証・プロンプトリント・シェル静的解析・フック回帰テストを CI で自動実行する                | 必須  | PRD FR_004 / UR_003   |
 | FR-005 | マニフェスト（marketplace.json / plugin.json）を Claude Code プラグイン仕様に準拠させる      | 必須  | PRD IR_001            |
 | FR-006 | プロンプト Markdown にコードブロックを含めず、EN/JA テンプレートのファイルセットを同一に保つ    | 必須  | PRD DC_002 / DC_003   |
@@ -75,16 +75,20 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 本機能は個別の機能スキルを追加するのではなく、プラグインを配布・運用するための基盤コンポーネントを
 提供する。対象コンポーネントは以下のとおり。
 
-| 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                          | 概要                                                                    |
+| 種別（config/ci/script/template/docs） | 配置場所                                                          | 名前                          | 概要                                                                    |
 |------------------------------|-----------------------------------------------------------------|-----------------------------|-------------------------------------------------------------------------|
 | config                       | `.claude-plugin/marketplace.json`                              | マーケットプレイスメタデータ       | 登録プラグイン一覧・参照先・バージョンを定義する（FR-001 / FR-005）              |
-| config                       | `plugins/sdd-workflow/.claude-plugin/plugin.json`              | プラグインマニフェスト            | 名前・バージョン・エージェント・スキル・フックを登録する（FR-001 / FR-005 / DC_001） |
-| ci                           | `.github/workflows/ci.yml`                                     | CI 検証ワークフロー             | 構造検証・shellcheck・plugin-lint・回帰テストを複数 OS で実行する（FR-004 / NFR-001） |
+| config                       | `plugins/sdd-workflow/.claude-plugin/plugin.json`              | プラグインマニフェスト            | 名前・バージョンとエージェントを登録する。スキル・フックは標準パスの自動検出に委ねる（FR-001 / FR-005 / DC_001） |
+| ci                           | `.github/workflows/ci.yml`                                     | CI 検証ワークフロー             | 構造検証・plugin-lint を ubuntu で、shellcheck・回帰テストを ubuntu / macos の両 OS で実行する（FR-004 / NFR-001） |
 | ci                           | `.github/workflows/prepare-release.yml`                        | リリース準備ワークフロー          | develop → main の PR 作成・CI 待機・マージまでを自動化する（FR-002）             |
 | ci                           | `.github/workflows/release.yml`                                | リリース配布ワークフロー          | タグ契機でバージョン整合を検証し、公開リポへ配布・リリースを作成する（FR-002 / FR-005） |
 | script                       | `scripts/validate-marketplace.sh`                              | 構造・バージョン検証スクリプト     | JSON 構文・必須フィールド・バージョン整合を検証する（FR-004 / FR-005）             |
-| script                       | `scripts/plugin-lint.sh`                                       | プロンプト・構成リント           | コードブロック検出・EN/JA 同一性・パストークン検査を行う（FR-006 / DC_002 / DC_003） |
-| template                     | `plugins/sdd-workflow/skills/*/templates/{en,ja}/` 等            | 多言語テンプレート群             | 全スキル・エージェントの出力テンプレートを日英二言語で提供する（FR-003 / DC_003）    |
+| script                       | `scripts/plugin-lint.sh`                                       | プロンプト・構成リント           | コードブロック検出・EN/JA 同一性・パストークン検査・マニフェスト衛生検査を行う（FR-006 / DC_002 / DC_003） |
+| script                       | `scripts/test-session-start.sh`                                | session-start 回帰テスト        | SessionStart フックの環境変数出力・言語判定の既存挙動を検証する（FR-004 / NFR-001） |
+| script                       | `scripts/test-hook-scripts.sh`                                 | フックスクリプト回帰テスト        | pre/post-tool-use・user-prompt-submit の既存挙動を検証する（FR-004 / NFR-001） |
+| script                       | `scripts/test-e2e-sdd-init.sh`                                 | sdd-init E2E テスト            | 空プロジェクトでの初期化連鎖（session-start → 構造生成 → CLAUDE.md 更新）を通しで検証する（FR-004） |
+| script                       | `scripts/test-skill-scripts.sh`                                | スキルヘルパー回帰テスト          | スキル同梱ヘルパースクリプトが custom root で正しく動作するか検証する（FR-004）      |
+| template                     | `plugins/sdd-workflow/skills/*/templates/{en,ja}/` 等            | 多言語テンプレート群             | 出力テンプレートを持つスキル・エージェントのテンプレートを日英二言語で提供する（FR-003 / DC_003） |
 | docs                         | `plugins/sdd-workflow/CHANGELOG.md` / `CHANGELOG.ja.md`         | 変更履歴（日英併記）             | バージョンごとの変更内容を英語・日本語で提供する（FR-002）                        |
 
 ## 4.1. 入出力定義
@@ -106,7 +110,7 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 | 用語               | 説明                                                                       |
 |------------------|----------------------------------------------------------------------------|
 | marketplace.json | マーケットプレイスのメタデータ。登録プラグインの一覧と参照先・バージョンを定義する          |
-| plugin.json      | プラグインマニフェスト。名前・バージョン・エージェント・スキル・フックを登録する            |
+| plugin.json      | プラグインマニフェスト。名前・バージョンとエージェントを登録する。スキル・フックは標準パスが自動検出されるため宣言しない |
 | CHANGELOG        | バージョンごとの変更履歴。英語版（CHANGELOG.md）と日本語版（CHANGELOG.ja.md）を併記する |
 | plugin-lint      | プロンプト Markdown・テンプレート構成のリポジトリ規約を検証するリントスクリプト           |
 | 回帰テスト          | フック・スキルスクリプトの既存挙動が変更で壊れていないことを確認する自動テスト             |
@@ -167,9 +171,9 @@ sequenceDiagram
 
 | 原則ID  | 原則名                   | 本仕様への適用内容                                                        |
 |-------|-------------------------|----------------------------------------------------------------------------|
-| B-002 | 多言語対応（EN/JA）の一貫性  | 全テンプレートを EN/JA 二言語で提供し、ファイルセット同一性を要件化する（FR-003 / DC_003） |
+| B-002 | 多言語対応（EN/JA）の一貫性  | テンプレートを持つスキル・エージェントで EN/JA 二言語を提供し、ファイルセット同一性を要件化する（FR-003 / DC_003） |
 | T-001 | JSON/Markdown 構文の正当性 | marketplace.json / plugin.json の JSON 正当性とドキュメントリンクの整合を CI で検証する |
-| T-002 | plugin.json 登録の徹底     | 配布対象のスキル・エージェント・フックがマニフェストに登録されていることを配布の前提とする    |
+| T-002 | plugin.json 登録の徹底     | 配布対象のエージェントがマニフェストに登録され、スキル・フックが標準パスの自動検出に委ねられていることを配布の前提とする |
 | T-003 | 日本語出力の文字化け防止     | ja テンプレート・日本語 CHANGELOG・ドキュメントに文字化けを混入させない               |
 
 ---

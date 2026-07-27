@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-07-15"
+updated: "2026-07-28"
 depends-on: ["spec-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -147,7 +147,7 @@ plugins/sdd-workflow/
 │   └── prerequisites_directory_paths.md
 ├── hooks/hooks.json                           # PostToolUse フック定義（本スキルの起動トリガー）
 ├── scripts/post-tool-use.py                   # advisory ヒント注入の実体（他フックスクリプトと共有）
-└── .claude-plugin/plugin.json                # skills への登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 **注記:** `hooks/hooks.json` と `scripts/post-tool-use.py` は `vibe-detector` など他の自動実行スキルとも
@@ -172,7 +172,7 @@ plugins/sdd-workflow/
 | デモンストレーション | PRD ↔ spec、spec ↔ design に意図的な不整合を仕込み、検出・分類・報告を確認 | 欠落・矛盾・陳腐化の 3 種別を各層（PRD↔spec, spec↔design の 2 層）で検出できること（PRD 検証方法: demonstration） |
 | インスペクション   | SKILL.md の front matter（`user-invocable: false`, `allowed-tools`） | 読み取り専用・自動実行の制約が満たされていること              |
 | 回帰テスト        | `post-tool-use.py` の advisory ヒント注入（`scripts/test-hook-scripts.sh`） | `${SDD_REQUIREMENT_PATH}` / `${SDD_SPECIFICATION_PATH}` 更新時に doc-consistency-checker 実行を促すヒントが出力されること |
-| 構文検証         | plugin.json への登録（plugin-lint / jq）             | スキルが `plugin.json` に登録されていること（T-002）      |
+| 構文検証         | plugin.json の構文と宣言（plugin-lint / jq）        | `plugin.json` に `skills` 宣言が無く、標準パス `skills/` で検出されること（T-002） |
 
 ---
 
@@ -221,5 +221,5 @@ plugins/sdd-workflow/
 | B-001 | Vibe Coding 防止          | ✅   | 層間不整合を検出し仕様書を真実の源として維持                            |
 | B-002 | 多言語対応（EN/JA）の一貫性   | ✅   | `templates/{en,ja}/consistency_report.md` を用意し `SDD_LANG` で切替 |
 | D-001 | Specification-Driven    | ✅   | 要求 ID のトレーサビリティ（PRD → spec → design）を検証           |
-| T-002 | plugin.json 登録の徹底      | ✅   | スキルは `plugin.json` の skills に登録済み                     |
+| T-002 | plugin.json 登録の徹底      | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれる（`plugin.json` に skills 宣言なし） |
 | T-003 | 日本語出力の文字化け防止      | ✅   | JA テンプレートは文字化け・U+FFFD 混入なしを確認                    |

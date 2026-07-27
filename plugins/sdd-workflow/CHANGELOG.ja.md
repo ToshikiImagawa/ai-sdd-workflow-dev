@@ -11,12 +11,43 @@
 
 ### Fixed
 
+#### Agents
+
+- **ツール制限が効いていなかった** - 6つのエージェントすべてが許可ツールを `allowed-tools:` で宣言していたが、
+  これはスキル専用の front matter キーである。サブエージェントが解釈するのは `tools:` / `disallowedTools:` の
+  ため宣言は警告なく無視され、全エージェントが `Write` / `Edit` / `Bash` を含む**すべてのツール**を継承していた。
+  キーを `tools:` に修正し、意図していた読み取り専用の範囲（`Read`, `Glob`, `Grep`, `AskUserQuestion`）を回復した
+
+#### Skills
+
+- **モデル指定が効いていなかった** - 8つのスキルが `agent: sonnet` / `agent: haiku` でモデルを指定していた。
+  `agent` フィールドは*サブエージェント型名*の指定で `context: fork` 設定時のみ有効なため、モデル名を書いても
+  警告なく無視され `general-purpose` にフォールバックしていた。fork の有無に関わらず有効な `model:`
+  フィールドに変更した
+
+#### Hooks
+
+- **インストールパスに空白があるとフックが起動しなかった** - 4つのフックコマンドすべてで
+  `${CLAUDE_PLUGIN_ROOT}` が未クォートだったため、パスが単語分割され（`$HOME` に空白を含む環境などで）
+  全フックが起動に失敗していた。変数をクォートした
+- **matcher の陳腐化したツール名** - `PreToolUse` / `PostToolUse` の matcher が `Write|Edit|MultiEdit`
+  だったが、`MultiEdit` は現在の Claude Code のツールではない。`Write|Edit` に絞った
+
 #### Plugin Manifest
 
 - **フックの二重ロード** - `plugin.json` から `"hooks": "./hooks/hooks.json"` の宣言を削除。Claude Code は
   プラグインルート直下の `hooks/hooks.json` を自動検出し、manifest のパスは既定パスを上書きせず補完するため、
   標準パスを明示すると同一ファイルが二重にロードされ、プラグイン読み込み時に `Duplicate hooks file detected`
   エラーが表示されていた。フック自体の動作は変わらない
+- **冗長な skills 宣言** - `"skills": "./skills"` を削除。既定の `skills/` ディレクトリは常に走査され、
+  `skills` フィールドはその走査に*加算*するだけなので、標準パスの宣言は無意味だった。19スキルはすべて
+  引き続き読み込まれる
+
+#### Documentation
+
+- **日本語 README が英語版と乖離していた** - `README.ja.md` はエージェントを5件（実際は6件）、フックを1件
+  （実際は4件）と記載し、`SDD_LANG` と `.sdd-config.json` の `lang` のデフォルトを `ja`（実際は `en`）と
+  記述し、`scripts/` 配下10ファイルのうち1件しか載せていなかった。両 README を同期した
 
 ## [4.0.0] - 2026-07-16
 

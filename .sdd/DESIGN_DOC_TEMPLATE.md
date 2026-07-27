@@ -100,11 +100,11 @@ graph TD
 
 ```
 plugins/sdd-workflow/
-├── skills/{name}/
+├── skills/{name}/               # 標準パスは自動検出（plugin.json への登録は不要）
 │   ├── SKILL.md
 │   ├── scripts/
 │   └── templates/{en,ja}/
-└── .claude-plugin/plugin.json   # 登録を忘れない（T-002）
+└── .claude-plugin/plugin.json   # エージェント追加時は agents への登録を忘れない（T-002）
 ```
 
 ---

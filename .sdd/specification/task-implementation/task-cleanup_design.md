@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-task-cleanup"]
 tags: ["task-cleanup", "knowledge-persistence"]
 category: "task-implementation"
@@ -44,7 +44,7 @@ risk: "medium"
 | task-cleanup スキル      | 🟢     | `skills/task-cleanup/SKILL.md`（`user-invocable: true`、`agent: haiku`、`allowed-tools: Read/Write/Edit/Glob/Grep/Bash/AskUserQuestion`） |
 | 範囲確認例              | 🟢     | `skills/task-cleanup/examples/scope_confirmation.md`                  |
 | 出力テンプレート         | 🟢     | `skills/task-cleanup/templates/{en,ja}/cleanup_output.md`             |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                  |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -150,11 +150,11 @@ plugins/sdd-workflow/
 │   ├── SKILL.md                              # ユーザー呼び出しスキル本体（agent: haiku）
 │   ├── examples/scope_confirmation.md        # 範囲確認提示の例
 │   └── templates/{en,ja}/cleanup_output.md   # 出力基底テンプレート（日英）
-└── .claude-plugin/plugin.json                # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-task-cleanup スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+task-cleanup スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -208,7 +208,7 @@ task-cleanup スキルは実装・登録済みであり、本設計書は逆算�
 | B-002 | 多言語対応（EN/JA）の一貫性     | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven          | ✅     | 設計知見を `*_design.md` へ集約し仕様・設計を真実の源に保つ            |
 | D-003 | ドキュメント永続性ルールの遵守   | ✅     | 統合完了後にのみ task/ を削除し、統合前削除を発生させない              |
-| T-002 | plugin.json 登録の徹底         | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底         | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止         | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

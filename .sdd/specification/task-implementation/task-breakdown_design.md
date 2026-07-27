@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-task-breakdown"]
 tags: ["task-breakdown", "tasks"]
 category: "task-implementation"
@@ -45,7 +45,7 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 | 依存関係図参照           | 🟢     | `skills/task-breakdown/references/task_dependency_diagram.md`         |
 | 出力例・カバレッジ例       | 🟢     | `skills/task-breakdown/examples/`（task_list_format / requirement_coverage / serena_analysis） |
 | 出力テンプレート         | 🟢     | `skills/task-breakdown/templates/{en,ja}/breakdown_output.md`         |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                  |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -140,11 +140,11 @@ plugins/sdd-workflow/
 │   ├── references/task_dependency_diagram.md # 依存関係図の例
 │   ├── examples/                             # task_list_format / requirement_coverage / serena_analysis
 │   └── templates/{en,ja}/breakdown_output.md # 出力基底テンプレート（日英）
-└── .claude-plugin/plugin.json                # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-task-breakdown スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+task-breakdown スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -199,7 +199,7 @@ task-breakdown スキルは実装・登録済みであり、本設計書は逆�
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven      | ✅     | 技術設計書を真実の源として分解                                    |
 | D-002 | ファイル命名規則の厳守      | ✅     | 入出力パス・task front matter スキーマを厳守                       |
-| T-002 | plugin.json 登録の徹底     | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

@@ -3,7 +3,7 @@ name: prd-reviewer
 description: "Use this agent when PRD (Product Requirements Document) review is requested, after running /generate-prd command when quality checks are needed, or when users say 'review PRD', 'check requirements spec', or 'review requirements'. Reviews .sdd/requirement/*.md PRD files for CONSTITUTION.md compliance, SysML requirements diagram format validity, required section completeness, and requirement ID traceability. Generates fix proposals for detected violations. Requires the PRD file path to review. Note: spec/design reviews are handled by spec-reviewer."
 model: sonnet
 color: orange
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 skills: [ ]
 ---
 
@@ -91,7 +91,7 @@ perspectives:
 - Using Task tool for recursive exploration causes context explosion
 - Use Read, Glob, and Grep tools to efficiently identify and load necessary files, prioritizing context efficiency
 
-**allowed-tools Design**:
+**tools Design**:
 
 - `Read`: Load CONSTITUTION.md, PRD
 - `Glob`: Search for PRD files

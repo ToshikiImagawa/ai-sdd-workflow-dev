@@ -100,15 +100,17 @@ marketplace-repository/
   "version": "1.0.0",
   "license": "MIT",
   "homepage": "https://github.com/username/plugin-name",
-  "url": "https://...",
-  "strict": false
+  "url": "https://..."
 }
 ```
 
+> **Note**: `strict` は plugin.json のフィールドではありません。marketplace.json のプラグインエントリ側のフィールドです（[marketplace.json](#marketplacejsonマーケットプレイスマニフェスト)
+> 参照）。
+
 #### コンポーネントパスフィールド
 
-plugin.json でコンポーネントの配置場所をカスタマイズできます。カスタムパスはデフォルトパスを**補完**します（上書きではない）。パスは
-`./` で始まる必要があります。
+plugin.json でコンポーネントの配置場所をカスタマイズできます。標準パス（`agents/`, `skills/`, `commands/`,
+`hooks/hooks.json`）は宣言しなくても自動検出されます。パスは `./` で始まる必要があります。
 
 ```json
 {
@@ -120,7 +122,7 @@ plugin.json でコンポーネントの配置場所をカスタマイズでき�
   "commands": "./custom-commands",
   "agents": "./custom-agents",
   "skills": "./custom-skills",
-  "hooks": "./hooks/hooks.json",
+  "hooks": "./extra-hooks/hooks.json",
   "mcpServers": "./.mcp.json",
   "lspServers": "./.lsp.json",
   "outputStyles": "./styles"
@@ -137,6 +139,14 @@ plugin.json でコンポーネントの配置場所をカスタマイズでき�
 | lspServers   | string/object | LSP 設定ファイルのパス、またはインラインで LSP サーバー定義 |
 | outputStyles | string        | 出力スタイルディレクトリのカスタムパス                |
 
+**IMPORTANT**: 「カスタムパスは常にデフォルトパスを補完する」わけではありません。フィールドごとに挙動が異なります。
+
+| フィールド                            | 標準走査に対する挙動  | 帰結                                                                                       |
+|:---------------------------------|:------------|:-----------------------------------------------------------------------------------------|
+| `agents` / `commands` / `workflows` | **置換**する    | 配列に載せたパスのみ読み込まれる。載せなかったファイルは無視されるため、新規追加時は必ず登録する                                        |
+| `skills`                         | **加算**する    | 標準の `skills/` は常に走査されるため、`"./skills"` の宣言は冗長                                             |
+| `hooks`                          | 既定パスを**補完**する | 標準パス `hooks/hooks.json` を宣言すると同一ファイルの二重ロードになり、ローダーが `Duplicate hooks file detected` エラーで拒否する。**標準パスは宣言してはいけない** |
+
 #### `${CLAUDE_PLUGIN_ROOT}` 環境変数
 
 プラグイン内のスクリプトやフックから、プラグインのルートディレクトリを参照するために `${CLAUDE_PLUGIN_ROOT}`
@@ -147,8 +157,12 @@ plugin.json でコンポーネントの配置場所をカスタマイズでき�
   "hooks": {
     "SessionStart": [
       {
-        "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
+          }
+        ]
       }
     ]
   }
@@ -203,6 +217,7 @@ plugin.json でコンポーネントの配置場所をカスタマイズでき�
 | category    | No  | カテゴリ（`development`, `productivity`, など） |
 | license     | No  | ライセンスタイプ                                |
 | tags        | No  | 検索・フィルタリング用タグ                           |
+| strict      | No  | LSP サーバー起動失敗を厳格に扱うか（デフォルト `false`。[`strict` フィールド](#strict-フィールド) 参照）  |
 
 ---
 
@@ -288,28 +303,33 @@ name: agent-name
 description: "このエージェントを呼び出すタイミング、トリガーフレーズ、ユースケースの詳細な説明"
 model: sonnet
 color: blue
-allowed-tools: [ Read, Glob, Grep, Edit, Bash, TodoWrite ]
+tools: [ Read, Glob, Grep, Edit, Bash, TodoWrite ]
 skills: [ "plugin-name:skill-name" ]
 hooks:
   PostToolUse:
-    - type: prompt
-      prompt: "ツール使用後の検証プロンプト"
-      matcher: Edit
+    - matcher: Edit
+      hooks:
+        - type: prompt
+          prompt: "ツール使用後の検証プロンプト"
 ---
 ```
 
 **利用可能なフィールド**:
 
-| フィールド         | 型      | 必須  | 説明                                    |
-|:--------------|:-------|:----|:--------------------------------------|
-| name          | string | Yes | エージェント識別子（kebab-case）                 |
-| description   | string | Yes | いつ・どのように呼び出すかの説明（具体的に！）               |
-| model         | string | No  | モデル選択（`sonnet`, `opus`, `haiku`）      |
-| color         | string | No  | ターミナル出力の色（`red`, `green`, `blue`, など） |
-| allowed-tools | array  | No  | エージェントが使用できるツールのリスト                   |
-| tools         | array  | No  | `allowed-tools` の代替フィールド              |
-| skills        | array  | No  | プリロードするスキルのリスト                        |
-| hooks         | object | No  | エージェントスコープのフック設定                      |
+| フィールド           | 型      | 必須  | 説明                                    |
+|:----------------|:-------|:----|:--------------------------------------|
+| name            | string | Yes | エージェント識別子（kebab-case）                 |
+| description     | string | Yes | いつ・どのように呼び出すかの説明（具体的に！）               |
+| model           | string | No  | モデル選択（`sonnet`, `opus`, `haiku`）      |
+| color           | string | No  | ターミナル出力の色（`red`, `green`, `blue`, など） |
+| tools           | array  | No  | エージェントが使用できるツールのホワイトリスト（省略時は全ツールを継承）  |
+| disallowedTools | array  | No  | エージェントが使用できないツールのブラックリスト              |
+| skills          | array  | No  | プリロードするスキルのリスト                        |
+| hooks           | object | No  | エージェントスコープのフック設定                      |
+
+**IMPORTANT**: サブエージェントのツール指定の正当キーは `tools`（ホワイトリスト）と `disallowedTools`
+（ブラックリスト）のみです。`allowed-tools` は**サブエージェントでは無効キー**であり、記述しても警告なく無視され、エージェントは全ツールを継承します（`tools`
+を省略した場合と同じ）。コマンド・スキルの `allowed-tools` と混同しないでください。
 
 ### モデル選択ガイド
 
@@ -361,7 +381,7 @@ name: code-reviewer
 description: "..."
 model: opus
 color: green
-allowed-tools: [Read, Glob, Grep]
+tools: [Read, Glob, Grep]
 ---
 
 あなたは[ドメイン]を専門とするシニアコードレビュアーです。
@@ -403,7 +423,7 @@ $ARGUMENTS
 2. **適切なモデル選択**: タスクの複雑さに応じて選択
 3. **色分け**: ターミナル出力を視認しやすく
 4. **明確な入出力**: 期待する入力と出力形式を定義
-5. **ツール制限**: `allowed-tools` で必要最小限のツールのみ許可
+5. **ツール制限**: `tools` で必要最小限のツールのみ許可（`allowed-tools` は無効キーなので使わない）
 6. **役割の明確化**: エージェントのペルソナと専門性を明示
 
 詳細なエージェント設計原則は [PLUGIN_AGENTS.md](./PLUGIN_AGENTS.md) を参照してください。
@@ -442,13 +462,15 @@ user-invocable: true
 argument-hint: "<引数の説明>"
 disable-model-invocation: false
 allowed-tools: [ Read, Glob, Grep, Edit ]
+disallowed-tools: [ Write, Bash ]
 context: fork
 agent: sonnet
 hooks:
   PostToolUse:
-    - type: prompt
-      prompt: "検証プロンプト"
-      matcher: Edit
+    - matcher: Edit
+      hooks:
+        - type: prompt
+          prompt: "検証プロンプト"
 ---
 ```
 
@@ -463,10 +485,14 @@ hooks:
 | user-invocable           | boolean | No  | `true` でユーザーが `/skill-name` で直接呼び出し可能                  |
 | argument-hint            | string  | No  | 引数のヒント（ユーザー呼び出し時に表示）                                   |
 | disable-model-invocation | boolean | No  | `true` でモデルによる自動呼び出しを無効化（ユーザー明示呼び出しのみ）                 |
-| allowed-tools            | array   | No  | スキル実行時に使用可能なツールのリスト                                    |
+| allowed-tools            | array   | No  | スキル有効時に**許可を尋ねずに**使えるツールのリスト（権限の事前承認）                  |
+| disallowed-tools         | array   | No  | スキル実行時に**使用を禁止**するツールのリスト                              |
 | context                  | string  | No  | `fork` でサブエージェントコンテキストで実行                              |
 | agent                    | string  | No  | `context: fork` 時のエージェントタイプ（`sonnet`, `opus`, `haiku`） |
 | hooks                    | object  | No  | スキルスコープのフック設定                                          |
+
+**IMPORTANT**: スキルの `allowed-tools` は**制限リストではありません**。「許可を尋ねずに使えるツール」を事前承認するフィールドであり、ここに載せなかったツールも（通常の権限確認を経て）使用できます。ツールを実際に禁止したい場合は
+`disallowed-tools` を使ってください。
 
 ### 文字列置換変数
 
@@ -536,7 +562,7 @@ description: "このスキルは、ユーザーが「スキルをデモンスト
 4. **例とリファレンス**: examples/ と references/ を活用
 5. **バージョン管理**: version フィールドで変更を追跡
 6. **`context: fork` の活用**: 重い処理はサブエージェントとして実行
-7. **ツール制限**: `allowed-tools` で最小限のツールのみ許可
+7. **ツール制限**: 禁止は `disallowed-tools` で行い、`allowed-tools` は許可を尋ねずに使わせるツールに限定する
 
 ---
 
@@ -617,7 +643,6 @@ description: "このスキルは、ユーザーが「スキルをデモンスト
   "author": {
     "name": "作成者名"
   },
-  "strict": false,
   "lspServers": {
     "typescript": {
       "command": "typescript-language-server",
@@ -643,8 +668,9 @@ description: "このスキルは、ユーザーが「スキルをデモンスト
 
 ### `strict` フィールド
 
-plugin.json の `strict` フィールドは LSP サーバー専用です。`false`（デフォルト）の場合、LSP
-サーバーが起動に失敗しても警告のみでプラグインの読み込みは続行されます。
+`strict` は plugin.json ではなく **marketplace.json のプラグインエントリ**に記述するフィールドです。LSP
+サーバー向けの設定で、`false`（デフォルト）の場合、LSP サーバーが起動に失敗しても警告のみでプラグインの読み込みは続行されます。plugin.json
+に書いても効果はありません。
 
 ---
 
@@ -656,32 +682,57 @@ plugin.json の `strict` フィールドは LSP サーバー専用です。`fals
 
 フックは `hooks/hooks.json` ファイルまたは plugin.json 内でインライン定義します。
 
+フック設定は**3階層の入れ子構造**です。トップレベルの `"hooks"` ラッパーの下にイベント名をキーとした配列を置き、その各要素（マッチャーグループ）が
+`matcher` と `hooks` 配列を持ち、`hooks` 配列の要素（フックハンドラ）が `type` / `command` を持ちます。
+
+1. **イベント**: `"hooks"` 直下のキー（`SessionStart`, `PreToolUse` など）
+2. **マッチャーグループ**: イベント配列の要素。`matcher` で発火条件を絞る（省略可）
+3. **フックハンドラ**: マッチャーグループ内の `hooks` 配列の要素。`type` と `command` / `prompt` を指定する
+
 #### hooks/hooks.json での定義
 
 ```json
 {
-  "SessionStart": [
-    {
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
-    }
-  ],
-  "PreToolUse": [
-    {
-      "type": "command",
-      "command": "echo 'Tool about to be used'",
-      "matcher": "Bash"
-    }
-  ],
-  "PostToolUse": [
-    {
-      "type": "prompt",
-      "prompt": "ツール実行結果を検証し、問題があれば報告してください。",
-      "matcher": "Edit"
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Tool about to be used'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "ツール実行結果を検証し、問題があれば報告してください。"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
+
+> **Note**: `matcher` は `type` / `command` の兄弟ではありません。`matcher` はイベント配列要素（マッチャーグループ）のキーで、`type`
+> / `command` はその中の `hooks` 配列の要素に書きます。実装済みの例として本リポジトリの
+> [`plugins/sdd-workflow/hooks/hooks.json`](./plugins/sdd-workflow/hooks/hooks.json) を参照してください。
 
 #### plugin.json でのインライン定義
 
@@ -695,13 +746,20 @@ plugin.json の `strict` フィールドは LSP サーバー専用です。`fals
   "hooks": {
     "UserPromptSubmit": [
       {
-        "type": "command",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-prompt.sh"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-prompt.sh"
+          }
+        ]
       }
     ]
   }
 }
 ```
+
+> **Note**: plugin.json の `hooks` に書くのは、`hooks/hooks.json` のトップレベル `"hooks"`
+> ラッパーの**中身**（イベント名をキーとしたオブジェクト）です。構造の残りの階層は同じです。
 
 ### イベント一覧
 
@@ -730,22 +788,33 @@ plugin.json の `strict` フィールドは LSP サーバー専用です。`fals
 
 ### マッチャー (matcher)
 
-`PreToolUse`, `PostToolUse`, `PostToolUseFailure` イベントでは `matcher` フィールドでツール名を指定してフィルタリングできます。
+`PreToolUse`, `PostToolUse`, `PostToolUseFailure` イベントでは `matcher` フィールドでツール名を指定してフィルタリングできます。`matcher`
+は正規表現なので `Edit|Write` で複数ツールをまとめて指定できます。`matcher` を省略（または `"*"` / `""`）した場合はそのイベントの全発火にマッチします。
 
 ```json
 {
-  "PostToolUse": [
-    {
-      "type": "prompt",
-      "prompt": "編集内容がコーディング規約に準拠しているか確認してください。",
-      "matcher": "Edit"
-    },
-    {
-      "type": "command",
-      "command": "npm run lint",
-      "matcher": "Write"
-    }
-  ]
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "編集内容がコーディング規約に準拠しているか確認してください。"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run lint"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -952,7 +1021,7 @@ claude --debug
 ### コマンド/スキル設計
 
 - **単一責任の原則**: 各コマンド/スキルは1つのタスクに集中
-- **ツールアクセス制限**: `allowed-tools` で必要なツールのみ許可
+- **ツールアクセス制限**: スキルでは `disallowed-tools` で禁止する（`allowed-tools` は許可を尋ねずに使えるツールの事前承認であり制限ではない）
 - **明確なヒント**: `argument-hint` でユーザーをガイド
 - **引数処理**: `$ARGUMENTS` 変数を適切に活用
 - **新規はスキルで作成**: `commands/` ではなく `skills/` を使用
@@ -966,7 +1035,7 @@ claude --debug
     - シンプルなタスク → `haiku`
 - **色分けの活用**: ターミナル出力を読みやすく
 - **入出力の明確化**: 期待する入力と出力形式を定義
-- **ツール制限**: `allowed-tools` を必要最小限に
+- **ツール制限**: `tools` を必要最小限に（サブエージェントで `allowed-tools` は無効）
 
 ### スキル設計
 
