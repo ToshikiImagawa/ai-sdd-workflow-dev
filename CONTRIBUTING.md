@@ -58,6 +58,13 @@ bash scripts/test-session-start.sh
 bash scripts/test-hook-scripts.sh
 ```
 
+CI には含まれていませんが、Claude Code CLI 自身の検証もローカルで実行できます
+（認証不要。`agents/` にサポートファイルが混ざっていないかなどを検査します）:
+
+```bash
+claude plugin validate ./plugins/sdd-workflow --strict
+```
+
 ローカルでプラグインの動作確認をする場合:
 
 ```bash

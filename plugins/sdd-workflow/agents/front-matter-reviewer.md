@@ -23,7 +23,7 @@ $ARGUMENTS
 
 ### Input Examples
 
-**Reference**: `examples/front_matter_reviewer_usage.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/examples/front_matter_reviewer_usage.md`
 
 ## Output
 
@@ -37,7 +37,7 @@ Front matter validation report containing:
 
 **Before execution, read the front matter reference document.**
 
-Front matter reference: `references/front_matter_reference.md`
+Front matter reference: `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md`
 
 This document defines the complete schema, per-type fields, dependency direction rules, validation checklist,
 status transition rules, and missing front matter policy.
@@ -104,7 +104,7 @@ search outside this scope.
 
 ### Step 1: Read Front Matter Reference
 
-Before starting validation, **read `references/front_matter_reference.md` using the Read tool** to understand the
+Before starting validation, **read `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` using the Read tool** to understand the
 complete schema and validation rules.
 
 ### Step 2: Load Target Documents
@@ -201,11 +201,11 @@ When `--cross-ref` option is specified, perform project-wide checks:
 
 ## Output Format
 
-Read `templates/${SDD_LANG:-en}/front_matter_validation_report.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/front_matter_validation_report.md` and use it for output formatting.
 
 ### Severity Levels
 
-Read `references/validation_severity_levels.md` for severity level definitions and include them at the end of the report.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/references/validation_severity_levels.md` for severity level definitions and include them at the end of the report.
 
 ## Notes
 

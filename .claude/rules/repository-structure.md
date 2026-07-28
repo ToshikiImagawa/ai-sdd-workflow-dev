@@ -22,10 +22,7 @@ ai-sdd-workflow/
 │       │   ├── requirement-analyzer.md  # 要求仕様分析エージェント
 │       │   ├── clarification-assistant.md  # 仕様明確化アシスタント
 │       │   ├── front-matter-reviewer.md  # front matter検証エージェント
-│       │   ├── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
-│       │   ├── examples/          # エージェント利用例
-│       │   ├── references/        # エージェント参照資料
-│       │   └── templates/{en,ja}/ # エージェント出力テンプレート
+│       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
 │       ├── skills/                # 19スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
 │       │   ├── check-spec/                 # 実装とdesignの整合性チェック
@@ -69,8 +66,10 @@ ai-sdd-workflow/
 │       │   │   └── templates/{en,ja}/
 │       │   └── vibe-detector/              # Vibe Coding検出
 │       │       └── templates/{en,ja}/
-│       ├── shared/
-│       │   └── references/        # スキル・エージェント共通の参照資料（13ファイル）
+│       ├── shared/                # スキル・エージェント共通のサポートファイル
+│       │   ├── references/        # 共通の参照資料（20ファイル）
+│       │   ├── examples/          # エージェント利用例（7ファイル）
+│       │   └── templates/{en,ja}/ # エージェント出力テンプレート（各8ファイル）
 │       ├── hooks/
 │       │   └── hooks.json         # フック設定（JSON形式）
 │       ├── scripts/
@@ -113,7 +112,11 @@ ai-sdd-workflow/
   （CONSTITUTION T-002 v2.0.0）。`agents` はデフォルトの `agents/` スキャンを**置き換える**ため宣言が必須だが、
   `skills` は常にスキャンされるので宣言が冗長、`hooks` は標準パスを宣言すると二重ロードになる。
   新規エージェント追加時のみ `plugin.json` の更新が必要
-- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料。`plugin-lint` の
-  Check 2 でスキル配下のサポートファイルと同じ命名規則・拡張子規則が適用される
+- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料（20ファイル）。エージェントの参照資料も
+  ここに集約している。`plugin-lint` の Check 2 でスキル配下のサポートファイルと同じ命名規則・拡張子規則が適用される
+- **`agents/` にはエージェント定義のみを置く**: `templates/` / `references/` / `examples/` などのサポートファイルは
+  `shared/` 配下に置き、エージェント本文からは `${CLAUDE_PLUGIN_ROOT}/shared/...` 形式で参照する。
+  `claude plugin validate --strict` は `agents/**` を再帰走査するため、`agents/` 配下のサポートファイルは
+  エージェント定義として扱われ検証エラーになる（`plugin-lint.sh` の Check 4.2 が同じ不変条件を検査する）
 - **ルート直下の `scripts/` と `tests/`**: 検証コマンドの詳細は
   [scripts.md](scripts.md) / [testing-and-verification.md](testing-and-verification.md) を参照

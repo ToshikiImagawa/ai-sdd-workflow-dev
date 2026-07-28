@@ -26,7 +26,7 @@ $ARGUMENTS
 
 ### Input Examples
 
-**Reference**: `examples/clarification_assistant_usage.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/examples/clarification_assistant_usage.md`
 
 ## Output
 
@@ -106,7 +106,7 @@ Generate **up to 5 questions** from unclear points.
 | **Blocker**    | Is it prerequisite information for starting implementation? |
 | **Dependency** | Does it affect other design decisions?                      |
 
-**Question Format**: Read `templates/${SDD_LANG:-en}/clarification_question_template.md` for the question structure
+**Question Format**: Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/clarification_question_template.md` for the question structure
 template.
 
 ### 4. Integration Proposal for Specifications
@@ -127,7 +127,7 @@ and proposed content so the main agent can apply the changes.
 
 ## Workflow
 
-**Reference**: `references/clarification_workflow.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/references/clarification_workflow.md`
 
 ## Question Generation Stop Conditions
 
@@ -142,7 +142,7 @@ and proposed content so the main agent can apply the changes.
 
 ### Stop Report Format
 
-Read `templates/${SDD_LANG:-en}/stop_report_format.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/stop_report_format.md` and use it for output formatting.
 
 ### Infinite Loop Prevention
 
@@ -152,7 +152,7 @@ Read `templates/${SDD_LANG:-en}/stop_report_format.md` and use it for output for
 
 ## Output Format
 
-Read `templates/${SDD_LANG:-en}/clarification_analysis_output.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/clarification_analysis_output.md` and use it for output formatting.
 
 ## Prerequisites
 
@@ -204,11 +204,11 @@ use the existing Glob/Grep/Read flow.
 
 ## Question Template
 
-Read `templates/${SDD_LANG:-en}/clarification_question_template.md` for the question structure template.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/clarification_question_template.md` for the question structure template.
 
 ## Example Questions
 
-Read `examples/clarification_questions.md` for good and bad question examples.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/examples/clarification_questions.md` for good and bad question examples.
 
 ## Integration Points
 

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Plugin Layout
+
+- **Agent support files moved out of `agents/`** - `agents/references/`, `agents/examples/` and
+  `agents/templates/{en,ja}/` now live under `shared/` (`shared/references/`, `shared/examples/`,
+  `shared/templates/{en,ja}/`), leaving `agents/` with nothing but the six agent definitions.
+  `claude plugin validate --strict` scans `agents/**` recursively and ignores the manifest's `agents`
+  array, so every support file parked there was reported as an agent without front matter
+- **Agent reference paths are now absolute** - The 33 reference, example and template paths in the agent
+  prompts use `${CLAUDE_PLUGIN_ROOT}/shared/...` instead of a bare relative path. The previous form
+  depended on the reader resolving the path relative to the agent file; the placeholder resolves
+  anywhere in agent content, so the target is now unambiguous
+- Five symlinks under `agents/references/` that pointed into `shared/references/` are gone; the agents
+  reference those files directly
+
 ### Fixed
 
 #### Agents

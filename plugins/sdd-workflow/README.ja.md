@@ -543,18 +543,17 @@ sdd-workflow/
 │   ├── requirement-analyzer.md    # 要求分析エージェント
 │   ├── clarification-assistant.md # 仕様明確化アシスタント
 │   ├── front-matter-reviewer.md   # YAML front matter検証エージェント
-│   ├── cross-prd-reviewer.md      # PRD横断整合レビューエージェント
-│   ├── templates/{en,ja}/         # エージェント出力テンプレート（言語別）
-│   ├── references/                # エージェント参照（sharedへのsymlink）
-│   └── examples/                  # エージェント使用例
-├── shared/
-│   └── references/                # 共通参照ドキュメント
-│       ├── mermaid_notation_rules.md          # Mermaid記法ガイド
-│       ├── usecase_diagram_guide.md           # ユースケース図ガイド
-│       ├── requirements_diagram_components.md # SysML要求図
-│       ├── document_dependencies.md           # ドキュメント依存関係チェーン
-│       ├── front_matter_*.md                  # YAML front matter 参照資料
-│       └── prerequisites_*.md                 # 前提条件参照資料
+│   └── cross-prd-reviewer.md      # PRD横断整合レビューエージェント
+├── shared/                        # スキル・エージェント共通のサポートファイル
+│   ├── references/                # 共通参照ドキュメント
+│   │   ├── mermaid_notation_rules.md          # Mermaid記法ガイド
+│   │   ├── usecase_diagram_guide.md           # ユースケース図ガイド
+│   │   ├── requirements_diagram_components.md # SysML要求図
+│   │   ├── document_dependencies.md           # ドキュメント依存関係チェーン
+│   │   ├── front_matter_*.md                  # YAML front matter 参照資料
+│   │   └── prerequisites_*.md                 # 前提条件参照資料
+│   ├── examples/                  # エージェント使用例
+│   └── templates/{en,ja}/         # エージェント出力テンプレート（言語別）
 ├── skills/
 │   ├── sdd-init/                  # AI-SDDワークフロー初期化
 │   ├── constitution/              # プロジェクト憲章管理

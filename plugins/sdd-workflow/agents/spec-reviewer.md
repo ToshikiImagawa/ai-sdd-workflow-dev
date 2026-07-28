@@ -23,7 +23,7 @@ $ARGUMENTS
 
 ### Input Examples
 
-**Reference**: `examples/spec_reviewer_usage.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/examples/spec_reviewer_usage.md`
 
 ## Output
 
@@ -287,21 +287,21 @@ Design documents support both flat structure (`{feature-name}_design.md`) and hi
 
 ## Ambiguity Detection Patterns
 
-Read `references/ambiguity_patterns.md` for expressions to avoid and commonly missing information.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/references/ambiguity_patterns.md` for expressions to avoid and commonly missing information.
 
 ### Document Link Convention
 
-Read `references/document_link_convention.md` for link format conventions and check points.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/references/document_link_convention.md` for link format conventions and check points.
 
 ## Review Output Format
 
-Read `templates/${SDD_LANG:-en}/spec_review_output.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/spec_review_output.md` and use it for output formatting.
 
 ## Fix Proposal Flow
 
 When principle violations are detected, generate fix proposals with the following flow.
 
-**Reference**: `references/fix_proposal_flow.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/references/fix_proposal_flow.md`
 
 ### Proposable Fix Cases
 

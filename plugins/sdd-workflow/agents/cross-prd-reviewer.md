@@ -28,7 +28,7 @@ cross-PRD review is not applicable and recommend prd-reviewer instead.
 
 ### Input Examples
 
-**Reference**: `examples/cross_prd_reviewer_usage.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/examples/cross_prd_reviewer_usage.md`
 
 ## Output
 
@@ -156,18 +156,18 @@ a gap: only flag when the principle's subject matter clearly belongs to that PRD
 
 Classify every finding as [must] (contradiction or broken cross-reference), [recommend] (inconsistency that will
 mislead readers or downstream automation), or [nits] (cosmetic divergence). Severity mapping follows
-`references/validation_severity_levels.md` (error → must, warning → recommend, info → nits). Every finding MUST
+`${CLAUDE_PLUGIN_ROOT}/shared/references/validation_severity_levels.md` (error → must, warning → recommend, info → nits). Every finding MUST
 name the file(s) and section(s) concerned.
 
 ## Review Output Format
 
-Read `templates/${SDD_LANG:-en}/cross_prd_review_output.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/cross_prd_review_output.md` and use it for output formatting.
 
 ## Fix Proposal Flow
 
 When inconsistencies are detected, generate fix proposals with the following flow.
 
-**Reference**: `references/fix_proposal_flow.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/references/fix_proposal_flow.md`
 
 ### Proposable Fix Cases
 

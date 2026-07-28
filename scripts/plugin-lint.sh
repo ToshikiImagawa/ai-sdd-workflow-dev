@@ -280,9 +280,8 @@ printf "=== Check 4: Plugin Manifest Hygiene ===\n\n"
 
 # Manifest component-path fields behave in three different ways, so "register
 # everything" is not a safe rule (CONSTITUTION T-002 v2.0.0):
-#   agents -> REPLACES the default agents/ scan. Registration is mandatory, and
-#             the array also keeps agents/references/ etc. from being picked up
-#             as agents, so it is load-bearing.
+#   agents -> REPLACES the default agents/ scan, so an unlisted agent file is
+#             never loaded. Registration is mandatory.
 #   skills -> ADDS to the default skills/ scan. skills/ is always scanned, so
 #             declaring "./skills" is redundant.
 #   hooks  -> SUPPLEMENTS the default path. Declaring the standard
@@ -311,8 +310,25 @@ if [ -f "$PLUGIN_MANIFEST" ]; then
     fi
 fi
 
+# --- 4.2 agents/ holds nothing but agent definitions ---
+# `claude plugin validate --strict` scans agents/** recursively and ignores the
+# manifest's agents array, so any support file parked under agents/ is reported
+# as an agent with no frontmatter and fails the run. This reproduces that
+# invariant without depending on the Claude Code CLI being installed in CI.
+for entry in "$PLUGIN_DIR"/agents/*/; do
+    [ -d "$entry" ] || continue
+    log_error "plugins/sdd-workflow/agents/$(basename "$entry")/ - agents/ must contain only agent definitions (support files belong in shared/; \`plugin validate --strict\` scans agents/** recursively)"
+done
+
+for f in "$PLUGIN_DIR"/agents/*.md; do
+    [ -f "$f" ] || continue
+    if [ "$(head -n 1 "$f")" != "---" ]; then
+        log_error "${f#"$REPO_ROOT"/} - agent file has no front matter block (rejected by \`plugin validate --strict\`)"
+    fi
+done
+
 if [ "$(cat "$ERROR_FILE")" -eq "$check4_errors_before" ]; then
-    log_ok "plugin.json registers agents and leaves skills/hooks to auto-detection"
+    log_ok "plugin.json registers agents, leaves skills/hooks to auto-detection, and agents/ holds only agent definitions"
 fi
 printf "\n"
 

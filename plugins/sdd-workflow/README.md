@@ -547,18 +547,17 @@ sdd-workflow/
 │   ├── requirement-analyzer.md    # Requirement analysis agent
 │   ├── clarification-assistant.md # Specification clarification assistant
 │   ├── front-matter-reviewer.md   # YAML front matter validation agent
-│   ├── cross-prd-reviewer.md      # Cross-PRD consistency review agent
-│   ├── templates/{en,ja}/         # Agent output templates (language-specific)
-│   ├── references/                # Agent references (symlinks to shared)
-│   └── examples/                  # Agent usage examples
-├── shared/
-│   └── references/                # Centralized reference documentation
-│       ├── mermaid_notation_rules.md          # Mermaid syntax guide
-│       ├── usecase_diagram_guide.md           # Use case diagram guide
-│       ├── requirements_diagram_components.md # SysML requirements diagram
-│       ├── document_dependencies.md           # Document dependency chain
-│       ├── front_matter_*.md                  # YAML front matter references
-│       └── prerequisites_*.md                 # Prerequisite references
+│   └── cross-prd-reviewer.md      # Cross-PRD consistency review agent
+├── shared/                        # Support files shared by skills and agents
+│   ├── references/                # Centralized reference documentation
+│   │   ├── mermaid_notation_rules.md          # Mermaid syntax guide
+│   │   ├── usecase_diagram_guide.md           # Use case diagram guide
+│   │   ├── requirements_diagram_components.md # SysML requirements diagram
+│   │   ├── document_dependencies.md           # Document dependency chain
+│   │   ├── front_matter_*.md                  # YAML front matter references
+│   │   └── prerequisites_*.md                 # Prerequisite references
+│   ├── examples/                  # Agent usage examples
+│   └── templates/{en,ja}/         # Agent output templates (language-specific)
 ├── skills/
 │   ├── sdd-init/                  # AI-SDD workflow initialization
 │   ├── constitution/              # Project constitution management

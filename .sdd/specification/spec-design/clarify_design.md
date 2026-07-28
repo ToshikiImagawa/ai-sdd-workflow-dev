@@ -120,7 +120,7 @@ graph TD
 ## 5.2. 明確度スコア算出
 
 明確度スコアは「Clear 項目数 ÷ 全項目数」を基本式とし、カテゴリ別・総合で算出する
-（`references/clarification_workflow.md`：`Total score = Clear items / All items`）。
+（`shared/references/clarification_workflow.md`：`Total score = Clear items / All items`）。
 出力テンプレートではカテゴリ別に Clear/Partial/Missing の件数と総合スコアを表形式で提示する。
 
 ```
@@ -176,8 +176,10 @@ plugins/sdd-workflow/
 │   └── templates/{en,ja}/
 │       └── clarification_output.md     # 明確化レポート出力フォーマット
 ├── agents/
-│   ├── clarification-assistant.md      # 分析エージェント（読み取り専用・統合提案）
+│   └── clarification-assistant.md      # 分析エージェント（読み取り専用・統合提案）
+├── shared/                             # エージェント本文から ${CLAUDE_PLUGIN_ROOT}/shared/... で参照
 │   ├── references/clarification_workflow.md   # 分析→回答→再評価のワークフロー
+│   ├── templates/{en,ja}/              # clarification_question_template / clarification_analysis_output / stop_report_format
 │   └── examples/                       # clarification_assistant_usage / clarification_questions
 └── .claude-plugin/plugin.json          # skills は宣言せず自動検出、agents 配列に clarification-assistant を明示登録（T-002）
 ```

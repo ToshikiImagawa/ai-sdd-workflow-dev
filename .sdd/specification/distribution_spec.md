@@ -83,12 +83,12 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 | ci                           | `.github/workflows/prepare-release.yml`                        | リリース準備ワークフロー          | develop → main の PR 作成・CI 待機・マージまでを自動化する（FR-002）             |
 | ci                           | `.github/workflows/release.yml`                                | リリース配布ワークフロー          | タグ契機でバージョン整合を検証し、公開リポへ配布・リリースを作成する（FR-002 / FR-005） |
 | script                       | `scripts/validate-marketplace.sh`                              | 構造・バージョン検証スクリプト     | JSON 構文・必須フィールド・バージョン整合を検証する（FR-004 / FR-005）             |
-| script                       | `scripts/plugin-lint.sh`                                       | プロンプト・構成リント           | コードブロック検出・EN/JA 同一性・パストークン検査・マニフェスト衛生検査を行う（FR-006 / DC_002 / DC_003） |
+| script                       | `scripts/plugin-lint.sh`                                       | プロンプト・構成リント           | コードブロック検出・EN/JA 同一性・パストークン検査・マニフェスト衛生検査（`agents/` レイアウト検査を含む）を行う（FR-006 / DC_002 / DC_003） |
 | script                       | `scripts/test-session-start.sh`                                | session-start 回帰テスト        | SessionStart フックの環境変数出力・言語判定の既存挙動を検証する（FR-004 / NFR-001） |
 | script                       | `scripts/test-hook-scripts.sh`                                 | フックスクリプト回帰テスト        | pre/post-tool-use・user-prompt-submit の既存挙動を検証する（FR-004 / NFR-001） |
 | script                       | `scripts/test-e2e-sdd-init.sh`                                 | sdd-init E2E テスト            | 空プロジェクトでの初期化連鎖（session-start → 構造生成 → CLAUDE.md 更新）を通しで検証する（FR-004） |
 | script                       | `scripts/test-skill-scripts.sh`                                | スキルヘルパー回帰テスト          | スキル同梱ヘルパースクリプトが custom root で正しく動作するか検証する（FR-004）      |
-| template                     | `plugins/sdd-workflow/skills/*/templates/{en,ja}/` 等            | 多言語テンプレート群             | 出力テンプレートを持つスキル・エージェントのテンプレートを日英二言語で提供する（FR-003 / DC_003） |
+| template                     | `plugins/sdd-workflow/skills/*/templates/{en,ja}/` / `plugins/sdd-workflow/shared/templates/{en,ja}/` | 多言語テンプレート群             | 出力テンプレートを持つスキル・エージェントのテンプレートを日英二言語で提供する（FR-003 / DC_003） |
 | docs                         | `plugins/sdd-workflow/CHANGELOG.md` / `CHANGELOG.ja.md`         | 変更履歴（日英併記）             | バージョンごとの変更内容を英語・日本語で提供する（FR-002）                        |
 
 ## 4.1. 入出力定義
@@ -102,6 +102,7 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 - 検証       : CI（PR / push）で構造検証・shellcheck・plugin-lint・回帰テストが全て通過する
 - 多言語     : templates/en と templates/ja のファイルセット（ファイル名集合）が常に同一である
 - プロンプト : スキル・エージェントのプロンプト Markdown にコードブロックを含めない
+- 配置       : `agents/` にはエージェント定義の `*.md` のみを置き、サポートファイルは `shared/` 配下に置く
 - 対応 OS    : CI マトリクスに ubuntu-latest / macos-latest を含める
 ```
 
@@ -127,6 +128,9 @@ ci.yml → validate（構造検証） / shellcheck（ubuntu+macos） / plugin-li
 # ローカル検証: CI と同じ検証を手元で実行
 bash scripts/validate-marketplace.sh
 bash scripts/plugin-lint.sh
+
+# ローカル手動検証: Claude Code CLI 自身の検証（CI 非搭載）
+claude plugin validate ./plugins/sdd-workflow --strict
 
 # リリース準備: develop から main への PR 作成・マージを自動化
 prepare-release.yml（workflow_dispatch, version 入力）

@@ -9,6 +9,22 @@
 
 ## [Unreleased]
 
+### Changed
+
+#### Plugin Layout
+
+- **エージェントのサポートファイルを `agents/` 外へ移動** - `agents/references/`・`agents/examples/`・
+  `agents/templates/{en,ja}/` を `shared/` 配下（`shared/references/`・`shared/examples/`・
+  `shared/templates/{en,ja}/`）に移し、`agents/` にはエージェント定義6件のみを残した。
+  `claude plugin validate --strict` は `agents/**` を再帰走査してマニフェストの `agents` 配列を無視するため、
+  そこに置かれたサポートファイルはすべて「front matter の無いエージェント」として報告されていた
+- **エージェントの参照パスを絶対パス化** - エージェントプロンプト内の参照資料・利用例・テンプレートへの
+  33箇所を、ベアな相対パスから `${CLAUDE_PLUGIN_ROOT}/shared/...` 形式に変更した。従来の形式は
+  エージェント定義ファイルからの相対解決に依存していたが、このプレースホルダは agent content の
+  どこでも展開されるため参照先が一意に定まる
+- `agents/references/` にあった `shared/references/` を指す symlink 5本を削除。エージェントは
+  実ファイルを直接参照する
+
 ### Fixed
 
 #### Agents

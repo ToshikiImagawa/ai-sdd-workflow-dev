@@ -23,7 +23,7 @@ $ARGUMENTS
 
 ### Input Examples
 
-**Reference**: `examples/prd_reviewer_usage.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/examples/prd_reviewer_usage.md`
 
 ## Output
 
@@ -187,17 +187,17 @@ If front matter is absent, note in report: "Front matter not found. Consider add
 
 ### 3. Ambiguity Detection
 
-Read `references/ambiguity_patterns.md` for expressions to avoid and commonly missing information.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/references/ambiguity_patterns.md` for expressions to avoid and commonly missing information.
 
 ## Review Output Format
 
-Read `templates/${SDD_LANG:-en}/prd_review_output.md` and use it for output formatting.
+Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/prd_review_output.md` and use it for output formatting.
 
 ## Fix Proposal Flow
 
 When principle violations are detected, generate fix proposals with the following flow.
 
-**Reference**: `references/fix_proposal_flow.md`
+**Reference**: `${CLAUDE_PLUGIN_ROOT}/shared/references/fix_proposal_flow.md`
 
 ### Proposable Fix Cases
 

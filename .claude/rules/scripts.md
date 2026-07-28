@@ -11,7 +11,7 @@ paths:
 | スクリプト                     | 役割                                                                 | CIジョブ      |
 |:--------------------------|:-------------------------------------------------------------------|:------------|
 | `validate-marketplace.sh` | `marketplace.json` / `plugin.json` のJSON構文・必須フィールド・バージョン整合性を検証     | `validate`    |
-| `plugin-lint.sh`          | プラグイン構造の Lint。プロンプトMD内のコードブロック検出（Check 1・警告のみ）、サポートファイル構造（Check 2）、`${SDD_*}` パストークン健全性（Check 3）、`plugin.json` マニフェスト衛生（Check 4）、front matter キー衛生（Check 5）を検証 | `plugin-lint`（1/2ステップ） |
+| `plugin-lint.sh`          | プラグイン構造の Lint。プロンプトMD内のコードブロック検出（Check 1・警告のみ）、サポートファイル構造（Check 2）、`${SDD_*}` パストークン健全性（Check 3）、マニフェスト衛生と `agents/` レイアウト（Check 4 / 4.2）、front matter キー衛生（Check 5）を検証 | `plugin-lint`（1/2ステップ） |
 | `test-session-start.sh`   | `plugins/sdd-workflow/scripts/session-start.py` のゴールデンファイル回帰テスト     | `test`        |
 | `test-hook-scripts.sh`    | `plugins/sdd-workflow/scripts/` のフックスクリプト（pre-tool-use / post-tool-use / user-prompt-submit）の回帰テスト | `test`        |
 | `test-e2e-sdd-init.sh`    | 空プロジェクトでの sdd-init 通しE2E（session-start → init-structure → update-claude-md）。CLAUDE.md 最小化・`.claude/rules/` 生成・レガシー掃除・冪等性・en/ja テンプレート描画・custom root を検証 | `test`        |
@@ -24,7 +24,7 @@ paths:
 
 | ステップ | 実装                                              | 検査範囲                                                                          |
 |:-----|:------------------------------------------------|:------------------------------------------------------------------------------|
-| 1    | `scripts/plugin-lint.sh`                        | 構造・マニフェスト・front matter。Check 1（コードブロック）/ 2（サポートファイル構造・`shared/` を含む）/ 3（`${SDD_*}` トークンと `.sdd/` ハードコード）/ 4（`plugin.json`）/ 5（`allowed-tools` 誤用・`agent:` 誤用・`${CLAUDE_PLUGIN_ROOT}` の未クォート） |
+| 1    | `scripts/plugin-lint.sh`                        | 構造・マニフェスト・front matter。Check 1（コードブロック）/ 2（サポートファイル構造・`shared/` を含む）/ 3（`${SDD_*}` トークンと `.sdd/` ハードコード）/ 4（`plugin.json`）/ 4.2（`agents/` にサブディレクトリを置かない・`agents/*.md` は front matter を持つ）/ 5（`allowed-tools` 誤用・`agent:` 誤用・`${CLAUDE_PLUGIN_ROOT}` の未クォート） |
 | 2    | `.claude/skills/plugin-lint/scripts/plugin_lint.py` | スキル `SKILL.md` の `allowed-tools` に列挙されたツール名の妥当性と重複（シェル版に無い）。加えて Check 1 / 2 相当も JSON で出力する |
 
 **採番は別体系**である点に注意する。シェル版の "Check 3" は `${SDD_*}` パストークン、Python 版の
