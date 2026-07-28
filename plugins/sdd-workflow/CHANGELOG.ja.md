@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-07-28
+
 ### Changed
 
 #### Permissions
