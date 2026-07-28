@@ -15,10 +15,13 @@ This document describes the contribution process and conventions (Japanese first
 
 ## 開発の流れ
 
-1. リポジトリを Fork し、`main` からブランチを作成する
+1. リポジトリを Fork し、**`develop` からブランチを作成する**
 2. 変更を実装する
 3. [検証](#検証) の各チェックを通過させる
-4. Pull Request を作成する
+4. **`develop` をベースに** Pull Request を作成する
+
+> `main` はリリース済みの状態を保持するブランチです。`main` への PR はリリース時（`develop` → `main`）に
+> `prepare-release.yml` が自動作成するものだけで、通常の変更は `develop` に入れてください。
 
 ## 新しいプラグインの追加
 
@@ -26,7 +29,8 @@ This document describes the contribution process and conventions (Japanese first
 2. `plugins/{plugin-name}/.claude-plugin/plugin.json` にプラグインマニフェストを配置する
 3. agents / skills / hooks を必要に応じて追加する（新規コマンドは `skills/` を推奨）
 4. `.claude-plugin/marketplace.json` の `plugins` 配列にプラグインを登録する
-5. 新規エージェント / スキルは `plugin.json` のコンポーネントパスに登録する
+5. 新規エージェントは `plugin.json` の `agents` に登録する（スキルと `hooks/hooks.json` は標準パスが
+   自動検出されるため宣言しない。CONSTITUTION T-002 v2.0.0）
 
 プラグインとマーケットプレイスの詳細な構造は [PLUGIN.md](./PLUGIN.md) を、
 サブエージェントの設計原則は [PLUGIN_AGENTS.md](./PLUGIN_AGENTS.md) を参照してください。
@@ -56,6 +60,13 @@ find . -name "*.sh" -type f -print0 | xargs -0 shellcheck -S warning -e SC1091
 # フックスクリプトの回帰テスト
 bash scripts/test-session-start.sh
 bash scripts/test-hook-scripts.sh
+```
+
+CI には含まれていませんが、Claude Code CLI 自身の検証もローカルで実行できます
+（認証不要。`agents/` にサポートファイルが混ざっていないかなどを検査します）:
+
+```bash
+claude plugin validate ./plugins/sdd-workflow --strict
 ```
 
 ローカルでプラグインの動作確認をする場合:

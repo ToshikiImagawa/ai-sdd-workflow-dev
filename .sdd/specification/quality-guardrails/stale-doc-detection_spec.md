@@ -17,7 +17,7 @@ risk: "medium"
 
 **関連 Design Doc:** [stale-doc-detection_design.md](stale-doc-detection_design.md)
 **関連 PRD:** [stale-doc-detection.md](../../requirement/quality-guardrails/stale-doc-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, D-001（Specification-Driven）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）
 
 ---
 
@@ -67,9 +67,10 @@ FR-001〜FR-003 は編集されたファイルの種別（仕様書 / 要求仕�
 | ID      | カテゴリ         | 要件                                                       | 目標値                                     |
 |---------|--------------|----------------------------------------------------------|--------------------------------------------|
 | NFR-001 | 性能           | フック処理は軽量でファイル編集の応答性を阻害しない                  | スクリプト単体の実行時間 500ms 以内（親 PRD NFR_001） |
-| NFR-002 | インターフェース | Claude Code フックイベント仕様・additionalContext 仕様に準拠する | 親 PRD IR_001                              |
+| NFR-002 | 互換性         | macOS / Linux で動作する                                   | 親 PRD DC_004                              |
+| NFR-003 | インターフェース | Claude Code フックイベント仕様・additionalContext 仕様に準拠する | 親 PRD IR_001                              |
 
-NFR-002 について、本機能は JSON Decision Control 仕様に準拠しつつ、非ブロッキング方針（DC_001）のため
+NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつつ、非ブロッキング方針（DC_001）のため
 `deny` は用いず `additionalContext` のみを注入する。
 
 # 4. 提供コンポーネント
@@ -169,6 +170,7 @@ sequenceDiagram
 
 | 原則ID  | 原則名               | 本仕様への適用内容                                                                 |
 |-------|---------------------|--------------------------------------------------------------------------------|
+| A-002 | フックとスクリプトの責務分離 | 機械的なパス判定（フック）と整合性検証（検証スキル）の責務を分離し、フックは更新漏れの検知・可視化に専念する |
 | B-001 | Vibe Coding 防止     | 更新漏れによる仕様・実装の乖離を編集直後に検知・可視化し、暗黙的な乖離の進行を抑止する         |
 | D-001 | Specification-Driven | 編集後に関連ドキュメント（PRD / spec / design）の同期を促し、仕様書を真実の源とするフローを維持する |
 
@@ -180,6 +182,6 @@ sequenceDiagram
 |-----------------|--------------------------------------------------------------------------------------------|
 | 要求カバレッジ     | 子 PRD FR_001 の 2 つのトリガー方式（.sdd 編集 / ソース編集）を FR-001〜FR-003 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
 | 要求 ID 参照      | 各 FR に対応する子 PRD / 親 PRD（UR_003・FR_004・DC_001・NFR_001・IR_001）の要求 ID を「根拠」列に明記 |
-| 非機能要求の反映   | 親 PRD NFR_001・IR_001・DC_001 を NFR-001〜002 および制約事項に反映                             |
+| 非機能要求の反映   | 親 PRD NFR_001・IR_001・DC_001・DC_004 を NFR-001〜003 および制約事項に反映                       |
 | 用語整合性        | 親 PRD 用語集の「フック」「additionalContext」定義に整合。本機能固有の「更新漏れ」「design 同期」を追加定義 |
 | スコープ整合性     | 子 PRD スコープ外（整合性検証・自動修正・編集前ガード）を制約事項として明記                          |

@@ -17,7 +17,7 @@ risk: "medium"
 
 **関連 Design Doc:** [constitution-injection_design.md](constitution-injection_design.md)
 **関連 PRD:** [constitution-injection.md](../../requirement/quality-guardrails/constitution-injection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
 ---
 
@@ -177,6 +177,7 @@ sequenceDiagram
 | 原則ID  | 原則名                    | 本仕様への適用内容                                                              |
 |-------|--------------------------|------------------------------------------------------------------------|
 | A-002 | フックとスクリプトの責務分離   | 原則注入という決定的処理を Python フックに委譲し、Claude の推論を要さず軽量に実現する      |
+| B-001 | Vibe Coding 防止           | 実装着手時点でプロジェクト原則を可視化し、原則違反を構造的に抑止する。B-001（Vibe Coding 防止）等の形骸化を防ぐ本機能の背景（§1）を構造的に支える |
 | D-001 | Specification-Driven      | 実装コンテキストに原則を注入し、原則を真実の源として実装が進むフローを支える                |
 | T-003 | 日本語出力の文字化け防止      | 日本語を含む CONSTITUTION 本文を `ensure_ascii=False` で文字化けなく注入する        |
 

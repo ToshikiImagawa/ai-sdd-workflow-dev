@@ -30,14 +30,28 @@ $ARGUMENTS
 
 | Check ID | 内容 |
 |:---|:---|
-| 1 | プロンプトMarkdown（`plugins/sdd-workflow/agents/*.md`, `skills/*/SKILL.md`）内のコードブロック検出。`templates/`, `examples/`, `references/` 配下は除外 |
+| 1 | プロンプトMarkdown（`plugins/sdd-workflow/agents/*.md`, `skills/*/SKILL.md`）内のコードブロック検出。開始フェンスのみを1件として数える |
 | 2.1 | スキルディレクトリ直下のエントリが `SKILL.md`, `README.md`, `templates`, `examples`, `references`, `scripts` のいずれかであること |
-| 2.2 | サポートファイル名が snake_case（`^[a-z0-9_]+\.[a-z]+$`）であること（`shared/references/` を含む） |
+| 2.2 | サポートファイル名が snake_case（`^[a-z0-9_]+\.[a-z]+$`）であること |
 | 2.3 | `templates/` に `en/` と `ja/` の両方が存在すること |
-| 2.4 | `templates/en/` と `templates/ja/` のファイルセットが一致すること |
-| 2.5 | サポートファイルの拡張子が `.md` であること（`scripts/` は対象外） |
-| 3.1 | スキル `SKILL.md` の `allowed-tools` に列挙されたツール名が実在すること |
+| 2.4 | `templates/en/` と `templates/ja/` の直下ファイル名セットが一致すること |
+| 2.5 | サポートファイルの拡張子が `.md` であること |
+| 3.1 | スキル `SKILL.md` の `allowed-tools` に列挙されたツール名が実在すること。`Edit(.sdd/**)` や `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/..." *)` のような指定子付き宣言は**ツール名部分（`(` の手前）だけ**を既知名と照合する。あわせて指定子の括弧が閉じていないケース（指定子にカンマを含めた場合など）も検出する |
 | 3.2 | `allowed-tools` にツール名の重複がないこと |
+
+**2.2 / 2.5 の対象範囲**: 各スキルの `templates/` `examples/` `references/` 配下（再帰）と
+`plugins/sdd-workflow/shared/references/` 配下。`scripts/` は実行コードなので両チェックの対象外。
+
+**3.1 は指定子を許容する**: `allowed-tools` は「許可を尋ねずに使えるツール」の事前承認であり、permissions と同じ
+`ツール名(指定子)` 構文で範囲を絞れる。したがって指定子付き宣言は未知ツールとして扱わない。
+一方、ベアな `Write` / `Edit` / `Bash`（スコープ無しの事前承認）の検出はシェル版 `scripts/plugin-lint.sh` の
+Check 5.4 が担当し、本スクリプトでは検出しない。
+
+**採番は本スクリプト固有**: 上記 Check ID は `scripts/plugin_lint.py` の採番であり、CI の
+`plugin-lint` ジョブが併走させるシェル版 `scripts/plugin-lint.sh` とは**別体系**。
+たとえばシェル版の "Check 3" は `${SDD_*}` パストークン健全性で、本スクリプトの "3.1 / 3.2"
+（`allowed-tools` 検証）とは別物。シェル版にしかない検査（`${SDD_*}` トークン、`plugin.json`
+マニフェスト衛生、front matter キー衛生）は本スクリプトでは検出されない。
 
 ## Processing Flow
 

@@ -33,6 +33,8 @@ risk: "medium"
 
 # {機能名} 要求仕様書 `<MUST>`
 
+**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `vX.Y.Z` を記載）のうち、本 PRD の要求が前提とする原則ID（例: B-001, B-002）を記載します。`prd-reviewer` エージェントが CONSTITUTION 準拠をレビューするため、SPEC/DESIGN と同様に明記して 3 層（PRD → spec → design）の一貫性を保ちます。
+
 ## 概要 `<MUST>`
 
 このドキュメントの目的と対象範囲を簡潔に説明します。

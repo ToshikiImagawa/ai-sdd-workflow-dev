@@ -23,7 +23,7 @@
 |:--|:--------|:------|:------------|
 | 1 | {relative/path/to/file.md} | {行番号} | {言語指定 or plain} |
 
-**推奨事項**: コードブロックを `templates/`、`examples/`、`reference/` ディレクトリに移動し、LLM出力時の混同を防止してください。
+**推奨事項**: コードブロックを `templates/`、`examples/`、`references/` ディレクトリに移動し、LLM出力時の混同を防止してください。
 
 ---
 
@@ -35,7 +35,7 @@
 
 | スキル | ディレクトリ | 期待値 |
 |:------|:----------|:------|
-| {skill-name} | {unexpected-dir} | templates, examples, reference, scripts |
+| {skill-name} | {unexpected-dir} | templates, examples, references, scripts |
 
 ### 2.2 ファイル名規約（snake_case）
 

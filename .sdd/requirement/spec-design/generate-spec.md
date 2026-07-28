@@ -94,6 +94,10 @@ requirementDiagram
 （`{feature-name}_design.md`）を生成し、specification ディレクトリに保存する。
 [index.md](index.md) の UR_001 から派生。
 
+生成にあたっては、生成前に入力の曖昧性（Vibe Coding リスク）を評価し、高リスク時は不足情報を確認したうえで
+生成へ進む（vibe-detector 機能との連携。曖昧性検知そのものは vibe-detector が正典）。また非対話（CI）モードでは、
+曖昧性評価・レビューを省略して既存ファイルの上書きを自動承認する運用にも対応する。
+
 **トリガー方式:** 手動（開発者による `/generate-spec` スキル呼び出し）
 
 **検証方法:** デモンストレーションによる検証

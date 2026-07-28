@@ -197,7 +197,20 @@ def check_allowed_tools(root: Path, findings: list) -> None:
             tools = [t for t in tools if t]
             seen = set()
             for tool in tools:
-                if tool not in KNOWN_TOOLS:
+                # `Bash(python3 "..." *)` や `Edit(.sdd/**)` のような指定子付き宣言は
+                # permissions のルール構文で、SKILL.md の allowed-tools でも有効。
+                # ツール名部分だけを既知名と照合する。
+                base = tool.split("(", 1)[0].strip()
+                if "(" in tool and not tool.endswith(")"):
+                    findings.append(
+                        {
+                            "check_id": "3.1",
+                            "file": str(rel),
+                            "line": None,
+                            "message": f"指定子の括弧が閉じていません（指定子にカンマは使えません）: {tool}",
+                        }
+                    )
+                elif base not in KNOWN_TOOLS:
                     findings.append(
                         {
                             "check_id": "3.1",

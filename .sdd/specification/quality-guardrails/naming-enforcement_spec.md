@@ -17,7 +17,7 @@ risk: "medium"
 
 **関連 Design Doc:** [naming-enforcement_design.md](naming-enforcement_design.md)
 **関連 PRD:** [naming-enforcement.md](../../requirement/quality-guardrails/naming-enforcement.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) D-002（ファイル命名規則の厳守）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) D-002（ファイル命名規則の厳守）, B-001（Vibe Coding 防止）
 
 ---
 
@@ -173,7 +173,7 @@ sequenceDiagram
 |-------|--------------------------|------------------------------------------------------------------------|
 | D-002 | ファイル命名規則の厳守       | 命名規則違反の書き込みを構造的にブロックし、規約遵守を強制する（本機能の存在意義）        |
 | B-001 | Vibe Coding 防止          | ドキュメント種別を命名で識別する前提を守り、仕様書を真実の源とするワークフローを維持する    |
-| B-002 | 多言語対応（EN/JA）の一貫性 | 拒否理由メッセージはフック出力の責務として定義（現状は英語固定、多言語化は将来検討）      |
+| B-002 | 多言語対応（EN/JA）の一貫性 | **適用範囲外**。本機能はフックであり `templates/{en,ja}/` を持つスキルではない。deny メッセージは英語固定で、B-002 の適用範囲（`templates/{en,ja}/` を持つ全スキル）に含まれない。多言語化は将来の別 Issue で検討 |
 
 ---
 

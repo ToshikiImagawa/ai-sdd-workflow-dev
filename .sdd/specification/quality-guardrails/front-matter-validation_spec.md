@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
@@ -17,7 +17,7 @@ risk: "low"
 
 **関連 Design Doc:** [front-matter-validation_design.md](front-matter-validation_design.md)
 **関連 PRD:** [front-matter-validation.md](../../requirement/quality-guardrails/front-matter-validation.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の A-002（生成と検証の責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 
 ---
 
@@ -80,7 +80,7 @@ front matter はオプション（後方互換）であるため人手で記述�
 |---------|--------|--------------------------------------------------------------------------|-------------------------------------|
 | NFR-001 | コスト最適化 | ルール基盤の軽量検証に低コストモデル（haiku）を用い、複雑推論を要する検証とコスト階層を分離する | 親 DC_003 / PRD 検証方法（test） |
 | NFR-002 | 安全性    | ドキュメントを変更せず、読み取りのみで検証する（副作用なし）                              | 書き込み系ツールを使用しない            |
-| NFR-003 | 移植性    | macOS / Linux で動作し、`SDD_LANG` による EN/JA 出力切り替えに対応する         | 親 DC_004                           |
+| NFR-003 | 移植性    | macOS / Linux で動作し、`SDD_LANG` による EN/JA 出力切り替えに対応する         | 親 DC_004・DC_005                    |
 | NFR-004 | 応答性    | `--cross-ref` 非指定時はプロジェクト横断走査をスキップし検証を高速に保つ            | 親 NFR_001 の趣旨（軽量性の維持。500ms 定量基準はフックスクリプト向けで本エージェントに直接は適用されない） |
 
 # 4. 提供コンポーネント
@@ -88,10 +88,10 @@ front matter はオプション（後方互換）であるため人手で記述�
 | 種別（skill/agent/hook/template） | 配置場所                                                        | 名前                             | 概要                                                    |
 |------------------------------|-------------------------------------------------------------|--------------------------------|-------------------------------------------------------|
 | agent                        | `agents/front-matter-reviewer.md`                           | front-matter-reviewer          | YAML front matter の形式・依存方向・ID 一意性を検証する haiku エージェント |
-| template                     | `agents/templates/{en,ja}/front_matter_validation_report.md` | front_matter_validation_report | 検証レポートの出力フォーマット（EN/JA）                       |
-| reference                    | `agents/references/front_matter_reference.md`               | front_matter_reference         | スキーマ定義・種別別フィールド・依存方向規則・検証チェックリスト・状態遷移・欠落ポリシー |
-| reference                    | `agents/references/validation_severity_levels.md`           | validation_severity_levels     | 重要度（error / warning / info）の定義                   |
-| example                      | `agents/examples/front_matter_reviewer_usage.md`            | front_matter_reviewer_usage    | エージェントの呼び出し例（単一 / 複数 / `--cross-ref`）        |
+| template                     | `shared/templates/{en,ja}/front_matter_validation_report.md` | front_matter_validation_report | 検証レポートの出力フォーマット（EN/JA）                       |
+| reference                    | `shared/references/front_matter_reference.md`               | front_matter_reference         | スキーマ定義・種別別フィールド・依存方向規則・検証チェックリスト・状態遷移・欠落ポリシー |
+| reference                    | `shared/references/validation_severity_levels.md`           | validation_severity_levels     | 重要度（error / warning / info）の定義                   |
+| example                      | `shared/examples/front_matter_reviewer_usage.md`            | front_matter_reviewer_usage    | エージェントの呼び出し例（単一 / 複数 / `--cross-ref`）        |
 
 ## 4.1. 入出力定義
 
@@ -104,7 +104,7 @@ front matter はオプション（後方互換）であるため人手で記述�
 | `SDD_LANG`       | 任意 | 出力テンプレートの言語（既定: `en`）                                     |
 | `SDD_*` 環境変数    | 任意 | ディレクトリパス解決（`SDD_ROOT` / `SDD_REQUIREMENT_PATH` / `SDD_SPECIFICATION_PATH` / `SDD_TASK_PATH`） |
 
-**出力:** front matter 検証レポート（`templates/${SDD_LANG:-en}/front_matter_validation_report.md` 形式）。
+**出力:** front matter 検証レポート（`shared/templates/${SDD_LANG:-en}/front_matter_validation_report.md` 形式）。
 
 - 重要度（error / warning / info）付きの不備リスト
 - 各不備に対する改善提案
@@ -141,7 +141,7 @@ front-matter-reviewer .sdd/specification/user-login_design.md --cross-ref
 sequenceDiagram
     participant Trigger as トリガー（生成後 / 整合性チェック / 手動）
     participant Reviewer as front-matter-reviewer
-    participant Ref as references/（スキーマ・重要度定義）
+    participant Ref as shared/references/（スキーマ・重要度定義）
     participant Docs as .sdd/ ドキュメント群
     participant Dev as 開発者／AI
 
@@ -170,6 +170,7 @@ sequenceDiagram
 
 | 原則ID  | 原則名                    | 本仕様への適用内容                                                            |
 |-------|------------------------|----------------------------------------------------------------------|
+| A-002 | フックとスクリプトの責務分離 | 責務分離の原則に基づき、生成（生成スキル）と検証（本レビューエージェント）を分離する。front matter 検証を独立したレビューエージェントとして提供し、生成処理と混在させない |
 | B-001 | Vibe Coding 防止         | front matter の機械的整合性を維持し、トレーサビリティ基盤の破綻による仕様乖離を防ぐ         |
 | B-002 | 多言語対応（EN/JA）の一貫性 | 出力レポートを `SDD_LANG` に応じた EN/JA テンプレートで切り替える                     |
 | D-001 | Specification-Driven   | `depends-on` の上流方向を検証し、prd → spec → design のトレーサビリティ連鎖を保証する    |
@@ -184,7 +185,8 @@ sequenceDiagram
 | 親 UR_003           | ドキュメント・実装間の整合性維持                   | FR-005, FR-006         |
 | 親 DC_003           | ルール基盤の軽量検証に低コストモデルを使用           | NFR-001                |
 | 親 NFR_001          | フック処理の軽量性                             | NFR-004（横断走査の抑制）    |
-| 親 DC_004           | クロスプラットフォーム・多言語対応                   | NFR-003                |
+| 親 DC_004           | クロスプラットフォーム対応                         | NFR-003                |
+| 親 DC_005           | 多言語対応（EN/JA 出力切替）                       | NFR-003                |
 | PRD スコープ外（自動修正しない）| 検出・報告までを責務とし修正は対話に委ねる          | NFR-002（読み取り専用・副作用なし） |
 
 子PRD の FR_001 は親 PRD の UR_003（ドキュメント・実装間の整合性維持）から派生し、

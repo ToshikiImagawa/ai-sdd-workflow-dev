@@ -76,10 +76,18 @@ flowchart LR
 |:-----|:-------|:----------|
 | プロジェクト初期化 | [sdd-init.md](sdd-init.md) | FR_001 |
 | プロジェクト原則管理 | [constitution-management.md](constitution-management.md) | FR_002 |
-| セッション設定初期化 | [session-config.md](session-config.md) | FR_003（FR_003_01〜04） |
+| セッション設定初期化 | [session-config.md](session-config.md) | FR_003 |
 | front matter 推奨 | [front-matter-recommend.md](front-matter-recommend.md) | FR_004 |
 | ドキュメントインデックス | [documentation-index.md](documentation-index.md) | FR_005 |
 | クロスプラットフォーム移植性 | [cross-platform-portability.md](cross-platform-portability.md) | NFR_002 |
+
+> **採番の規約:** 「元要求 ID」列は本ファイル（親 PRD）の全体要求図での ID を示す。各子 PRD は自ファイル内スコープで
+> `FR_001` から採番し直すため、例えばセッション設定初期化は親 `FR_003` が子ファイル内では `FR_001`（サブ要求
+> `FR_001_01〜04`）に対応する。
+
+> **役割境界（インデックス構築）:** [session-config.md](session-config.md) の FR_001_04 はセッション開始時の
+> インデックス構築トリガーと `SDD_INDEX` による有効・無効制御を担い、走査対象・抽出内容・構築成果物そのものの
+> 定義は [documentation-index.md](documentation-index.md)（FR_005）が担う。
 
 ---
 
@@ -94,7 +102,7 @@ FR ノード（FR_001〜FR_004）の詳細説明・トリガー方式・検証�
 requirementDiagram
     requirement WorkflowFoundation {
         id: UR_001
-        text: "AI-SDDワークフローを対象プロジェクトへ容易に導入できる"
+        text: "AI-SDDワークフローの前提となる基盤機能群を提供し容易に導入・運用できる"
         risk: medium
         verifymethod: demonstration
     }
@@ -108,7 +116,7 @@ requirementDiagram
 
     requirement ConsistentSession {
         id: UR_003
-        text: "全スキルが一貫したパスと言語設定で動作する"
+        text: "設定と原則ドキュメントを含む一貫したセッション初期化のもとで全スキルが動作する"
         risk: high
         verifymethod: test
     }
@@ -221,6 +229,7 @@ requirementDiagram
     DefaultFallback - traces -> SessionInit
     DefaultFallback - traces -> DocumentationIndex
     LanguageSupport - traces -> SessionInit
+    LanguageSupport - traces -> ProjectInit
     CrossPlatformPortability - traces -> WorkflowFoundation
 ```
 
@@ -230,9 +239,11 @@ requirementDiagram
 
 ## 4.1. ユーザー要求
 
-### UR_001: ワークフローの容易な導入
+### UR_001: ワークフロー基盤の提供と容易な導入
 
-開発者は、最小限の操作（初期化スキルの 1 回の実行）で、対象プロジェクトに AI-SDD ワークフローの
+AI-SDD ワークフローの前提となる基盤機能群（初期化・原則管理・セッション設定・メタデータ付与・
+ドキュメント参照）を提供し、これらが他のすべての機能カテゴリの土台となること。
+その入口として、開発者は最小限の操作（初期化スキルの 1 回の実行）で、対象プロジェクトに
 前提となるディレクトリ構造・テンプレート・設定を導入できること。
 
 **検証方法:** デモンストレーションによる検証
@@ -246,8 +257,9 @@ requirementDiagram
 
 ### UR_003: セッションの一貫性
 
-すべてのスキル・エージェント・フックが、同一セッション内で一貫したディレクトリパスと言語設定を
-参照して動作すること。設定の解決が個々の機能に分散せず、単一の初期化に集約されること。
+すべてのスキル・エージェント・フックが、同一セッション内で一貫したディレクトリパス・言語設定、
+および原則ドキュメント（AI-SDD-PRINCIPLES.md）の状態を参照して動作すること。設定・原則ドキュメントの
+解決と同期が個々の機能に分散せず、単一のセッション初期化に集約されること。
 
 **検証方法:** テストによる検証
 
