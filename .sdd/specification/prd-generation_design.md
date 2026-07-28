@@ -41,12 +41,12 @@ category: "prd-generation"
 
 | モジュール/機能                    | ステータス | 備考                                                                       |
 |----------------------------------|--------|----------------------------------------------------------------------------|
-| オーケストレーター（generate-prd）    | 🟢     | `allowed-tools` に Write/Edit/Bash を持つ唯一のスキル。10 ステップの生成フロー        |
+| オーケストレーター（generate-prd）    | 🟢     | 書き込み権限を事前承認された唯一のスキル（`Edit(.sdd/**)` とスクリプト限定の `Bash`）。10 ステップの生成フロー |
 | 事前ロード（prepare-prd.py）         | 🟢     | Python 2 フェーズ実行。プロジェクトテンプレート優先・参照キャッシュ・環境変数エクスポート    |
-| ユースケース図生成                   | 🟢     | `context: fork` / `agent: haiku` / Write・Edit・Bash 不許可（テキスト返却のみ）      |
-| 要求分析                           | 🟢     | `context: fork` / `agent: sonnet` / Write・Edit・Bash 不許可                      |
-| 要求図生成                         | 🟢     | `context: fork` / `agent: haiku` / Write・Edit・Bash 不許可                       |
-| PRD 統合・完成                     | 🟢     | `context: fork` / `agent: sonnet` / front matter 生成ルールを保持                  |
+| ユースケース図生成                   | 🟢     | `context: fork` / `model: haiku` / Write・Edit・Bash 不許可（テキスト返却のみ）      |
+| 要求分析                           | 🟢     | `context: fork` / `model: sonnet` / Write・Edit・Bash 不許可                      |
+| 要求図生成                         | 🟢     | `context: fork` / `model: haiku` / Write・Edit・Bash 不許可                       |
+| PRD 統合・完成                     | 🟢     | `context: fork` / `model: sonnet` / front matter 生成ルールを保持                  |
 | レビューエージェント群               | 🟢     | prd-reviewer/requirement-analyzer/cross-prd-reviewer（sonnet）・front-matter-reviewer（haiku）。すべて read-only |
 | 多言語テンプレート                   | 🟢     | generate-prd / finalize-prd が `templates/{en,ja}/` を保持                        |
 
@@ -67,9 +67,9 @@ category: "prd-generation"
 
 | 領域（skill/agent/script） | 採用方式                                                     | 選定理由                                                                                     |
 |--------------------------|--------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| skill（統括）              | Markdown スキル（`allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash`、メインコンテキスト） | 唯一の書き込み主体として永続化と統括を担う。A-001 に従い skill として実装（FR-001 / DC_001） |
+| skill（統括）              | Markdown スキル（`allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/generate-prd/scripts/prepare-prd.py" *)`、メインコンテキスト） | 唯一の書き込み主体として永続化と統括を担う。A-001 に従い skill として実装（FR-001 / DC_001）。`allowed-tools` は事前承認であり制限ではないため、書き込みを `.sdd/` 配下、シェルを同梱スクリプトに指定子で絞る |
 | skill（構成要素生成）        | Markdown スキル（`context: fork` + `agent` + `disallowed-tools: Write, Edit, Bash`） | コンテキストを隔離してトークンを節約し、書き込み不可でファイル破壊を構造的に防ぐ（DC_001）        |
-| agent（レビュー）           | サブエージェント（`model` 指定、`allowed-tools: Read, Glob, Grep, AskUserQuestion`） | 独立コンテキストで read-only にレビューし、生成物を汚さず修正提案を返す（FR-006〜008）           |
+| agent（レビュー）           | サブエージェント（`model` 指定、`tools: Read, Glob, Grep, AskUserQuestion`） | 独立コンテキストで read-only にレビューし、生成物を汚さず修正提案を返す（FR-006〜008）。サブエージェントの制限キーは `tools`（`allowed-tools` は無視される）    |
 | script（準備）             | Python 3（`prepare-prd.py`、標準ライブラリ）                     | テンプレート・参照ロードという決定的処理をスクリプト化し Claude の判断と分離する（A-002）           |
 | モデル選定                  | 図生成 = haiku、分析・統合・レビュー = sonnet                     | 図生成は定型で軽量なため haiku、要求抽出・統合・準拠レビューは判断を要するため sonnet。エイリアス表記で世代追従 |
 
@@ -92,7 +92,7 @@ graph TD
     end
     Orch --> UC --> AR --> RD --> FP
     FP -->|テキスト| Orch
-    Orch -->|Write| PRD[(PRD ファイル)]
+    Orch -->|Edit .sdd/**| PRD[(PRD ファイル)]
     subgraph Rev["レビューエージェント（read-only）"]
         PR[prd-reviewer]
         FM[front-matter-reviewer]
@@ -150,7 +150,7 @@ risk: "medium"                    # 入力に明示が無ければ既定 medium
 plugins/sdd-workflow/
 ├── skills/
 │   ├── generate-prd/
-│   │   ├── SKILL.md                         # オーケストレーター（Write/Edit/Bash 許可）
+│   │   ├── SKILL.md                         # オーケストレーター（Edit(.sdd/**) とスクリプト限定 Bash を事前承認）
 │   │   ├── scripts/prepare-prd.py           # Python 事前ロード
 │   │   ├── references/*.md                  # 図・要求図・front matter ガイド
 │   │   └── templates/{en,ja}/               # PRD テンプレート・出力・進捗チェックリスト

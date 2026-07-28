@@ -461,7 +461,7 @@ license: MIT
 user-invocable: true
 argument-hint: "<引数の説明>"
 disable-model-invocation: false
-allowed-tools: [ Read, Glob, Grep, Edit ]
+allowed-tools: [ Read, Glob, Grep, Edit(.sdd/**) ]
 disallowed-tools: [ Write, Bash ]
 context: fork
 agent: sonnet
@@ -493,6 +493,27 @@ hooks:
 
 **IMPORTANT**: スキルの `allowed-tools` は**制限リストではありません**。「許可を尋ねずに使えるツール」を事前承認するフィールドであり、ここに載せなかったツールも（通常の権限確認を経て）使用できます。ツールを実際に禁止したい場合は
 `disallowed-tools` を使ってください。
+
+#### 指定子で事前承認の範囲を絞る
+
+`allowed-tools` の各要素には permissions と同じルール構文 `ツール名(指定子)` が使えます。ベアなツール名は「そのツールの**あらゆる使い方**を無確認で許す」意味になるため、書き込みとシェル実行は必ず指定子で絞ります。
+
+| 宣言例                                                              | 事前承認される範囲                         |
+|:--------------------------------------------------------------------|:-------------------------------------------|
+| `Edit`                                                              | **任意のファイル**への書き込み（広すぎる） |
+| `Edit(.sdd/**)`                                                     | `.sdd/` 配下への書き込みのみ               |
+| `Edit(CLAUDE.md)`                                                   | `CLAUDE.md` への書き込みのみ               |
+| `Bash`                                                              | **任意のコマンド**の実行（広すぎる）       |
+| `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/foo/scripts/bar.py" *)` | 同梱スクリプト `bar.py` の実行のみ         |
+
+- **ファイル書き込みは `Edit(<path>)` で宣言します**。`Write(<path>)` 形式は**ファイル権限チェックにマッチしません**（Claude Code
+  自身が `Write(.sdd/**) is not matched by file permission checks — only Edit(path) rules are. Use Edit(.sdd/**) instead`
+  と診断します）。`Edit(<path>)` ルールは Write を含む**すべてのファイル編集ツール**をカバーします
+- **`Bash(...)` の指定子内では `${CLAUDE_PLUGIN_ROOT}` が展開されます**。プラグイン同梱スクリプトの実行だけを事前承認できます。パスに空白が入っても壊れないよう、指定子内でもパスをクォートします
+- 展開が保証されるのは `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_SKILL_DIR}` / `${CLAUDE_PROJECT_DIR}` のみです。`${SDD_ROOT}` のようなセッション環境変数は
+  `allowed-tools` では展開されないため、パスはリテラルで書きます
+- 指定子にはカンマを含められません（`allowed-tools` はカンマ区切りのため、括弧が閉じられずパースが崩れます）。複数の対象は要素を分けて列挙します
+- スコープを狭くしすぎても**機能は失われません**（fail-safe）。マッチしなかった操作は通常の権限確認に落ちるだけです
 
 ### 文字列置換変数
 
@@ -563,6 +584,8 @@ description: "このスキルは、ユーザーが「スキルをデモンスト
 5. **バージョン管理**: version フィールドで変更を追跡
 6. **`context: fork` の活用**: 重い処理はサブエージェントとして実行
 7. **ツール制限**: 禁止は `disallowed-tools` で行い、`allowed-tools` は許可を尋ねずに使わせるツールに限定する
+8. **事前承認は指定子で絞る**: 書き込みは `Edit(<path>)`、シェルは `Bash(<command> *)` で範囲を限定し、ベアな `Write` / `Edit` / `Bash`
+   を書かない
 
 ---
 
@@ -1022,6 +1045,8 @@ claude --debug
 
 - **単一責任の原則**: 各コマンド/スキルは1つのタスクに集中
 - **ツールアクセス制限**: スキルでは `disallowed-tools` で禁止する（`allowed-tools` は許可を尋ねずに使えるツールの事前承認であり制限ではない）
+- **事前承認の範囲指定**: `allowed-tools` の書き込み・シェルは指定子で絞る（`Edit(.sdd/**)` /
+  `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/..." *)`。`Write(path)` 形式は無効）
 - **明確なヒント**: `argument-hint` でユーザーをガイド
 - **引数処理**: `$ARGUMENTS` 変数を適切に活用
 - **新規はスキルで作成**: `commands/` ではなく `skills/` を使用

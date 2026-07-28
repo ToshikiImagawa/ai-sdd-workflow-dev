@@ -384,6 +384,62 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 claude --debug
 ```
 
+## ツール権限
+
+このプラグインの各スキルは front matter に `allowed-tools` を宣言しています。このフィールドは
+**ツール権限の事前承認**、つまり「スキルがユーザーに尋ねずに実行できるツール呼び出し」の宣言です。**制限ではありません** —
+すべてのツールは引き続き呼び出し可能で、事前承認されていない操作は通常の権限確認にフォールバックするだけです。
+
+このプラグインは事前承認の範囲を意図的に狭く保っており、ドキュメント以外への書き込みや任意のシェルコマンド実行を無確認で行うことはありません:
+
+| 操作                                                                             | 事前承認される範囲                                                          | 挙動                       |
+|:---------------------------------------------------------------------------------|:----------------------------------------------------------------------------|:---------------------------|
+| AI-SDD ドキュメントへの書き込み                                                  | `Edit(.sdd/**)`                                                             | 確認なしで適用             |
+| `/sdd-init` / `/constitution` / `/recommend-front-matter` のセットアップファイル | `Edit(CLAUDE.md)`, `Edit(.sdd-config.json)`, `Edit(.claude/rules/**)`       | 確認なしで適用             |
+| 同梱ヘルパースクリプトの実行                                                     | `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/<name>/scripts/<script>.py" *)` | 確認なしで適用             |
+| それ以外すべて                                                                   | 事前承認しない                                                              | Claude Code が確認を求める |
+
+「それ以外すべて」には、上記パス外への書き込み、任意のシェルコマンド、`git rm`、プロジェクト固有のテスト・リンターが含まれます。
+特に `/implement` / `/run-checklist` / `/task-cleanup` は `Bash` を**一切事前承認していません**。実行するコマンドがプロジェクト側のものであるため、
+各コマンドの実行前に確認が入ります。
+
+### 権限確認を減らす
+
+確認を減らしたい場合は、プロジェクトの `.claude/settings.json`（またはユーザーの `~/.claude/settings.json`）で
+自分で権限を付与してください:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Edit(.sdd/**)",
+      "Bash(npm test:*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}
+```
+
+**`Write(<path>)` ではなく `Edit(<path>)` を使ってください。** `Write(<path>)` はファイル権限チェックにマッチしません。
+`Edit(<path>)` ルールは Write を含む**すべてのファイル編集ツール**をカバーします。
+
+### カスタム SDD root の場合
+
+`.sdd-config.json` の `root` を `.sdd` 以外に設定している場合、プラグインの `Edit(.sdd/**)`
+事前承認はドキュメントにマッチしないため、書き込みのたびに権限確認が入ります。`allowed-tools` では `${SDD_ROOT}`
+を参照できないため（展開されるのは `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_SKILL_DIR}` / `${CLAUDE_PROJECT_DIR}` のみ）、
+自分の root に合わせたルールを `.claude/settings.json` に追加してください:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Edit(docs/sdd/**)"
+    ]
+  }
+}
+```
+
 ## Serena MCP 連携（オプション）
 
 [Serena](https://github.com/oraios/serena) MCP を設定すると、セマンティックコード分析による機能強化が可能です。

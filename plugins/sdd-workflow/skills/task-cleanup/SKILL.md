@@ -6,7 +6,7 @@ arguments: [ticket-number]
 license: MIT
 user-invocable: true
 model: haiku
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)
 ---
 
 # Task Cleanup - Task Log Cleanup

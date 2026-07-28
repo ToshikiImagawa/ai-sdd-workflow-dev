@@ -11,6 +11,24 @@
 
 ### Changed
 
+#### Permissions
+
+- **書き込みを無制限に事前承認しないようにした** - スキルの `allowed-tools` は「*確認を尋ねずに*
+  使えるツール」を与えるもので、制限ではなく事前承認である。11スキルがベアな `Write` / `Edit` を
+  列挙しており、任意のパスへの書き込みが無確認で通る状態だった。書き込み先を `Edit(<path>)` 形式で
+  限定し、`Edit(.sdd/**)` を基本に、必要なスキルにのみ `Edit(CLAUDE.md)` /
+  `Edit(.sdd-config.json)` / `Edit(.claude/rules/**)` を与えた。範囲外への書き込みは確認が入る。
+  なお `Write(<path>)` は有効な形式ではなく、`Edit(<path>)` が全ファイル編集ツールをカバーする
+- **シェル実行を同梱スクリプトに限定した** - 10スキルがベアな `Bash` を列挙し、任意のコマンドが
+  無確認で通る状態だった。同梱ヘルパーのみを実行する7スキルは対象を明示する形にした。例:
+  `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" *)`
+- **3スキルから `Bash` を外した** - `implement` と `run-checklist` はプロジェクトの任意のテスト・
+  リンター・スキャナを実行し、`task-cleanup` は `git rm` / `git rm -r` を実行する。いずれも
+  事前承認すべきではないため、コマンド実行前に確認が入るようにした
+- `.sdd-config.json` でカスタム `root` を設定しているプロジェクトでは書き込み時に確認が入る。
+  `${SDD_ROOT}` は `allowed-tools` では展開されないため。カスタム root を事前承認する設定例は
+  README を参照
+
 #### Plugin Layout
 
 - **エージェントのサポートファイルを `agents/` 外へ移動** - `agents/references/`・`agents/examples/`・

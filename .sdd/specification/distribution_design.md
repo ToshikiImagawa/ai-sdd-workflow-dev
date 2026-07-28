@@ -164,6 +164,14 @@ CLI 依存を持ち込まずに同じ不変条件を CI で担保する（`--str
 `allowed-tools`、スキルの `agent:` へのモデル名、`context: fork` を伴わない `agent:`、`hooks.json` の
 未クォート `${CLAUDE_PLUGIN_ROOT}`）も plugin-lint.sh の front matter 衛生検査で機械検知する。
 
+加えて、スキルの `allowed-tools` は「許可を尋ねずに使えるツール」の**事前承認**であり制限リストではないため、
+ベアな `Write` / `Edit` は任意のパスへの書き込みを、ベアな `Bash` は任意のコマンド実行を無確認で通してしまう。
+これも見た目からは危険度が読み取れないため、plugin-lint.sh の Check 5.4 がベアな `Write` / `Edit` / `Bash` を
+`log_error` する。配布側は書き込みを `Edit(.sdd/**)` 等のパス指定子で、シェルを
+`Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/<name>/scripts/<script>.py" *)` の形で同梱スクリプトに限定して事前承認する
+（`Write(<path>)` はファイル権限チェックにマッチせず、`Edit(<path>)` ルールが Write を含む全ファイル編集ツールをカバーする）。
+スコープを絞りすぎても利用者に権限確認が出るだけで機能は失われない（fail-safe）。
+
 ---
 
 # 6. ファイル構成
@@ -206,7 +214,7 @@ ai-sdd-workflow-dev/
 | テストレベル      | 対象                                                   | カバレッジ目標                          |
 |--------------|--------------------------------------------------------|----------------------------------------|
 | 構造検証        | marketplace.json / plugin.json（validate-marketplace.sh）    | JSON 正当性・必須フィールド・バージョン整合    |
-| 静的解析（lint） | プロンプト Markdown・テンプレート構成・マニフェスト（plugin-lint.sh / plugin_lint.py） | コードブロック不在・EN/JA 同一性・パストークン健全性・マニフェスト衛生・`agents/` レイアウト・front matter キー衛生・skill の allowed-tools 妥当性 |
+| 静的解析（lint） | プロンプト Markdown・テンプレート構成・マニフェスト（plugin-lint.sh / plugin_lint.py） | コードブロック不在・EN/JA 同一性・パストークン健全性・マニフェスト衛生・`agents/` レイアウト・front matter キー衛生・skill の `allowed-tools` 妥当性（ツール名・重複・指定子構文）と事前承認スコープ（ベアな Write/Edit/Bash の排除） |
 | 公式バリデータ（手動） | プラグイン全体（`claude plugin validate --strict`）              | CLI 自身の検証で exit 0。CI には入れず（npm/node 依存を持ち込まないため）ローカル手動で実行 |
 | 静的解析（shell） | 全 `.sh`（shellcheck -S warning）                          | OS 依存・構文問題の検知（ubuntu/macos）      |
 | 回帰・E2E      | フック・スキルスクリプト（test-*.sh）・pytest（tests/）           | 移植前後で挙動等価（複数 OS）                 |

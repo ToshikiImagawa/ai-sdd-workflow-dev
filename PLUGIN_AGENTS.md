@@ -184,6 +184,13 @@ tools: [ Read, Glob, Grep, AskUserQuestion ]
 使用可能ツールの制限リストではありません。スキルで制限したい場合は `disallowed-tools`、
 エージェントで制限したい場合は `tools` の絞り込みまたは `disallowedTools` を使います。
 
+スキルの `allowed-tools` は permissions と同じ `ツール名(指定子)` 構文を取れるため、事前承認の範囲を絞れます
+（書き込みは `Edit(.sdd/**)`、シェルは `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/foo/scripts/bar.py" *)`）。
+`Write(<path>)` 形式はファイル権限チェックにマッチしないため、書き込みの限定には `Edit(<path>)` を使います
+（`Edit(<path>)` ルールが Write を含む全ファイル編集ツールをカバーします）。詳細は
+[PLUGIN.md](PLUGIN.md) の「指定子で事前承認の範囲を絞る」を参照してください。
+ベアな `Write` / `Edit` / `Bash` は `scripts/plugin-lint.sh` の Check 5.4 がエラーとして検出します。
+
 **`model` フィールドの選択基準**:
 
 タスクに要求される推論の複雑さに応じてモデルを選択し、コストと速度のバランスを取ります。
@@ -461,7 +468,8 @@ allowed-tools: [ Read, Glob, Grep ]
 `general-purpose` 等）の指定で、`context: fork` を設定したときにのみ効きます。ここにモデル名を書くと
 警告なく `general-purpose` にフォールバックし、モデル指定が無効になります。
 また、スキルの `allowed-tools` は「許可を尋ねずに使えるツール」の宣言であり、エージェントの `tools` とは
-意味が異なります（前者は権限の事前承認、後者は使用可能ツールの限定）。
+意味が異なります（前者は権限の事前承認、後者は使用可能ツールの限定）。事前承認の範囲は
+`Edit(.sdd/**)` のような指定子で絞ります。
 
 **パターン2: エージェントに `skills` でスキルをプリロード**
 

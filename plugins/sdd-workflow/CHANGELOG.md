@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Permissions
+
+- **Write access is no longer pre-approved wholesale** - A skill's `allowed-tools` grants tools *without
+  asking*; it is a pre-approval, not a restriction. Eleven skills listed a bare `Write` / `Edit`, which
+  pre-approved writing to any path. Writes are now scoped with the `Edit(<path>)` rule form -
+  `Edit(.sdd/**)` plus `Edit(CLAUDE.md)`, `Edit(.sdd-config.json)` and `Edit(.claude/rules/**)` where a
+  skill legitimately needs them. Writing outside those paths now asks for confirmation.
+  Note that `Write(<path>)` is not a valid rule form; `Edit(<path>)` covers every file-editing tool
+- **Shell access is limited to the plugin's own scripts** - Ten skills listed a bare `Bash`, which
+  pre-approved any command. The seven skills that only run a bundled helper now name it explicitly, e.g.
+  `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" *)`
+- **`Bash` removed from three skills** - `implement` and `run-checklist` run arbitrary project test,
+  lint and scanner commands, and `task-cleanup` runs `git rm` / `git rm -r`. None of those should be
+  pre-approved, so they now ask before running a command
+- Projects that set a custom `root` in `.sdd-config.json` will be asked to confirm writes, because
+  `${SDD_ROOT}` is not expanded in `allowed-tools`. See the README for a settings snippet that
+  pre-approves a custom root
+
 #### Plugin Layout
 
 - **Agent support files moved out of `agents/`** - `agents/references/`, `agents/examples/` and

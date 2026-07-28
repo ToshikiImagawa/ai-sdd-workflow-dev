@@ -6,7 +6,7 @@ arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
 model: haiku
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList, TaskGet
+allowed-tools: Read, Glob, Grep, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
 # Run Checklist - Automated Quality Verification

@@ -40,7 +40,7 @@ risk: "medium"
 
 | モジュール/機能           | ステータス | 備考                                                              |
 |------------------------|--------|-------------------------------------------------------------------|
-| checklist スキル         | 🟢     | `skills/checklist/SKILL.md`（`user-invocable: true`、`allowed-tools: Read/Write/Edit/Glob/Grep`） |
+| checklist スキル         | 🟢     | `skills/checklist/SKILL.md`（`user-invocable: true`、`allowed-tools: Read, Glob, Grep, Edit(.sdd/**)`。書き込みの事前承認を `.sdd/` 配下に限定） |
 | 出力テンプレート          | 🟢     | `skills/checklist/templates/{en,ja}/checklist_template.md`           |
 | フル出力例               | 🟢     | `skills/checklist/examples/checklist_full_example.md`（CHK-101〜CHK-903 の 9 カテゴリ 60 項目） |
 | plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
@@ -174,7 +174,7 @@ checklist スキルは実装済みであり、本設計書は逆算文書であ�
 | 決定事項            | 選択肢                          | 決定内容                          | 理由                                                            |
 |-------------------|-------------------------------|--------------------------------|---------------------------------------------------------------|
 | 実装層             | スキル単体 / スキル + エージェント    | スキル単体                        | 観点抽出・分類は単一スキルで完結し、分析専用エージェントを分離する必要がない       |
-| ツール権限          | Bash 含む / 読み書き系のみ         | Read/Write/Edit/Glob/Grep（Bash 不使用） | チェックリスト生成は決定的コマンド実行を要さない。生成は Write/Edit で行う         |
+| ツール権限          | Bash 含む / 読み書き系のみ         | `Read, Glob, Grep, Edit(.sdd/**)`（Bash 不使用） | チェックリスト生成は決定的コマンド実行を要さない。生成は Edit で行い、事前承認は `.sdd/` 配下に限定する |
 | ID 体系            | 連番のみ / カテゴリ + 連番          | `CHK-{category}{nn}`             | カテゴリをプレフィックスに含め、更新時の安定性と分類の可読性を両立（NFR-001）        |
 | 抽出元の必須性       | 全文書必須 / spec・design 必須       | spec・design を必須、PRD・tasks は任意 | 仕様・設計は検証観点の中核。PRD・tasks は補助情報として存在時に活用            |
 | 保存先             | 任意パス / task ディレクトリ配下     | `${SDD_TASK_PATH}/{ticket}/checklist.md` | run-checklist の入力位置と一致させ、ワークフロー連携を成立させる（親 PRD IR_001） |

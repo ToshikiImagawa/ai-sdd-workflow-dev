@@ -166,7 +166,7 @@ plugins/sdd-workflow/
 
 | 要件（spec）                | 実現方針                                                                                       |
 |-------------------------|--------------------------------------------------------------------------------------------|
-| NFR-001（読み取り専用の安全性）  | SKILL.md front matter で `allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash`、`disallowed-tools: Write, Edit` を宣言 |
+| NFR-001（読み取り専用の安全性）  | SKILL.md front matter で `disallowed-tools: Write, Edit` により書き込みを禁止。`allowed-tools`（事前承認）の `Bash` は `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" *)` と指定子で同梱スクリプトの実行のみに絞る |
 | NFR-002（多言語対応）        | 出力を `templates/${SDD_LANG:-en}/check_spec_output.md` から選択。EN / JA の両テンプレートを配置    |
 | NFR-003（移植性）          | `find-design-docs.py` を Python 標準ライブラリ（`pathlib` / `json`）で記述し、外部コマンド非依存で macOS / Linux / Windows に対応  |
 | NFR-004（効率性）          | Phase 1 の 1 回のスクリプト実行に走査を集約し、Claude の Glob / Grep 反復を削減（A-002）              |

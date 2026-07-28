@@ -40,7 +40,7 @@ risk: "high"
 
 | モジュール/機能         | ステータス | 備考                                                                 |
 |----------------------|--------|----------------------------------------------------------------------|
-| implement スキル       | 🟢     | `skills/implement/SKILL.md`（`user-invocable: true`、Bash・TaskList 系ツール使用可） |
+| implement スキル       | 🟢     | `skills/implement/SKILL.md`（`user-invocable: true`、TaskList 系ツールを事前承認。Bash は使用可だが事前承認せず都度確認） |
 | 段階・TDD 参照資料      | 🟢     | `skills/implement/references/`（five_phases_overview / tdd_principles / commit_strategy / test_types / tasklist_error_handling） |
 | 出力テンプレート        | 🟢     | `skills/implement/templates/{en,ja}/`（phase_rules / tdd_cycle / phase_progress_tracking / continuous_verification / 各エラー等） |
 | 実行モード例           | 🟢     | `skills/implement/examples/`（option_continue / option_phase_skip / option_dry_run / 各出力例） |
@@ -63,7 +63,7 @@ risk: "high"
 | 領域     | 採用方式                                                              | 選定理由                                                                          |
 |--------|-------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | skill  | Markdown プロンプトスキル（`user-invocable: true`）                      | 実装は Claude の判断・生成を要する。A-001（Skills-First）に従いスキルとして実装             |
-| ツール   | `Read/Write/Edit/Glob/Grep/Bash/AskUserQuestion/TaskCreate/TaskUpdate/TaskList/TaskGet` | テスト実行に Bash、進捗可視化に TaskList、曖昧時の確認に AskUserQuestion が必要             |
+| ツール   | `allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet` | 進捗可視化に TaskList、曖昧時の確認に AskUserQuestion が必要。`allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` に絞り、Bash はプロジェクト任意のテストを実行するため事前承認しない（実行自体は可能で、都度ユーザー確認が入る） |
 | 進捗管理 | TaskList（利用不可環境は Markdown フォールバック）                          | 5 段階の複数ステップ作業を `/tasks`・`Ctrl+T` で可視化（NFR-003）。エラー処理は references に定義 |
 | 段階制御 | 5 段階を references/templates で定義し順序を強制                          | テストファースト（DC_001）を段階順序として担保。段階規則は `templates/{en,ja}/phase_rules.md` |
 | 多言語   | `SDD_LANG` 環境変数 + `templates/{en,ja}/`                            | B-002 の一貫性要件。段階規則・TDD サイクル・エラー等をテンプレートで切り替える                   |
@@ -178,7 +178,7 @@ implement スキルは実装済みであり、本設計書は逆算文書であ�
 |-------------------|-----------------------------|-------------------------------------|---------------------------------------------------------------|
 | テスト先行の担保     | 推奨に留める / 段階順序で強制      | Tests を Core より前段に固定           | 順序を段階として固定し、テストのない実装への進行を防ぐ（DC_001）           |
 | 進捗管理手段         | Markdown のみ / TaskList      | TaskList（利用不可時 Markdown 代替）    | 5 段階の複数ステップを可視化しユーザーが進捗を追跡できる（NFR-003）         |
-| Bash 権限          | 禁止 / 許可                    | 許可                                 | テスト実行・型チェック等の検証コマンドに Bash が必要                       |
+| Bash 権限          | 禁止 / 事前承認 / 事前承認しない       | 事前承認しない（禁止もしない）                 | テスト実行・型チェック等の検証コマンドに Bash は必要だが、実行対象がプロジェクト任意のコマンドであるため事前承認せず都度ユーザー確認を挟む |
 | 乖離検出の位置       | 完了後のみ / 段階境界           | 段階境界で check-spec を推奨            | 早期に乖離を検知し手戻りを抑える（FR-008 / B-001）                       |
 | 実行モード          | 単一モードのみ / 複数モード        | continue / phase-skip / dry-run を提供 | 中断再開・特定段階着手・非破壊シミュレーションの実運用ニーズに対応             |
 

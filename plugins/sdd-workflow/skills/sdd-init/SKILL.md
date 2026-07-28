@@ -6,7 +6,7 @@ license: MIT
 user-invocable: true
 disable-model-invocation: true
 model: haiku
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash
+allowed-tools: Read, Glob, Grep, Edit(.sdd/**), Edit(.sdd-config.json), Edit(CLAUDE.md), Edit(.claude/rules/**), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py" *), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/update-claude-md.py" *)
 ---
 
 # SDD Init - AI-SDD Workflow Initializer

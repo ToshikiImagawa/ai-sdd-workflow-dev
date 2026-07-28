@@ -400,8 +400,33 @@ if [ -f "$HOOKS_FILE" ]; then
         done
 fi
 
+# --- 5.4 skills must not pre-approve write or shell access wholesale ---
+# A skill's allowed-tools grants tools *without asking* - it is a pre-approval,
+# not a restriction. A bare `Write`/`Edit` pre-approves writing anywhere, and a
+# bare `Bash` pre-approves any command. Both must be narrowed with a specifier:
+# `Edit(.sdd/**)` for writes (the `Write(path)` form is not honoured by file
+# permission checks) and `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/..." *)` for the
+# plugin's own scripts. An over-tight scope only costs a permission prompt.
+for f in "$PLUGIN_DIR"/skills/*/SKILL.md; do
+    [ -f "$f" ] || continue
+    relpath="${f#"$REPO_ROOT"/}"
+    tools_line=$(awk 'NR==1 && $0=="---"{f=1;next} f&&$0=="---"{exit} f&&/^allowed-tools:/{sub(/^allowed-tools:[[:space:]]*/,"");print;exit}' "$f")
+    [ -z "$tools_line" ] && continue
+    echo "$tools_line" | tr ',' '\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+        | while IFS= read -r tool; do
+            case "$tool" in
+                Write|Edit)
+                    log_error "${relpath} - \"allowed-tools\" pre-approves bare ${tool} (writing anywhere); scope it, e.g. Edit(.sdd/**)"
+                    ;;
+                Bash)
+                    log_error "${relpath} - \"allowed-tools\" pre-approves bare Bash (any command); scope it, e.g. Bash(python3 \"\${CLAUDE_PLUGIN_ROOT}/skills/<name>/scripts/<script>.py\" *)"
+                    ;;
+            esac
+        done
+done
+
 if [ "$(cat "$ERROR_FILE")" -eq "$check5_errors_before" ]; then
-    log_ok "agents use tools:, skills keep model selection in model:, hook commands quote \${CLAUDE_PLUGIN_ROOT}"
+    log_ok "agents use tools:, skills keep model selection in model: and scope write/shell pre-approval, hook commands quote \${CLAUDE_PLUGIN_ROOT}"
 fi
 printf "\n"
 
