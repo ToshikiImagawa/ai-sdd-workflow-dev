@@ -169,9 +169,27 @@ name: agent-name
 description: "詳細なトリガー説明"
 model: sonnet
 color: green
-allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
+tools: [ Read, Glob, Grep, AskUserQuestion ]
 ---
 ```
+
+**`tools` と `allowed-tools` の違い（重要）**:
+
+サブエージェントでツールを指定するキーは **`tools`** です。`allowed-tools` はスキルとレガシーコマンド用のキーで、
+エージェント定義に書いても**警告もエラーも出ずに無視され、結果としてエージェントは全ツールを継承します**。
+ツール制限が効かない状態に静かに退行するため、`scripts/plugin-lint.sh` の Check 5 が
+`agents/*.md` の `allowed-tools` をエラーとして検出します。
+
+なお、スキル側の `allowed-tools` は「**許可を尋ねずに使えるツール**」（権限の事前承認）を意味し、
+使用可能ツールの制限リストではありません。スキルで制限したい場合は `disallowed-tools`、
+エージェントで制限したい場合は `tools` の絞り込みまたは `disallowedTools` を使います。
+
+スキルの `allowed-tools` は permissions と同じ `ツール名(指定子)` 構文を取れるため、事前承認の範囲を絞れます
+（書き込みは `Edit(.sdd/**)`、シェルは `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/foo/scripts/bar.py" *)`）。
+`Write(<path>)` 形式はファイル権限チェックにマッチしないため、書き込みの限定には `Edit(<path>)` を使います
+（`Edit(<path>)` ルールが Write を含む全ファイル編集ツールをカバーします）。詳細は
+[PLUGIN.md](PLUGIN.md) の「指定子で事前承認の範囲を絞る」を参照してください。
+ベアな `Write` / `Edit` / `Bash` は `scripts/plugin-lint.sh` の Check 5.4 がエラーとして検出します。
 
 **`model` フィールドの選択基準**:
 
@@ -189,11 +207,11 @@ allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
 
 **拡張フィールド**:
 
-| フィールド  | 型      | 説明                                |
-|:-------|:-------|:----------------------------------|
-| tools  | array  | `allowed-tools` の代替フィールド          |
-| skills | array  | プリロードするスキル（例: `["plugin:skill"]`） |
-| hooks  | object | エージェントスコープのフック設定                  |
+| フィールド           | 型      | 説明                                    |
+|:----------------|:-------|:--------------------------------------|
+| disallowedTools | array  | 明示的に禁止するツール（`tools` で列挙しきれない場合の補完）    |
+| skills          | array  | プリロードするスキル（例: `["plugin:skill"]`）     |
+| hooks           | object | エージェントスコープのフック設定                      |
 
 **`skills` フィールドの活用例**:
 
@@ -203,7 +221,7 @@ name: spec-reviewer
 description: "仕様書レビューエージェント"
 model: sonnet
 color: green
-allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
+tools: [ Read, Glob, Grep, AskUserQuestion ]
 skills: [ "sdd-workflow:sdd-templates" ]
 ---
 ```
@@ -218,19 +236,19 @@ name: spec-reviewer
 description: "仕様書レビューエージェント"
 model: sonnet
 color: green
-allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
+tools: [ Read, Glob, Grep, AskUserQuestion ]
 ---
 ```
 
 エージェントスコープのフックにより、そのエージェント内でのツール使用に対して自動検証を設定できます。なお、読み取り専用のサブエージェントではEditフックは不要です。
 
-#### 2.4 allowed-toolsの設計方針
+#### 2.4 toolsの設計方針
 
-`allowed-tools` は **タスクの性質に応じて最小限** に設定します。
+`tools` は **タスクの性質に応じて最小限** に設定します。
 
 **AI-SDDワークフローの設計パターン**:
 
-| エージェントタイプ                               | allowed-tools                                  | 理由                             |
+| エージェントタイプ                               | tools                                          | 理由                             |
 |:----------------------------------------|:-----------------------------------------------|:-------------------------------|
 | **レビュー系** (prd-reviewer, spec-reviewer) | Read, Glob, Grep, AskUserQuestion              | 読み取り専用。修正提案を出力し、メインエージェントが適用   |
 | **分析系** (requirement-analyzer)          | Read, Glob, Grep, AskUserQuestion              | 読み取り専用。分析結果と提案を出力              |
@@ -245,16 +263,16 @@ allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
 - Taskツールで再帰的に探索すると、コンテキストが爆発的に増加
 - Read, Glob, Grep で必要なファイルを特定し、効率的に読み込む設計
 
-**allowed-tools設計のベストプラクティス**:
+**tools設計のベストプラクティス**:
 
 ```markdown
 # ❌ Bad: すべてのツールを許可
 
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
 
 # ✅ Good: 必要最小限のツールのみ許可
 
-allowed-tools: Read, Glob, Grep, Edit, AskUserQuestion
+tools: Read, Glob, Grep, Edit, AskUserQuestion
 ```
 
 理由: 不要なツールを許可すると、エージェントが非効率な実装を選択する可能性がある。
@@ -425,7 +443,7 @@ WRITE系タスク? (ドキュメント生成、修正)
 name: heavy-analysis
 description: "重い分析をサブエージェントとして実行するスキル"
 context: fork
-agent: sonnet
+model: sonnet
 allowed-tools: [ Read, Glob, Grep ]
 ---
 
@@ -446,6 +464,13 @@ allowed-tools: [ Read, Glob, Grep ]
 メインコンテキスト
 ```
 
+**Note**: スキルのモデル選択は `model:` で行います。`agent:` は**サブエージェント型名**（`Explore` /
+`general-purpose` 等）の指定で、`context: fork` を設定したときにのみ効きます。ここにモデル名を書くと
+警告なく `general-purpose` にフォールバックし、モデル指定が無効になります。
+また、スキルの `allowed-tools` は「許可を尋ねずに使えるツール」の宣言であり、エージェントの `tools` とは
+意味が異なります（前者は権限の事前承認、後者は使用可能ツールの限定）。事前承認の範囲は
+`Edit(.sdd/**)` のような指定子で絞ります。
+
 **パターン2: エージェントに `skills` でスキルをプリロード**
 
 エージェントのフロントマターに `skills` を指定すると、エージェント実行時にスキルのコンテキストが自動的に読み込まれます。
@@ -456,7 +481,7 @@ allowed-tools: [ Read, Glob, Grep ]
 name: spec-reviewer
 description: "仕様書レビューエージェント"
 model: sonnet
-allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
+tools: [ Read, Glob, Grep, AskUserQuestion ]
 skills: [ "sdd-workflow:sdd-templates" ]
 ---
 ```
@@ -480,19 +505,25 @@ sdd-templates スキルのコンテキストが自動注入
 
 エージェントやスキル内でフックを定義することで、ツール使用時に自動検証を組み込めます。
 
+**構造の注意点**: フックイベントの配列要素は「マッチャーのグループ」であり、`matcher` と `hooks` 配列を持つ
+**入れ子構造**です。`type` / `prompt` を `matcher` と同じ階層に並べたフラット構造では動作しません。
+実際に動いている定義は [plugins/sdd-workflow/hooks/hooks.json](plugins/sdd-workflow/hooks/hooks.json)
+を参照してください（`matcher` は `Write|Edit` のように `|` 区切りで複数ツールを指定できます）。
+
 **品質検証パターン（`prompt` タイプ）**:
 
 ```yaml
 # エージェントフロントマターでのフック定義
 hooks:
   PostToolUse:
-    - type: prompt
-      prompt: |
-        Edit操作の結果を検証してください:
-        1. CONSTITUTION.mdの原則に準拠しているか
-        2. ドキュメント間のトレーサビリティが維持されているか
-        3. 命名規則に従っているか
-      matcher: Edit
+    - matcher: Edit
+      hooks:
+        - type: prompt
+          prompt: |
+            Edit操作の結果を検証してください:
+            1. CONSTITUTION.mdの原則に準拠しているか
+            2. ドキュメント間のトレーサビリティが維持されているか
+            3. 命名規則に従っているか
 ```
 
 **自動レビューパターン（`agent` タイプ）**:
@@ -500,9 +531,10 @@ hooks:
 ```yaml
 hooks:
   PostToolUse:
-    - type: agent
-      agent: spec-reviewer
-      matcher: Write
+    - matcher: Write
+      hooks:
+        - type: agent
+          agent: spec-reviewer
 ```
 
 Write ツール使用後に自動的に spec-reviewer エージェントが起動し、書き込まれた内容をレビューします。
@@ -570,7 +602,7 @@ spec-reviewer
 **エージェントマニフェストでの制約表明**:
 
 ```markdown
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 
 **注意**: このエージェントは Task ツール、Edit ツール、Write ツールを使用しません。再委譲を避け、読み取り専用でコンテキスト効率化を優先します。
 ```
@@ -597,7 +629,7 @@ description: "
 仕様書の品質レビューとCONSTITUTION.md準拠チェックを行うエージェント。曖昧な記述、不足セクション、SysMLとしての妥当性をチェックし、違反時は修正提案を出力します。"
 ```
 
-#### 5.2 allowed-toolsを最小限にする
+#### 5.2 toolsを最小限にする
 
 **設計ルール**:
 
@@ -608,11 +640,11 @@ description: "
 ```markdown
 # ❌ Bad: すべてのツールを許可
 
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, Bash, Task, AskUserQuestion
 
 # ✅ Good: レビュー系エージェント（読み取り専用）
 
-allowed-tools: Read, Glob, Grep, AskUserQuestion
+tools: Read, Glob, Grep, AskUserQuestion
 ```
 
 #### 5.3 大きなコンテキストはファイルで委任

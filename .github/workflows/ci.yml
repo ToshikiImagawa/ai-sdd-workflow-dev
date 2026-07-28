@@ -36,8 +36,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - name: Run plugin-lint.sh
         run: bash scripts/plugin-lint.sh
+      # The /plugin-lint skill's Python linter covers checks the shell script does
+      # not (skill allowed-tools tool-name validity and duplicates). Without this
+      # step those checks only run when a human invokes the skill.
+      - name: Run plugin-lint skill linter
+        run: python3 .claude/skills/plugin-lint/scripts/plugin_lint.py
 
   test:
     name: Test hook scripts (${{ matrix.os }})

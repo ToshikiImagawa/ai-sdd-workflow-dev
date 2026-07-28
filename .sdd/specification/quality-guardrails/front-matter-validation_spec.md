@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
@@ -88,10 +88,10 @@ front matter はオプション（後方互換）であるため人手で記述�
 | 種別（skill/agent/hook/template） | 配置場所                                                        | 名前                             | 概要                                                    |
 |------------------------------|-------------------------------------------------------------|--------------------------------|-------------------------------------------------------|
 | agent                        | `agents/front-matter-reviewer.md`                           | front-matter-reviewer          | YAML front matter の形式・依存方向・ID 一意性を検証する haiku エージェント |
-| template                     | `agents/templates/{en,ja}/front_matter_validation_report.md` | front_matter_validation_report | 検証レポートの出力フォーマット（EN/JA）                       |
-| reference                    | `agents/references/front_matter_reference.md`               | front_matter_reference         | スキーマ定義・種別別フィールド・依存方向規則・検証チェックリスト・状態遷移・欠落ポリシー |
-| reference                    | `agents/references/validation_severity_levels.md`           | validation_severity_levels     | 重要度（error / warning / info）の定義                   |
-| example                      | `agents/examples/front_matter_reviewer_usage.md`            | front_matter_reviewer_usage    | エージェントの呼び出し例（単一 / 複数 / `--cross-ref`）        |
+| template                     | `shared/templates/{en,ja}/front_matter_validation_report.md` | front_matter_validation_report | 検証レポートの出力フォーマット（EN/JA）                       |
+| reference                    | `shared/references/front_matter_reference.md`               | front_matter_reference         | スキーマ定義・種別別フィールド・依存方向規則・検証チェックリスト・状態遷移・欠落ポリシー |
+| reference                    | `shared/references/validation_severity_levels.md`           | validation_severity_levels     | 重要度（error / warning / info）の定義                   |
+| example                      | `shared/examples/front_matter_reviewer_usage.md`            | front_matter_reviewer_usage    | エージェントの呼び出し例（単一 / 複数 / `--cross-ref`）        |
 
 ## 4.1. 入出力定義
 
@@ -104,7 +104,7 @@ front matter はオプション（後方互換）であるため人手で記述�
 | `SDD_LANG`       | 任意 | 出力テンプレートの言語（既定: `en`）                                     |
 | `SDD_*` 環境変数    | 任意 | ディレクトリパス解決（`SDD_ROOT` / `SDD_REQUIREMENT_PATH` / `SDD_SPECIFICATION_PATH` / `SDD_TASK_PATH`） |
 
-**出力:** front matter 検証レポート（`templates/${SDD_LANG:-en}/front_matter_validation_report.md` 形式）。
+**出力:** front matter 検証レポート（`shared/templates/${SDD_LANG:-en}/front_matter_validation_report.md` 形式）。
 
 - 重要度（error / warning / info）付きの不備リスト
 - 各不備に対する改善提案
@@ -141,7 +141,7 @@ front-matter-reviewer .sdd/specification/user-login_design.md --cross-ref
 sequenceDiagram
     participant Trigger as トリガー（生成後 / 整合性チェック / 手動）
     participant Reviewer as front-matter-reviewer
-    participant Ref as references/（スキーマ・重要度定義）
+    participant Ref as shared/references/（スキーマ・重要度定義）
     participant Docs as .sdd/ ドキュメント群
     participant Dev as 開発者／AI
 

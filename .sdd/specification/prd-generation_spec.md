@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
@@ -178,7 +178,7 @@ sequenceDiagram
 | B-001 | Vibe Coding 防止          | 対話モードで曖昧要件を質問で明確化し、推測での補完を排除する（CI モードは例外）        |
 | B-002 | 多言語対応（EN/JA）の一貫性  | テンプレート・出力を `SDD_LANG` に従い EN/JA 同等構成で提供する（DC_003）           |
 | A-002 | フックとスクリプトの責務分離   | テンプレート・参照の事前ロードという機械的処理を prepare-prd.py に委譲する（FR_001_01） |
-| T-002 | plugin.json 登録の徹底     | 生成スキル群・レビューエージェント群を plugin.json に登録する                       |
+| T-002 | plugin.json 登録の徹底     | レビューエージェント群を plugin.json の agents に登録する（スキルは標準パス `skills/` の自動検出で読み込む） |
 
 ---
 

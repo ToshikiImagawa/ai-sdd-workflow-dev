@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-constitution-management"]
 tags: ["constitution", "governance", "skill", "principles"]
 category: "workflow-foundation"
@@ -28,7 +28,8 @@ risk: "medium"
 
 本設計書は、既に実装・稼働している `constitution` スキル（`plugins/sdd-workflow/skills/constitution/`）の
 構成を逆算して記述したものである。実装コード（`SKILL.md` / `scripts/validate-files.py` /
-`templates/{en,ja}/` / `.claude-plugin/plugin.json` の `skills` 登録）を真実の源とする。
+`templates/{en,ja}/`）を真実の源とする。スキルは標準パス `skills/` の自動検出で読み込まれ、
+`plugin.json` に `skills` を宣言しない（T-002）。
 
 > **逆算記述の経緯（正当化）**: `constitution` スキルは AI-SDD ワークフローの基盤機能として先行実装され、
 > 本 spec/design は後追いで機能要求を明文化した逆算記述である。D-001（Specification-Driven）の原則に対し、
@@ -42,7 +43,7 @@ risk: "medium"
 | スキル本体（SKILL.md）               | 🟢     | init/add/show/update/validate/sync/bump-version を Markdown プロンプトで定義 |
 | validate 用走査スクリプト             | 🟢     | `scripts/validate-files.py`（Python 標準ライブラリのみ）                  |
 | 言語別テンプレート                    | 🟢     | `templates/{en,ja}/constitution_template.md` / `constitution_output.md`    |
-| plugin.json 登録                    | 🟢     | `"skills": "./skills"` によりディレクトリ一括登録                          |
+| plugin.json 登録                    | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -138,7 +139,7 @@ plugins/sdd-workflow/
 │   └── examples/                               # 各サブコマンドの出力例
 ├── scripts/hook_common.py                      # resolve_project_root 共有
 ├── scripts/env_export.py                       # rewrite_exports 共有
-└── .claude-plugin/plugin.json                  # "skills": "./skills"（T-002）
+└── .claude-plugin/plugin.json                  # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 ---
@@ -192,7 +193,7 @@ plugins/sdd-workflow/
 | A-002 | フックとスクリプトの責務分離   | ✅   | validate のファイル走査を `validate-files.py` に委譲                    |
 | B-002 | 多言語対応の一貫性          | ✅   | `templates/{en,ja}/` を用意し `SDD_LANG` に応じて出力                    |
 | D-001 | Specification-Driven     | ⚠️   | 実装先行のため本 spec/design を逆算作成（1 節に例外を文書化・正当化）          |
-| T-002 | plugin.json 登録の徹底     | ✅   | `"skills": "./skills"` によりスキルを登録済み                           |
+| T-002 | plugin.json 登録の徹底     | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 日本語テンプレート・出力で UTF-8 を維持し mojibake を防止                  |
 
 **原則から逸脱する場合**: D-001 について実装先行の経緯を「9.1 は該当なし・1 節」に文書化し、CONSTITUTION.md の例外プロセスに従う。

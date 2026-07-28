@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["prd-spec-design-spec-review"]
 tags: ["spec-review", "constitution", "traceability", "quality-assurance"]
 category: "spec-design"
@@ -87,9 +87,9 @@ AI-SDD ワークフローでは、PRD から抽象仕様書（`*_spec.md`）・�
 | 種別     | 配置場所                                       | 名前            | 概要                                          |
 |:-------|:---------------------------------------------|:--------------|:--------------------------------------------|
 | agent    | `agents/spec-reviewer.md`                    | spec-reviewer | `*_spec.md` / `*_design.md` の品質・原則準拠をレビューし修正提案を生成 |
-| template | `agents/templates/{en,ja}/spec_review_output.md` | spec_review_output | レビュー結果レポートの出力フォーマット           |
-| reference | `agents/references/ambiguity_patterns.md`   | ambiguity_patterns | 検出対象の曖昧表現パターンと欠落しやすい情報の定義 |
-| reference | `agents/references/fix_proposal_flow.md`    | fix_proposal_flow | 原則違反検出時の修正提案生成フロー              |
+| template | `shared/templates/{en,ja}/spec_review_output.md` | spec_review_output | レビュー結果レポートの出力フォーマット           |
+| reference | `shared/references/ambiguity_patterns.md`   | ambiguity_patterns | 検出対象の曖昧表現パターンと欠落しやすい情報の定義 |
+| reference | `shared/references/fix_proposal_flow.md`    | fix_proposal_flow | 原則違反検出時の修正提案生成フロー              |
 
 > **スコープ注記**: front matter の形式・依存方向・id 一意性の検証は `front-matter-reviewer` エージェント
 > （別機能）が担う。実装コードと設計書の整合性チェックは quality-guardrails カテゴリの `check-spec` が担う。
@@ -170,7 +170,7 @@ sequenceDiagram
 - CONSTITUTION.md が存在しない場合、原則準拠チェックはスキップされ、その旨がレポートに明記される
 - トレーサビリティ検証は、上流ドキュメントが front matter の `depends-on` または本文リンクで
   参照可能な場合に機能する
-- 曖昧表現検出は `references/ambiguity_patterns.md` で定義されたパターンに基づく
+- 曖昧表現検出は `shared/references/ambiguity_patterns.md` で定義されたパターンに基づく
 
 ## 8.2. 設計的制約
 

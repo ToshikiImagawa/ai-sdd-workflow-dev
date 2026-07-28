@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-07-28"
 depends-on: ["spec-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
@@ -154,11 +154,11 @@ plugins/sdd-workflow/
 │   └── examples/
 │       ├── scope_confirmation.md             # 引数なし実行時の範囲確認例
 │       └── serena_symbol_analysis.md         # Serena シンボル解析の出力例
-└── .claude-plugin/plugin.json                # スキル登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 > `references/*.md` は複数スキルで共有される参照ドキュメントの symlink（実体は共有ディレクトリ）。
-> `plugin.json` は `"skills": "./skills"` によりディレクトリ単位でスキルを自動登録する（T-002）。
+> スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` を宣言しない（T-002）。
 
 ---
 
@@ -166,7 +166,7 @@ plugins/sdd-workflow/
 
 | 要件（spec）                | 実現方針                                                                                       |
 |-------------------------|--------------------------------------------------------------------------------------------|
-| NFR-001（読み取り専用の安全性）  | SKILL.md front matter で `allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash`、`disallowed-tools: Write, Edit` を宣言 |
+| NFR-001（読み取り専用の安全性）  | SKILL.md front matter で `disallowed-tools: Write, Edit` により書き込みを禁止。`allowed-tools`（事前承認）の `Bash` は `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" *)` と指定子で同梱スクリプトの実行のみに絞る |
 | NFR-002（多言語対応）        | 出力を `templates/${SDD_LANG:-en}/check_spec_output.md` から選択。EN / JA の両テンプレートを配置    |
 | NFR-003（移植性）          | `find-design-docs.py` を Python 標準ライブラリ（`pathlib` / `json`）で記述し、外部コマンド非依存で macOS / Linux / Windows に対応  |
 | NFR-004（効率性）          | Phase 1 の 1 回のスクリプト実行に走査を集約し、Claude の Glob / Grep 反復を削減（A-002）              |
@@ -218,5 +218,5 @@ plugins/sdd-workflow/
 | D-001 | Specification-Driven            | 例外 | 本機能は「実装 ↔ design の乖離検出」機能自体で実装が先行した特殊ケース。既存実装から design を逆算記述し、逆算後は design を真実の源に戻す（§9.1 参照）。CONSTITUTION の例外プロセス（design への理由記載・CHANGELOG 記録）に従う |
 | B-002 | 多言語対応（EN/JA）の一貫性        | ✅   | `templates/{en,ja}/check_spec_output.md` を提供                    |
 | D-002 | ファイル命名規則の厳守             | ✅   | `_spec.md` / `_design.md` サフィックス前提でファイルを特定             |
-| T-002 | plugin.json 登録の徹底            | ✅   | `check-spec` スキルは `plugin.json` に登録済み                       |
+| T-002 | plugin.json 登録の徹底            | ✅   | `check-spec` スキルは標準パス `skills/` の自動検出で読み込まれる（宣言不要） |
 | T-003 | 日本語出力の文字化け防止           | ✅   | JA テンプレート・本設計書ともに U+FFFD / mojibake の混入なし           |

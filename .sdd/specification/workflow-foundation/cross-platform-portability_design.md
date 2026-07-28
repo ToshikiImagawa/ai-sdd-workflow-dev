@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-cross-platform-portability"]
 tags: ["portability", "cross-platform", "python", "scripts", "ci"]
 category: "workflow-foundation"
@@ -182,5 +182,5 @@ plugins/sdd-workflow/
 | A-002 | フックとスクリプトの責務分離   | ✅   | 機械的処理を OS 非依存な標準ライブラリのスクリプトへ委譲                   |
 | D-001 | Specification-Driven     | ✅   | 本 spec/design に基づき移植性を担保。実装が仕様に準拠                    |
 | T-001 | JSON/Markdown 構文の正当性 | ✅   | 移植後もプラグイン JSON・ドキュメントリンクの正当性を CI で検証             |
-| T-002 | plugin.json 登録の徹底     | ✅   | 移植はスクリプト実体の置換であり、登録済みスキル・フックの構成を変えない        |
+| T-002 | plugin.json 登録の徹底     | ✅   | 移植はスクリプト実体の置換であり、既存スキル・フックの構成を変えない        |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 移植後スクリプトの出力・テンプレートで UTF-8 を維持し mojibake を防止        |

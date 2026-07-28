@@ -95,36 +95,43 @@ name: agent-name
 description: "詳細なトリガー説明"
 model: sonnet
 color: green
-allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
+tools: [ Read, Glob, Grep, AskUserQuestion ]
 ---
 ```
 
+**`tools` と `allowed-tools` の使い分け**:
+
+サブエージェントでツールを指定するキーは **`tools`** のみ。`allowed-tools` はスキルとレガシーコマンド用のキーであり、
+エージェントのフロントマターに書いても**警告なく無視され、エージェントは全ツールを継承する**。
+レビュー時に `allowed-tools` を使っているエージェントを見つけたら、`tools` への修正を提案する。
+
 **拡張フィールド**:
 
-| フィールド  | 型      | 説明                                |
-|:-------|:-------|:----------------------------------|
-| tools  | array  | `allowed-tools` の代替フィールド          |
-| skills | array  | プリロードするスキル（例: `["plugin:skill"]`） |
-| hooks  | object | エージェントスコープのフック設定                  |
+| フィールド           | 型      | 説明                                |
+|:----------------|:-------|:----------------------------------|
+| disallowedTools | array  | 明示的に禁止するツール（`tools` で絞り込まない場合の補完） |
+| skills          | array  | プリロードするスキル（例: `["plugin:skill"]`） |
+| hooks           | object | エージェントスコープのフック設定                  |
 
-### 4. allowed-tools の設計
+### 4. tools の設計
 
 **設計パターン**:
 
-| エージェントタイプ                                               | allowed-tools                     | 理由                     |
+| エージェントタイプ                                               | tools                             | 理由                     |
 |:--------------------------------------------------------|:----------------------------------|:-----------------------|
 | **レビュー系** (prd-reviewer, spec-reviewer)                 | Read, Glob, Grep, AskUserQuestion | 読み取り専用。修正提案を出力し、メインが適用 |
 | **分析系** (requirement-analyzer, clarification-assistant) | Read, Glob, Grep, AskUserQuestion | 読み取り専用。分析結果と提案を出力      |
 
 **チェック項目**:
 
+- ツール指定に `allowed-tools` ではなく `tools` が使われているか（`allowed-tools` は無視され全ツール継承になる）
 - タスクの性質（READ系 or WRITE系）に応じて適切なツールが選択されているか
 - 不要なツールが含まれていないか（特にTaskツール）
 - レビュー系エージェントでTaskツールが許可されている場合、正当な理由があるか
 
 **重要な制約**:
 
-- **レビュー系エージェント（spec-reviewer, prd-reviewer）は Task ツールを使用しない**
+- **レビュー系エージェント（spec-reviewer, prd-reviewer）は Task ツールを `tools` に含めない**
 - 理由: ドキュメント間トレーサビリティチェックで大量のファイル読み込みが発生し、Taskツールで再帰的に探索するとコンテキストが爆発的に増加するため
 - **WRITE系はメインエージェントのみ**: サブエージェントは修正提案を出力し、メインエージェントが Edit を実行
 
@@ -141,7 +148,7 @@ allowed-tools: [ Read, Glob, Grep, AskUserQuestion ]
 **チェック項目**:
 
 - エージェントマニフェストで再委譲を避ける設計意図が明記されているか
-- allowed-tools に Task が含まれる場合、正当な理由が説明されているか
+- `tools` に Task が含まれる場合、正当な理由が説明されているか
 
 **許可されるパターン**:
 

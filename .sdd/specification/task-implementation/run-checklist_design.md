@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-run-checklist"]
 tags: ["checklist", "verification"]
 category: "task-implementation"
@@ -28,7 +28,7 @@ risk: "medium"
 
 本設計書は既存実装（`skills/run-checklist/`）の挙動を逆算して記述したものである。
 処理フロー（読み込み → 環境検出 → 検証実行 → 結果記録 → レポート生成）・カテゴリ別自動検証度・
-実行モデル（`agent: haiku`）・入出力パス・テンプレート群は実装（Markdown プロンプトおよび
+実行モデル（`model: haiku`）・入出力パス・テンプレート群は実装（Markdown プロンプトおよび
 `references/verification_commands.md` / `templates/{en,ja}/`）を真実の源とする。
 
 > **逆算記述の経緯（正当化）**: run-checklist スキルは AI-SDD ワークフローの初期構築時に実装が先行し、
@@ -41,10 +41,10 @@ risk: "medium"
 
 | モジュール/機能          | ステータス | 備考                                                                |
 |-----------------------|--------|---------------------------------------------------------------------|
-| run-checklist スキル     | 🟢     | `skills/run-checklist/SKILL.md`（`user-invocable: true`、`agent: haiku`、Bash・TaskList 系ツール使用可） |
+| run-checklist スキル     | 🟢     | `skills/run-checklist/SKILL.md`（`user-invocable: true`、`model: haiku`、TaskList 系ツールを事前承認。Bash は使用可だが事前承認せず都度確認） |
 | 検証コマンドマッピング     | 🟢     | `skills/run-checklist/references/verification_commands.md`             |
 | 出力テンプレート         | 🟢     | `skills/run-checklist/templates/{en,ja}/`（result_format / report_format / tasklist_patterns） |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                  |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -63,8 +63,8 @@ risk: "medium"
 
 | 領域     | 採用方式                                                              | 選定理由                                                                          |
 |--------|-------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| skill  | Markdown プロンプトスキル（`user-invocable: true`、`agent: haiku`）        | 検証実行はコマンド駆動で判断が比較的定型。軽量モデル（haiku）でコスト効率よく実行。A-001 に従いスキルとして実装 |
-| ツール   | `Read/Write/Edit/Glob/Grep/Bash/TaskCreate/TaskUpdate/TaskList/TaskGet` | テスト・リンター・セキュリティ実行に Bash、検証進捗の可視化に TaskList が必要                 |
+| skill  | Markdown プロンプトスキル（`user-invocable: true`、`model: haiku`）        | 検証実行はコマンド駆動で判断が比較的定型。軽量モデル（haiku）でコスト効率よく実行。A-001 に従いスキルとして実装 |
+| ツール   | `allowed-tools: Read, Glob, Grep, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet` | 検証進捗の可視化に TaskList が必要。`allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` に絞り、Bash はプロジェクト任意のテスト・リンター・スキャナを実行するため事前承認しない（実行自体は可能で、都度ユーザー確認が入る） |
 | コマンド解決 | `references/verification_commands.md` のマッピング表              | 検証コマンドを参照資料に外出しし、決定的なマッピングと保守性を確保（A-002）                    |
 | 検証度制御 | CHK-ID カテゴリごとに Yes/Partial を判定                              | 自動化可能な範囲を明示し、Partial 項目は補助手段（型チェック・整合性チェック等）に委ねる            |
 | 多言語   | `SDD_LANG` 環境変数 + `templates/{en,ja}/`                            | B-002 の一貫性要件。結果・レポート形式をテンプレートで切り替える                              |
@@ -141,14 +141,14 @@ graph TD
 ```
 plugins/sdd-workflow/
 ├── skills/run-checklist/
-│   ├── SKILL.md                                # ユーザー呼び出しスキル本体（agent: haiku）
+│   ├── SKILL.md                                # ユーザー呼び出しスキル本体（model: haiku）
 │   ├── references/verification_commands.md     # カテゴリ別検証コマンドマッピング
 │   └── templates/{en,ja}/                      # result_format / report_format / tasklist_patterns
-└── .claude-plugin/plugin.json                  # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                  # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-run-checklist スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+run-checklist スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -178,7 +178,7 @@ run-checklist スキルは実装・登録済みであり、本設計書は逆算
 
 | 決定事項            | 選択肢                        | 決定内容                              | 理由                                                          |
 |-------------------|-----------------------------|-------------------------------------|---------------------------------------------------------------|
-| 実行モデル          | 既定モデル / haiku            | `agent: haiku`                       | 検証はコマンド駆動で判断が比較的定型。軽量モデルでコスト効率を優先            |
+| 実行モデル          | 既定モデル / haiku            | `model: haiku`                       | 検証はコマンド駆動で判断が比較的定型。軽量モデルでコスト効率を優先            |
 | 検証コマンド定義     | SKILL.md 内に直書き / 参照外出し | `references/verification_commands.md` へ外出し | マッピングの決定性・保守性を確保し SKILL.md を簡潔に保つ（A-002）           |
 | 失敗時の挙動         | 即中断 / 継続                 | 継続（失敗を記録して次へ）              | 1 項目の失敗で全体を止めず、全体の品質状況を把握する（NFR-001）             |
 | 未導入ツールの扱い    | エラー / SKIPPED             | SKIPPED（理由・導入提案付き）           | 環境依存を許容し、対象プロジェクトのツール構成に依存しない（NFR-003）         |
@@ -202,7 +202,7 @@ run-checklist スキルは実装・登録済みであり、本設計書は逆算
 | B-001 | Vibe Coding 防止          | ✅     | 品質判定を客観的な検証結果で行い主観依存を排除                       |
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven      | ✅     | 仕様由来のチェックリストを検証対象とし仕様準拠を検証                   |
-| T-002 | plugin.json 登録の徹底     | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

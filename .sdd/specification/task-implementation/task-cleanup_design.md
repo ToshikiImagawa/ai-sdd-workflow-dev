@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-task-cleanup"]
 tags: ["task-cleanup", "knowledge-persistence"]
 category: "task-implementation"
@@ -28,7 +28,7 @@ risk: "medium"
 
 本設計書は既存実装（`skills/task-cleanup/`）の挙動を逆算して記述したものである。
 処理フロー（対象特定 → ファイル確認 → 分類 → 統合先決定 → 統合 → front matter 更新 → 削除）・
-統合／削除の分類基準・削除方式（`git rm`）・実行モデル（`agent: haiku`）・入出力パス・テンプレートは
+統合／削除の分類基準・削除方式（`git rm`）・実行モデル（`model: haiku`）・入出力パス・テンプレートは
 実装（Markdown プロンプトおよび `examples/` / `templates/{en,ja}/`）を真実の源とする。
 
 > **逆算記述の経緯（正当化）**: task-cleanup スキルは AI-SDD ワークフローの初期構築時に実装が先行し、
@@ -41,10 +41,10 @@ risk: "medium"
 
 | モジュール/機能          | ステータス | 備考                                                                |
 |-----------------------|--------|---------------------------------------------------------------------|
-| task-cleanup スキル      | 🟢     | `skills/task-cleanup/SKILL.md`（`user-invocable: true`、`agent: haiku`、`allowed-tools: Read/Write/Edit/Glob/Grep/Bash/AskUserQuestion`） |
+| task-cleanup スキル      | 🟢     | `skills/task-cleanup/SKILL.md`（`user-invocable: true`、`model: haiku`、`allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`。`Bash` は事前承認せず `git rm` は都度確認） |
 | 範囲確認例              | 🟢     | `skills/task-cleanup/examples/scope_confirmation.md`                  |
 | 出力テンプレート         | 🟢     | `skills/task-cleanup/templates/{en,ja}/cleanup_output.md`             |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                  |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -62,8 +62,8 @@ risk: "medium"
 
 | 領域     | 採用方式                                                              | 選定理由                                                                          |
 |--------|-------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| skill  | Markdown プロンプトスキル（`user-invocable: true`、`agent: haiku`）        | 知見の選別・統合は判断を要するが定型度が高い。軽量モデル（haiku）でコスト効率よく実行。A-001 に従いスキルとして実装 |
-| ツール   | `Read/Write/Edit/Glob/Grep/Bash/AskUserQuestion`                   | ファイル一覧・更新日確認・削除に Bash（`ls`/`git log`/`git rm`）、統合に Edit/Write、範囲確認に AskUserQuestion が必要 |
+| skill  | Markdown プロンプトスキル（`user-invocable: true`、`model: haiku`）        | 知見の選別・統合は判断を要するが定型度が高い。軽量モデル（haiku）でコスト効率よく実行。A-001 に従いスキルとして実装 |
+| ツール   | `allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`   | `allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` で `.sdd/` 配下に限定する。`Bash` は事前承認しない（`ls`/`git log`/`git rm` は引き続き実行できるが、破壊的な `git rm` を無確認で通さないため都度ユーザー確認を挟む） |
 | 削除    | `git rm`（ファイル単位）/ `git rm -r`（ディレクトリ）                     | 削除を Git 管理下で行い履歴の追跡と取り消しを可能にする                                    |
 | 順序保証 | 統合 → front matter 更新 → 削除の順を処理フローで固定                     | 統合前削除の禁止（DC_002 / D-003）をプロセス順序として担保                                |
 | 多言語   | `SDD_LANG` 環境変数 + `templates/{en,ja}/cleanup_output.md`           | B-002 の一貫性要件。出力形式をテンプレートで切り替える                                    |
@@ -147,14 +147,14 @@ graph TD
 ```
 plugins/sdd-workflow/
 ├── skills/task-cleanup/
-│   ├── SKILL.md                              # ユーザー呼び出しスキル本体（agent: haiku）
+│   ├── SKILL.md                              # ユーザー呼び出しスキル本体（model: haiku）
 │   ├── examples/scope_confirmation.md        # 範囲確認提示の例
 │   └── templates/{en,ja}/cleanup_output.md   # 出力基底テンプレート（日英）
-└── .claude-plugin/plugin.json                # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-task-cleanup スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+task-cleanup スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -184,7 +184,7 @@ task-cleanup スキルは実装・登録済みであり、本設計書は逆算�
 
 | 決定事項            | 選択肢                        | 決定内容                              | 理由                                                          |
 |-------------------|-----------------------------|-------------------------------------|---------------------------------------------------------------|
-| 実行モデル          | 既定モデル / haiku            | `agent: haiku`                       | 選別・統合は判断を要するが定型度が高く、軽量モデルでコスト効率を優先          |
+| 実行モデル          | 既定モデル / haiku            | `model: haiku`                       | 選別・統合は判断を要するが定型度が高く、軽量モデルでコスト効率を優先          |
 | 削除方式            | `rm` / `git rm`               | `git rm`（`-r` でディレクトリ）          | Git 管理下で削除し履歴追跡・取り消しを可能にする                        |
 | 削除順序            | 任意 / 統合完了後に固定          | 統合 → front matter 更新 → 削除の順     | 統合前削除の禁止（DC_002 / D-003）をプロセス順序として担保               |
 | 統合先が無い場合     | 常に新規作成 / 条件分岐          | spec があれば新規 design 作成、無ければ削除 | 孤立した設計書の乱造を避けつつ、根拠ある知見のみ永続化する                  |
@@ -208,7 +208,7 @@ task-cleanup スキルは実装・登録済みであり、本設計書は逆算�
 | B-002 | 多言語対応（EN/JA）の一貫性     | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven          | ✅     | 設計知見を `*_design.md` へ集約し仕様・設計を真実の源に保つ            |
 | D-003 | ドキュメント永続性ルールの遵守   | ✅     | 統合完了後にのみ task/ を削除し、統合前削除を発生させない              |
-| T-002 | plugin.json 登録の徹底         | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底         | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止         | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

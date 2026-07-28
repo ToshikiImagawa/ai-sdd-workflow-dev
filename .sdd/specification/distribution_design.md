@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
 category: "distribution"
@@ -16,7 +16,7 @@ category: "distribution"
 
 **関連 Spec:** [distribution_spec.md](distribution_spec.md)
 **関連 PRD:** [distribution.md](../requirement/distribution.md)
-**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md) B-002（多言語対応の一貫性）, D-002（ファイル命名規則の厳守）, T-001（JSON/Markdown 構文の正当性）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `v2.0.0`） B-002（多言語対応の一貫性）, D-002（ファイル命名規則の厳守）, T-001（JSON/Markdown 構文の正当性）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
 
 ---
 
@@ -41,9 +41,9 @@ category: "distribution"
 | モジュール/機能              | ステータス | 備考                                                                       |
 |----------------------------|--------|----------------------------------------------------------------------------|
 | マーケットプレイス配布         | 🟢     | `marketplace.json` が `./plugins/sdd-workflow` を登録（version 4.0.0）          |
-| プラグインマニフェスト         | 🟢     | `plugin.json` が agents（6件）・skills（`./skills`）・hooks を登録              |
+| プラグインマニフェスト         | 🟢     | `plugin.json` が agents（6件）のみを登録。skills / hooks は標準パスの自動検出に委ねる |
 | バージョン一元管理            | 🟢     | plugin.json を単一ソースとし、release.yml がタグとの整合を検証（DC_001）          |
-| 多言語テンプレート体系         | 🟢     | 各スキル・エージェントが `templates/{en,ja}/` を保持。CHANGELOG は日英併記         |
+| 多言語テンプレート体系         | 🟢     | 出力テンプレートを持つ 16/19 スキルが `skills/*/templates/{en,ja}/`、エージェント群が `shared/templates/{en,ja}/` を保持。CHANGELOG は日英併記 |
 | CI 継続検証                  | 🟢     | `ci.yml` が validate / shellcheck / plugin-lint / test の 4 ジョブを実行         |
 | クロスプラットフォーム検証      | 🟢     | shellcheck・test ジョブが `ubuntu-latest` / `macos-latest` マトリクスで実行       |
 | リリースワークフロー          | 🟢     | prepare-release.yml（PR 自動化）と release.yml（公開リポ同期・リリース作成）        |
@@ -54,7 +54,7 @@ category: "distribution"
 
 - Claude Code 標準のマーケットプレイス機構に準拠して配布し、利用者の標準導入・更新手順を成立させる（FR-001 / FR-005）
 - バージョンをマニフェストに一元化し、タグ・marketplace.json・plugin.json の不整合を配布前に機械検知する（FR-002 / DC_001）
-- 全スキル・エージェントのテンプレートを EN/JA で提供し、ファイルセット同一性を自動検証する（FR-003 / DC_003）
+- 出力テンプレートを持つスキル・エージェントのテンプレートを EN/JA で提供し、ファイルセット同一性を自動検証する（FR-003 / DC_003）
 - 構造・構文・リント・回帰の各検証を CI で自動化し、壊れたプラグインの配布を防止する（FR-004）
 - スクリプト・フックの動作を macOS / Linux の CI マトリクスで検証し、移植性の退行を検知する（NFR-001）
 
@@ -109,12 +109,12 @@ graph TD
 | モジュール名                | 責務                                                       | 依存関係              | 配置場所                                          |
 |---------------------------|------------------------------------------------------------|---------------------|-------------------------------------------------|
 | marketplace.json          | マーケットプレイスメタデータとプラグイン登録・バージョン定義          | -                   | `.claude-plugin/marketplace.json`               |
-| plugin.json               | プラグインマニフェスト（agents / skills / hooks / version）        | -                   | `plugins/sdd-workflow/.claude-plugin/plugin.json` |
+| plugin.json               | プラグインマニフェスト（name / version / agents）                  | -                   | `plugins/sdd-workflow/.claude-plugin/plugin.json` |
 | ci.yml                    | 構造検証・shellcheck・plugin-lint・回帰テストの実行             | 検証スクリプト群 / GitHub Actions | `.github/workflows/ci.yml`             |
 | prepare-release.yml       | develop → main の release ブランチ作成・PR・CI 待機・マージ       | ci.yml / gh CLI     | `.github/workflows/prepare-release.yml`         |
 | release.yml               | バージョン整合検証・公開リポ同期・タグ・Release 作成               | ci.yml（再利用）/ jq / rsync / gh | `.github/workflows/release.yml`       |
 | validate-marketplace.sh   | JSON 構文・必須フィールド・バージョン整合の検証                    | jq                  | `scripts/validate-marketplace.sh`               |
-| plugin-lint.sh            | コードブロック検出・EN/JA 同一性・パストークン検査                 | find / grep         | `scripts/plugin-lint.sh`                        |
+| plugin-lint.sh            | コードブロック検出・EN/JA 同一性・パストークン検査・manifest 衛生検査（`agents/` レイアウト検査を含む） | find / grep / jq    | `scripts/plugin-lint.sh`                        |
 | CHANGELOG.md / .ja.md     | バージョンごとの変更履歴（日英）                                | -                   | `plugins/sdd-workflow/CHANGELOG*.md`            |
 
 ---
@@ -141,11 +141,36 @@ graph TD
 {
   "name": "sdd-workflow",
   "version": "4.0.0",
-  "agents": ["./agents/clarification-assistant.md", "..."],
-  "skills": "./skills",
-  "hooks": "./hooks/hooks.json"
+  "agents": ["./agents/clarification-assistant.md", "..."]
 }
 ```
+
+`skills` / `hooks` は manifest で宣言しない。Claude Code のコンポーネントパスフィールドは挙動が
+3 種類に分かれるため、一律に登録する運用は成立しない（T-002 v2.0.0）。
+
+| フィールド | 挙動                     | 本プラグインの方針                                                      |
+|:--------|:------------------------|:--------------------------------------------------------------------|
+| `agents` | 既定の `agents/` 走査を**置換**する | 配列に載せたファイルのみ読み込まれるため登録必須。ただし検証系の走査対象は絞れないため、サポートファイルは `agents/` に置かず `shared/` に集約する |
+| `skills` | 既定の `skills/` 走査に**加算**する | 標準パス `skills/` は常に走査されるため `"./skills"` の宣言は冗長。宣言しない        |
+| `hooks`  | 既定パスを**補完**する（上書きではない） | 標準パス `hooks/hooks.json` を明示すると同一ファイルの二重ロードとなりローダーが拒否する。宣言しない |
+
+この非対称を機械的に守るため、plugin-lint.sh のマニフェスト衛生検査が `hooks` / `skills` への標準パス宣言と
+`agents` の欠落を検出して `log_error` する。あわせて `agents/` にサブディレクトリが存在すること、および
+`agents/*.md` に front matter が無いことも検出する。これは `claude plugin validate --strict` が
+マニフェストを無視して `agents/**` を再帰走査し、サポートファイルをエージェント定義として扱うためであり、
+CLI 依存を持ち込まずに同じ不変条件を CI で担保する（`--strict` はローカル手動検証として利用する）。
+
+同様に、宣言しても警告なく無視されるため人手では気付けない front matter キーの誤用（サブエージェントでの
+`allowed-tools`、スキルの `agent:` へのモデル名、`context: fork` を伴わない `agent:`、`hooks.json` の
+未クォート `${CLAUDE_PLUGIN_ROOT}`）も plugin-lint.sh の front matter 衛生検査で機械検知する。
+
+加えて、スキルの `allowed-tools` は「許可を尋ねずに使えるツール」の**事前承認**であり制限リストではないため、
+ベアな `Write` / `Edit` は任意のパスへの書き込みを、ベアな `Bash` は任意のコマンド実行を無確認で通してしまう。
+これも見た目からは危険度が読み取れないため、plugin-lint.sh の Check 5.4 がベアな `Write` / `Edit` / `Bash` を
+`log_error` する。配布側は書き込みを `Edit(.sdd/**)` 等のパス指定子で、シェルを
+`Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/<name>/scripts/<script>.py" *)` の形で同梱スクリプトに限定して事前承認する
+（`Write(<path>)` はファイル権限チェックにマッチせず、`Edit(<path>)` ルールが Write を含む全ファイル編集ツールをカバーする）。
+スコープを絞りすぎても利用者に権限確認が出るだけで機能は失われない（fail-safe）。
 
 ---
 
@@ -156,7 +181,9 @@ ai-sdd-workflow-dev/
 ├── .claude-plugin/
 │   └── marketplace.json                    # マーケットプレイスメタデータ・バージョン
 ├── plugins/sdd-workflow/
-│   ├── .claude-plugin/plugin.json          # プラグインマニフェスト（agents/skills/hooks/version）
+│   ├── .claude-plugin/plugin.json          # プラグインマニフェスト（name/version/agents）
+│   ├── agents/*.md                         # エージェント定義のみ（サポートファイルは shared/ へ）
+│   ├── shared/templates/{en,ja}/           # エージェント出力の多言語テンプレート（EN/JA 同一セット）
 │   ├── skills/*/templates/{en,ja}/         # 多言語テンプレート（EN/JA 同一セット）
 │   ├── CHANGELOG.md                        # 変更履歴（英語）
 │   └── CHANGELOG.ja.md                     # 変更履歴（日本語）
@@ -178,7 +205,7 @@ ai-sdd-workflow-dev/
 |-------------------------------|------------------------------------------------------------------------------------------------|
 | NFR-001 クロスプラットフォーム    | shellcheck / test ジョブを `[ubuntu-latest, macos-latest]` マトリクスで実行。フック・スキルは Python 標準ライブラリ実装（cross-platform-portability 参照） |
 | NFR-002 退行検知（保守性）        | release.yml がタグ・marketplace.json・plugin.json の 3 者バージョン一致を検証し、不一致で `exit 1`。CI 各ジョブがマージをブロック |
-| NFR-003 一貫性（EN/JA）          | plugin-lint.sh の Check 2 が `templates/en` と `templates/ja` のファイルセット差分を検出し、片側欠落で `log_error` |
+| NFR-003 一貫性（EN/JA）          | plugin-lint.sh のサポートファイル構造検査が `templates/en` と `templates/ja` のファイルセット差分を検出し、片側欠落で `log_error` |
 
 ---
 
@@ -187,7 +214,8 @@ ai-sdd-workflow-dev/
 | テストレベル      | 対象                                                   | カバレッジ目標                          |
 |--------------|--------------------------------------------------------|----------------------------------------|
 | 構造検証        | marketplace.json / plugin.json（validate-marketplace.sh）    | JSON 正当性・必須フィールド・バージョン整合    |
-| 静的解析（lint） | プロンプト Markdown・テンプレート構成（plugin-lint.sh）           | コードブロック不在・EN/JA 同一性・パストークン健全性 |
+| 静的解析（lint） | プロンプト Markdown・テンプレート構成・マニフェスト（plugin-lint.sh / plugin_lint.py） | コードブロック不在・EN/JA 同一性・パストークン健全性・マニフェスト衛生・`agents/` レイアウト・front matter キー衛生・skill の `allowed-tools` 妥当性（ツール名・重複・指定子構文）と事前承認スコープ（ベアな Write/Edit/Bash の排除） |
+| 公式バリデータ（手動） | プラグイン全体（`claude plugin validate --strict`）              | CLI 自身の検証で exit 0。CI には入れず（npm/node 依存を持ち込まないため）ローカル手動で実行 |
 | 静的解析（shell） | 全 `.sh`（shellcheck -S warning）                          | OS 依存・構文問題の検知（ubuntu/macos）      |
 | 回帰・E2E      | フック・スキルスクリプト（test-*.sh）・pytest（tests/）           | 移植前後で挙動等価（複数 OS）                 |
 | リリース検証     | タグ vs マニフェストのバージョン整合（release.yml）                | 不一致で配布を中止                          |
@@ -221,9 +249,9 @@ ai-sdd-workflow-dev/
 | 原則ID  | 原則名                   | 準拠状況 | 備考                                                          |
 |-------|-------------------------|------|---------------------------------------------------------------|
 | B-002 | 多言語対応（EN/JA）の一貫性  | ✅   | plugin-lint.sh が EN/JA テンプレート同一性を検査。CHANGELOG を日英併記        |
-| D-002 | ファイル命名規則の厳守       | ✅   | plugin-lint.sh の Check 3 が `.sdd/` パストークンの健全性を検査              |
+| D-002 | ファイル命名規則の厳守       | ✅   | plugin-lint.sh の SDD パストークン検査が `.sdd/` パストークンの健全性を検査       |
 | T-001 | JSON/Markdown 構文の正当性 | ✅   | validate-marketplace.sh が jq で JSON 正当性・必須フィールドを検証           |
-| T-002 | plugin.json 登録の徹底     | ✅   | agents / skills / hooks を plugin.json に登録。構造検証で欠落を検知         |
+| T-002 | plugin.json 登録の徹底     | ✅   | `agents` を plugin.json に登録し、構造検証で欠落を検知。`skills` / `hooks` は標準パスの自動検出に委ねる（T-002 v2.0.0）。`agents/` にはエージェント定義のみを置き、サポートファイルは `shared/` に集約 |
 | T-003 | 日本語出力の文字化け防止     | ✅   | ja テンプレート・日本語 CHANGELOG を UTF-8 で維持し mojibake を防止           |
 
 **原則から逸脱する場合**: D-001（Specification-Driven）に対する実装先行の経緯は「1. 実装ステータス」の

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-front-matter-recommend"]
 tags: ["front-matter", "metadata", "skill", "scan"]
 category: "workflow-foundation"
@@ -44,7 +44,7 @@ risk: "low"
 | 走査スクリプト                       | 🟢     | `scripts/scan-documents.py`（Python 標準ライブラリ + 共有モジュール）        |
 | 共有モジュール利用                    | 🟢     | `fm_parser.has_front_matter` / `naming.determine_type` / `doc_walker.collect_documents` |
 | 言語別テンプレート                    | 🟢     | `recommendation_report.md` / `application_result.md` / `type_specific_fields.md`（en/ja） |
-| plugin.json 登録                    | 🟢     | `"skills": "./skills"` によりディレクトリ一括登録                          |
+| plugin.json 登録                    | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -62,7 +62,7 @@ risk: "low"
 
 | 領域     | 採用方式                                          | 選定理由                                                                                     |
 |--------|-------------------------------------------------|--------------------------------------------------------------------------------------------|
-| skill  | Markdown プロンプト（`SKILL.md`, `agent: haiku`）     | メタデータ推論（id/tags/category/depends-on）は Claude の推論を要する。軽量タスクのため haiku を指定（A-001） |
+| skill  | Markdown プロンプト（`SKILL.md`, `model: haiku`）     | メタデータ推論（id/tags/category/depends-on）は Claude の推論を要する。軽量タスクのため haiku を指定（A-001） |
 | script | Python 3 + 標準ライブラリ + 共有モジュール            | 有無検出・種別判定・タイトル抽出は決定的処理。共有モジュールで他スキルとロジックを共通化（A-002 / NFR-003） |
 | 実行分離 | 4 フェーズ（走査 → 推論 → レポート → 適用）           | 機械的走査と推論・適用を分離し、Claude の Glob/Grep 逐次呼び出しを削減する（A-002 / NFR-002）        |
 | 適用制御 | `--apply` + `AskUserQuestion` によるユーザー確認     | 既定は非破壊（レポートのみ）。ファイル変更は明示的な opt-in と確認を必須にする（安全側の既定）             |
@@ -153,7 +153,7 @@ plugins/sdd-workflow/
 ├── scripts/naming.py                               # determine_type 共有
 ├── scripts/doc_walker.py                           # collect_documents 共有
 ├── scripts/hook_common.py / env_export.py          # ルート解決・env export 共有
-└── .claude-plugin/plugin.json                      # "skills": "./skills"（T-002）
+└── .claude-plugin/plugin.json                      # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 ---
@@ -184,7 +184,7 @@ plugins/sdd-workflow/
 
 | 決定事項                | 選択肢                                          | 決定内容                       | 理由                                                                                          |
 |-----------------------|-----------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------|
-| 実装形態                | (a) legacy command / (b) skill                  | **(b) skill（agent: haiku）**  | A-001 に従い skills として実装。推論主体の軽量タスクのため haiku を指定                              |
+| 実装形態                | (a) legacy command / (b) skill                  | **(b) skill（model: haiku）**  | A-001 に従い skills として実装。推論主体の軽量タスクのため haiku を指定                              |
 | 走査の実装             | (a) Claude が逐次 Read / (b) スクリプトで一括走査     | **(b) スクリプト一括走査**       | A-002 に従い決定的処理を委譲。ツール呼び出しとトークンを削減（NFR-002）                               |
 | 走査ロジックの共通化      | (a) スキル内に固有実装 / (b) 共有モジュールを利用       | **(b) 共有モジュール**           | `fm_parser`/`naming`/`doc_walker` を他スキル・フックと共有し、検出・種別判定ロジックの重複を排除     |
 | 既定動作               | (a) 常に適用 / (b) 推奨のみ、適用は --apply           | **(b) 推奨のみが既定**           | ファイル変更は破壊的操作。安全側の既定とし、適用は明示 opt-in + AskUserQuestion 確認を必須にする       |
@@ -207,7 +207,7 @@ plugins/sdd-workflow/
 | A-002 | フックとスクリプトの責務分離   | ✅   | 走査を `scan-documents.py` と共有モジュールに委譲                       |
 | B-002 | 多言語対応の一貫性          | ✅   | `templates/{en,ja}/` を用意し `SDD_LANG` に応じて出力                    |
 | D-001 | Specification-Driven     | ⚠️   | 実装先行のため本 spec/design を逆算作成（1 節に例外を文書化・正当化）          |
-| T-002 | plugin.json 登録の徹底     | ✅   | `"skills": "./skills"` によりスキルを登録済み                           |
+| T-002 | plugin.json 登録の徹底     | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 日本語テンプレート・出力で UTF-8 を維持し mojibake を防止                  |
 
 **原則から逸脱する場合**: D-001 について実装先行の経緯を 1 節に文書化し、CONSTITUTION.md の例外プロセスに従う。

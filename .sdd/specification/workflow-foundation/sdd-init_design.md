@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-workflow-foundation-sdd-init"]
 tags: ["initialization", "template", "claude-md", "skill"]
 category: "workflow-foundation"
@@ -40,7 +40,7 @@ risk: "medium"
 
 | モジュール/機能                     | ステータス | 備考                                                             |
 |-----------------------------------|--------|------------------------------------------------------------------|
-| スキル本体（SKILL.md）               | 🟢     | 2 フェーズ実行手順を Markdown で定義（`agent: haiku`, `--ci` 対応）        |
+| スキル本体（SKILL.md）               | 🟢     | 2 フェーズ実行手順を Markdown で定義（`model: haiku`, `--ci` 対応）        |
 | Phase 1 スクリプト                   | 🟢     | `init-structure.py`（ルート作成・テンプレコピー・掃除・env export）         |
 | Phase 2 スクリプト                   | 🟢     | `update-claude-md.py`（CLAUDE.md 作成/追記/更新/skip の分岐）             |
 | 言語別テンプレート                    | 🟢     | `claude_md_template.md` / `init_output.md`（en/ja）                     |
@@ -64,7 +64,7 @@ risk: "medium"
 
 | 領域     | 採用方式                                          | 選定理由                                                                                     |
 |--------|-------------------------------------------------|--------------------------------------------------------------------------------------------|
-| skill  | Markdown プロンプト（`SKILL.md`, `agent: haiku`）     | 手順の統括・結果報告を担う。決定的操作はスクリプトへ委譲するため軽量な haiku で足りる（A-001）          |
+| skill  | Markdown プロンプト（`SKILL.md`, `model: haiku`）     | 手順の統括・結果報告を担う。決定的操作はスクリプトへ委譲するため軽量な haiku で足りる（A-001）          |
 | script (Phase 1) | Python 3 + 標準ライブラリ（`pathlib` / `shutil` / `json`） | ディレクトリ作成・テンプレコピー・掃除は決定的処理。OS 固有 CLI 非依存で実装（A-002 / NFR-003）    |
 | script (Phase 2) | Python 3 + 標準ライブラリ（`pathlib` / `re` / `json`）    | CLAUDE.md のセクション検出・置換は決定的処理。sed/awk/grep を使わず `re` で実装（A-002 / NFR-003） |
 | 実行分離 | 2 フェーズ（構造初期化 → CLAUDE.md 更新）            | 静的操作と CLAUDE.md 更新を分離し、Claude のツール呼び出しを 60〜70% 削減する（NFR-002）           |
@@ -147,7 +147,7 @@ plugins/sdd-workflow/
 │   └── templates/ja/{同上}                         # 日本語版
 ├── scripts/hook_common.py / env_export.py         # ルート解決・env export 共有
 ├── scripts/session-start.py                       # 詳細ルール配置（session-config 側）
-└── .claude-plugin/plugin.json                     # "skills": "./skills"（T-002）
+└── .claude-plugin/plugin.json                     # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
 ---
@@ -178,7 +178,7 @@ plugins/sdd-workflow/
 
 | 決定事項                | 選択肢                                          | 決定内容                       | 理由                                                                                          |
 |-----------------------|-----------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------|
-| 実装形態                | (a) legacy command / (b) skill                  | **(b) skill（agent: haiku）**  | A-001 に従い skills として実装。統括役のため軽量な haiku で足りる                                    |
+| 実装形態                | (a) legacy command / (b) skill                  | **(b) skill（model: haiku）**  | A-001 に従い skills として実装。統括役のため軽量な haiku で足りる                                    |
 | 実行分離                | (a) Claude が逐次ツール実行 / (b) 2 フェーズスクリプト | **(b) 2 フェーズ**              | A-002 に従い決定的操作を委譲。ツール呼び出しを 60〜70% 削減（NFR-002）                              |
 | CLAUDE.md の情報量       | (a) 詳細ガイドも CLAUDE.md に含める / (b) 最小化し rules へ分離 | **(b) 最小化 + rules 分離**    | 常時ロードのコンテキストを軽く保つ。詳細は `.sdd/**` 作業時のみロードされる path-scoped rule に置く      |
 | 詳細ルールの言語対応      | (a) en/ja 二本 / (b) 単一英語ファイル               | **(b) 単一英語**               | rules は AI エージェント向けガイドで人間向けドキュメントではない。単一ファイルで path-scoped rule を 1 本に保つ |
@@ -203,7 +203,7 @@ plugins/sdd-workflow/
 | B-002 | 多言語対応の一貫性          | ✅   | `templates/{en,ja}/` を用意し `SDD_LANG` に応じて EN/JA 同等構成で生成      |
 | D-001 | Specification-Driven     | ⚠️   | 実装先行のため本 spec/design を逆算作成（1 節に例外を文書化・正当化）          |
 | D-002 | ファイル命名規則の厳守       | ✅   | 生成構造・テンプレートが requirement/specification 命名規則に準拠           |
-| T-002 | plugin.json 登録の徹底     | ✅   | `"skills": "./skills"` によりスキルを登録済み                           |
+| T-002 | plugin.json 登録の徹底     | ✅   | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅   | 日本語テンプレート・出力で UTF-8 を維持し mojibake を防止                  |
 
 **原則から逸脱する場合**: D-001 について実装先行の経緯を 1 節に文書化し、CONSTITUTION.md の例外プロセスに従う。

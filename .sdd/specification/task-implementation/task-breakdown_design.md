@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-task-breakdown"]
 tags: ["task-breakdown", "tasks"]
 category: "task-implementation"
@@ -41,11 +41,11 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 
 | モジュール/機能          | ステータス | 備考                                                                |
 |-----------------------|--------|---------------------------------------------------------------------|
-| task-breakdown スキル    | 🟢     | `skills/task-breakdown/SKILL.md`（`user-invocable: true`、`allowed-tools: Read/Write/Edit/Glob/Grep/AskUserQuestion`） |
+| task-breakdown スキル    | 🟢     | `skills/task-breakdown/SKILL.md`（`user-invocable: true`、`allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`。書き込みの事前承認を `.sdd/` 配下に限定） |
 | 依存関係図参照           | 🟢     | `skills/task-breakdown/references/task_dependency_diagram.md`         |
 | 出力例・カバレッジ例       | 🟢     | `skills/task-breakdown/examples/`（task_list_format / requirement_coverage / serena_analysis） |
 | 出力テンプレート         | 🟢     | `skills/task-breakdown/templates/{en,ja}/breakdown_output.md`         |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                  |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -64,7 +64,7 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 | 領域     | 採用方式                                                              | 選定理由                                                                          |
 |--------|-------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | skill  | Markdown プロンプトスキル（`user-invocable: true`、Bash 不使用）           | 設計書分析・タスク分解は Claude の判断を要する。A-001 に従いスキルとして実装。決定的コマンドが不要のため Bash を持たない |
-| ツール   | `Read/Write/Edit/Glob/Grep/AskUserQuestion`                        | 文書読み込みと生成・保存に読み書き系、設計書欠如時の確認に AskUserQuestion が必要             |
+| ツール   | `allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`  | 文書読み込みと生成・保存に読み書き系、設計書欠如時の確認に AskUserQuestion が必要。`allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` で `.sdd/` 配下に限定する |
 | 分解原則 | 独立性・テスト可能性・適切な粒度を references/templates で定義              | 独立テスト可能性（NFR_001）を分解基準として明示する                                       |
 | 依存整理 | Mermaid 依存関係図（`references/task_dependency_diagram.md`）          | タスク間依存を可視化し、実装順序の錯綜を防ぐ                                             |
 | MCP 連携 | Serena MCP を任意連携（`.mcp.json` 設定時）                             | 影響範囲分析・依存自動検出で精度向上。未設定でも設計書ベースで分解可能に保つ                    |
@@ -140,11 +140,11 @@ plugins/sdd-workflow/
 │   ├── references/task_dependency_diagram.md # 依存関係図の例
 │   ├── examples/                             # task_list_format / requirement_coverage / serena_analysis
 │   └── templates/{en,ja}/breakdown_output.md # 出力基底テンプレート（日英）
-└── .claude-plugin/plugin.json                # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-task-breakdown スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+task-breakdown スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -175,7 +175,7 @@ task-breakdown スキルは実装・登録済みであり、本設計書は逆�
 | 決定事項            | 選択肢                        | 決定内容                              | 理由                                                          |
 |-------------------|-----------------------------|-------------------------------------|---------------------------------------------------------------|
 | 実装層             | スキル単体 / スキル + エージェント    | スキル単体                            | 設計書分析・分解は単一スキルで完結する                              |
-| Bash 権限          | 含む / 含まない                 | 含まない（Read/Write/Edit/Glob/Grep/AskUserQuestion） | 分解は決定的コマンド実行を要さない。生成は Write/Edit で行う             |
+| Bash 権限          | 含む / 含まない                 | 含まない（`Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`） | 分解は決定的コマンド実行を要さない。生成は Edit で行う                  |
 | 設計書欠如時の挙動    | 常にエラー / モード分岐          | `--ci` はエラー終了、対話は generate-spec を促す | CI では確定的に失敗させ、対話では次アクションを案内する（FR-002）           |
 | 依存の表現          | テキストのみ / Mermaid 図        | Mermaid 依存関係図                     | 依存を可視化し実装順序の錯綜を防ぐ                                    |
 | Serena MCP         | 必須 / 任意連携                 | 任意連携（未設定でも動作）              | 精度向上は歓迎するが、外部 MCP 依存を必須にしない                        |
@@ -199,7 +199,7 @@ task-breakdown スキルは実装・登録済みであり、本設計書は逆�
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven      | ✅     | 技術設計書を真実の源として分解                                    |
 | D-002 | ファイル命名規則の厳守      | ✅     | 入出力パス・task front matter スキーマを厳守                       |
-| T-002 | plugin.json 登録の徹底     | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。

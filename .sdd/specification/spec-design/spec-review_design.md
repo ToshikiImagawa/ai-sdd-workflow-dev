@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-07-28"
 depends-on: ["spec-spec-design-spec-review"]
 tags: ["spec-review", "agent", "constitution", "traceability"]
 category: "spec-design"
@@ -33,10 +33,10 @@ category: "spec-design"
 | モジュール/機能             | ステータス | 備考                                                              |
 |--------------------------|--------|-----------------------------------------------------------------|
 | spec-reviewer エージェント本体 | 🟢     | `agents/spec-reviewer.md`（model: sonnet、Read/Glob/Grep/AskUserQuestion） |
-| レビュー出力テンプレート        | 🟢     | `agents/templates/{en,ja}/spec_review_output.md`                  |
-| 曖昧表現パターン定義          | 🟢     | `agents/references/ambiguity_patterns.md`                         |
-| 修正提案フロー定義           | 🟢     | `agents/references/fix_proposal_flow.md`                          |
-| SysML / リンク規約参照       | 🟢     | `agents/references/`（mermaid / sysml / document_link_convention 等） |
+| レビュー出力テンプレート        | 🟢     | `shared/templates/{en,ja}/spec_review_output.md`                  |
+| 曖昧表現パターン定義          | 🟢     | `shared/references/ambiguity_patterns.md`                         |
+| 修正提案フロー定義           | 🟢     | `shared/references/fix_proposal_flow.md`                          |
+| SysML / リンク規約参照       | 🟢     | `shared/references/`（mermaid / sysml / document_link_convention 等） |
 | plugin.json 登録           | 🟢     | `.claude-plugin/plugin.json` の `agents` に登録済み（T-002）           |
 
 ---
@@ -60,8 +60,8 @@ category: "spec-design"
 |---------------|-------------------------------------------------------|----------------------------------------------------------------------------|
 | agent          | Markdown プロンプトエージェント（`model: sonnet`）           | 文書横断の分析・原則解釈・トレーサビリティ判定は Claude の推論を要する。宣言的コンポーネントとして agent 実装 |
 | ツール構成        | `Read` / `Glob` / `Grep` / `AskUserQuestion`（Task 不使用） | 関連文書を効率的に特定・読込。Task による再帰探索はコンテキスト爆発を招くため使用しない（責務を自己完結） |
-| 出力フォーマット     | `templates/{en,ja}/spec_review_output.md`              | B-002 の多言語一貫性。`SDD_LANG` で言語別テンプレートを選択                          |
-| 曖昧表現・修正提案   | `references/` に外部化                                    | パターン定義・修正提案フローをプロンプト本体から分離し、追加・改訂を容易にする（NFR-002）        |
+| 出力フォーマット     | `shared/templates/{en,ja}/spec_review_output.md`        | B-002 の多言語一貫性。`SDD_LANG` で言語別テンプレートを選択                          |
+| 曖昧表現・修正提案   | `shared/references/` に外部化                             | パターン定義・修正提案フローをプロンプト本体から分離し、追加・改訂を容易にする（NFR-002）        |
 | パス解決         | `SDD_*` 環境変数 →`.sdd-config.json`→ 既定値               | フラット / 階層の両構造で上流 PRD・spec を解決する                                   |
 
 ## 3.1. Task ツールを使わない設計判断
@@ -112,10 +112,10 @@ graph TD
 | モジュール名              | 責務                                                             | 依存関係                              | 配置場所                                             |
 |------------------------|----------------------------------------------------------------|-------------------------------------|----------------------------------------------------|
 | spec-reviewer.md        | 4 検証軸の実行・修正提案生成のオーケストレーション                       | AI-SDD-PRINCIPLES, CONSTITUTION, PRD, spec/design | `plugins/sdd-workflow/agents/spec-reviewer.md`       |
-| spec_review_output.md   | レビュー結果レポートの言語別テンプレート                              | SDD_LANG                            | `plugins/sdd-workflow/agents/templates/{en,ja}/`     |
-| ambiguity_patterns.md   | 検出対象の曖昧表現パターンと欠落しやすい情報の定義                       | -                                   | `plugins/sdd-workflow/agents/references/`            |
-| fix_proposal_flow.md    | 原則違反検出時の修正提案生成フロー（提案可能 / 不可能ケース）              | -                                   | `plugins/sdd-workflow/agents/references/`            |
-| SysML / リンク規約参照     | mermaid_notation_rules / sysml_requirements_theory / document_link_convention 等 | -                    | `plugins/sdd-workflow/agents/references/`            |
+| spec_review_output.md   | レビュー結果レポートの言語別テンプレート                              | SDD_LANG                            | `plugins/sdd-workflow/shared/templates/{en,ja}/`     |
+| ambiguity_patterns.md   | 検出対象の曖昧表現パターンと欠落しやすい情報の定義                       | -                                   | `plugins/sdd-workflow/shared/references/`            |
+| fix_proposal_flow.md    | 原則違反検出時の修正提案生成フロー（提案可能 / 不可能ケース）              | -                                   | `plugins/sdd-workflow/shared/references/`            |
+| SysML / リンク規約参照     | mermaid_notation_rules / sysml_requirements_theory / document_link_convention 等 | -                    | `plugins/sdd-workflow/shared/references/`            |
 | front-matter-reviewer（外部） | front matter の形式・依存方向・id 一意性の検証（本機能は委譲）           | Read/Glob/Grep                      | `plugins/sdd-workflow/agents/front-matter-reviewer.md` |
 
 ---
@@ -153,7 +153,8 @@ Markdown レポートを出力する。レポートは以下の要素で構成�
 plugins/sdd-workflow/
 ├── agents/
 │   ├── spec-reviewer.md                       # 本機能の中核エージェント（model: sonnet）
-│   ├── front-matter-reviewer.md               # front matter 検証（外部委譲先）
+│   └── front-matter-reviewer.md               # front matter 検証（外部委譲先）
+├── shared/                                    # エージェント本文から ${CLAUDE_PLUGIN_ROOT}/shared/... で参照
 │   ├── templates/{en,ja}/
 │   │   └── spec_review_output.md              # レビュー結果レポートテンプレート
 │   ├── references/
@@ -177,8 +178,8 @@ plugins/sdd-workflow/
 | 要件                          | 実現方針                                                              |
 |-----------------------------|---------------------------------------------------------------------|
 | NFR-001（修正提案の常時提示）      | 出力テンプレートに修正提案セクションを常設し、`fix_proposal_flow.md` に沿って生成 |
-| NFR-002（パターン・フローの外部化） | 曖昧表現パターン・修正提案フロー・重要度定義を `references/` に分離して保守       |
-| NFR-003 / B-002（多言語対応）     | `SDD_LANG` に従い `templates/{en,ja}/spec_review_output.md` を選択       |
+| NFR-002（パターン・フローの外部化） | 曖昧表現パターン・修正提案フロー・重要度定義を `shared/references/` に分離して保守  |
+| NFR-003 / B-002（多言語対応）     | `SDD_LANG` に従い `shared/templates/{en,ja}/spec_review_output.md` を選択 |
 | T-003（文字化け防止）            | 日本語出力で UTF-8 を維持し、mojibake / U+FFFD の混入を出力前に確認           |
 
 ---
@@ -212,7 +213,7 @@ plugins/sdd-workflow/
 
 | 課題                                    | 影響度 | 対応方針                                                        |
 |---------------------------------------|-----|-----------------------------------------------------------------|
-| レビュー品質が基盤モデルの能力に依存する        | 中   | プロンプトと `references/` の継続改善で担保。将来のモデル更新で改善        |
+| レビュー品質が基盤モデルの能力に依存する        | 中   | プロンプトと `shared/references/` の継続改善で担保。将来のモデル更新で改善  |
 | generate-spec からの生成後レビュー連携との責務境界 | 低   | 本機能はレビュー本体を正典とし、generate-spec 側は呼び出し（オーケストレーション）のみを担う |
 
 ---
@@ -222,7 +223,7 @@ plugins/sdd-workflow/
 | 原則ID  | 原則名                    | 準拠状況 | 備考                                                          |
 |-------|--------------------------|--------|-------------------------------------------------------------|
 | B-001 | Vibe Coding防止            | ✅     | 曖昧表現検出により不明確な記述を実装前に検出                        |
-| B-002 | 多言語対応（EN/JA）の一貫性    | ✅     | `SDD_LANG` + `templates/{en,ja}/spec_review_output.md`         |
+| B-002 | 多言語対応（EN/JA）の一貫性    | ✅     | `SDD_LANG` + `shared/templates/{en,ja}/spec_review_output.md`   |
 | D-001 | Specification-Driven       | ✅     | 仕様書・設計書の品質を検証し仕様駆動フローの品質ゲートを担う           |
 | D-002 | ファイル命名規則の厳守         | ✅     | トレーサビリティ検証で `_spec` / `_design` サフィックスと構造を前提に上流解決 |
 | T-002 | plugin.json 登録の徹底       | ✅     | `agents` に spec-reviewer を登録済み                            |

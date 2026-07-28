@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-28"
 depends-on: ["spec-task-implementation-checklist-generation"]
 tags: ["checklist", "quality"]
 category: "task-implementation"
@@ -40,10 +40,10 @@ risk: "medium"
 
 | モジュール/機能           | ステータス | 備考                                                              |
 |------------------------|--------|-------------------------------------------------------------------|
-| checklist スキル         | 🟢     | `skills/checklist/SKILL.md`（`user-invocable: true`、`allowed-tools: Read/Write/Edit/Glob/Grep`） |
+| checklist スキル         | 🟢     | `skills/checklist/SKILL.md`（`user-invocable: true`、`allowed-tools: Read, Glob, Grep, Edit(.sdd/**)`。書き込みの事前承認を `.sdd/` 配下に限定） |
 | 出力テンプレート          | 🟢     | `skills/checklist/templates/{en,ja}/checklist_template.md`           |
 | フル出力例               | 🟢     | `skills/checklist/examples/checklist_full_example.md`（CHK-101〜CHK-903 の 9 カテゴリ 60 項目） |
-| plugin.json 登録         | 🟢     | `skills` はディレクトリ参照 `./skills` で自動登録（T-002）                 |
+| plugin.json 登録         | 🟢     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に宣言しない（T-002） |
 
 ---
 
@@ -139,11 +139,11 @@ plugins/sdd-workflow/
 │   ├── SKILL.md                              # ユーザー呼び出しスキル本体
 │   ├── examples/checklist_full_example.md    # 9 カテゴリ 60 項目のフル出力例
 │   └── templates/{en,ja}/checklist_template.md  # 出力基底テンプレート（日英）
-└── .claude-plugin/plugin.json                # skills は "./skills" 参照で自動登録（T-002）
+└── .claude-plugin/plugin.json                # skills は宣言せず標準パスの自動検出に委ねる（T-002）
 ```
 
-checklist スキルは実装・登録済みであり、本設計書は逆算文書である。
-新規追加ではないため plugin.json の変更は発生しない（既存登録の維持を確認する）。
+checklist スキルは実装済みであり、本設計書は逆算文書である。標準パス `skills/` の自動検出で読み込まれ、
+新規追加でもないため plugin.json の変更は発生しない（`skills` 宣言を持たない状態の維持を確認する）。
 
 ---
 
@@ -174,7 +174,7 @@ checklist スキルは実装・登録済みであり、本設計書は逆算文�
 | 決定事項            | 選択肢                          | 決定内容                          | 理由                                                            |
 |-------------------|-------------------------------|--------------------------------|---------------------------------------------------------------|
 | 実装層             | スキル単体 / スキル + エージェント    | スキル単体                        | 観点抽出・分類は単一スキルで完結し、分析専用エージェントを分離する必要がない       |
-| ツール権限          | Bash 含む / 読み書き系のみ         | Read/Write/Edit/Glob/Grep（Bash 不使用） | チェックリスト生成は決定的コマンド実行を要さない。生成は Write/Edit で行う         |
+| ツール権限          | Bash 含む / 読み書き系のみ         | `Read, Glob, Grep, Edit(.sdd/**)`（Bash 不使用） | チェックリスト生成は決定的コマンド実行を要さない。生成は Edit で行い、事前承認は `.sdd/` 配下に限定する |
 | ID 体系            | 連番のみ / カテゴリ + 連番          | `CHK-{category}{nn}`             | カテゴリをプレフィックスに含め、更新時の安定性と分類の可読性を両立（NFR-001）        |
 | 抽出元の必須性       | 全文書必須 / spec・design 必須       | spec・design を必須、PRD・tasks は任意 | 仕様・設計は検証観点の中核。PRD・tasks は補助情報として存在時に活用            |
 | 保存先             | 任意パス / task ディレクトリ配下     | `${SDD_TASK_PATH}/{ticket}/checklist.md` | run-checklist の入力位置と一致させ、ワークフロー連携を成立させる（親 PRD IR_001） |
@@ -197,7 +197,7 @@ checklist スキルは実装・登録済みであり、本設計書は逆算文�
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven      | ✅     | 仕様書・設計書を真実の源として観点を抽出                            |
 | D-002 | ファイル命名規則の厳守      | ✅     | 入出力パスで requirement 無サフィックス／spec・design サフィックスを厳守  |
-| T-002 | plugin.json 登録の徹底     | ✅     | `./skills` 参照で自動登録済み                                   |
+| T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 
 **原則から逸脱する場合**: 理由を「9.1. 決定事項」に明記し、CONSTITUTION.md の例外プロセスに従うこと。
