@@ -96,6 +96,45 @@ class TestLoadSddPaths:
         )
 
 
+# --- load_naming_ignore_patterns -------------------------------------------
+
+
+class TestLoadNamingIgnorePatterns:
+    def test_defaults_when_config_missing(self, tmp_path):
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ()
+
+    def test_reads_patterns(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"naming": {"ignore_patterns": ["*_test.md", "tmp_*.md"]}}),
+            encoding="utf-8",
+        )
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ("*_test.md", "tmp_*.md")
+
+    def test_missing_naming_key_returns_empty(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"root": "docs"}), encoding="utf-8",
+        )
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ()
+
+    def test_broken_config_returns_empty(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text("{ broken", encoding="utf-8")
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ()
+
+    def test_non_list_value_returns_empty(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"naming": {"ignore_patterns": "*_test.md"}}),
+            encoding="utf-8",
+        )
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ()
+
+    def test_non_string_elements_are_dropped(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"naming": {"ignore_patterns": ["*_test.md", 123]}}),
+            encoding="utf-8",
+        )
+        assert hc.load_naming_ignore_patterns(str(tmp_path)) == ("*_test.md",)
+
+
 # --- relative_to_project ---------------------------------------------------
 
 

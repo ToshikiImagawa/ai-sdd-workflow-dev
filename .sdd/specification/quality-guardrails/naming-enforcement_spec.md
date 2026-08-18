@@ -57,9 +57,12 @@ risk: "medium"
 | FR-003 | `specification/` 配下のファイルに `_spec` / `_design` サフィックスがなければ拒否する | 必須  | 子 PRD FR_001                        |
 | FR-004 | 違反時は `permissionDecision: deny` により理由付きで書き込みをブロックする         | 必須  | 子 PRD FR_001 / 親 PRD DC_001・IR_001 |
 | FR-005 | 命名規則に適合する場合・検証対象外パスの場合はブロックせず開発フローに介入しない        | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生 |
+| FR-006 | `.sdd-config.json` の `naming.ignore_patterns` に定義された glob パターンにファイル名（basename）が一致する場合は検証をスキップし、常に許可する | 推奨  | 親 PRD DC_001（ブロッキングの最小化）から派生。テスト用ファイル等、意図的に規則外の命名をする利用者要望に対応 |
 
 検証対象は `.md` ファイルのみとする。`requirement/` / `specification/` いずれの管理対象ディレクトリにも
 該当しないパス（`.sdd/` 外のソースコード、`task/` 配下等）は本機能の検証対象外とし、ブロックしない（FR-005）。
+`naming.ignore_patterns` に一致するファイルは、`requirement/` / `specification/` いずれの配下であっても
+検証対象外として扱う（FR-006）。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -111,6 +114,7 @@ NFR-003 について、本機能は命名規則違反という明確な違反条
 | JSON Decision Control | フックがツール実行の許可・拒否を JSON 出力（`permissionDecision`）で制御する Claude Code の仕組み      |
 | deny                | ツール実行をブロックする `permissionDecision` の値                                    |
 | `.sdd-config.json`   | `.sdd` ルート名・`requirement` / `specification` ディレクトリ名を上書き設定するプロジェクト設定ファイル |
+| `naming.ignore_patterns` | `.sdd-config.json` 内のキー。命名規則検証を除外するファイル名の glob パターン（`fnmatch` 形式）の配列 |
 
 # 6. 使用例
 
@@ -131,6 +135,9 @@ Write .sdd/requirement/user-login.md          → （介入なし・許可）
 
 # .sdd/ 外のソースコード → 検証対象外
 Write src/main.py                             → （命名検証は介入なし）
+
+# .sdd-config.json の naming.ignore_patterns: ["*_test.md"] に一致 → 検証をスキップして許可
+Write .sdd/specification/user-login_spec_test.md   → （介入なし・許可、FR-006）
 ```
 
 # 7. 振る舞い図
@@ -166,6 +173,8 @@ sequenceDiagram
 - ブロッキング動作（`deny`）は命名規則違反に限定する。他の品質ゲートは警告・促しに留める（親 PRD DC_001）。
 - 検証対象ディレクトリの判定はパスのプレフィックス照合に基づく。`.sdd-config.json` によるディレクトリ名の
   カスタマイズには追従するが、想定外のディレクトリ構造は検証対象外として扱う。
+- `naming.ignore_patterns`（FR-006）はファイルの basename のみに対して照合する。ディレクトリ部分を
+  含めたパスマッチには対応しない。マッチ方式は `fnmatch`（シェル風 glob）であり、大文字小文字を区別する。
 
 # 9. 原則との整合性
 
