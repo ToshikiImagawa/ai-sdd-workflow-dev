@@ -9,6 +9,14 @@
 
 ## [Unreleased]
 
+### Added
+
+#### Configuration
+
+- **`.sdd-config.json` に `naming.ignore_patterns` を追加** - `"*_test.md"` のような glob パターンをファイル名
+  （basename）に照合し、一致したファイルを `requirement`/`specification` の命名規則チェックから除外できるように
+  なった。テスト用ファイル等、意図的に規則外の命名をしたい場合にブロックされなくなる
+
 ## [4.0.1] - 2026-07-28
 
 ### Changed
