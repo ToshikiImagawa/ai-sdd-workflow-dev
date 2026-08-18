@@ -36,6 +36,7 @@ risk: "medium"
 | PreToolUse フックスクリプト（命名検証） | 🟢     | `scripts/pre-tool-use.py` の `validate_naming` 関数            |
 | フック共通ヘルパー                     | 🟢     | `scripts/hook_common.py`（stdin 解析・パス解決・deny emit）        |
 | パス設定の解決                        | 🟢     | `hook_common.load_sdd_paths`（`.sdd-config.json` 対応）         |
+| 無視パターンの読み込み                   | 🟢     | `hook_common.load_naming_ignore_patterns`（`.sdd-config.json` の `naming.ignore_patterns` 対応） |
 | フック登録                          | 🟢     | `hooks/hooks.json` の `PreToolUse`（matcher: `Write|Edit`）    |
 | 回帰テスト                          | 🟢     | リポジトリルート `scripts/test-hook-scripts.sh`（適合・違反・対象外を検証。CI の `test` ジョブで実行） |
 
@@ -83,7 +84,7 @@ graph TD
 | モジュール名          | 責務                                                                          | 依存関係            | 配置場所                                        |
 |-------------------|-----------------------------------------------------------------------------|-----------------|-----------------------------------------------|
 | pre-tool-use.py   | 書き込み対象パスを検証し、命名規則違反時に deny を emit（`validate_naming`）             | hook_common.py, os, re | `plugins/sdd-workflow/scripts/pre-tool-use.py`  |
-| hook_common.py    | stdin JSON 解析・プロジェクトルート解決・`.sdd-config.json` 読み込み・deny の JSON 出力 | json, sys, os    | `plugins/sdd-workflow/scripts/hook_common.py`   |
+| hook_common.py    | stdin JSON 解析・プロジェクトルート解決・`.sdd-config.json` 読み込み（パス設定・無視パターン）・deny の JSON 出力 | json, sys, os    | `plugins/sdd-workflow/scripts/hook_common.py`   |
 | hooks.json        | `PreToolUse`（matcher `Write|Edit`）へのスクリプト登録                          | -               | `plugins/sdd-workflow/hooks/hooks.json`         |
 
 `pre-tool-use.py` は命名検証に加え CONSTITUTION 原則注入も担うが、後者は別機能
@@ -95,16 +96,18 @@ graph TD
 
 ## 5.1. 検証ロジック（validate_naming）
 
-`validate_naming(rel_path, requirement_prefix, specification_prefix)` は、違反時に理由メッセージ文字列を、
-適合・対象外時に空文字列を返す。呼び出し元 `main` は事前に `relative_to_project` でプロジェクトルート外の
-パスを弾き（空文字列なら検証をスキップ）、以降を相対パスで判定する。判定手順は以下のとおり。
+`validate_naming(rel_path, requirement_prefix, specification_prefix, ignore_patterns=())` は、違反時に
+理由メッセージ文字列を、適合・対象外時に空文字列を返す。呼び出し元 `main` は事前に `relative_to_project`
+でプロジェクトルート外のパスを弾き（空文字列なら検証をスキップ）、以降を相対パスで判定する。判定手順は
+以下のとおり。
 
 0. パスがプロジェクトルート配下でなければ検証対象外（`main` が `relative_to_project` の空結果で `return`）
 1. 拡張子が `.md` でなければ対象外（空文字列を返す）
-2. ファイル名（basename）から `.md` を除いた `stem` を取り出す
-3. パスが `requirement/` プレフィックス配下: `stem` が `_spec` または `_design` で終わる場合は**違反**
-4. パスが `specification/` プレフィックス配下: `stem` が `_spec` にも `_design` にも該当しない場合は**違反**
-5. いずれの管理対象プレフィックスにも該当しない場合は対象外（空文字列を返す）
+2. ファイル名（basename）が `ignore_patterns` のいずれかに `fnmatch` で一致する場合は対象外（FR-006、空文字列を返す）
+3. ファイル名（basename）から `.md` を除いた `stem` を取り出す
+4. パスが `requirement/` プレフィックス配下: `stem` が `_spec` または `_design` で終わる場合は**違反**
+5. パスが `specification/` プレフィックス配下: `stem` が `_spec` にも `_design` にも該当しない場合は**違反**
+6. いずれの管理対象プレフィックスにも該当しない場合は対象外（空文字列を返す）
 
 | 対象ディレクトリ         | 判定条件                              | 違反例                              | 適合例                               |
 |-------------------|-------------------------------------|------------------------------------|-------------------------------------|
@@ -119,6 +122,13 @@ graph TD
 `hook_common.load_sdd_paths(project_root)` が `(sdd_root, requirement_dir, specification_dir)` を返す。
 プロジェクトルートに `.sdd-config.json` が存在すれば `root` / `directories.requirement` /
 `directories.specification` の値で上書きし、なければ既定値（`.sdd` / `requirement` / `specification`）を用いる。
+
+## 5.2bis. 無視パターンの解決（load_naming_ignore_patterns）
+
+`hook_common.load_naming_ignore_patterns(project_root)` が `.sdd-config.json` の `naming.ignore_patterns`
+（文字列配列）を読み込み、タプルとして返す。設定ファイルが存在しない・`naming` キーが無い・JSON が壊れている・
+`ignore_patterns` の値がリストでない場合は空タプル `()` を返す（既存の `load_sdd_paths` と同じフォールバック方針）。
+配列内の非文字列要素は無視して読み飛ばす。
 
 ## 5.3. 拒否出力（emit_permission_deny）
 
@@ -191,6 +201,7 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 | 検証対象拡張子        | 全ファイル / `.md` のみ                  | `.md` のみ                        | `.sdd/` ドキュメントは Markdown。図表・補助ファイル等の非 .md は命名規則の対象外   |
 | ディレクトリ名の解決    | ハードコード / `.sdd-config.json` から解決 | `.sdd-config.json` から解決（既定値あり） | プロジェクト固有のディレクトリ名に追従。設定なし時は既定値でゼロ設定動作を維持          |
 | 対象外パスの挙動       | 何か出力 / 無出力                        | 管理対象外は無出力で許可               | FR-005。`.sdd/` 外・`task/` 配下等の書き込みに一切介入しない                  |
+| 無視パターンのマッチ方式 | `fnmatch`（glob） / 正規表現 / 単純な前方一致 | `fnmatch`（glob）                    | FR-006。既存実装（`find-implementation-files.py`）と同じ照合方式を採用し実装・設定記述の一貫性を保つ。正規表現よりエスケープ不要で書きやすい |
 
 ## 9.2. 未解決の課題
 

@@ -64,6 +64,14 @@ class TestValidateNaming:
     def test_outside_sdd_dirs_ignored(self):
         assert ptu.validate_naming("src/main.py", REQ, SPEC) == ""
 
+    def test_specification_ignored_by_pattern(self):
+        rel = os.path.join(SPEC, "xxx_spec_test.md")
+        assert ptu.validate_naming(rel, REQ, SPEC, ("*_test.md",)) == ""
+
+    def test_ignore_pattern_no_match_still_violates(self):
+        rel = os.path.join(SPEC, "user-login.md")
+        assert "Naming violation" in ptu.validate_naming(rel, REQ, SPEC, ("*_test.md",))
+
 
 # --- session_marker_path ---------------------------------------------------
 
