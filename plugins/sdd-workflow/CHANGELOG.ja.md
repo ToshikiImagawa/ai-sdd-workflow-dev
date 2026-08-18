@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-08-19
+
 ### Added
 
 #### Configuration
