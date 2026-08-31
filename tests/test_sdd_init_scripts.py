@@ -45,6 +45,7 @@ class TestReadConfig:
             "root": ".sdd",
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
             "lang": "en",
         }
@@ -59,6 +60,7 @@ class TestReadConfig:
                     "directories": {
                         "requirement": "reqs",
                         "specification": "specs",
+                        "adr": "decisions",
                         "task": "tasks",
                     },
                 }
@@ -71,6 +73,7 @@ class TestReadConfig:
             "root": ".ai-docs",
             "requirement": "reqs",
             "specification": "specs",
+            "adr": "decisions",
             "task": "tasks",
             "lang": "ja",
         }
@@ -142,6 +145,7 @@ class TestExportEnvVars:
             "root": ".ai-docs",
             "requirement": "reqs",
             "specification": "specs",
+            "adr": "decisions",
             "task": "tasks",
             "lang": "ja",
         }
@@ -152,6 +156,8 @@ class TestExportEnvVars:
         assert 'export SDD_REQUIREMENT_DIR="reqs"' in content
         assert 'export SDD_REQUIREMENT_PATH=".ai-docs/reqs"' in content
         assert 'export SDD_SPECIFICATION_PATH=".ai-docs/specs"' in content
+        assert 'export SDD_ADR_DIR="decisions"' in content
+        assert 'export SDD_ADR_PATH=".ai-docs/decisions"' in content
         assert 'export SDD_TASK_PATH=".ai-docs/tasks"' in content
         assert 'export SDD_LANG="ja"' in content
 
@@ -166,6 +172,7 @@ class TestExportEnvVars:
             "root": ".sdd",
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
             "lang": "en",
         }
@@ -184,6 +191,7 @@ class TestExportEnvVars:
                 "root": ".sdd",
                 "requirement": "requirement",
                 "specification": "specification",
+                "adr": "adr",
                 "task": "task",
                 "lang": "en",
             }

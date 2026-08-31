@@ -57,6 +57,7 @@ def read_config(config_file: Path) -> dict:
         "root": config.get("root") or ".sdd",
         "requirement": directories.get("requirement") or "requirement",
         "specification": directories.get("specification") or "specification",
+        "adr": directories.get("adr") or "adr",
         "task": directories.get("task") or "task",
         "lang": config.get("lang") or "en",
     }
@@ -109,15 +110,18 @@ def export_env_vars(config: dict) -> None:
     sdd_root = config["root"]
     requirement = config["requirement"]
     specification = config["specification"]
+    adr = config["adr"]
     task = config["task"]
 
     wrote = rewrite_exports("SDD_", [
         f'export SDD_ROOT="{sdd_root}"',
         f'export SDD_REQUIREMENT_DIR="{requirement}"',
         f'export SDD_SPECIFICATION_DIR="{specification}"',
+        f'export SDD_ADR_DIR="{adr}"',
         f'export SDD_TASK_DIR="{task}"',
         f'export SDD_REQUIREMENT_PATH="{sdd_root}/{requirement}"',
         f'export SDD_SPECIFICATION_PATH="{sdd_root}/{specification}"',
+        f'export SDD_ADR_PATH="{sdd_root}/{adr}"',
         f'export SDD_TASK_PATH="{sdd_root}/{task}"',
         f'export SDD_LANG="{config["lang"]}"',
     ])
@@ -142,7 +146,7 @@ def main() -> None:
     log(f"Root directory ready: {sdd_root}/")
     log(
         f"Note: Subdirectories ({config['requirement']}, {config['specification']}, "
-        f"{config['task']}) will be created automatically when files are generated"
+        f"{config['adr']}, {config['task']}) will be created automatically when files are generated"
     )
 
     # --- Phase 2: Copy templates (if not exist) ---
