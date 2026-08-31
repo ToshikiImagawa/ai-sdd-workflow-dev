@@ -572,6 +572,7 @@ Place a `.sdd-config.json` file in your project root to customize directory name
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   },
   "index": true,
@@ -587,6 +588,7 @@ Place a `.sdd-config.json` file in your project root to customize directory name
 | `lang`                      | `en`            | Language (`en` or `ja`)                                                                           |
 | `directories.requirement`   | `requirement`   | PRD (Requirements Specification) directory                                                        |
 | `directories.specification` | `specification` | Specification/design document directory                                                           |
+| `directories.adr`           | `adr`           | Architecture Decision Record (decision log) directory                                             |
 | `directories.task`          | `task`          | Temporary task logs directory                                                                     |
 | `index`                     | `true`          | Boolean. Build a compressed `.sdd` document index (SQLite → `index.md`) at session start for token reduction. Set to `false` to disable. |
 | `naming.ignore_patterns`    | `[]`            | Glob patterns (`fnmatch` syntax) matched against a file's basename. Matching files skip the `requirement`/`specification` naming check (e.g. `*_test.md` for test fixtures). |

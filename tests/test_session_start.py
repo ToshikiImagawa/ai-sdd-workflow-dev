@@ -39,6 +39,7 @@ class TestLoadOrCreateConfig:
         assert result["directories"] == {
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
         }
         # index はデフォルト on として明示的に書き込まれる
@@ -84,6 +85,7 @@ class TestBuildSddConfig:
         assert cfg.lang == "en"
         assert cfg.requirement_dir == "requirement"
         assert cfg.specification_dir == "specification"
+        assert cfg.adr_dir == "adr"
         assert cfg.task_dir == "task"
 
     def test_empty_raw_uses_default_lang(self):
@@ -96,6 +98,7 @@ class TestBuildSddConfig:
             "directories": {
                 "requirement": "req",
                 "specification": "spec",
+                "adr": "decisions",
                 "task": "tasks",
             },
         }
@@ -104,6 +107,7 @@ class TestBuildSddConfig:
         assert cfg.lang == "ja"
         assert cfg.requirement_dir == "req"
         assert cfg.specification_dir == "spec"
+        assert cfg.adr_dir == "decisions"
         assert cfg.task_dir == "tasks"
 
     def test_unknown_lang_value_is_passed_through(self):
@@ -116,13 +120,14 @@ class TestBuildSddConfig:
         raw = {
             "root": "",
             "lang": "",
-            "directories": {"requirement": "", "specification": "", "task": ""},
+            "directories": {"requirement": "", "specification": "", "adr": "", "task": ""},
         }
         cfg = ss.build_sdd_config(raw, "en")
         assert cfg.root == ".sdd"
         assert cfg.lang == "en"
         assert cfg.requirement_dir == "requirement"
         assert cfg.specification_dir == "specification"
+        assert cfg.adr_dir == "adr"
         assert cfg.task_dir == "task"
 
     def test_index_defaults_on_when_absent(self):
@@ -365,6 +370,8 @@ class TestWriteEnvVars:
         assert 'export SDD_TASK_PATH="docs/sdd/tasks"' in content
         assert 'export SDD_REQUIREMENT_PATH="docs/sdd/requirement"' in content
         assert 'export SDD_SPECIFICATION_PATH="docs/sdd/specification"' in content
+        assert 'export SDD_ADR_DIR="adr"' in content
+        assert 'export SDD_ADR_PATH="docs/sdd/adr"' in content
 
     def test_existing_sdd_lines_are_replaced(self, tmp_path, monkeypatch):
         env_file = tmp_path / "env"

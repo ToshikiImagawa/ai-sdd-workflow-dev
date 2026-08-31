@@ -103,7 +103,7 @@ Execute `${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py` to per
 
 2. **Ensure Root Directory Exists**:
     - `mkdir -p "${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/"`
-    - Note: Subdirectories (requirement, specification, task) are created automatically when files are generated
+    - Note: Subdirectories (requirement, specification, adr, task) are created automatically when files are generated
 
 3. **Copy Templates** (if not exist):
     - PRD_TEMPLATE.md (from `/generate-prd` skill)
