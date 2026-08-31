@@ -56,11 +56,6 @@ feature context.
 
 See `references/document_dependencies.md` for the document dependency chain and direction meaning.
 
-**⚠️ Known gap**: This shared reference (also used by other skills) has not yet been migrated to the `adr/`
-model as of this writing — it still describes `specification/*_design.md` as persistent and does not mention
-`adr/`. Until it is updated, treat the check targets and persistence rules defined in this file (`SKILL.md`) as
-authoritative for this skill's own checks.
-
 ## Directory Structure Support
 
 Both flat and hierarchical structures are supported. See `references/directory_structure.md` for the
