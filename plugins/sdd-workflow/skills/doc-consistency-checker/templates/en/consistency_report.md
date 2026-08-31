@@ -12,14 +12,14 @@ This template is the output format for document consistency check results.
 |:---------|:----------------------------------------------|:-------------|
 | PRD      | `${SDD_REQUIREMENT_PATH}/{feature-name}.md`          | YYYY-MM-DD   |
 | spec     | `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`   | YYYY-MM-DD   |
-| design   | `${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` | YYYY-MM-DD   |
+| adr      | `${SDD_ADR_PATH}/{feature-name}-decisions.md`        | YYYY-MM-DD   |
 
 ### Check Results Summary
 
 | Check Target            | Result                    | Count     |
 |:------------------------|:--------------------------|:----------|
 | PRD ↔ spec              | Consistent / Inconsistent | {n} items |
-| spec ↔ design           | Consistent / Inconsistent | {n} items |
+| spec ↔ adr              | Consistent / Inconsistent | {n} items |
 
 ---
 
@@ -48,9 +48,14 @@ This template is the output format for document consistency check results.
 - [ ] Update spec to reflect requirement
 - [ ] If PRD requirement is unnecessary, remove it
 
+> **Note**: If the type is `Contradiction`, or `Missing` in the PRD → spec direction (a new behavior no PRD
+> requirement covers), always report this item as `[must]` and do **not** edit the PRD automatically. Present
+> the conflicting spec change and the affected PRD requirement, and let a human decide whether to update the
+> PRD, revert the spec change, or accept it as an intentional scope change.
+
 ---
 
-#### spec ↔ design
+#### spec ↔ adr
 
 ##### 1. {Inconsistency Title}
 
@@ -62,21 +67,22 @@ This template is the output format for document consistency check results.
 {spec content}
 ```
 
-**design States**:
+**adr States**:
 
 ```
-{design content (or "Not documented")}
+{adr content (or "Not documented")}
 ```
 
 **Recommended Action**:
 
-- [ ] Update design to reflect specification
-- [ ] If spec is outdated, update it
+- [ ] Append a new entry to adr to capture the decision behind the spec change
+- [ ] If the adr entry is now stale (the spec element it describes was changed/removed), flag it for a
+      follow-up append — never rewrite the existing entry
 
 ---
 
-> **Note**: `design ↔ Implementation` consistency is out of scope for this skill. Use `/check-spec`
-> (the `impl-spec-check` feature) for design ↔ implementation checks.
+> **Note**: `spec ↔ Implementation` and any remaining `*_design.md` artifact checks are out of scope for this
+> skill. Use `/check-spec` (the `impl-spec-check` feature) for those checks.
 
 ### Verified Consistent Items
 

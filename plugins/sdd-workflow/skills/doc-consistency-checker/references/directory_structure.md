@@ -1,14 +1,22 @@
 # Directory Structure
 
+**Persistence** (see `SKILL.md` for the checks that apply): `requirement/` and `specification/` are persistent;
+`adr/` is persistent and append-only; `task/` (including `design-draft.md`) is temporary, deleted after
+implementation.
+
 ## Flat Structure
 
 ```
 ${SDD_ROOT}/
 ├── CONSTITUTION.md                        # Project constitution (top-level)
 ├── requirement/{feature-name}.md
-└── specification/
-    ├── {feature-name}_spec.md
-    └── {feature-name}_design.md
+├── specification/
+│   └── {feature-name}_spec.md             # Abstract specification
+├── adr/
+│   └── {feature-name}-decisions.md        # Decision log
+└── task/
+    └── {ticket-number}/
+        └── design-draft.md                # Technical design draft
 ```
 
 ## Hierarchical Structure
@@ -21,12 +29,17 @@ ${SDD_ROOT}/
 │   └── {parent-feature}/
 │       ├── index.md                       # Parent feature overview and requirements list
 │       └── {child-feature}.md             # Child feature requirements
-└── specification/
-    ├── {feature-name}_spec.md             # Top-level feature
-    ├── {feature-name}_design.md
-    └── {parent-feature}/
-        ├── index_spec.md                  # Parent feature abstract specification
-        ├── index_design.md                # Parent feature technical design document
-        ├── {child-feature}_spec.md        # Child feature abstract specification
-        └── {child-feature}_design.md      # Child feature technical design document
+├── specification/
+│   ├── {feature-name}_spec.md             # Top-level feature abstract specification
+│   └── {parent-feature}/
+│       ├── index_spec.md                  # Parent feature abstract specification
+│       └── {child-feature}_spec.md        # Child feature abstract specification
+├── adr/
+│   ├── {feature-name}-decisions.md        # Top-level feature decision log
+│   └── {parent-feature}/
+│       ├── index-decisions.md             # Parent feature decision log
+│       └── {child-feature}-decisions.md   # Child feature decision log
+└── task/
+    └── {ticket-number}/
+        └── design-draft.md                # Technical design draft
 ```
