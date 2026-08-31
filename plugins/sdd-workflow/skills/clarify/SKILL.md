@@ -22,6 +22,10 @@ before implementation.
 - `references/prerequisites_principles.md` - Read AI-SDD principles document
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
+**PRD is out of scope for edits**: Although `allowed-tools` grants `Edit(.sdd/**)`, this skill only edits
+`*_spec.md` / `*_design.md`. Never write to `requirement/**` — see AI-SDD-PRINCIPLES.md § Document Update
+Triggers ("Updating `requirement/` (PRD) — Never Automated").
+
 ### Relationship to Vibe Detector Skill
 
 This command is complementary to the `vibe-detector` skill:
@@ -87,7 +91,8 @@ Based on category analysis, generate up to 5 high-impact questions using the for
 After receiving user answers, the **main agent (this skill)** applies the integration:
 
 1. **Review Integration Proposals**: Review proposals from `clarification-assistant` agent output
-2. **Update Specifications**: Apply approved changes to appropriate `*_spec.md` or `*_design.md` using Edit/Write tools
+2. **Update Specifications**: Apply approved changes to appropriate `*_spec.md` or `*_design.md` using Edit/Write
+   tools (never `requirement/**` — see Prerequisites)
 3. **Mark Resolved**: Track which questions have been addressed
 4. **Generate Diff**: Show what was added to specifications
 

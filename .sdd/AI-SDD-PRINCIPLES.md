@@ -39,6 +39,7 @@ It addresses the following issues in traditional development:
 | **AI Guardrails**                | Provide **high-abstraction specifications** as guardrails to AI, eliminating ambiguity |
 | **Design Decision Transparency** | Clarify the **"why"** that code alone cannot convey through specifications             |
 | **Knowledge Asset Persistence**  | Prevent documentation bloat and maintain only the latest design intent persistently    |
+| **PRD Non-Automation**           | **Never auto-update** the PRD from downstream changes; contradictions are reported and resolved by a human, not silently reconciled |
 
 ## Four Structured Phases
 
@@ -559,6 +560,17 @@ Verify consistency between documents:
 ### Document Update Triggers
 
 Criteria for when to update each document:
+
+**Updating `requirement/` (PRD) — Never Automated**:
+
+- The PRD records **human business decisions**. No skill or agent may rewrite `requirement/**` content by
+  inferring it backward from spec, design, or implementation changes, regardless of Edit access to `.sdd/**`
+- When a downstream change (spec/design/implementation) contradicts a PRD requirement, or introduces behavior
+  no PRD requirement covers, report the contradiction instead of editing the PRD
+- Present the conflicting change and the affected PRD requirement, and let a human decide: update the PRD,
+  revert the downstream change, or accept it as an intentional scope change
+- Applies to every skill/agent with `.sdd/**` Edit access (e.g. `generate-prd`, `clarify`, `plan-refactor`),
+  not only to consistency-check tooling
 
 **When to Update `*_spec.md`**:
 

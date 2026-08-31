@@ -26,6 +26,12 @@ This skill supports two scenarios:
 - `references/prerequisites_principles.md` - Read AI-SDD principles document
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
+**PRD is read-only context**: Although `allowed-tools` grants `Edit(.sdd/**)`, this skill only writes to
+`specification/` (`*_spec.md` / `*_design.md`). The PRD loaded in Step 3A.1 is reference context for the
+refactoring plan — never write to `requirement/**`. If the analysis surfaces a PRD/implementation contradiction,
+record it in the plan for human review; do not resolve it by editing the PRD. See AI-SDD-PRINCIPLES.md §
+Document Update Triggers ("Updating `requirement/` (PRD) — Never Automated").
+
 ### Language Configuration
 
 Templates are located under `templates/${SDD_LANG:-en}/` within this skill directory.

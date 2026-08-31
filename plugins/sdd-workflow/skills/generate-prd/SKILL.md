@@ -21,6 +21,13 @@ Generates PRD from business requirements by orchestrating sub-skills.
 | `references/prerequisites_principles.md`      | Load AI-SDD principles                   |
 | `references/prerequisites_plugin_update.md`   | Check plugin version compatibility       |
 
+**PRD writes are human-directed, not inferred**: This skill's PRD writes (Step 10) are authored directly from the
+`requirements` input the user provided — this is the intended, human-initiated path for creating/updating a PRD,
+and is compatible with AI-SDD-PRINCIPLES.md § Document Update Triggers ("Updating `requirement/` (PRD) — Never
+Automated"). Never repurpose this skill to reconcile the PRD backward from a spec/design/implementation
+contradiction — the "Consistency Check" in Post-Generation Actions only recommends downstream updates
+(`/generate-spec`), it must never edit the PRD itself.
+
 **Load PRD template** (in order):
 
 1. `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/PRD_TEMPLATE.md` — Project-specific template
