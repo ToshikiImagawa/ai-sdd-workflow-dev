@@ -121,6 +121,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `/generate-prd`                  | ビジネス要件から SysML 要件図形式の PRD（要求仕様書）を生成                          |
 | `/check-spec`                    | 実装コードと仕様書の整合性をチェックし、不整合を検出                                   |
 | `/task-cleanup`                  | 実装完了後の task/ ディレクトリをクリーンアップし、設計判断を統合                         |
+| `/render-adr-review`             | ADR決定ログを決定・理由・却下した代替案の軸で構造化した一時レビューHTMLとしてレンダリング              |
 | `/task-breakdown`                | 技術設計書からタスクを小タスクのリストに分解                                       |
 | `/clarify`                       | 仕様を9つのカテゴリでスキャンし、曖昧さを明確化するための質問を生成                           |
 | `/implement`                     | TDD ベースの5フェーズ実装。TaskList で進捗を追跡し、tasks.md に自動マーク             |
@@ -186,6 +187,15 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 ```
 /task-cleanup TICKET-123
 ```
+
+#### ADRレビューHTMLレンダリング
+
+```
+/render-adr-review adr/user-auth-decisions.md
+```
+
+決定ログを `.sdd/.cache/render-adr-review/` 配下の一時HTMLとして、決定・理由・却下した代替案の軸で
+構造化してレンダリングする。生成物はスクラッチファイルであり、コミットされない。
 
 #### 仕様明確化
 
@@ -626,6 +636,7 @@ sdd-workflow/
 │   ├── implement/                 # TDDベース実装の実行
 │   ├── clarify/                   # 仕様明確化
 │   ├── task-cleanup/              # タスククリーンアップ
+│   ├── render-adr-review/         # ADR軸レビューHTMLレンダリング
 │   ├── checklist/                 # 品質チェックリスト生成
 │   ├── run-checklist/             # チェックリスト自動検証
 │   ├── recommend-front-matter/    # YAML front matter推奨

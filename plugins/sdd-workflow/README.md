@@ -122,6 +122,7 @@ This command automatically:
 | `/generate-prd`                  | Generates a PRD (Requirements Specification) in SysML requirements diagram format from business requirements |
 | `/check-spec`                    | Checks consistency between implementation code and specifications, detecting discrepancies                   |
 | `/task-cleanup`                  | Cleans up the task/ directory after implementation, integrating design decisions                             |
+| `/render-adr-review`             | Renders an ADR decision log into a temporary review HTML, structured by decision / rationale / rejected alternatives |
 | `/task-breakdown`                | Breaks down tasks from the technical design document into a list of small tasks                              |
 | `/clarify`                       | Scans specs across 9 categories, generates questions to clarify ambiguity                                    |
 | `/implement`                     | TDD-based 5-phase implementation. Tracks progress with TaskList and auto-marks in tasks.md                   |
@@ -187,6 +188,16 @@ Available only to logged-in users.
 ```
 /task-cleanup TICKET-123
 ```
+
+#### ADR Review Rendering
+
+```
+/render-adr-review adr/user-auth-decisions.md
+```
+
+Renders the decision log as a temporary HTML file under `.sdd/.cache/render-adr-review/`, structured by
+decision / rationale / rejected alternatives for human review. The file is a scratch artifact and is
+never committed.
 
 #### Specification Clarification
 
@@ -631,6 +642,7 @@ sdd-workflow/
 │   ├── implement/                 # TDD-based implementation execution
 │   ├── clarify/                   # Specification clarification
 │   ├── task-cleanup/              # Task cleanup
+│   ├── render-adr-review/         # ADR-axis review HTML rendering
 │   ├── checklist/                 # Quality checklist generation
 │   ├── run-checklist/             # Automated checklist verification
 │   ├── recommend-front-matter/    # YAML front matter recommendation
