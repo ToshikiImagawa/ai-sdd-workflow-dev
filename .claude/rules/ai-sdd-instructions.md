@@ -28,11 +28,11 @@ Supports both flat and hierarchical structures.
 |   |- {feature-name}.md
 |- specification/
 |   |- {feature-name}_spec.md    # Abstract specification (persistent)
-|   |- {feature-name}_design.md  # Technical design draft (temporary, deleted after implementation)
 |- adr/                          # Persistent decision log
 |   |- {feature-name}-decisions.md  # Decisions and rationale (append-only)
 |- task/                         # Temporary task logs
     |- {ticket-number}/
+        |- design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 ### Hierarchical Structure (for medium to large projects)
@@ -50,12 +50,9 @@ Supports both flat and hierarchical structures.
 |       |- {child-feature}.md    # Child feature requirements
 |- specification/
 |   |- {feature-name}_spec.md    # Top-level feature
-|   |- {feature-name}_design.md  # Temporary, deleted after implementation
 |   |- {parent-feature}/         # Parent feature directory
 |       |- index_spec.md         # Parent feature abstract spec
-|       |- index_design.md       # Parent feature technical design draft (temporary)
 |       |- {child-feature}_spec.md   # Child feature abstract spec
-|       |- {child-feature}_design.md # Child feature technical design draft (temporary)
 |- adr/                          # Persistent decision log
 |   |- {feature-name}-decisions.md  # Top-level feature
 |   |- {parent-feature}/         # Parent feature directory
@@ -63,6 +60,7 @@ Supports both flat and hierarchical structures.
 |       |- {child-feature}-decisions.md # Child feature decision log
 |- task/                         # Temporary task logs
     |- {ticket-number}/
+        |- design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 ## File Naming Convention (Important)
@@ -73,7 +71,7 @@ Supports both flat and hierarchical structures.
 |:------------------|:-----------------|:-----------------------------------------------|:------------------------------------------|
 | **requirement**   | All files        | `{name}.md` (no suffix)                        | `user-login.md`, `index.md`               |
 | **specification** | Abstract spec    | `{name}_spec.md` (`_spec` suffix required)     | `user-login_spec.md`, `index_spec.md`     |
-| **specification** | Technical design | `{name}_design.md` (`_design` suffix required, temporary) | `user-login_design.md`, `index_design.md` |
+| **task**          | Design draft     | `design-draft.md` (fixed filename, ticket-scoped, temporary) | `task/68/design-draft.md`   |
 | **adr**           | Decision log     | `{name}-decisions.md` (`-decisions` suffix required, append-only) | `user-login-decisions.md`, `index-decisions.md` |
 
 ### Naming Pattern Quick Reference
@@ -83,16 +81,15 @@ Supports both flat and hierarchical structures.
 requirement/auth/index.md              # Parent feature overview (no suffix)
 requirement/auth/user-login.md         # Child feature requirements (no suffix)
 specification/auth/index_spec.md       # Parent feature abstract spec (_spec required)
-specification/auth/index_design.md     # Parent feature technical design (_design required, temporary)
 specification/auth/user-login_spec.md  # Child feature abstract spec (_spec required)
-specification/auth/user-login_design.md # Child feature technical design (_design required, temporary)
+task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
 adr/auth/index-decisions.md            # Parent feature decision log (-decisions required, persistent)
 adr/auth/user-login-decisions.md       # Child feature decision log (-decisions required, persistent)
 
 # Incorrect Naming (never use these)
 requirement/auth/index_spec.md         # requirement doesn't need _spec
-specification/auth/user-login.md       # specification requires _spec/_design
-specification/auth/index.md            # specification requires _spec/_design
+specification/auth/user-login.md       # specification requires _spec
+specification/auth/index_design.md     # design docs no longer live under specification/
 adr/auth/user-login.md                 # adr requires -decisions suffix
 ```
 
