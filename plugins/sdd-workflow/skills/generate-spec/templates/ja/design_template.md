@@ -1,5 +1,5 @@
 ---
-id: "design-{feature-name}"
+id: "design-{ticket-number}"
 title: "{機能名}"
 type: "design"
 status: "draft"
@@ -16,8 +16,9 @@ risk: "medium"
 
 # 技術設計書テンプレート (Design Doc)
 
-このドキュメントは `${SDD_SPECIFICATION_PATH}/` 配下の技術設計書（Design Doc）を作成する際のテンプレートです。
-ファイル名は `{機能名}_design.md` となります。
+このドキュメントは `${SDD_TASK_PATH}/{ticket-number}/` 配下に置く技術設計書（Design Doc）の**ドラフト**を作成する際のテンプレートです。
+ファイル名は `design-draft.md` となります。
+このファイルは**一時ドラフト**であり、実装完了後、重要な決定事項を `adr/{feature-name}-decisions.md` へ統合したうえで削除します。
 
 > **注意**: このテンプレートはプラグインのフォールバック用です。
 > プロジェクトで使用する際は、プログラミング言語やプロジェクト構成に合わせてカスタマイズし、

@@ -9,7 +9,7 @@ and cross-reference validation.
 
 | Field        | Type   | Required | Description                                           |
 |:-------------|:-------|:---------|:------------------------------------------------------|
-| `id`         | string | Yes      | Unique identifier. Pattern: `"{type}-{feature-name}"` |
+| `id`         | string | Yes      | Unique identifier. Pattern: `"{type}-{feature-name}"` (design: `"design-{ticket-number}"` — see Design section) |
 | `title`      | string | Yes      | Human-readable title                                  |
 | `type`       | string | Yes      | Document type (see per-type tables below)             |
 | `status`     | string | Yes      | Current status                                        |
@@ -31,11 +31,15 @@ and cross-reference validation.
 | `risk`       | `high`, `medium`, `low`                     | Inherit from PRD if available          |
 | `depends-on` | `["prd-*"]`                                 | References PRD                         |
 
-### Design (`type: "design"`)
+### Design (`type: "design"`) — temporary draft under `task/{ticket-number}/design-draft.md`
+
+**Note**: Unlike spec, the Design Doc is a temporary draft, not a persistent knowledge asset — see
+`AI-SDD-PRINCIPLES.md`'s Document Persistence Rules. Front matter is still included while the draft exists, so
+that `spec-reviewer` / `front-matter-reviewer` can validate it before deletion.
 
 | Field         | Valid Values / Pattern                          | Notes                                    |
 |:--------------|:------------------------------------------------|:-----------------------------------------|
-| `id`          | `"design-{name}"`                               | Hierarchical: `"design-{parent}-{name}"` |
+| `id`          | `"design-{ticket-number}"`                      | Ticket-scoped, not feature-scoped        |
 | `type`        | `"design"`                                      |                                          |
 | `status`      | `draft`, `review`, `approved`, `deprecated`     |                                          |
 | `sdd-phase`   | `"plan"`                                        | Always `"plan"`                          |
@@ -63,7 +67,7 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"])
 | Check Item                  | Description                                                                                      | Importance |
 |:----------------------------|:-------------------------------------------------------------------------------------------------|:-----------|
 | **`id` format**             | Matches expected pattern for type (`spec-*`, `design-*`)                                         | Medium     |
-| **`type` correctness**      | Matches document location (`"spec"`/`"design"` for `specification/`)                             | Medium     |
+| **`type` correctness**      | Matches document location (`"spec"` for `specification/`, `"design"` for `task/{ticket-number}/design-draft.md`) | Medium     |
 | **`depends-on` references** | All referenced IDs exist in actual documents                                                     | High       |
 | **`depends-on` direction**  | Dependencies point upstream only (spec→prd, design→spec)                                         | High       |
 | **`status` validity**       | Value is one of the allowed values for the document type                                         | Low        |
