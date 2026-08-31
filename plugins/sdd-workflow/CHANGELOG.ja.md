@@ -9,6 +9,51 @@
 
 ## [Unreleased]
 
+**注記**: このリリースには破壊的変更が含まれるため、マイナー/パッチではなくメジャーバージョン
+（v5.0.0）としてリリースする。
+
+### Breaking Changes
+
+#### ドキュメント構造
+
+- **`specification/{feature-name}_design.md` は永続ドキュメントではなくなった** - 技術設計書は
+  `task/{ticket-number}/design-draft.md` の一時ドラフトとなり、`task/` の他のファイルと同様、実装完了後に
+  削除される。決定・その理由・却下した代替案のみが、新設の `adr/{feature-name}-decisions.md`
+  （追記専用）に永続化される。既に `*_design.md` を永続化しているプロジェクトは手動で移行が必要 —
+  README.md / README.ja.md の「v4.x からの移行」を参照
+- **`/generate-spec` にチケット番号が必須になった** - 設計ドラフトのパスがチケット単位
+  （`task/{ticket-number}/design-draft.md`）になったため、`/generate-spec` は `--ticket <番号>`
+  を受け取る（`--ci` モードでは必須、それ以外は対話的に解決）
+- **`doc-consistency-checker` のチェック対象が PRD ↔ spec ↔ design から PRD ↔ spec ↔ adr へ変更** -
+  `design ↔ Implementation` チェックは 4.0.0 以来変わらず `/check-spec` の専任のまま
+
+### Added
+
+#### Skills
+
+- **`render-adr-review`** - `adr/{feature-name}-decisions.md` の決定ログ（または `*_spec.md`/
+  `*_design.md` の決定根拠セクション）を、単純な Markdown→HTML 変換ではなく決定・理由・却下した代替案の
+  軸で構造化した一時レビューHTMLとしてレンダリングする新規スキル。生成物は
+  `.sdd/.cache/render-adr-review/` 配下に出力され、コミットを想定しない
+- **`task-cleanup`** - 実装完了時にチケットへ要約コメントを投稿するようになった。また、`adr/` に統合する
+  決定が「When to Update `*_spec.md`」の基準に該当するかを判定し、該当する場合は `AskUserQuestion` で
+  Spec 更新を提案する
+
+#### Configuration
+
+- **`SDD_ADR_DIR` / `SDD_ADR_PATH`** - `adr/` ディレクトリ用の環境変数を新設。既存の `SDD_*_DIR` /
+  `SDD_*_PATH` と同じパターンでセッション開始時に設定される
+
+### Changed
+
+#### Documentation
+
+- **`AI-SDD-PRINCIPLES.md`** - `adr/` ディレクトリと `design-draft.md` のライフサイクルを明文化し、
+  `requirement/`（PRD）は spec/design/実装側の変更から自動更新されないこと — 矛盾は人間の判断に委ね、
+  無断で書き戻さないことを明記した
+- **`shared/references/document_dependencies.md`** - `adr/` モデルに整合するよう更新（それまで
+  `specification/*_design.md` を永続扱いとする旧記述のまま、再設計に追随していなかった）
+
 ## [4.1.0] - 2026-08-19
 
 ### Added

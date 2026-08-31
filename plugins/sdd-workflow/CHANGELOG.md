@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Note**: This release contains breaking changes and will ship as a major version bump (v5.0.0), not a
+minor/patch release.
+
+### Breaking Changes
+
+#### Document Structure
+
+- **`specification/{feature-name}_design.md` is no longer a persistent document** - Technical Design
+  Documents are now a temporary draft at `task/{ticket-number}/design-draft.md`, deleted after
+  implementation like the rest of `task/`. Only the decisions, their rationale, and rejected
+  alternatives are persisted, in the new `adr/{feature-name}-decisions.md` (append-only). Projects with
+  existing persisted `*_design.md` files must migrate them manually — see "Migration from v4.x" in
+  README.md / README.ja.md
+- **`/generate-spec` now requires a ticket number** - The design draft path is ticket-scoped
+  (`task/{ticket-number}/design-draft.md`), so `/generate-spec` takes `--ticket <number>` (required in
+  `--ci` mode, resolved interactively otherwise)
+- **`doc-consistency-checker` now checks PRD ↔ spec ↔ adr, not PRD ↔ spec ↔ design** - The
+  `design ↔ Implementation` check remains `/check-spec`'s exclusive responsibility, unchanged since 4.0.0
+
+### Added
+
+#### Skills
+
+- **`render-adr-review`** - New skill that renders an `adr/{feature-name}-decisions.md` decision log (or
+  the decision rationale section of a `*_spec.md`/`*_design.md`) into a temporary review HTML, structured
+  by decision / rationale / rejected alternative rather than a plain Markdown-to-HTML conversion. Output
+  is written under `.sdd/.cache/render-adr-review/` and is not meant to be committed
+- **`task-cleanup`** - Posts a summary comment to the ticket when implementation completes, and checks
+  whether the decisions being integrated into `adr/` also trigger a `*_spec.md` update per the "When to
+  Update `*_spec.md`" criteria; if so, proposes the spec update via `AskUserQuestion`
+
+#### Configuration
+
+- **`SDD_ADR_DIR` / `SDD_ADR_PATH`** - New environment variables for the `adr/` directory, set at session
+  start alongside the existing `SDD_*_DIR` / `SDD_*_PATH` variables
+
+### Changed
+
+#### Documentation
+
+- **`AI-SDD-PRINCIPLES.md`** - Documents the `adr/` directory and the `design-draft.md` lifecycle, and
+  makes explicit that `requirement/` (PRD) is never auto-updated from downstream spec/design/
+  implementation changes — contradictions are reported for a human to resolve, not silently written back
+- **`shared/references/document_dependencies.md`** - Updated to the `adr/` model (previously still
+  described `specification/*_design.md` as persistent, out of sync with the rest of the redesign)
+
 ## [4.1.0] - 2026-08-19
 
 ### Added

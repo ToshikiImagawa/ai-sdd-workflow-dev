@@ -96,7 +96,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 このコマンドは自動的に:
 
 - プロジェクトの `CLAUDE.md` に AI-SDD Instructions セクションを追加
-- `.sdd/` ディレクトリ構造を作成（requirement/, specification/, task/）
+- `.sdd/` ディレクトリ構造を作成（requirement/, specification/, adr/, task/）
 - PRD、仕様書、設計書のテンプレートファイルを生成
 
 ## 含まれるコンポーネント
@@ -265,10 +265,11 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 #### Step 3: 仕様書と設計書の生成
 
 ```
-/generate-spec user-auth
+/generate-spec user-auth --ticket TICKET-123
 ```
 
-→ `.sdd/specification/user-auth_spec.md` と `user-auth_design.md` が生成されます。
+→ `.sdd/specification/user-auth_spec.md` が生成され、`.sdd/task/TICKET-123/design-draft.md` に
+一時的な設計ドラフトも生成されます。
 
 #### Step 4: 仕様の明確化
 
@@ -324,7 +325,8 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 /task-cleanup TICKET-123
 ```
 
-一時ファイルをクリーンアップし、重要な設計判断を `*_design.md` に統合します。
+`task/` 配下の一時ファイル（`design-draft.md` を含む）をクリーンアップし、重要な設計判断を
+`adr/{feature-name}-decisions.md`（追記専用）に統合してから削除します。
 
 ## v2.x からの移行
 
@@ -357,6 +359,45 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 2. 日本語サポートのために `.sdd-config.json` に `"lang": "ja"` を設定
 3. 自動化スクリプトを新しいコマンド名（アンダースコアからハイフン）に更新
 
+## v4.x からの移行
+
+### v5.0.0 の破壊的変更
+
+1. **`specification/{feature-name}_design.md` は永続ドキュメントではなくなりました。** 技術設計書はまず
+   `task/{ticket-number}/design-draft.md` の一時ドラフトとして作成され、`task/` の他のファイルと同様、
+   実装完了後に削除されます
+2. **新しい `adr/` ディレクトリを追加。** 決定・その理由・却下した代替案のみが `adr/{feature-name}-decisions.md`
+   （追記専用）に永続化されます
+3. **`/generate-spec` にチケット番号が必要になりました。** 設計ドラフトのパスが `specification/` ではなく
+   `task/{ticket-number}/` 配下になったため、`--ticket <番号>` を指定するか、対話的に解決してください
+
+### 既存の `*_design.md` を `adr/` へ抜粋する手順
+
+この変更より前に永続化された `specification/{feature-name}_design.md` がある場合、決定履歴を
+`adr/{feature-name}-decisions.md` へ抜粋してください。抜粋が完了するまで旧ファイルを削除しないこと:
+
+1. `.sdd-config.json` で `directories.adr` にカスタム名を使用する場合は移行前に設定する
+   （デフォルトは `adr`）。その後 `/sdd-init` を再実行して `adr/` ディレクトリとテンプレートを作成する
+   （既存ファイルは上書きされません）
+2. **各 `*_design.md` から設計判断を特定する** — 技術・アーキテクチャ・アプローチをなぜ選んだかを説明している節
+3. **`adr/{feature-name}-decisions.md` を作成する**（`specification/` 配下のパスに対応させる。例:
+   `specification/auth/user-login_design.md` → `adr/auth/user-login-decisions.md`）。共通の front
+   matter フィールド（`id`、`title`、`type: "adr"`、`status`、`created`、`updated`）を設定する —
+   `adr` の詳細スキーマは `shared/references/front_matter_reference.md` にまだ定義されていないため、
+   現時点では共通フィールドのみが対象
+4. **決定ごとに1エントリを追記する**。含めるのは次のみ:
+   - 下した決定
+   - その理由
+   - 検討した代替案と却下理由
+   - 決定の日付・背景（分かる場合）
+5. **持ち込まないもの**: 実装手順、理由付けのない技術スタックの列挙、現在のコードに既に反映されている内容 —
+   *why* のみを残し、*how* / *what* は持ち込まない
+6. **決定を `adr/` に取り込んだら旧 `*_design.md` を削除**し、`/check-spec`（または
+   `doc-consistency-checker`）を実行して削除したファイルへの参照が残っていないか確認する
+
+`adr/` のフィールド・フォーマットの全体は `AI-SDD-PRINCIPLES.md` の「Architecture Decision Record」節を
+参照してください。
+
 ## フックについて
 
 このプラグインはセッション開始時に `.sdd-config.json` を自動的に読み込み、環境変数を設定します。
@@ -380,10 +421,12 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `SDD_ROOT`               | `.sdd`               | ルートディレクトリ     |
 | `SDD_LANG`               | `en`                 | 言語設定          |
 | `SDD_REQUIREMENT_DIR`    | `requirement`        | 要求仕様書ディレクトリ   |
-| `SDD_SPECIFICATION_DIR`  | `specification`      | 仕様書/設計書ディレクトリ |
+| `SDD_SPECIFICATION_DIR`  | `specification`      | 仕様書ディレクトリ     |
+| `SDD_ADR_DIR`            | `adr`                | 決定ログ（ADR）ディレクトリ |
 | `SDD_TASK_DIR`           | `task`               | タスクログディレクトリ   |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | 要求仕様書フルパス     |
-| `SDD_SPECIFICATION_PATH` | `.sdd/specification` | 仕様書/設計書フルパス   |
+| `SDD_SPECIFICATION_PATH` | `.sdd/specification` | 仕様書フルパス       |
+| `SDD_ADR_PATH`           | `.sdd/adr`           | 決定ログ（ADR）フルパス |
 | `SDD_TASK_PATH`          | `.sdd/task`          | タスクログフルパス     |
 
 ### フックのデバッグ
@@ -519,10 +562,12 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 ├── requirement/                  # PRD（要求仕様書）
 │   └── {feature-name}.md
 ├── specification/                # 永続的な知識資産
-│   ├── {feature-name}_spec.md    # 抽象仕様書
-│   └── {feature-name}_design.md  # 技術設計書
+│   └── {feature-name}_spec.md    # 抽象仕様書
+├── adr/                          # 永続的な決定ログ
+│   └── {feature-name}-decisions.md  # 決定と理由（追記専用）
 └── task/                         # 一時的なタスクログ（実装後に削除）
     └── {ticket-number}/
+        └── design-draft.md       # 技術設計ドラフト（実装後に削除）
 ```
 
 #### 階層構造（中〜大規模プロジェクト向け）
@@ -540,21 +585,28 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 │       └── {child-feature}.md    # 子機能の要件
 ├── specification/                # 永続的な知識資産
 │   ├── {feature-name}_spec.md    # トップレベル機能（フラット構造と下位互換）
-│   ├── {feature-name}_design.md
 │   └── {parent-feature}/         # 親機能ディレクトリ
 │       ├── index_spec.md         # 親機能の抽象仕様書
-│       ├── index_design.md       # 親機能の技術設計書
-│       ├── {child-feature}_spec.md   # 子機能の抽象仕様書
-│       └── {child-feature}_design.md # 子機能の技術設計書
+│       └── {child-feature}_spec.md   # 子機能の抽象仕様書
+├── adr/                          # 永続的な決定ログ
+│   ├── {feature-name}-decisions.md   # トップレベル機能（フラット構造と下位互換）
+│   └── {parent-feature}/         # 親機能ディレクトリ
+│       ├── index-decisions.md        # 親機能の決定ログ
+│       └── {child-feature}-decisions.md # 子機能の決定ログ
 └── task/                         # 一時的なタスクログ（実装後に削除）
     └── {ticket-number}/
+        └── design-draft.md       # 技術設計ドラフト（実装後に削除）
 ```
 
 #### ドキュメント依存関係
 
 ```
-CONSTITUTION.md → requirement/ → *_spec.md → *_design.md → task/ → 実装
+CONSTITUTION.md → requirement/ → *_spec.md → task/{ticket-number}/design-draft.md → 実装
 ```
+
+`adr/{feature-name}-decisions.md` は、`design-draft.md` が削除される前に抜粋された決定・理由・却下した
+代替案を永続化します（追記専用。既存の `*_design.md` を移行する場合は
+[v4.x からの移行](#v4x-からの移行) を参照）。
 
 すべてのドキュメントは `CONSTITUTION.md` のプロジェクト原則に従って作成されます。
 

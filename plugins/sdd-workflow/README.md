@@ -97,7 +97,7 @@ The `SDD_LANG` environment variable is automatically set at session start from t
 This command automatically:
 
 - Adds the AI-SDD Instructions section to your project's `CLAUDE.md`
-- Creates the `.sdd/` directory structure (requirement/, specification/, task/)
+- Creates the `.sdd/` directory structure (requirement/, specification/, adr/, task/)
 - Generates PRD, specification, and design document template files
 
 ## Included Components
@@ -268,10 +268,11 @@ Includes session management and password reset functionality.
 #### Step 3: Generate Specification and Design Documents
 
 ```
-/generate-spec user-auth
+/generate-spec user-auth --ticket TICKET-123
 ```
 
-→ `.sdd/specification/user-auth_spec.md` and `user-auth_design.md` are generated.
+→ `.sdd/specification/user-auth_spec.md` is generated, along with a temporary design draft at
+`.sdd/task/TICKET-123/design-draft.md`.
 
 #### Step 4: Clarify Specifications
 
@@ -328,7 +329,8 @@ Verifies consistency between implementation and specifications, reporting any di
 /task-cleanup TICKET-123
 ```
 
-Cleans up temporary files and integrates important design decisions into `*_design.md`.
+Cleans up temporary files under `task/` (including `design-draft.md`) and integrates important design
+decisions into `adr/{feature-name}-decisions.md` (append-only) before deletion.
 
 ## Migration from v2.x
 
@@ -361,6 +363,48 @@ Cleans up temporary files and integrates important design decisions into `*_desi
 2. Set `"lang": "ja"` in `.sdd-config.json` for Japanese language support
 3. Update any automation scripts to use new command names (hyphens instead of underscores)
 
+## Migration from v4.x
+
+### Breaking Changes in v5.0.0
+
+1. **`specification/{feature-name}_design.md` is no longer a persistent document.** Technical Design
+   Documents now start as a temporary draft at `task/{ticket-number}/design-draft.md` and are deleted
+   after implementation, like the rest of `task/`
+2. **New `adr/` directory.** Only the decisions, their rationale, and rejected alternatives are
+   persisted, in `adr/{feature-name}-decisions.md` (append-only)
+3. **`/generate-spec` now requires a ticket number.** The design draft path is ticket-scoped
+   (`--ticket <number>`, or resolved interactively), since the draft lives under
+   `task/{ticket-number}/` instead of `specification/`
+
+### Extracting Existing `*_design.md` Files into `adr/`
+
+If your project has persisted `specification/{feature-name}_design.md` files created before this change,
+extract their decision history into `adr/{feature-name}-decisions.md`. Do not delete the old files until
+this is done:
+
+1. If you use a custom `directories.adr` name in `.sdd-config.json`, set it before migrating (defaults
+   to `adr`), then re-run `/sdd-init` to create the `adr/` directory and templates (existing files are
+   never overwritten)
+2. **Locate the design decisions** in each `*_design.md` — the section(s) explaining why a technology,
+   architecture, or approach was chosen
+3. **Create `adr/{feature-name}-decisions.md`**, mirroring the feature's path under `specification/`
+   (e.g. `specification/auth/user-login_design.md` → `adr/auth/user-login-decisions.md`), with the
+   common front matter fields (`id`, `title`, `type: "adr"`, `status`, `created`, `updated` — the
+   detailed `adr` schema is not yet defined in `shared/references/front_matter_reference.md`, so only
+   the common fields apply for now)
+4. **Append one entry per decision**, keeping only:
+   - The decision made
+   - The reasoning behind it
+   - Alternatives considered and why they were rejected
+   - The date/context of the decision, if known
+5. **Do not carry over** implementation steps, technology stack listings without rationale, or content
+   already reflected in the current codebase — only the *why*, not the *how* or *what*
+6. **Delete the old `*_design.md`** once its decisions are captured in `adr/`, then run
+   `/check-spec` (or `doc-consistency-checker`) to confirm nothing else references the removed file
+
+See `AI-SDD-PRINCIPLES.md` § "Architecture Decision Record" for the full `adr/` field and format
+reference.
+
 ## About Hooks
 
 This plugin automatically loads `.sdd-config.json` and sets environment variables at session start.
@@ -384,10 +428,12 @@ The following environment variables are automatically set at session start:
 | `SDD_ROOT`               | `.sdd`               | Root directory                          |
 | `SDD_LANG`               | `en`                 | Language setting                        |
 | `SDD_REQUIREMENT_DIR`    | `requirement`        | Requirements specification directory    |
-| `SDD_SPECIFICATION_DIR`  | `specification`      | Specification/design document directory |
+| `SDD_SPECIFICATION_DIR`  | `specification`      | Specification document directory        |
+| `SDD_ADR_DIR`            | `adr`                | Decision log (ADR) directory            |
 | `SDD_TASK_DIR`           | `task`               | Task log directory                      |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | Requirements specification full path    |
-| `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification/design document full path |
+| `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification document full path        |
+| `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (ADR) full path            |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log full path                      |
 
 ### Hook Debugging
@@ -525,10 +571,12 @@ Both flat and hierarchical structures are supported.
 ├── requirement/                  # PRD (Requirements Specification)
 │   └── {feature-name}.md
 ├── specification/                # Persistent knowledge assets
-│   ├── {feature-name}_spec.md    # Abstract specification
-│   └── {feature-name}_design.md  # Technical design document
+│   └── {feature-name}_spec.md    # Abstract specification
+├── adr/                          # Persistent decision log
+│   └── {feature-name}-decisions.md  # Decisions and rationale (append-only)
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
+        └── design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 #### Hierarchical Structure (for medium to large projects)
@@ -546,21 +594,28 @@ Both flat and hierarchical structures are supported.
 │       └── {child-feature}.md    # Child feature requirements
 ├── specification/                # Persistent knowledge assets
 │   ├── {feature-name}_spec.md    # Top-level feature (backward compatible with flat structure)
-│   ├── {feature-name}_design.md
 │   └── {parent-feature}/         # Parent feature directory
 │       ├── index_spec.md         # Parent feature abstract specification
-│       ├── index_design.md       # Parent feature technical design document
-│       ├── {child-feature}_spec.md   # Child feature abstract specification
-│       └── {child-feature}_design.md # Child feature technical design document
+│       └── {child-feature}_spec.md   # Child feature abstract specification
+├── adr/                          # Persistent decision log
+│   ├── {feature-name}-decisions.md   # Top-level feature (backward compatible with flat structure)
+│   └── {parent-feature}/         # Parent feature directory
+│       ├── index-decisions.md        # Parent feature decision log
+│       └── {child-feature}-decisions.md # Child feature decision log
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
+        └── design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 #### Document Dependencies
 
 ```
-CONSTITUTION.md → requirement/ → *_spec.md → *_design.md → task/ → Implementation
+CONSTITUTION.md → requirement/ → *_spec.md → task/{ticket-number}/design-draft.md → Implementation
 ```
+
+`adr/{feature-name}-decisions.md` persists the decisions, rationale, and rejected alternatives extracted
+from `design-draft.md` before it is deleted (append-only; see [Migration from v4.x](#migration-from-v4x)
+if you have existing persisted `*_design.md` files to convert).
 
 All documents are created following `CONSTITUTION.md` project principles.
 
