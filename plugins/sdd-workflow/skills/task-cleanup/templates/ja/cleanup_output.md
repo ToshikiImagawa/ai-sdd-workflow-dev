@@ -10,10 +10,10 @@
 |:--------|:-----------|:------------|
 | {ファイル名} | YYYY-MM-DD | 統合予定 / 削除予定 |
 
-### 統合すべき内容（→ `adr/{feature}-decisions.md` へ追記）
+### 統合すべき内容（→ `adr/{feature}.md` へ追記）
 
 - [ ] **{決定1}**: {概要（理由・却下した代替案を含む）}
-    - 統合先: `${SDD_ADR_PATH}/{name}-decisions.md`
+    - 統合先: `${SDD_ADR_PATH}/{name}.md`
 - [ ] **{決定2}**: {概要}
     - 統合先: ...
 
@@ -36,7 +36,7 @@
 
 ### 実行するアクション
 
-1. {決定} を `${SDD_ADR_PATH}/{feature}-decisions.md` に追記
+1. {決定} を `${SDD_ADR_PATH}/{feature}.md` に追記
 2. `task/{対象}/` を削除
 3. チケット `{ticket-number}` へ要約をコメント投稿
 

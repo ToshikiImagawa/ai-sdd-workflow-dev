@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/.cache/**)
 
 # Render ADR Review - Decision-Axis Review HTML
 
-Reorganizes an `adr/{feature}-decisions.md` decision log (or the decision-rationale content of a
+Reorganizes an `adr/{feature}.md` decision log (or the decision-rationale content of a
 `*_spec.md` / `*_design.md`) around **decision / rationale / rejected alternatives**, and renders it
 as a temporary HTML file for human review. This is not a Markdown-to-HTML converter: content is
 mapped into dedicated template regions (decision card, comparison table) so a reviewer can see what
@@ -42,29 +42,32 @@ The `SDD_LANG` environment variable determines the language (default: `en`).
 Full argument string: $ARGUMENTS
 
 > **Fallback**: If `source-path` is empty or remains a literal `$` placeholder, search
-> `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/**/*-decisions.md` with Glob. If exactly one file is found,
-> use it. If several are found, ask the user to pick one with `AskUserQuestion`. If none are found,
-> tell the user no ADR decision log exists yet and stop (do not fall back to inventing content).
+> `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/**/*.md` with Glob (`adr/` is a single-type directory, so every
+> file found is a decision log regardless of whether it carries the legacy `-decisions` suffix). If
+> exactly one file is found, use it. If several are found, ask the user to pick one with
+> `AskUserQuestion`. If none are found, tell the user no ADR decision log exists yet and stop (do not
+> fall back to inventing content).
 
 | Argument        | Required | Description                                                                          |
 |:-----------------|:---------|:--------------------------------------------------------------------------------------|
-| `source-path`    | -        | Path to an `adr/{feature}-decisions.md` decision log, or a `*_spec.md` / `*_design.md` that contains a decision-rationale section. Searched under `${SDD_ADR_PATH}` when omitted |
+| `source-path`    | -        | Path to an `adr/{feature}.md` decision log, or a `*_spec.md` / `*_design.md` that contains a decision-rationale section. Searched under `${SDD_ADR_PATH}` when omitted |
 | `ticket-number`  | -        | Used for the output file name. Falls back to the source file's feature name if omitted |
 
 ### Input Examples
 
 | Example                                              | Description                                  |
 |:------------------------------------------------------|:----------------------------------------------|
-| `/render-adr-review adr/auth/user-login-decisions.md` | Render a single feature's decision log        |
-| `/render-adr-review adr/user-auth-decisions.md TICKET-123` | Name the output after the ticket instead of the feature |
+| `/render-adr-review adr/auth/user-login.md` | Render a single feature's decision log        |
+| `/render-adr-review adr/user-auth.md TICKET-123` | Name the output after the ticket instead of the feature |
 | `/render-adr-review`                                  | No argument - pick from ADR logs found under `${SDD_ADR_PATH}` |
 
 ## Processing Flow
 
 ### 1. Resolve and Read the Source
 
-Both flat (`{feature}-decisions.md`) and hierarchical (`{parent-feature}/{child-feature}-decisions.md`)
-ADR layouts are supported, matching `${SDD_ADR_PATH}`. Read the resolved file in full.
+Both flat (`{feature}.md`) and hierarchical (`{parent-feature}/{child-feature}.md`) ADR layouts are
+supported, matching `${SDD_ADR_PATH}` (see the Fallback note above for the legacy `-decisions` suffix
+form). Read the resolved file in full.
 
 ### 2. Extract Decision Entries
 

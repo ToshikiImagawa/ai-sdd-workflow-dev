@@ -31,4 +31,4 @@ After: /implement -> /check-spec -> /task-cleanup -> PR
 
 ### Log Usage
 
-After implementation complete, integrate decisions and rejected alternatives into `adr/{feature}-decisions.md` (executed by `/task-cleanup`).
+After implementation complete, integrate decisions and rejected alternatives into `adr/{feature}.md` (executed by `/task-cleanup`).

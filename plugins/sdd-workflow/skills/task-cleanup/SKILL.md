@@ -1,6 +1,6 @@
 ---
 name: task-cleanup
-description: "Clean up task/ directory after implementation completion, integrating design decisions and rejected alternatives into adr/{feature}-decisions.md before deletion"
+description: "Clean up task/ directory after implementation completion, integrating design decisions and rejected alternatives into adr/{feature}.md before deletion"
 argument-hint: "[ticket-number]"
 arguments: [ticket-number]
 license: MIT
@@ -12,7 +12,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)
 # Task Cleanup - Task Log Cleanup
 
 Organizes documents under `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/`, integrating design decisions and rejected
-alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}-decisions.md` (append-only) before deletion.
+alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}.md` (append-only) before deletion.
 
 ## Prerequisites
 
@@ -27,8 +27,8 @@ alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}-decisions.md`
 | Path                          | Persistence    | Management Rules                                                                                  |
 |:-------------------------------|:---------------|:----------------------------------------------------------------------------------------------------|
 | `specification/*_design.md`   | **Temporary**  | Draft technical plan. Deleted by a separate flow after implementation — not handled by this skill  |
-| `task/`                       | **Temporary**  | **Delete** after implementation complete (this skill). Integrate decisions/rejected alternatives into `adr/{feature}-decisions.md` first |
-| `adr/{feature}-decisions.md`  | **Persistent** | **Append-only** decision log. Never rewrite past entries — append new decisions as they are made   |
+| `task/`                       | **Temporary**  | **Delete** after implementation complete (this skill). Integrate decisions/rejected alternatives into `adr/{feature}.md` first |
+| `adr/{feature}.md`            | **Persistent** | **Append-only** decision log. Never rewrite past entries — append new decisions as they are made   |
 
 **Role separation**: `task/` is temporary, AI-facing working notes, deleted once cleanup completes. The ticket
 (GitHub Issue / JIRA) is the persistent, team-facing progress record — step 9 dumps a summary there so humans
@@ -87,7 +87,7 @@ Get the file list in the target directory with `ls -la ${CLAUDE_PROJECT_DIR}/${S
 
 Review content of each file and classify as follows:
 
-**Content to Integrate (-> `adr/{feature}-decisions.md`)**:
+**Content to Integrate (-> `adr/{feature}.md`)**:
 
 | Category                           | Examples                                                                  |
 |:-----------------------------------|:--------------------------------------------------------------------------|
@@ -107,12 +107,13 @@ Review content of each file and classify as follows:
 
 ### 4. Determine Integration Target
 
-When there is information to integrate, determine the appropriate `adr/{feature}-decisions.md`:
+When there is information to integrate, determine the appropriate `adr/{feature}.md`:
 
-1. Find the existing decision log most related to content:
-   - Flat layout: `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature-name}-decisions.md`
-   - Hierarchical layout: `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{parent-feature}/{child-feature}-decisions.md`
-2. If no existing file for the feature -> create a new `adr/{feature}-decisions.md`
+1. Find the existing decision log most related to content with a single Glob covering both the current
+   suffix-free name and the legacy `-decisions` suffix (still valid on existing files):
+   - Flat layout: `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature-name}*.md`
+   - Hierarchical layout: `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{parent-feature}/{child-feature}*.md`
+2. If no existing file for the feature -> create a new `adr/{feature}.md` (no suffix — the default for new files)
 3. If no design decision or rejected alternative was found in the target -> skip integration (nothing to append)
 
 ### 5. Integrate Information
@@ -154,7 +155,7 @@ Delete individual files with `git rm ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{tar
 For each target ticket identified in step 1, once its integration and deletion are done, post a summary comment
 on that ticket (don't wait for other targets when running without an argument — post per ticket as it completes).
 
-The summary should include: which `adr/{feature}-decisions.md` entries were added, whether a spec update was
+The summary should include: which `adr/{feature}.md` entries were added, whether a spec update was
 proposed (and its outcome), and which files were deleted.
 
 - GitHub: `gh issue comment <ticket-number> --body "<summary>"`
@@ -179,4 +180,4 @@ Use the `templates/${SDD_LANG:-en}/cleanup_output.md` template for output format
 
 - **Don't leave history**: Don't add notations like "migrated from ..." during migration
 - **Minimal migration**: Migrate only truly valuable information (decisions and rejected alternatives only)
-- **Avoid duplication**: Don't migrate content already documented in `adr/{feature}-decisions.md`
+- **Avoid duplication**: Don't migrate content already documented in `adr/{feature}.md`

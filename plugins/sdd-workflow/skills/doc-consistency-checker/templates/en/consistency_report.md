@@ -12,7 +12,7 @@ This template is the output format for document consistency check results.
 |:---------|:----------------------------------------------|:-------------|
 | PRD      | `${SDD_REQUIREMENT_PATH}/{feature-name}.md`          | YYYY-MM-DD   |
 | spec     | `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`   | YYYY-MM-DD   |
-| adr      | `${SDD_ADR_PATH}/{feature-name}-decisions.md`        | YYYY-MM-DD   |
+| adr      | `${SDD_ADR_PATH}/{feature-name}.md`                  | YYYY-MM-DD   |
 
 ### Check Results Summary
 

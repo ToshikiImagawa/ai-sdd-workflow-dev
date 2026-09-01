@@ -59,6 +59,11 @@
   単一種別ディレクトリ（配下は抽象仕様書のみ／決定ログのみ）であるため、命名規則強制フックはこれらの
   ディレクトリでサフィックスを必須としなくなった。既存のサフィックス付きファイルは引き続き有効。
   `requirement/` は変更なし（`_spec`/`_design` サフィックスは引き続き禁止）
+- **生成スキルが新規ADRファイルのデフォルトを `adr/{feature}.md`（`-decisions` サフィックス無し）に統一** -
+  `task-cleanup`・`generate-spec`・`render-adr-review`・`doc-consistency-checker`・`sdd-init`・
+  `implement`・共有の `document_dependencies.md` の参照例が、新規決定ログ作成時のデフォルトとして
+  サフィックス無しのファイル名を示すようになった。既存の `-decisions.md` ファイルは引き続き有効で、
+  そのまま検出・編集される。`naming.py` のバリデーションに変更はない
 
 #### Documentation
 

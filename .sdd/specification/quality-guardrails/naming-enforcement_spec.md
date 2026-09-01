@@ -177,11 +177,13 @@ sequenceDiagram
   含めたパスマッチには対応しない。マッチ方式は `fnmatch`（シェル風 glob）であり、大文字小文字を区別する。
 - `specification/` は単一種別ディレクトリのためサフィックス検証を行わない。`adr/`（decision log）も同様に
   単一種別ディレクトリだが、本機能は現状 `adr/` 用のプレフィックスを受け取らず検証対象に含めていない
-  （管理対象外パスとして常に許可され、結果としてサフィックス任意と同じ挙動になる）。
+  （管理対象外パスとして常に許可され、結果としてサフィックス任意と同じ挙動になる）。生成側（`task-cleanup`
+  等の生成スキルが新規 `adr/` ファイルにどちらの名前を選ぶか）のデフォルト命名は本機能の検証対象外であり、
+  詳細は [document_dependencies.md](../../../plugins/sdd-workflow/shared/references/document_dependencies.md) を参照。
 - `_design.md` サフィックスは `specification/` 配下で拒否しないが、これは既存ファイル（ADR モデル移行前に
   作成された技術設計書）との後方互換のためであり、新規ファイルで推奨される命名ではない。新規の技術設計書は
-  `task/{ticket-number}/design-draft.md`（一時ドラフト）を経て `adr/{feature}-decisions.md`（永続）へ
-  統合する（[AI-SDD-PRINCIPLES.md](../../AI-SDD-PRINCIPLES.md) の Document Persistence Rules を参照）。
+  `task/{ticket-number}/design-draft.md`（一時ドラフト）を経て `adr/{feature}.md`（永続）へ統合する
+  （[AI-SDD-PRINCIPLES.md](../../AI-SDD-PRINCIPLES.md) の Document Persistence Rules を参照）。
 
 # 9. 原則との整合性
 
