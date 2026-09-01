@@ -12,7 +12,7 @@
 |:-------|:-------------------------------------|:-----------|
 | PRD    | `${SDD_REQUIREMENT_PATH}/{機能名}.md`          | YYYY-MM-DD |
 | spec   | `${SDD_SPECIFICATION_PATH}/{機能名}_spec.md`   | YYYY-MM-DD |
-| adr    | `${SDD_ADR_PATH}/{機能名}-decisions.md`        | YYYY-MM-DD |
+| adr    | `${SDD_ADR_PATH}/{機能名}.md`                  | YYYY-MM-DD |
 
 ### チェック結果サマリー
 

@@ -1,6 +1,6 @@
 ---
 name: doc-consistency-checker
-description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*-decisions.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, and ensures traceability between documents."
+description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, and ensures traceability between documents."
 argument-hint: "[feature-name]"
 license: MIT
 user-invocable: false
@@ -10,7 +10,7 @@ disallowed-tools: Write, Edit, Bash
 
 # Doc Consistency Checker - Document Consistency Check
 
-Automatically checks consistency between AI-SDD documents (PRD, `*_spec.md`, `adr/*-decisions.md`) and detects inconsistencies.
+Automatically checks consistency between AI-SDD documents (PRD, `*_spec.md`, `adr/*.md`) and detects inconsistencies.
 
 ## Language Configuration
 
@@ -67,7 +67,7 @@ flat and hierarchical directory layouts.
 |:------------------|:-------------------------------------|:-------------------------------------------------|
 | **requirement**   | No suffix                            | `index.md`, `user-login.md`                     |
 | **specification** | `_spec` required                     | `index_spec.md`, `user-login_spec.md`           |
-| **adr**           | `-decisions` required (append-only)  | `index-decisions.md`, `user-login-decisions.md` |
+| **adr**           | `-decisions` optional, legacy-valid (append-only)  | `index.md`, `user-login.md` |
 
 Consistency checks also consider parent-child relationships for hierarchical structures.
 
@@ -107,7 +107,7 @@ before the human approves the edit.
 
 | Check Item                    | Description                                                                                                             |
 |:---------------------------------|:----------------------------------------------------------------------------------------------------------------------------|
-| **Decision Traceability**        | Are spec-driving decisions (API shape, data model choices) captured in `adr/*-decisions.md`?                              |
+| **Decision Traceability**        | Are spec-driving decisions (API shape, data model choices) captured in `adr/*.md`?                              |
 | **Referenced Spec Still Valid**  | Do adr entries reference spec elements (API, data model, requirement IDs) that still exist in the current spec?          |
 | **Terminology Consistency**      | Is the same terminology used in spec and adr?                                                                             |
 | **Obsolescence Detection**       | Does an adr entry describe a decision about spec elements that were since changed or removed, with no follow-up entry?   |
@@ -115,12 +115,12 @@ before the human approves the edit.
 **Note — out of scope for this skill**:
 
 - `task/{ticket-number}/design-draft.md` consistency with `*_spec.md`, and its integration into
-  `adr/*-decisions.md` before deletion, are checked by the `task-cleanup` skill at cleanup time (see
+  `adr/*.md` before deletion, are checked by the `task-cleanup` skill at cleanup time (see
   `AI-SDD-PRINCIPLES.md`)
 - `spec <-> Implementation` and any remaining `*_design.md` artifact checks (module structure, interface
   definitions, technology stack) are checked by `/check-spec` (the `impl-spec-check` feature)
 
-This skill checks the **persisted** artifacts only: `*_spec.md` and `adr/*-decisions.md`.
+This skill checks the **persisted** artifacts only: `*_spec.md` and `adr/*.md`.
 
 ## Automatic Detection Patterns
 
@@ -167,7 +167,7 @@ Based on consistency check results, recommend document updates in the following 
 See "PRD ↔ spec Consistency" above for how to report and handle this. This skill never edits `requirement/`
 files itself.
 
-### When to Append to `adr/{feature}-decisions.md`
+### When to Append to `adr/{feature}.md`
 
 Owned by the `task-cleanup` skill at implementation-completion time, not by this skill — see
 `AI-SDD-PRINCIPLES.md` § Document Update Triggers for the trigger conditions.

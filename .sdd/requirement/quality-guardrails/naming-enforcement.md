@@ -21,10 +21,11 @@ risk: "medium"
 
 `.sdd/` 配下のドキュメントは命名規則（`requirement/` はサフィックスなし必須）によって種別が識別される。
 `specification/` は単一種別ディレクトリ（配下は抽象仕様書のみ）であり、ディレクトリ自体が種別を表すため
-`_spec.md` サフィックスは任意とする（設計書は `task/{ticket-number}/design-draft.md`・`adr/{feature}-decisions.md`
-へ移管済みで `specification/` 配下には存在しない）。命名規則違反（`requirement/` へのサフィックス付与）は
-ワークフロー全体の整合性を損なうため、違反ファイルの書き込みをフックで構造的にブロックし、プロジェクト原則の
-遵守を強制する。
+`_spec.md` サフィックスは任意とする（設計書は `task/{ticket-number}/design-draft.md`・`adr/{feature}.md`
+へ移管済みで `specification/` 配下には存在しない。`-decisions` サフィックス付きファイル名は既存ファイルの
+みで有効な旧表記）。命名規則違反（`requirement/` へのサフィックス付与）はワークフロー全体の整合性を損なう
+ため、違反ファイルの書き込みをフックで構造的にブロックし、プロジェクト原則（[CONSTITUTION.md](../../CONSTITUTION.md)
+D-002: ファイル命名規則の厳守）の遵守を強制する。
 
 ---
 
@@ -95,10 +96,9 @@ DC_004（クロスプラットフォーム対応）が本機能に trace する�
 **トリガー方式:** 自動（`.sdd/` 配下へのファイル書き込み・編集前のフック）
 
 - `requirement/` 配下: `_spec` / `_design` サフィックスの付与を禁止
-- `specification/` 配下: サフィックスの有無を問わずブロックしない（`_spec.md` サフィックスは任意。
-  単一種別ディレクトリ（配下は抽象仕様書のみ）のためディレクトリ自体で種別を識別できる。設計書は
-  `task/{ticket-number}/design-draft.md`（一時）または `adr/{feature}-decisions.md`（永続）に配置され、
-  `specification/` 配下には存在しない）
+- `specification/` 配下: サフィックスの有無を問わずブロックしない。単一種別ディレクトリのため
+  ディレクトリ自体で種別を識別できる（`_spec.md` は任意）。設計書は `task/{ticket-number}/design-draft.md`
+  （一時）または `adr/{feature}.md`（永続）に配置され、`specification/` 配下には存在しない
 - 違反時は JSON Decision Control（`permissionDecision: deny`）により理由付きでブロックする
 
 **検証方法:** テストによる検証
@@ -120,6 +120,8 @@ DC_004（クロスプラットフォーム対応）が本機能に trace する�
 - 編集時のコンテキスト注入・編集後のリマインド（[constitution-injection.md](constitution-injection.md) /
   [stale-doc-detection.md](stale-doc-detection.md) で扱う）
 - front matter の内容検証（[front-matter-validation.md](front-matter-validation.md) で扱う。本機能はファイル名のみを対象とする）
-- `adr/` 配下の命名検証（`adr/` も `specification/` と同様の単一種別ディレクトリだが、本機能は現時点で
-  `adr/` 用の検証対象プレフィックスを持たない。管理対象外パスとして常にブロックしないため、結果的に
-  サフィックス任意という望む挙動には一致する。`adr/` 固有の検証が必要になった場合は別途検討する）
+- `adr/` 配下の命名検証、および生成スキル（`task-cleanup` 等）が新規ファイル作成時にどちらの名前を使うかの
+  デフォルト選択（`adr/` も `specification/` と同様の単一種別ディレクトリだが、本機能は現時点で `adr/` 用の
+  検証対象プレフィックスを持たない。管理対象外パスとして常にブロックしないため、結果的にサフィックス任意という
+  望む挙動には一致する。生成側の名前選択は各生成スキル自身の実装に委ねる。`adr/` 固有の検証が必要になった
+  場合は別途検討する）

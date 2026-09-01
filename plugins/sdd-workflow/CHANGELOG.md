@@ -60,6 +60,11 @@ minor/patch release.
   single-type directories (every file is an abstract spec / a decision log respectively), so the
   naming-enforcement hook no longer requires a suffix there. Existing suffixed files remain valid.
   `requirement/` is unaffected — a `_spec`/`_design` suffix is still forbidden there
+- **Generation skills now default to `adr/{feature}.md` (no `-decisions` suffix) for new ADR files** -
+  `task-cleanup`, `generate-spec`, `render-adr-review`, `doc-consistency-checker`, `sdd-init`,
+  `implement`, and the shared `document_dependencies.md` reference now show the suffix-free filename as
+  the default when creating a new decision log. Existing `-decisions.md` files remain valid and are
+  still discovered/edited in place; `naming.py` validation is unchanged
 
 #### Documentation
 

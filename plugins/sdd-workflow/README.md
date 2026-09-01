@@ -192,7 +192,7 @@ Available only to logged-in users.
 #### ADR Review Rendering
 
 ```
-/render-adr-review adr/user-auth-decisions.md
+/render-adr-review adr/user-auth.md
 ```
 
 Renders the decision log as a temporary HTML file under `.sdd/.cache/render-adr-review/`, structured by
@@ -330,7 +330,7 @@ Verifies consistency between implementation and specifications, reporting any di
 ```
 
 Cleans up temporary files under `task/` (including `design-draft.md`) and integrates important design
-decisions into `adr/{feature-name}-decisions.md` (append-only) before deletion.
+decisions into `adr/{feature-name}.md` (append-only) before deletion.
 
 ## Migration from v2.x
 
@@ -371,7 +371,7 @@ decisions into `adr/{feature-name}-decisions.md` (append-only) before deletion.
    Documents now start as a temporary draft at `task/{ticket-number}/design-draft.md` and are deleted
    after implementation, like the rest of `task/`
 2. **New `adr/` directory.** Only the decisions, their rationale, and rejected alternatives are
-   persisted, in `adr/{feature-name}-decisions.md` (append-only)
+   persisted, in `adr/{feature-name}.md` (append-only)
 3. **`/generate-spec` now requires a ticket number.** The design draft path is ticket-scoped
    (`--ticket <number>`, or resolved interactively), since the draft lives under
    `task/{ticket-number}/` instead of `specification/`
@@ -379,7 +379,7 @@ decisions into `adr/{feature-name}-decisions.md` (append-only) before deletion.
 ### Extracting Existing `*_design.md` Files into `adr/`
 
 If your project has persisted `specification/{feature-name}_design.md` files created before this change,
-extract their decision history into `adr/{feature-name}-decisions.md`. Do not delete the old files until
+extract their decision history into `adr/{feature-name}.md`. Do not delete the old files until
 this is done:
 
 1. If you use a custom `directories.adr` name in `.sdd-config.json`, set it before migrating (defaults
@@ -387,8 +387,8 @@ this is done:
    never overwritten)
 2. **Locate the design decisions** in each `*_design.md` — the section(s) explaining why a technology,
    architecture, or approach was chosen
-3. **Create `adr/{feature-name}-decisions.md`**, mirroring the feature's path under `specification/`
-   (e.g. `specification/auth/user-login_design.md` → `adr/auth/user-login-decisions.md`), with the
+3. **Create `adr/{feature-name}.md`**, mirroring the feature's path under `specification/`
+   (e.g. `specification/auth/user-login_design.md` → `adr/auth/user-login.md`), with the
    common front matter fields (`id`, `title`, `type: "adr"`, `status`, `created`, `updated` — the
    detailed `adr` schema is not yet defined in `shared/references/front_matter_reference.md`, so only
    the common fields apply for now)
@@ -573,7 +573,7 @@ Both flat and hierarchical structures are supported.
 ├── specification/                # Persistent knowledge assets
 │   └── {feature-name}_spec.md    # Abstract specification
 ├── adr/                          # Persistent decision log
-│   └── {feature-name}-decisions.md  # Decisions and rationale (append-only)
+│   └── {feature-name}.md         # Decisions and rationale (append-only)
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
         └── design-draft.md       # Technical design draft, deleted after implementation
@@ -598,10 +598,10 @@ Both flat and hierarchical structures are supported.
 │       ├── index_spec.md         # Parent feature abstract specification
 │       └── {child-feature}_spec.md   # Child feature abstract specification
 ├── adr/                          # Persistent decision log
-│   ├── {feature-name}-decisions.md   # Top-level feature (backward compatible with flat structure)
+│   ├── {feature-name}.md         # Top-level feature (backward compatible with flat structure)
 │   └── {parent-feature}/         # Parent feature directory
-│       ├── index-decisions.md        # Parent feature decision log
-│       └── {child-feature}-decisions.md # Child feature decision log
+│       ├── index.md              # Parent feature decision log
+│       └── {child-feature}.md    # Child feature decision log
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
         └── design-draft.md       # Technical design draft, deleted after implementation
@@ -613,7 +613,7 @@ Both flat and hierarchical structures are supported.
 CONSTITUTION.md → requirement/ → *_spec.md → task/{ticket-number}/design-draft.md → Implementation
 ```
 
-`adr/{feature-name}-decisions.md` persists the decisions, rationale, and rejected alternatives extracted
+`adr/{feature-name}.md` persists the decisions, rationale, and rejected alternatives extracted
 from `design-draft.md` before it is deleted (append-only; see [Migration from v4.x](#migration-from-v4x)
 if you have existing persisted `*_design.md` files to convert).
 

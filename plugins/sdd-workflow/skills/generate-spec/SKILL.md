@@ -192,7 +192,7 @@ Follow these steps to prepare the template:
 - Design Goals, Technology Stack, Architecture, and Design Decisions are required sections
 - Remove section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) from headings in the final output — they are author-facing guides only and must not appear in the generated document
 - Ensure consistency with spec
-- This file is a **temporary draft**: it is deleted after implementation, once its key decisions are integrated into `adr/{feature-name}-decisions.md` (see `task-cleanup` skill)
+- This file is a **temporary draft**: it is deleted after implementation, once its key decisions are integrated into `adr/{feature-name}.md` (see `task-cleanup` skill)
 
 **Save Location**:
 

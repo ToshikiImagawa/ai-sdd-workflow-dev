@@ -13,7 +13,7 @@ ${SDD_ROOT}/
 ├── specification/
 │   └── {feature-name}_spec.md             # Abstract specification
 ├── adr/
-│   └── {feature-name}-decisions.md        # Decision log
+│   └── {feature-name}.md                  # Decision log
 └── task/
     └── {ticket-number}/
         └── design-draft.md                # Technical design draft
@@ -35,10 +35,10 @@ ${SDD_ROOT}/
 │       ├── index_spec.md                  # Parent feature abstract specification
 │       └── {child-feature}_spec.md        # Child feature abstract specification
 ├── adr/
-│   ├── {feature-name}-decisions.md        # Top-level feature decision log
+│   ├── {feature-name}.md                  # Top-level feature decision log
 │   └── {parent-feature}/
-│       ├── index-decisions.md             # Parent feature decision log
-│       └── {child-feature}-decisions.md   # Child feature decision log
+│       ├── index.md                       # Parent feature decision log
+│       └── {child-feature}.md             # Child feature decision log
 └── task/
     └── {ticket-number}/
         └── design-draft.md                # Technical design draft

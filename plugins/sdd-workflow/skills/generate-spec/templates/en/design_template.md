@@ -19,7 +19,7 @@ risk: "medium"
 This document is a template for creating a Technical Design Document **draft** under `${SDD_TASK_PATH}/{ticket-number}/`.
 The filename is `design-draft.md`.
 This is a **temporary** file: delete it after implementation, once its key decisions are integrated into
-`adr/{feature-name}-decisions.md`.
+`adr/{feature-name}.md`.
 
 > **Note**: This template is a fallback for the plugin.
 > When using in a project, customize it according to your programming language and project structure,

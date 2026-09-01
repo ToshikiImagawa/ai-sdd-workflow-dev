@@ -13,7 +13,7 @@
 | `implementation_log_{id}.md` | {decision count}                   | To Integrate |
 | `implementation_log_{id}.md` | {decision count}                   | To Integrate |
 
-**Total**: {count} entries to append to `adr/{feature}-decisions.md`
+**Total**: {count} entries to append to `adr/{feature}.md`
 
 #### Files to Delete
 
@@ -35,8 +35,8 @@
 ### Next Actions
 
 1. **Append decisions to ADR**:
-    - Append {decision} to `${SDD_ADR_PATH}/{feature}-decisions.md`
-    - Append {decision} to `${SDD_ADR_PATH}/{feature}-decisions.md`
+    - Append {decision} to `${SDD_ADR_PATH}/{feature}.md`
+    - Append {decision} to `${SDD_ADR_PATH}/{feature}.md`
 
 2. **Delete processed files**:
     - Delete `${SDD_TASK_PATH}/{target}/` directory

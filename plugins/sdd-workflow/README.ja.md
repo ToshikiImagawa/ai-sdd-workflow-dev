@@ -191,7 +191,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 #### ADRレビューHTMLレンダリング
 
 ```
-/render-adr-review adr/user-auth-decisions.md
+/render-adr-review adr/user-auth.md
 ```
 
 決定ログを `.sdd/.cache/render-adr-review/` 配下の一時HTMLとして、決定・理由・却下した代替案の軸で
@@ -326,7 +326,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 ```
 
 `task/` 配下の一時ファイル（`design-draft.md` を含む）をクリーンアップし、重要な設計判断を
-`adr/{feature-name}-decisions.md`（追記専用）に統合してから削除します。
+`adr/{feature-name}.md`（追記専用）に統合してから削除します。
 
 ## v2.x からの移行
 
@@ -366,7 +366,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 1. **`specification/{feature-name}_design.md` は永続ドキュメントではなくなりました。** 技術設計書はまず
    `task/{ticket-number}/design-draft.md` の一時ドラフトとして作成され、`task/` の他のファイルと同様、
    実装完了後に削除されます
-2. **新しい `adr/` ディレクトリを追加。** 決定・その理由・却下した代替案のみが `adr/{feature-name}-decisions.md`
+2. **新しい `adr/` ディレクトリを追加。** 決定・その理由・却下した代替案のみが `adr/{feature-name}.md`
    （追記専用）に永続化されます
 3. **`/generate-spec` にチケット番号が必要になりました。** 設計ドラフトのパスが `specification/` ではなく
    `task/{ticket-number}/` 配下になったため、`--ticket <番号>` を指定するか、対話的に解決してください
@@ -374,14 +374,14 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 ### 既存の `*_design.md` を `adr/` へ抜粋する手順
 
 この変更より前に永続化された `specification/{feature-name}_design.md` がある場合、決定履歴を
-`adr/{feature-name}-decisions.md` へ抜粋してください。抜粋が完了するまで旧ファイルを削除しないこと:
+`adr/{feature-name}.md` へ抜粋してください。抜粋が完了するまで旧ファイルを削除しないこと:
 
 1. `.sdd-config.json` で `directories.adr` にカスタム名を使用する場合は移行前に設定する
    （デフォルトは `adr`）。その後 `/sdd-init` を再実行して `adr/` ディレクトリとテンプレートを作成する
    （既存ファイルは上書きされません）
 2. **各 `*_design.md` から設計判断を特定する** — 技術・アーキテクチャ・アプローチをなぜ選んだかを説明している節
-3. **`adr/{feature-name}-decisions.md` を作成する**（`specification/` 配下のパスに対応させる。例:
-   `specification/auth/user-login_design.md` → `adr/auth/user-login-decisions.md`）。共通の front
+3. **`adr/{feature-name}.md` を作成する**（`specification/` 配下のパスに対応させる。例:
+   `specification/auth/user-login_design.md` → `adr/auth/user-login.md`）。共通の front
    matter フィールド（`id`、`title`、`type: "adr"`、`status`、`created`、`updated`）を設定する —
    `adr` の詳細スキーマは `shared/references/front_matter_reference.md` にまだ定義されていないため、
    現時点では共通フィールドのみが対象
@@ -564,7 +564,7 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 ├── specification/                # 永続的な知識資産
 │   └── {feature-name}_spec.md    # 抽象仕様書
 ├── adr/                          # 永続的な決定ログ
-│   └── {feature-name}-decisions.md  # 決定と理由（追記専用）
+│   └── {feature-name}.md         # 決定と理由（追記専用）
 └── task/                         # 一時的なタスクログ（実装後に削除）
     └── {ticket-number}/
         └── design-draft.md       # 技術設計ドラフト（実装後に削除）
@@ -589,10 +589,10 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 │       ├── index_spec.md         # 親機能の抽象仕様書
 │       └── {child-feature}_spec.md   # 子機能の抽象仕様書
 ├── adr/                          # 永続的な決定ログ
-│   ├── {feature-name}-decisions.md   # トップレベル機能（フラット構造と下位互換）
+│   ├── {feature-name}.md         # トップレベル機能（フラット構造と下位互換）
 │   └── {parent-feature}/         # 親機能ディレクトリ
-│       ├── index-decisions.md        # 親機能の決定ログ
-│       └── {child-feature}-decisions.md # 子機能の決定ログ
+│       ├── index.md              # 親機能の決定ログ
+│       └── {child-feature}.md    # 子機能の決定ログ
 └── task/                         # 一時的なタスクログ（実装後に削除）
     └── {ticket-number}/
         └── design-draft.md       # 技術設計ドラフト（実装後に削除）
@@ -604,7 +604,7 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 CONSTITUTION.md → requirement/ → *_spec.md → task/{ticket-number}/design-draft.md → 実装
 ```
 
-`adr/{feature-name}-decisions.md` は、`design-draft.md` が削除される前に抜粋された決定・理由・却下した
+`adr/{feature-name}.md` は、`design-draft.md` が削除される前に抜粋された決定・理由・却下した
 代替案を永続化します（追記専用。既存の `*_design.md` を移行する場合は
 [v4.x からの移行](#v4x-からの移行) を参照）。
 
