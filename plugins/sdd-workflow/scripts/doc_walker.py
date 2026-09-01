@@ -4,20 +4,17 @@ Single source of truth for the target-selection rule that was duplicated between
 sdd_index.iter_target_files and scan-documents.collect_documents:
 
 - requirement/: every ``.md`` file
-- specification/: only ``*_spec.md`` / ``*_design.md`` files (see naming.has_spec_suffix)
+- specification/: every ``.md`` file (the ``_spec``/``_design`` suffix is optional
+  since specification/ is a single-type directory identified by directory alone;
+  see naming.py)
 - task/: every ``.md`` file
 
 Also hosts find_design_doc (used by the post-tool-use hook). All traversal is
 pathlib-based for cross-platform behavior.
 """
 
-import sys
 from pathlib import Path
 from typing import List, Union
-
-# Ensure sibling shared modules resolve even when doc_walker is loaded directly.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from naming import has_spec_suffix  # noqa: E402
 
 PathLike = Union[str, Path]
 
@@ -29,11 +26,9 @@ def iter_requirement_docs(req_path: PathLike) -> List[Path]:
 
 
 def iter_specification_docs(spec_path: PathLike) -> List[Path]:
-    """Only ``*_spec.md`` / ``*_design.md`` files under a specification directory, sorted."""
+    """Every ``.md`` file under a specification directory, sorted (suffix optional)."""
     p = Path(spec_path)
-    if not p.is_dir():
-        return []
-    return sorted(f for f in p.rglob("*.md") if has_spec_suffix(f.name[:-3]))
+    return sorted(p.rglob("*.md")) if p.is_dir() else []
 
 
 def iter_all_markdown(path: PathLike) -> List[Path]:

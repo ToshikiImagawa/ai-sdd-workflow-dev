@@ -70,7 +70,7 @@ See `references/target_specification_loading.md` for the list of paths to load f
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` or `_design` suffix required (`index_spec.md`, `{feature-name}_spec.md`)
+- **Under specification**: `_spec` or `_design` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
 
 ### 2. Nine Category Analysis
 

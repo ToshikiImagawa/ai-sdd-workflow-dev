@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-01"
 depends-on: ["prd-quality-guardrails-naming-enforcement"]
 tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
@@ -23,9 +23,10 @@ risk: "medium"
 
 # 1. 背景
 
-`.sdd/` 配下のドキュメントは、ディレクトリとファイル名のサフィックスによって種別が識別される。
-`requirement/` 配下は要求仕様書（サフィックスなし）、`specification/` 配下は抽象仕様書（`_spec.md`）・
-技術設計書（`_design.md`）として扱われる。この命名規則は AI-SDD ワークフロー全体の前提であり、
+`.sdd/` 配下のドキュメントは、ディレクトリによって種別が識別される。`requirement/` 配下は要求仕様書
+（サフィックスなし必須）、`specification/` 配下は抽象仕様書として扱われる。`specification/` は単一種別
+ディレクトリであり、`_spec.md` / `_design.md` サフィックスはディレクトリ内での視認性のための任意の記法で
+あって種別識別の必須条件ではない。この命名規則は AI-SDD ワークフロー全体の前提であり、
 [CONSTITUTION.md](../../CONSTITUTION.md) の原則 D-002（ファイル命名規則の厳守）で非交渉原則として定義されている。
 
 命名規則に違反したファイルが書き込まれると、ドキュメント種別の識別が破綻し、後続の整合性チェック・
@@ -54,15 +55,14 @@ risk: "medium"
 |--------|--------------------------------------------------------------------------|-----|-------------------------------------|
 | FR-001 | `.sdd/` 配下へのファイル書き込み・編集前に命名規則を検証する                     | 必須  | 子 PRD FR_001 / 親 PRD UR_004・FR_002 |
 | FR-002 | `requirement/` 配下のファイルに `_spec` / `_design` サフィックスがあれば拒否する | 必須  | 子 PRD FR_001                        |
-| FR-003 | `specification/` 配下のファイルに `_spec` / `_design` サフィックスがなければ拒否する | 必須  | 子 PRD FR_001                        |
+| FR-003 | `specification/` 配下のファイルは `_spec` / `_design` サフィックスの有無にかかわらずブロックしない（サフィックスは任意） | 必須  | 子 PRD FR_001                        |
 | FR-004 | 違反時は `permissionDecision: deny` により理由付きで書き込みをブロックする         | 必須  | 子 PRD FR_001 / 親 PRD DC_001・IR_001 |
 | FR-005 | 命名規則に適合する場合・検証対象外パスの場合はブロックせず開発フローに介入しない        | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生 |
 | FR-006 | `.sdd-config.json` の `naming.ignore_patterns` に定義された glob パターンにファイル名（basename）が一致する場合は検証をスキップし、常に許可する | 推奨  | 親 PRD DC_001（ブロッキングの最小化）から派生。テスト用ファイル等、意図的に規則外の命名をする利用者要望に対応 |
 
-検証対象は `.md` ファイルのみとする。`requirement/` / `specification/` いずれの管理対象ディレクトリにも
-該当しないパス（`.sdd/` 外のソースコード、`task/` 配下等）は本機能の検証対象外とし、ブロックしない（FR-005）。
-`naming.ignore_patterns` に一致するファイルは、`requirement/` / `specification/` いずれの配下であっても
-検証対象外として扱う（FR-006）。
+検証対象は `.md` ファイルのみとする。`requirement/` 配下以外（`specification/` 配下、`adr/` 配下、`.sdd/` 外の
+ソースコード、`task/` 配下等）は本機能の検証対象外とし、ブロックしない（FR-003・FR-005）。
+`naming.ignore_patterns` に一致するファイルは、`requirement/` 配下であっても検証対象外として扱う（FR-006）。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -109,7 +109,7 @@ NFR-003 について、本機能は命名規則違反という明確な違反条
 
 | 用語                  | 説明                                                                            |
 |---------------------|-------------------------------------------------------------------------------|
-| 命名規則               | `requirement/` はサフィックスなし、`specification/` は `_spec.md` / `_design.md` 必須という規約 |
+| 命名規則               | `requirement/` はサフィックスなし必須、`specification/` はサフィックス任意（単一種別ディレクトリのため） |
 | PreToolUse フック      | `Write` / `Edit` ツール実行の直前に発火する Claude Code のフックイベント                 |
 | JSON Decision Control | フックがツール実行の許可・拒否を JSON 出力（`permissionDecision`）で制御する Claude Code の仕組み      |
 | deny                | ツール実行をブロックする `permissionDecision` の値                                    |
@@ -119,25 +119,24 @@ NFR-003 について、本機能は命名規則違反という明確な違反条
 # 6. 使用例
 
 ```
-# specification/ にサフィックスなしのファイルを書こうとする → ブロック
-Write .sdd/specification/user-login.md
-  → deny: [AI-SDD] Naming violation: '.sdd/specification/user-login.md'.
-    Files under specification/ require a _spec.md or _design.md suffix ...
+# specification/ にサフィックスなしのファイルを書く → サフィックス任意のためブロックしない
+Write .sdd/specification/user-login.md       → （介入なし・許可）
 
 # requirement/ に _spec サフィックス付きで書こうとする → ブロック
 Write .sdd/requirement/user-login_spec.md
   → deny: [AI-SDD] Naming violation: '.sdd/requirement/user-login_spec.md'.
-    Files under requirement/ must not have a _spec/_design suffix ...
+    Files under .sdd/requirement/ must not have a _spec/_design suffix ...
 
-# 命名規則に適合 → そのまま書き込み
+# 命名規則に適合 → そのまま書き込み（サフィックス付きの既存記法も引き続き有効）
 Write .sdd/specification/user-login_spec.md   → （介入なし・許可）
 Write .sdd/requirement/user-login.md          → （介入なし・許可）
 
 # .sdd/ 外のソースコード → 検証対象外
 Write src/main.py                             → （命名検証は介入なし）
 
-# .sdd-config.json の naming.ignore_patterns: ["*_test.md"] に一致 → 検証をスキップして許可
-Write .sdd/specification/user-login_spec_test.md   → （介入なし・許可、FR-006）
+# .sdd-config.json の naming.ignore_patterns: ["*_test.md"] に一致する requirement/ 配下ファイル
+# → サフィックス違反があっても検証をスキップして許可
+Write .sdd/requirement/user-login_spec_test.md   → （介入なし・許可、FR-006）
 ```
 
 # 7. 振る舞い図
@@ -150,15 +149,16 @@ sequenceDiagram
 
     Claude ->> Runtime: Write / Edit（file_path）
     Runtime ->> Hook: tool_input を JSON で渡す
-    alt .md かつ requirement/ または specification/ 配下
-        alt 命名規則違反
-            Hook -->> Runtime: permissionDecision: deny（理由付き）
-            Runtime -->> Claude: 書き込み拒否
-        else 命名規則に適合
-            Hook -->> Runtime: 出力なし（許可）
-            Runtime ->> Claude: 書き込み実行
-        end
-    else 検証対象外パス
+    alt .md 以外
+        Hook -->> Runtime: 出力なし（許可）
+        Runtime ->> Claude: 書き込み実行
+    else naming.ignore_patterns の basename に一致（FR-006）
+        Hook -->> Runtime: 出力なし（許可）
+        Runtime ->> Claude: 書き込み実行
+    else requirement/ 配下かつ _spec/_design サフィックスがある（命名規則違反）
+        Hook -->> Runtime: permissionDecision: deny（理由付き）
+        Runtime -->> Claude: 書き込み拒否
+    else 命名規則に適合（specification/ 配下・requirement/ のサフィックスなし・検証対象外パスを含む）
         Hook -->> Runtime: 出力なし（許可）
         Runtime ->> Claude: 書き込み実行
     end
@@ -175,13 +175,20 @@ sequenceDiagram
   カスタマイズには追従するが、想定外のディレクトリ構造は検証対象外として扱う。
 - `naming.ignore_patterns`（FR-006）はファイルの basename のみに対して照合する。ディレクトリ部分を
   含めたパスマッチには対応しない。マッチ方式は `fnmatch`（シェル風 glob）であり、大文字小文字を区別する。
+- `specification/` は単一種別ディレクトリのためサフィックス検証を行わない。`adr/`（decision log）も同様に
+  単一種別ディレクトリだが、本機能は現状 `adr/` 用のプレフィックスを受け取らず検証対象に含めていない
+  （管理対象外パスとして常に許可され、結果としてサフィックス任意と同じ挙動になる）。
+- `_design.md` サフィックスは `specification/` 配下で拒否しないが、これは既存ファイル（ADR モデル移行前に
+  作成された技術設計書）との後方互換のためであり、新規ファイルで推奨される命名ではない。新規の技術設計書は
+  `task/{ticket-number}/design-draft.md`（一時ドラフト）を経て `adr/{feature}-decisions.md`（永続）へ
+  統合する（[AI-SDD-PRINCIPLES.md](../../AI-SDD-PRINCIPLES.md) の Document Persistence Rules を参照）。
 
 # 9. 原則との整合性
 
 | 原則ID  | 原則名                    | 本仕様への適用内容                                                            |
 |-------|--------------------------|------------------------------------------------------------------------|
-| D-002 | ファイル命名規則の厳守       | 命名規則違反の書き込みを構造的にブロックし、規約遵守を強制する（本機能の存在意義）        |
-| B-001 | Vibe Coding 防止          | ドキュメント種別を命名で識別する前提を守り、仕様書を真実の源とするワークフローを維持する    |
+| D-002 | ファイル命名規則の厳守       | `requirement/` のサフィックス禁止を構造的にブロックし、規約遵守を強制する（本機能の存在意義）。`specification/` はサフィックス任意なため対象外 |
+| B-001 | Vibe Coding 防止          | ドキュメント種別を命名（ディレクトリ）で識別する前提を守り、仕様書を真実の源とするワークフローを維持する    |
 | B-002 | 多言語対応（EN/JA）の一貫性 | **適用範囲外**。本機能はフックであり `templates/{en,ja}/` を持つスキルではない。deny メッセージは英語固定で、B-002 の適用範囲（`templates/{en,ja}/` を持つ全スキル）に含まれない。多言語化は将来の別 Issue で検討 |
 
 ---
@@ -190,7 +197,7 @@ sequenceDiagram
 
 | 確認項目             | 結果                                                                     |
 |--------------------|--------------------------------------------------------------------------|
-| 要求カバレッジ        | 子 PRD FR_001（requirement/ 禁止・specification/ 必須・deny によるブロック）を FR-001〜FR-004 に分解してカバー（FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
+| 要求カバレッジ        | 子 PRD FR_001（requirement/ 禁止・specification/ 任意・deny によるブロック）を FR-001〜FR-004 に分解してカバー（FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
 | 要求 ID 参照         | 各 FR に対応する子 PRD FR_001 / 親 PRD UR_004・FR_002・NFR_001・IR_001・DC_001 を「根拠」列に明記 |
 | 非機能要求の反映      | 親 PRD NFR_001・IR_001・DC_001 を NFR-001〜003 および制約事項に反映            |
 | 用語整合性           | 親 PRD 用語集の「JSON Decision Control」定義に統一。命名規則の定義は CLAUDE.md・D-002 に整合 |

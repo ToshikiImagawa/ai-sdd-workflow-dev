@@ -1,6 +1,6 @@
 """doc_walker.py のユニットテスト（pytest）。
 
-対象選択ルール（requirement=全.md / specification=_spec・_design / task=全.md）と
+対象選択ルール（requirement=全.md / specification=全.md（サフィックス任意） / task=全.md）と
 design doc 探索を検証する。
 """
 
@@ -38,12 +38,12 @@ def _seed(base: Path):
 
 
 class TestIterTargetFiles:
-    def test_requirement_all_specification_filtered(self, tmp_path):
+    def test_requirement_and_specification_all_md(self, tmp_path):
         _seed(tmp_path)
         targets = dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification")
         names = sorted(Path(p).name for p in targets)
-        # requirement: index.md, child.md; specification: only _spec/_design (not notes.md); no task
-        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md"]
+        # requirement: index.md, child.md; specification: every .md, suffix optional; no task
+        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md", "notes.md"]
 
     def test_globally_sorted_strings(self, tmp_path):
         _seed(tmp_path)
@@ -59,12 +59,13 @@ class TestCollectDocuments:
         _seed(tmp_path)
         docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task")
         names = sorted(p.name for p in docs)
-        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md", "log.md"]
+        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md", "log.md", "notes.md"]
 
-    def test_specification_excludes_plain_md(self, tmp_path):
+    def test_specification_includes_plain_md(self, tmp_path):
+        # Suffix is optional under specification/ (issue #84).
         _seed(tmp_path)
         docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task")
-        assert "notes.md" not in [p.name for p in docs]
+        assert "notes.md" in [p.name for p in docs]
 
 
 class TestFindDesignDoc:

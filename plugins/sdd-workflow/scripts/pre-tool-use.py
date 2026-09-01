@@ -3,7 +3,7 @@
 
 Validates AI-SDD file naming conventions before writing to .sdd/ documents:
 - requirement/: no _spec/_design suffix allowed
-- specification/: _spec.md or _design.md suffix required
+- specification/ / adr/: suffix optional (not validated)
 
 Blocks the tool call via JSON Decision Control (permissionDecision: "deny")
 on violation.
@@ -94,12 +94,11 @@ def main() -> None:
     if not rel_path:
         return
 
-    sdd_root, requirement_dir, specification_dir = load_sdd_paths(project_root)
+    sdd_root, requirement_dir, _specification_dir = load_sdd_paths(project_root)
     requirement_prefix = str(Path(sdd_root) / requirement_dir)
-    specification_prefix = str(Path(sdd_root) / specification_dir)
 
     ignore_patterns = load_naming_ignore_patterns(project_root)
-    error = validate_naming(rel_path, requirement_prefix, specification_prefix, ignore_patterns)
+    error = validate_naming(rel_path, requirement_prefix, ignore_patterns)
     if error:
         emit_permission_deny("PreToolUse", error)
         return

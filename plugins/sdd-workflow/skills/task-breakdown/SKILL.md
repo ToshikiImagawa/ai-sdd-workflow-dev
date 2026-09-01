@@ -95,7 +95,7 @@ Both flat and hierarchical structures are supported.
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` or `_design` suffix required (`index_spec.md`, `{feature-name}_spec.md`)
+- **Under specification**: `_spec` or `_design` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
 
 **Hierarchical structure input examples**:
 

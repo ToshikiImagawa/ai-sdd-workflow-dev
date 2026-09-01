@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-01"
 depends-on: ["spec-workflow-foundation-front-matter-recommend"]
 tags: ["front-matter", "metadata", "skill", "scan"]
 category: "workflow-foundation"
@@ -132,7 +132,9 @@ export SDD_LANG="ja"
 ```
 
 適用する front matter の共通フィールドは `id` / `title` / `type` / `status` / `created` /
-`updated` / `depends-on` / `tags` / `category`。種別固有フィールドは `type_specific_fields.md` に従う
+`updated` / `sdd-version` / `depends-on` / `tags` / `category`。`sdd-version` は
+`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` を読み取って設定する（Issue #84）。
+種別固有フィールドは `type_specific_fields.md` に従う
 （例: prd は `priority` / `risk`、spec は `sdd-phase: "specify"`、design は `sdd-phase: "plan"` + `impl-status`）。
 
 ---

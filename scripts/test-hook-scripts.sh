@@ -87,12 +87,20 @@ run_hook "pre: valid spec name passes" "pre-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/user-login_spec.md\"}}" \
     0 ""
 
-run_hook "pre: specification without suffix is denied via JSON" "pre-tool-use.py" \
+run_hook "pre: specification without suffix passes" "pre-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/user-login.md\"}}" \
-    0 "\"permissionDecision\": \"deny\""
+    0 ""
+
+run_hook "pre: adr file without suffix passes" "pre-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/adr/user-login.md\"}}" \
+    0 ""
+
+run_hook "pre: adr file with -decisions suffix passes" "pre-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/adr/user-login-decisions.md\"}}" \
+    0 ""
 
 run_hook "pre: deny reason mentions the naming violation" "pre-tool-use.py" \
-    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/user-login.md\"}}" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login_spec.md\"}}" \
     0 "Naming violation"
 
 run_hook "pre: requirement with _spec suffix is denied via JSON" "pre-tool-use.py" \
@@ -112,12 +120,8 @@ run_hook "pre: invalid stdin is a no-op" "pre-tool-use.py" \
     0 ""
 
 # The deny reason embeds the configured path prefix (default .sdd layout).
-# Asserting the full prefix (not just 'specification/') guards against a
-# regression back to a hardcoded, non-configurable message.
-run_hook "pre: deny reason names the .sdd/specification prefix" "pre-tool-use.py" \
-    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/user-login.md\"}}" \
-    0 "Files under .sdd/specification/"
-
+# Asserting the full prefix guards against a regression back to a
+# hardcoded, non-configurable message.
 run_hook "pre: deny reason names the .sdd/requirement prefix" "pre-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login_spec.md\"}}" \
     0 "Files under .sdd/requirement/"
@@ -130,9 +134,9 @@ CUSTOM_DIR="$TMP_DIR/customroot-project"
 mkdir -p "$CUSTOM_DIR"
 printf '%s\n' '{"root":".ai-docs","directories":{"requirement":"requirement","specification":"specification"}}' > "$CUSTOM_DIR/.sdd-config.json"
 
-run_hook "pre: custom-root specification without suffix is denied" "pre-tool-use.py" \
+run_hook "pre: custom-root specification without suffix passes" "pre-tool-use.py" \
     "{\"cwd\": \"$CUSTOM_DIR\", \"tool_input\": {\"file_path\": \"$CUSTOM_DIR/.ai-docs/specification/user-login.md\"}}" \
-    0 "Files under .ai-docs/specification/"
+    0 ""
 
 run_hook "pre: custom-root requirement with _spec suffix is denied" "pre-tool-use.py" \
     "{\"cwd\": \"$CUSTOM_DIR\", \"tool_input\": {\"file_path\": \"$CUSTOM_DIR/.ai-docs/requirement/user-login_spec.md\"}}" \

@@ -144,8 +144,8 @@ Use comments to track when refactoring plans are updated:
 | Directory | File Type | Naming Pattern |
 |:--|:--|:--|
 | `requirement/` | PRD | `{feature-name}.md` (no suffix) |
-| `specification/` | Spec | `{feature-name}_spec.md` (`_spec` suffix required) |
-| `specification/` | Design | `{feature-name}_design.md` (`_design` suffix required) |
+| `specification/` | Spec | `{feature-name}_spec.md` (`_spec` suffix optional) |
+| `specification/` | Design | `{feature-name}_design.md` (`_design` suffix optional) |
 
 **Examples:**
 

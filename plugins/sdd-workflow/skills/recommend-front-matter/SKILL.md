@@ -91,6 +91,7 @@ Use the Read tool to read the first 100 lines of each document. This provides co
 | `status`     | Default to `"draft"` for new front matter                                                                            |
 | `created`    | Use current date `YYYY-MM-DD`                                                                                        |
 | `updated`    | Same as `created` for initial front matter                                                                           |
+| `sdd-version` | Read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`                                              |
 | `depends-on` | Infer from file naming patterns (spec → prd, design → spec, task → design). Empty list if no match found.           |
 | `tags`       | Extract from headings and content keywords (max 5 tags). Use lowercase, hyphenated format (e.g., `"user-auth"`).    |
 | `category`   | Infer from directory hierarchy or parent feature name. Empty if no clear category.                                   |
@@ -177,6 +178,7 @@ For each document without front matter (after user confirms):
    status: "draft"
    created: "{created_date}"
    updated: "{updated_date}"
+   sdd-version: "{plugin_version}"
    depends-on: [{dependency_ids}]
    tags: [{inferred_tags}]
    category: "{inferred_category}"

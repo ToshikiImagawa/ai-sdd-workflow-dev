@@ -110,7 +110,7 @@ Target design documents (`*_design.md`). Both flat and hierarchical structures a
 
 **Naming convention**:
 
-- **Under specification**: `_design` suffix required (`index_design.md`, `{feature-name}_design.md`)
+- **Under specification**: `_design` suffix optional (`index_design.md`, `{feature-name}_design.md`, or no suffix)
 
 **Hierarchical structure input examples**:
 

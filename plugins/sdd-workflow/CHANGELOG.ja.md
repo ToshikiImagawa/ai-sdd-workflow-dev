@@ -44,7 +44,21 @@
 - **`SDD_ADR_DIR` / `SDD_ADR_PATH`** - `adr/` ディレクトリ用の環境変数を新設。既存の `SDD_*_DIR` /
   `SDD_*_PATH` と同じパターンでセッション開始時に設定される
 
+#### Front Matter
+
+- **`sdd-version` 共通フィールド** - ドキュメントは front matter の `sdd-version` フィールドに、
+  生成時点の sdd-workflow プラグインバージョン（`plugin.json` から取得）を記録できるようになった。
+  `generate-spec`・`task-cleanup`・`recommend-front-matter` が front matter 生成時にこの値を設定する。
+  このフィールド導入前に生成されたドキュメントには存在しない
+
 ### Changed
+
+#### Naming
+
+- **`specification/`・`adr/` の `_spec`/`_design`/`-decisions` サフィックスが任意になった** - いずれも
+  単一種別ディレクトリ（配下は抽象仕様書のみ／決定ログのみ）であるため、命名規則強制フックはこれらの
+  ディレクトリでサフィックスを必須としなくなった。既存のサフィックス付きファイルは引き続き有効。
+  `requirement/` は変更なし（`_spec`/`_design` サフィックスは引き続き禁止）
 
 #### Documentation
 

@@ -27,6 +27,7 @@ nm = _load_module()
 
 REQ = os.path.join(".sdd", "requirement")
 SPEC = os.path.join(".sdd", "specification")
+ADR = os.path.join(".sdd", "adr")
 
 
 class TestHasSpecSuffix:
@@ -42,38 +43,40 @@ class TestHasSpecSuffix:
 
 class TestValidateNaming:
     def test_requirement_plain_ok(self):
-        assert nm.validate_naming(os.path.join(REQ, "user-login.md"), REQ, SPEC) == ""
+        assert nm.validate_naming(os.path.join(REQ, "user-login.md"), REQ) == ""
 
     def test_requirement_with_suffix_violates(self):
         assert "Naming violation" in nm.validate_naming(
-            os.path.join(REQ, "user-login_spec.md"), REQ, SPEC
+            os.path.join(REQ, "user-login_spec.md"), REQ
         )
 
     def test_specification_with_suffix_ok(self):
-        assert nm.validate_naming(os.path.join(SPEC, "index_design.md"), REQ, SPEC) == ""
+        assert nm.validate_naming(os.path.join(SPEC, "index_design.md"), REQ) == ""
 
-    def test_specification_without_suffix_violates(self):
-        assert "Naming violation" in nm.validate_naming(
-            os.path.join(SPEC, "user-login.md"), REQ, SPEC
-        )
+    def test_specification_without_suffix_ok(self):
+        # Suffix is optional under specification/: single-type directory, no
+        # longer enforced (issue #84).
+        assert nm.validate_naming(os.path.join(SPEC, "user-login.md"), REQ) == ""
+
+    def test_adr_with_suffix_ok(self):
+        assert nm.validate_naming(os.path.join(ADR, "index-decisions.md"), REQ) == ""
+
+    def test_adr_without_suffix_ok(self):
+        assert nm.validate_naming(os.path.join(ADR, "user-login.md"), REQ) == ""
 
     def test_non_markdown_ignored(self):
-        assert nm.validate_naming(os.path.join(SPEC, "notes.txt"), REQ, SPEC) == ""
+        assert nm.validate_naming(os.path.join(SPEC, "notes.txt"), REQ) == ""
 
     def test_outside_sdd_dirs_ignored(self):
-        assert nm.validate_naming("src/main.py", REQ, SPEC) == ""
-
-    def test_specification_ignored_by_pattern(self):
-        rel = os.path.join(SPEC, "xxx_spec_test.md")
-        assert nm.validate_naming(rel, REQ, SPEC, ("*_test.md",)) == ""
+        assert nm.validate_naming("src/main.py", REQ) == ""
 
     def test_requirement_ignored_by_pattern(self):
         rel = os.path.join(REQ, "user-login_spec_test.md")
-        assert nm.validate_naming(rel, REQ, SPEC, ("*_test.md",)) == ""
+        assert nm.validate_naming(rel, REQ, ("*_test.md",)) == ""
 
     def test_ignore_pattern_no_match_still_violates(self):
-        rel = os.path.join(SPEC, "user-login.md")
-        assert "Naming violation" in nm.validate_naming(rel, REQ, SPEC, ("*_test.md",))
+        rel = os.path.join(REQ, "user-login_spec.md")
+        assert "Naming violation" in nm.validate_naming(rel, REQ, ("*_test.md",))
 
 
 class TestDetermineType:
@@ -95,11 +98,13 @@ class TestDetermineType:
             "requirement", "specification", "task",
         ) == "design"
 
-    def test_specification_unknown_suffix(self):
+    def test_specification_no_suffix_is_spec(self):
+        # specification/ is a single-type directory (abstract specs only);
+        # suffix is optional (issue #84), so an unsuffixed name is still "spec".
         assert nm.determine_type(
             "/p/.sdd/specification/notes.md", "notes",
             "requirement", "specification", "task",
-        ) == "unknown"
+        ) == "spec"
 
     def test_task_implementation_log(self):
         assert nm.determine_type(

@@ -127,7 +127,7 @@ See `references/existing_document_check.md` for the list of paths to check for f
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` suffix required (`index_spec.md`, `{feature-name}_spec.md`)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
 - **Under task**: Design Doc draft uses the fixed filename `design-draft.md` (`task/{ticket-number}/design-draft.md`)
 
 **Hierarchical structure usage decision**:
@@ -213,6 +213,12 @@ Skip Design Doc generation and confirm with user in the following cases:
 Generated specs and design docs must include YAML front matter at the top of the file.
 
 See `references/front_matter_spec_design.md` for full schema definition, dependency direction rules, and validation checklist.
+
+### Common Field Rule
+
+| Field | Rule |
+|:------|:-----|
+| `sdd-version` | Set to the sdd-workflow plugin's current version — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` |
 
 ### Spec-Specific Field Rules
 

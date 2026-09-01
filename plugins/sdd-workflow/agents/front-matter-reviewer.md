@@ -123,8 +123,8 @@ Determine the expected document type from:
 1. The `type` field in front matter (if present)
 2. The file path and naming convention (using `SDD_*` environment variables):
     - `${SDD_REQUIREMENT_DIR}/*.md` -> `prd`
-    - `${SDD_SPECIFICATION_DIR}/*_spec.md` -> `spec`
     - `${SDD_SPECIFICATION_DIR}/*_design.md` -> `design`
+    - `${SDD_SPECIFICATION_DIR}/*.md` (any other name, suffix optional) -> `spec`
     - `${SDD_TASK_DIR}/*.md` -> `task` or `implementation-log`
 
 If `type` field conflicts with file location, report as **error**.

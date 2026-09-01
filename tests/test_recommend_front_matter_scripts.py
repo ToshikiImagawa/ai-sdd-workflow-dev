@@ -93,13 +93,15 @@ class TestDetermineType:
             == "design"
         )
 
-    def test_specification_unknown(self):
+    def test_specification_no_suffix_is_spec(self):
+        # specification/ is a single-type directory; suffix is optional
+        # (issue #84), so an unsuffixed name is still "spec".
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/notes.md", "notes",
                 "requirement", "specification", "task",
             )
-            == "unknown"
+            == "spec"
         )
 
     def test_task_implementation_log(self):
@@ -210,7 +212,8 @@ class TestCollectDocuments:
             "lang": "en",
         }
 
-    def test_specification_filters_by_suffix(self, tmp_path):
+    def test_specification_includes_plain_md(self, tmp_path):
+        # Suffix is optional under specification/ (issue #84).
         sdd_dir = tmp_path / ".sdd"
         (sdd_dir / "specification").mkdir(parents=True)
         (sdd_dir / "specification" / "a_spec.md").write_text("# a", encoding="utf-8")
@@ -221,7 +224,7 @@ class TestCollectDocuments:
             sdd_dir, "requirement", "specification", "task",
         )
         names = sorted(p.name for p in docs)
-        assert names == ["a_design.md", "a_spec.md"]
+        assert names == ["a_design.md", "a_spec.md", "notes.md"]
 
     def test_requirement_and_task_include_all_md(self, tmp_path):
         sdd_dir = tmp_path / ".sdd"
@@ -275,7 +278,7 @@ class TestEndToEnd:
             "# Login Spec\n", encoding="utf-8"
         )
         (proj / root / "specification" / "notes.md").write_text(
-            "# ignored\n", encoding="utf-8"
+            "# no-suffix-but-still-scanned\n", encoding="utf-8"
         )
 
         env_file = tmp_path / "env_output"
@@ -289,17 +292,18 @@ class TestEndToEnd:
         assert not (proj / ".sdd").exists()
 
         data = json.loads(scan_result.read_text(encoding="utf-8"))
-        assert data["total_documents"] == 2
+        assert data["total_documents"] == 3
         assert data["documents_with_front_matter"] == 1
-        assert data["documents_without_front_matter"] == 1
+        assert data["documents_without_front_matter"] == 2
 
         by_name = {d["basename"]: d for d in data["documents"]}
         assert by_name["login"]["type"] == "prd"
+        assert by_name["notes"]["type"] == "spec"
         assert by_name["login"]["has_front_matter"] is True
         assert by_name["login"]["title_line"] == "Login PRD"
         assert by_name["login_spec"]["type"] == "spec"
         assert by_name["login_spec"]["has_front_matter"] is False
-        assert "notes" not in by_name
+        assert by_name["notes"]["has_front_matter"] is False
 
         env_contents = env_file.read_text(encoding="utf-8")
         assert "RECOMMEND_FM_CACHE_DIR" in env_contents
