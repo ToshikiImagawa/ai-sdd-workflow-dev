@@ -11,9 +11,9 @@ Coding問題を防ぎ、仕様書を真実の源として高品質な実装を�
 `.claude/rules/` 配下のトピック別ファイルを参照してください。`.sdd/` 配下のAI-SDDワークフロー原則そのものは
 `.sdd/AI-SDD-PRINCIPLES.md` が正典です。
 
-## AI-SDD Instructions (v4.0.0)
+## AI-SDD Instructions (v4.1.0)
 
-<!-- sdd-workflow version: "4.0.0" -->
+<!-- sdd-workflow version: "4.1.0" -->
 
 このプロジェクトは AI-SDD（AI駆動仕様駆動開発）ワークフローに従います。
 
