@@ -45,7 +45,21 @@ minor/patch release.
 - **`SDD_ADR_DIR` / `SDD_ADR_PATH`** - New environment variables for the `adr/` directory, set at session
   start alongside the existing `SDD_*_DIR` / `SDD_*_PATH` variables
 
+#### Front Matter
+
+- **`sdd-version` common field** - Documents may record the sdd-workflow plugin version at generation time
+  in the `sdd-version` front matter field, read from `plugin.json`. `generate-spec`, `task-cleanup`, and
+  `recommend-front-matter` set it when creating new front matter. Absent in documents generated before this
+  field was introduced
+
 ### Changed
+
+#### Naming
+
+- **`_spec`/`_design`/`-decisions` suffix is now optional under `specification/` and `adr/`** - Both are
+  single-type directories (every file is an abstract spec / a decision log respectively), so the
+  naming-enforcement hook no longer requires a suffix there. Existing suffixed files remain valid.
+  `requirement/` is unaffected — a `_spec`/`_design` suffix is still forbidden there
 
 #### Documentation
 

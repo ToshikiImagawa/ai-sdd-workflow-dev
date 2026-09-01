@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-09-01"
 depends-on: ["spec-workflow-foundation-documentation-index"]
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
@@ -78,7 +78,7 @@ risk: "medium"
 graph TD
     SS[SessionStart] -->|index 有効時| RA[sdd_index.rebuild_all]
     PTU[PostToolUse Write/Edit/MultiEdit] -->|DB 既存時| UO[sdd_index.update_one]
-    RA --> SCAN[iter_target_files: requirement/**.md + specification/**_spec/_design.md]
+    RA --> SCAN[iter_target_files: requirement/**.md + specification/**.md]
     SCAN --> HASH{SHA-256 変更検知}
     HASH -->|変更あり| PARSE[scan_document: front matter / IDs / SysML / data / API 抽出]
     HASH -->|未変更| SKIP[スキップ]
@@ -135,7 +135,9 @@ graph TD
 ## 5.3. 走査対象（`iter_target_files`）
 
 - `${SDD_ROOT}/${requirement_dir}/` 配下の全 `.md`
-- `${SDD_ROOT}/${specification_dir}/` 配下の `*_spec.md` / `*_design.md` のみ
+- `${SDD_ROOT}/${specification_dir}/` 配下の全 `.md`（`_spec`/`_design` サフィックスは任意。Issue #84
+  以前は `*_spec.md` / `*_design.md` のみが対象だったが、`specification/` が単一種別ディレクトリになった
+  ため全 `.md` を対象とするよう変更した）
 - `${SDD_ROOT}/.cache/` は対象外（派生成果物のため）
 
 ---

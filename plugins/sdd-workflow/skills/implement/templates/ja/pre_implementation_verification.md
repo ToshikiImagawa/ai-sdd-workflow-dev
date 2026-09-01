@@ -12,4 +12,4 @@
 **命名規則の違いに注意**:
 
 - **requirement 配下**: サフィックスなし（`index.md`, `{feature-name}.md`）
-- **specification 配下**: `_spec` または `_design` サフィックス必須（`index_spec.md`, `{feature-name}_spec.md`）
+- **specification 配下**: `_spec` または `_design` サフィックスは任意（`index_spec.md`, `{feature-name}_spec.md`、またはサフィックスなし）

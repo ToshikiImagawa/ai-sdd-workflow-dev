@@ -233,14 +233,26 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 
 ### File Naming Convention (Important)
 
-**⚠️ Suffix requirements differ between requirement and specification directories. Do not confuse them.**
+**⚠️ `requirement/` forbids a `_spec`/`_design` suffix; it must stay distinguishable from `specification/` by
+name alone. `specification/` and `adr/` are single-type directories, so their suffix is optional.**
 
-| Directory         | File Type     | Naming Pattern                                                     | Examples                                        |
-|:------------------|:--------------|:---------------------------------------------------------------------|:--------------------------------------------------|
-| **requirement**   | All files     | `{name}.md` (no suffix)                                               | `user-login.md`, `index.md`                       |
-| **specification** | Abstract spec | `{name}_spec.md` (`_spec` suffix required)                           | `user-login_spec.md`, `index_spec.md`             |
-| **task**          | Design draft  | `design-draft.md` (fixed filename, ticket-scoped, **temporary**)     | `task/68/design-draft.md`                         |
-| **adr**           | Decision log  | `{name}-decisions.md` (`-decisions` suffix required, append-only)    | `user-login-decisions.md`, `index-decisions.md`   |
+| Directory         | File Type     | Naming Pattern                                                              | Examples                                                  |
+|:------------------|:--------------|:-------------------------------------------------------------------------------|:-------------------------------------------------------------|
+| **requirement**   | All files     | `{name}.md` (no suffix — required)                                            | `user-login.md`, `index.md`                                  |
+| **specification** | Abstract spec | `{name}.md` or `{name}_spec.md` (`_spec` suffix optional)                     | `user-login.md`, `user-login_spec.md`, `index_spec.md`        |
+| **task**          | Design draft  | `design-draft.md` (fixed filename, ticket-scoped, **temporary**)              | `task/68/design-draft.md`                                    |
+| **adr**           | Decision log  | `{name}.md` or `{name}-decisions.md` (`-decisions` suffix optional, append-only) | `user-login.md`, `user-login-decisions.md`, `index-decisions.md` |
+
+`specification/` and `adr/` are each a **single-type directory** — every file under `specification/` is an
+abstract spec, every file under `adr/` is a decision log — so the directory alone identifies document type and
+a suffix is no longer required (unlike `requirement/`, which forbids one so it stays distinguishable from
+`specification/` by name alone). Existing suffixed files (`_spec.md`, `-decisions.md`) remain valid; new files
+may use either form.
+
+**Tracking which AI-SDD generation produced a document**: inferring generation from suffix presence was
+considered and rejected — file naming should encode document type, not generation history. Instead, documents
+record the sdd-workflow plugin version at generation time in the `sdd-version` front matter field (see
+`front_matter_reference.md`). A document without this field predates its introduction.
 
 #### Naming Pattern Quick Reference
 
@@ -248,17 +260,15 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 # ✅ Correct naming
 requirement/auth/index.md              # Parent feature overview (no suffix)
 requirement/auth/user-login.md         # Child feature requirements (no suffix)
-specification/auth/index_spec.md       # Parent feature abstract spec (_spec required)
-specification/auth/user-login_spec.md  # Child feature abstract spec (_spec required)
+specification/auth/index_spec.md       # Parent feature abstract spec (_spec optional, still valid)
+specification/auth/user-login.md       # Child feature abstract spec (no suffix, also valid)
 task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
-adr/auth/index-decisions.md            # Parent feature decision log (-decisions required, persistent)
-adr/auth/user-login-decisions.md       # Child feature decision log (-decisions required, persistent)
+adr/auth/index-decisions.md            # Parent feature decision log (-decisions optional, still valid)
+adr/auth/user-login.md                 # Child feature decision log (no suffix, also valid)
 
 # ❌ Incorrect naming (never use these)
-requirement/auth/index_spec.md         # requirement does not need _spec
-specification/auth/user-login.md       # specification requires _spec
-specification/auth/index_design.md     # design docs no longer live under specification/
-adr/auth/user-login.md                 # adr requires -decisions suffix
+requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix
+specification/auth/index_design.md     # design docs no longer live under specification/ (use task/{ticket}/design-draft.md)
 ```
 
 ### Document Link Convention

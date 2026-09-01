@@ -141,7 +141,7 @@ for task fields and `references/front_matter_spec_design.md` for design fields.
 
 | Action | Description |
 |:-------|:------------|
-| **Update/create `adr` front matter** | Set the common fields (`id`, `title`, `type: "adr"`, `status`, `created`, `updated`). The detailed `adr` schema is not yet defined in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md`; use only the common fields until it is added |
+| **Update/create `adr` front matter** | Set the common fields (`id`, `title`, `type: "adr"`, `status`, `created`, `updated`, `sdd-version` — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`). The detailed `adr` schema is not yet defined in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md`; use only the common fields until it is added |
 | **Update design doc `updated`** | If the related `*_design.md` still exists, set to current date |
 | **Update spec `status`** | Consider updating to `"approved"` if implementation validates the spec |
 

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-01"
 depends-on: ["spec-quality-guardrails-naming-enforcement"]
 tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
@@ -33,7 +33,8 @@ risk: "medium"
 
 | モジュール/機能                       | ステータス | 備考                                                          |
 |---------------------------------|--------|-------------------------------------------------------------|
-| PreToolUse フックスクリプト（命名検証） | 🟢     | `scripts/pre-tool-use.py` の `validate_naming` 関数            |
+| 命名規則の単一定義                    | 🟢     | `scripts/naming.py` の `validate_naming` / `determine_type` 関数。`recommend-front-matter` スキルの `determine_type` 呼び出しとも共有する |
+| PreToolUse フックスクリプト（命名検証） | 🟢     | `scripts/pre-tool-use.py` が `naming.validate_naming` を呼び出して検証            |
 | フック共通ヘルパー                     | 🟢     | `scripts/hook_common.py`（stdin 解析・パス解決・deny emit）        |
 | パス設定の解決                        | 🟢     | `hook_common.load_sdd_paths`（`.sdd-config.json` 対応）         |
 | 無視パターンの読み込み                   | 🟢     | `hook_common.load_naming_ignore_patterns`（`.sdd-config.json` の `naming.ignore_patterns` 対応） |
@@ -83,9 +84,13 @@ graph TD
 
 | モジュール名          | 責務                                                                          | 依存関係            | 配置場所                                        |
 |-------------------|-----------------------------------------------------------------------------|-----------------|-----------------------------------------------|
-| pre-tool-use.py   | 書き込み対象パスを検証し、命名規則違反時に deny を emit（`validate_naming`）             | hook_common.py, os, re | `plugins/sdd-workflow/scripts/pre-tool-use.py`  |
-| hook_common.py    | stdin JSON 解析・プロジェクトルート解決・`.sdd-config.json` 読み込み（パス設定・無視パターン）・deny の JSON 出力 | json, sys, os    | `plugins/sdd-workflow/scripts/hook_common.py`   |
+| naming.py         | 命名規則の単一定義（`validate_naming` による検証、`determine_type` による種別判定）      | pathlib, fnmatch | `plugins/sdd-workflow/scripts/naming.py`        |
+| pre-tool-use.py   | 書き込み対象パスを検証し、命名規則違反時に deny を emit（`naming.validate_naming` を呼び出す） | hook_common.py, naming.py, re, tempfile, pathlib | `plugins/sdd-workflow/scripts/pre-tool-use.py`  |
+| hook_common.py    | stdin JSON 解析・プロジェクトルート解決・`.sdd-config.json` 読み込み（パス設定・無視パターン）・deny の JSON 出力 | json, os, sys, pathlib | `plugins/sdd-workflow/scripts/hook_common.py`   |
 | hooks.json        | `PreToolUse`（matcher `Write|Edit`）へのスクリプト登録                          | -               | `plugins/sdd-workflow/hooks/hooks.json`         |
+
+`naming.py` は本機能専用ではなく、`recommend-front-matter` スキル（`scan-documents.py`）の `determine_type` 呼び出しとも
+共有される横断モジュールである（詳細は [front-matter-recommend_design.md](../workflow-foundation/front-matter-recommend_design.md) を参照）。
 
 `pre-tool-use.py` は命名検証に加え CONSTITUTION 原則注入も担うが、後者は別機能
 （[constitution-injection.md](../../requirement/quality-guardrails/constitution-injection.md)）の責務であり本設計書のスコープ外とする。
@@ -96,7 +101,7 @@ graph TD
 
 ## 5.1. 検証ロジック（validate_naming）
 
-`validate_naming(rel_path, requirement_prefix, specification_prefix, ignore_patterns=())` は、違反時に
+`validate_naming(rel_path, requirement_prefix, ignore_patterns=())` は、違反時に
 理由メッセージ文字列を、適合・対象外時に空文字列を返す。呼び出し元 `main` は事前に `relative_to_project`
 でプロジェクトルート外のパスを弾き（空文字列なら検証をスキップ）、以降を相対パスで判定する。判定手順は
 以下のとおり。
@@ -104,24 +109,27 @@ graph TD
 0. パスがプロジェクトルート配下でなければ検証対象外（`main` が `relative_to_project` の空結果で `return`）
 1. 拡張子が `.md` でなければ対象外（空文字列を返す）
 2. ファイル名（basename）が `ignore_patterns` のいずれかに `fnmatch` で一致する場合は対象外（FR-006、空文字列を返す）
-3. ファイル名（basename）から `.md` を除いた `stem` を取り出す
-4. パスが `requirement/` プレフィックス配下: `stem` が `_spec` または `_design` で終わる場合は**違反**
-5. パスが `specification/` プレフィックス配下: `stem` が `_spec` にも `_design` にも該当しない場合は**違反**
-6. いずれの管理対象プレフィックスにも該当しない場合は対象外（空文字列を返す）
+3. パスが `requirement/` プレフィックス配下かつ `stem`（`.md` を除いた basename）が `_spec` または
+   `_design` で終わる場合のみ**違反**
+4. 上記に該当しない場合はすべて対象外（`specification/` 配下・`adr/` 配下・管理対象外パスを含め空文字列を返す）
 
 | 対象ディレクトリ         | 判定条件                              | 違反例                              | 適合例                               |
 |-------------------|-------------------------------------|------------------------------------|-------------------------------------|
 | `requirement/`    | `_spec` / `_design` サフィックス**禁止** | `requirement/user-login_spec.md`   | `requirement/user-login.md`, `requirement/auth/index.md` |
-| `specification/`  | `_spec` / `_design` サフィックス**必須** | `specification/user-login.md`      | `specification/user-login_spec.md`, `specification/auth/index_design.md` |
+| `specification/`  | サフィックス**任意**（検証しない）        | なし（常に適合）                      | `specification/user-login.md`, `specification/user-login_spec.md`, `specification/auth/index_design.md` |
+| `adr/`            | サフィックス**任意**（プレフィックスを受け取らず常に対象外） | なし（常に適合）                      | `adr/user-login.md`, `adr/user-login-decisions.md` |
 
-プレフィックスは `os.path.join(sdd_root, requirement_dir)` / `os.path.join(sdd_root, specification_dir)` で構築し、
-`rel_path.startswith(prefix + os.sep)` で照合する（既定では `.sdd/requirement` / `.sdd/specification`）。
+プレフィックスは `str(Path(sdd_root) / requirement_dir)` で構築し、`Path(rel_path).is_relative_to(prefix)` で
+照合する（既定では `.sdd/requirement`）。パス操作はすべて `pathlib.Path` で行い、文字列の `os.path` 操作は使わない。
 
 ## 5.2. パス設定の解決（load_sdd_paths）
 
 `hook_common.load_sdd_paths(project_root)` が `(sdd_root, requirement_dir, specification_dir)` を返す。
 プロジェクトルートに `.sdd-config.json` が存在すれば `root` / `directories.requirement` /
 `directories.specification` の値で上書きし、なければ既定値（`.sdd` / `requirement` / `specification`）を用いる。
+`pre-tool-use.py` は `validate_naming` がサフィックス検証を行わなくなった `specification_dir` を
+`_specification_dir` として受け取り破棄し、`requirement_prefix` の構築にのみ用いる（他の呼び出し元
+`post-tool-use.py` / `sdd_index.py` は 3 要素とも使用するため関数自体の戻り値は変更しない）。
 
 ## 5.2bis. 無視パターンの解決（load_naming_ignore_patterns）
 
@@ -145,7 +153,8 @@ graph TD
 ```
 
 `json.dumps(..., ensure_ascii=False)` で出力する（T-003）。拒否理由には違反パスと、適合させるための具体例
-（`requirement/`: `user-login.md`, `index.md` / `specification/`: `user-login_spec.md`, `index_design.md`）を含める。
+（`requirement/`: `user-login.md`, `index.md`）を含める。`specification/` は deny 対象ではないため、
+このメッセージ経路は `requirement/` 違反時のみ発火する。
 
 ---
 
@@ -154,7 +163,8 @@ graph TD
 ```
 plugins/sdd-workflow/
 ├── scripts/
-│   ├── pre-tool-use.py      # PreToolUse フック本体（validate_naming で命名検証・違反時 deny）
+│   ├── naming.py            # 命名規則の単一定義（validate_naming / determine_type）。recommend-front-matter と共有
+│   ├── pre-tool-use.py      # PreToolUse フック本体（naming.validate_naming を呼び出し違反時 deny）
 │   └── hook_common.py       # stdin 解析・パス解決・deny emit 共通ヘルパー
 └── hooks/
     └── hooks.json           # PreToolUse（matcher: Write|Edit）へフックを登録
@@ -174,7 +184,7 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 | 要件                          | 実現方針                                                                              |
 |-----------------------------|-------------------------------------------------------------------------------------|
 | NFR-001（500ms 以内）          | 外部プロセス・ネットワーク・LLM 呼び出しを行わず、標準ライブラリ（`os` / `re` / `json`）の文字列照合のみで同期処理する |
-| NFR-002（クロスプラットフォーム）   | POSIX 準拠の Python 3。パス区切りは `os.sep` / `os.path` を用い macOS・Linux 双方で動作する      |
+| NFR-002（クロスプラットフォーム）   | POSIX 準拠の Python 3。パス操作は `pathlib.Path` を用い macOS・Linux 双方で動作する      |
 | NFR-003（フックイベント仕様準拠）    | `hookSpecificOutput.permissionDecision` 形式で emit。適合・対象外は無出力・exit code 0 で許可 |
 
 ---
@@ -183,7 +193,7 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 
 | テストレベル       | 対象                                          | カバレッジ目標                                                        |
 |----------------|---------------------------------------------|--------------------------------------------------------------------|
-| 回帰テスト（hook） | リポジトリルート `scripts/test-hook-scripts.sh`   | 適合する spec 名の許可・`specification/` サフィックスなしの deny・拒否理由に違反文言を含む・`requirement/` への `_spec` の deny・`requirement/` サフィックスなしの許可・`.sdd/` 外ファイルの許可・不正 stdin の no-op |
+| 回帰テスト（hook） | リポジトリルート `scripts/test-hook-scripts.sh`   | 適合する spec 名の許可・`specification/` サフィックスなしの許可・`adr/` のサフィックスあり/なし双方の許可・拒否理由に違反文言を含む・`requirement/` への `_spec` の deny・`requirement/` サフィックスなしの許可・`.sdd/` 外ファイルの許可・不正 stdin の no-op・`.sdd-config.json` によるカスタム root/ディレクトリ名設定下での prefix 解決（custom-root 版の deny/許可） |
 | CI 検証          | `.github/workflows/ci.yml` の `test` ジョブ     | フックスクリプト回帰テストが CI で実行される                                    |
 | 手動検証         | デモンストレーション                              | ファイル編集操作の体感遅延がない水準（NFR-001）                                 |
 
@@ -208,9 +218,9 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 | 課題                                | 影響度 | 対応方針                                                    |
 |-----------------------------------|-----|-----------------------------------------------------------|
 | 拒否理由メッセージが英語固定             | 低   | 現状フック出力は英語のみ。`SDD_LANG` に応じた多言語化は将来の別 Issue で検討 |
-| プレフィックス照合の想定外ディレクトリ構造   | 低   | `requirement/` / `specification/` 以外の構造は対象外。ネストや別名は `.sdd-config.json` で吸収 |
-| MultiEdit がフック対象外                | 低   | `pre-tool-use.py` の docstring は `Write|Edit|MultiEdit` と記載するが、`hooks.json` の matcher は `Write|Edit` で MultiEdit は現状発火しない。docstring の是正または matcher への MultiEdit 追加を別途検討 |
-| stem がサフィックスのみのファイル名        | 低   | `specification/_spec.md`（stem=`_spec`）等はサフィックス保有と判定され適合扱いになる。実害は小さく、退化ファイル名の扱い厳格化は将来検討 |
+| プレフィックス照合の想定外ディレクトリ構造   | 低   | `requirement/` 以外の構造（`specification/`・`adr/` を含む）は検証対象外。ネストや別名は `.sdd-config.json` で吸収 |
+| MultiEdit がフック対象外                | 低   | `hooks.json` の matcher は `Write|Edit` で MultiEdit は現状発火しない。docstring（`pre-tool-use.py:2`）も `Write|Edit` のみを記載しており矛盾はないが、`MultiEdit` 対応が必要になった場合は matcher への追加を別途検討 |
+| `adr/` 用プレフィックスが未実装         | 低   | `validate_naming` は `adr_prefix` を受け取らず、`adr/` は「管理対象外パス」として常に許可される。結果的にサフィックス任意という望む挙動には一致するが、明示的な `adr/` 認識ではない。将来 `adr/` 固有の検証（例: front matter `type: "adr"` との整合）が必要になった場合に再検討 |
 | front matter 内容の検証は非対象         | -   | 本機能はファイル名のみ検証。内容検証は front-matter-validation 機能の責務（スコープ外） |
 
 ---
@@ -220,7 +230,7 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 | 原則ID  | 原則名                    | 準拠状況 | 備考                                                        |
 |-------|--------------------------|--------|-----------------------------------------------------------|
 | A-002 | フックとスクリプトの責務分離   | ✅     | 機械的な命名検証を Python フックへ委譲し、Claude の推論を消費しない        |
-| D-002 | ファイル命名規則の厳守       | ✅     | requirement/ サフィックス禁止・specification/ サフィックス必須を deny で強制 |
+| D-002 | ファイル命名規則の厳守       | ✅     | requirement/ サフィックス禁止を deny で強制。specification/ はサフィックス任意（単一種別ディレクトリのため検証不要） |
 | B-001 | Vibe Coding 防止          | ✅     | ドキュメント種別を命名で識別する前提を守り、仕様書を真実の源とするフローを維持      |
 | B-002 | 多言語対応（EN/JA）の一貫性  | 適用範囲外 | 本機能はフックであり `templates/{en,ja}/` を持つスキルではない。deny メッセージは英語固定で、B-002 の適用範囲（`templates/{en,ja}/` を持つ全スキル）に含まれない。多言語化は将来の別 Issue で検討 |
 | T-003 | 日本語出力の文字化け防止      | ✅     | `ensure_ascii=False` で出力（拒否理由に日本語を含む場合も文字化けを防止）    |
