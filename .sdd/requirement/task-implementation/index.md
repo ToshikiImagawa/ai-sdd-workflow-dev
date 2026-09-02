@@ -77,7 +77,7 @@ flowchart LR
 | TDD 実装 | [implement.md](implement.md) | 5 段階（Setup → Tests → Core → Integration → Polish）の TDD で実装し、チェックリスト進捗を逐次更新する |
 | チェックリスト生成 | [checklist-generation.md](checklist-generation.md) | 仕様・計画から構造化 ID・カテゴリ付きの品質チェックリストを生成する |
 | チェックリスト自動検証 | [run-checklist.md](run-checklist.md) | チェックリスト項目をテスト・リンター・セキュリティスキャン・仕様整合性チェックで自動検証する |
-| タスククリーンアップ | [task-cleanup.md](task-cleanup.md) | 重要な設計決定を技術設計書へ統合したうえで task ディレクトリを削除する |
+| タスククリーンアップ | [task-cleanup.md](task-cleanup.md) | 重要な設計決定を ADR（`adr/{feature}.md`）へ統合したうえで task ディレクトリを削除する |
 
 ---
 
@@ -148,7 +148,7 @@ requirementDiagram
 
     functionalRequirement TaskCleanup {
         id: FR_005
-        text: "設計決定を設計書へ統合してからタスクログを削除する"
+        text: "設計決定をADRへ統合してからタスクログを削除する"
         risk: medium
         verifymethod: demonstration
     }
@@ -183,7 +183,7 @@ requirementDiagram
 
     designConstraint PersistBeforeDelete {
         id: DC_002
-        text: "タスクログは設計書への統合完了後にのみ削除できる"
+        text: "タスクログはADRへの統合完了後にのみ削除できる"
         risk: medium
         verifymethod: inspection
     }
@@ -240,7 +240,7 @@ requirementDiagram
 ### UR_004: 設計知見の永続化
 
 実装過程で行われた設計判断・トレードオフの記録は、一時的なタスクログの削除によって失われず、
-技術設計書に統合されて永続化されること。
+ADR（`adr/{feature}.md`）に統合されて永続化されること。
 
 **検証方法:** インスペクションによる検証
 
@@ -288,10 +288,10 @@ requirementDiagram
 
 ### DC_002: 統合前削除の禁止
 
-task ディレクトリの削除は、重要な設計決定の技術設計書への統合が完了した後にのみ許可すること。
+task ディレクトリの削除は、重要な設計決定の ADR（`adr/{feature}.md`）への統合が完了した後にのみ許可すること。
 
 **根拠:** D-003 原則（ドキュメント永続性ルール）。task/ は一時ログであり、
-設計知見は永続ドキュメントである `*_design.md` に集約する。
+設計知見は永続ドキュメントである ADR（`adr/{feature}.md`）に集約する。
 
 **検証方法:** インスペクションによる検証
 
@@ -315,7 +315,7 @@ task ディレクトリの削除は、重要な設計決定の技術設計書へ
 
 # 6. 前提条件
 
-- 対象機能の技術設計書（`*_design.md`）が存在すること（タスク分解の入力）
+- 対象機能の技術設計書（`task/{ticket-number}/design-draft.md`）が存在すること（タスク分解の入力）
 - 対象プロジェクトで sdd-workflow プラグインが有効化され、`.sdd/` ディレクトリが初期化済みであること
 - チケット番号の採番規則はプロジェクト運用に委ねる（本機能群は指定された番号を使用する）
 
@@ -339,5 +339,5 @@ task ディレクトリの削除は、重要な設計決定の技術設計書へ
 | tasks.md  | タスク分解の成果物。チェックリスト形式のタスク一覧                                  |
 | TDD 5 段階  | Setup → Tests → Core → Integration → Polish の段階的実装プロセス           |
 | 構造化 ID    | チェックリスト項目に付与する一意な識別子。カテゴリと連番で構成                          |
-| タスクログ     | `task/{ticket-number}/` 配下の一時的な作業記録。完了後は設計書へ統合して削除する      |
+| タスクログ     | `task/{ticket-number}/` 配下の一時的な作業記録。完了後は ADR（`adr/{feature}.md`）へ統合して削除する |
 | チケット番号    | タスクを外部の課題管理と紐づける識別子                                          |
