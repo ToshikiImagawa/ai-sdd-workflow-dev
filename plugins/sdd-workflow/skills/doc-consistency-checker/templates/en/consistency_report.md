@@ -20,6 +20,7 @@ This template is the output format for document consistency check results.
 |:------------------------|:--------------------------|:----------|
 | PRD ↔ spec              | Consistent / Inconsistent | {n} items |
 | spec ↔ adr              | Consistent / Inconsistent | {n} items |
+| Generation staleness (`sdd-version`) | {n} stale / {n} checked | {n} items |
 
 ---
 
@@ -83,6 +84,18 @@ This template is the output format for document consistency check results.
 
 > **Note**: `spec ↔ Implementation` and any remaining `*_design.md` artifact checks are out of scope for this
 > skill. Use `/check-spec` (the `impl-spec-check` feature) for those checks.
+
+#### Generation Staleness (`sdd-version`)
+
+Documents whose `sdd-version` major is lower than the current plugin major (requires `SDD_INDEX=on`):
+
+| Document | `sdd-version` | Current Major |
+|:---------|:--------------|:--------------|
+| {doc_id or path} | {sdd-version value} | {current major} |
+
+> **Note**: This is advisory only — it flags candidates for manual migration review. Documents with an absent
+> `sdd-version` are not listed here (they predate the field's introduction). Skipped entirely when `SDD_INDEX`
+> is unset or `off`.
 
 ### Verified Consistent Items
 

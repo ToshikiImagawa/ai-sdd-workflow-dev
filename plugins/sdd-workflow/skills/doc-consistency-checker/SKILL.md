@@ -1,6 +1,6 @@
 ---
 name: doc-consistency-checker
-description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, and ensures traceability between documents."
+description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, documents with a stale sdd-version generation, and ensures traceability between documents."
 argument-hint: "[feature-name]"
 license: MIT
 user-invocable: false
@@ -37,7 +37,8 @@ Read it **once** and use all its tables (`Metadata`, `Requirement IDs`, `SysML R
 `Data Models`, `API Signatures`) for cross-document consistency checks. This replaces
 the need for multiple Glob/Grep/Read calls across `.sdd/`. Fall back to raw Read of a specific file
 only when cross-reference verification requires full section text. When `SDD_INDEX` is unset or `off`,
-use the existing Glob/Grep/Read flow.
+use the existing Glob/Grep/Read flow. The `Metadata` table's `sdd-version` column also drives Check
+Item 3 (Generation Staleness Detection) below.
 
 ## Input
 
@@ -133,6 +134,24 @@ points back at the obsolete one.
   definitions, technology stack) are checked by `/check-spec` (the `impl-spec-check` feature)
 
 This skill checks the **persisted** artifacts only: `*_spec.md` and `adr/*.md`.
+
+### 3. Generation Staleness Detection (`sdd-version`)
+
+**Requires `SDD_INDEX=on`** (see Index Fast Path above). Read the `Metadata` table's `sdd-version` column from
+`${SDD_ROOT}/.cache/index.md` — no additional Glob/Grep is needed.
+
+| Check Item                    | Description                                                                                                     |
+|:-------------------------------|:-------------------------------------------------------------------------------------------------------------------|
+| **Stale generation listing**  | Enumerate documents whose `sdd-version` major is lower than the current plugin's major (`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`'s `version`) |
+
+Documents with an absent `sdd-version` are **not** included in this listing (they predate the field's
+introduction and cannot be judged as stale by this signal alone — see `front_matter_reference.md`'s Missing
+Front Matter Policy). This check is advisory: report the listing so a human can decide whether each document
+needs a manual migration review; do not edit the listed documents.
+
+If `SDD_INDEX` is unset or `off`, skip this check (it depends on the pre-built index and does not have a
+Glob/Grep fallback, since scanning every document's front matter for this alone would defeat the purpose of a
+lightweight advisory check).
 
 ## Automatic Detection Patterns
 

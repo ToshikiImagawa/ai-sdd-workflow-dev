@@ -60,6 +60,7 @@ flowchart LR
     - ドキュメント編集後の増分更新（インデックス既存時のみ）
     - 圧縮インデックス（消費側が読むテーブル形式ドキュメント）の派生生成
     - 変更検知によるキャッシュ無効化（未変更ドキュメントの再処理回避）
+    - `sdd-version` の格納（世代判別・移行漏れ検知への活用）
 
 ---
 
@@ -112,6 +113,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement IndexSddVersion {
+        id: FR_001_05
+        text: "front matterのsdd-versionをインデックスに格納し世代判別に活用できるようにする"
+        risk: low
+        verifymethod: test
+    }
+
     designConstraint OptIn {
         id: DC_001
         text: "インデックスの有効・無効を設定で切り替えられる（既定は有効）"
@@ -124,6 +132,7 @@ requirementDiagram
     DocumentationIndex - contains -> IncrementalUpdate
     DocumentationIndex - contains -> DeriveCompactIndex
     DocumentationIndex - contains -> CacheInvalidation
+    DocumentationIndex - contains -> IndexSddVersion
     OptIn - traces -> DocumentationIndex
 ```
 
@@ -134,6 +143,8 @@ requirementDiagram
 - FR_001 は index.md の IR_001（設定スキーマ・環境変数の共通契約）にトレースされる
   （`.sdd-config.json` の `index` 設定・`SDD_INDEX` 環境変数）
 - FR_001 は [session-config.md](session-config.md) の FR_001_04（セッション開始時のインデックス構築）と連携する
+- FR_001_05 は世代判別・移行漏れ検知（[front-matter-validation.md](../quality-guardrails/front-matter-validation.md)・
+  [doc-consistency-check.md](../quality-guardrails/doc-consistency-check.md)）の入力として使われる
 
 ---
 
@@ -167,6 +178,8 @@ requirementDiagram
 - FR_001_03: 消費側（エージェント・スキル）が 1 回の Read で参照できる圧縮インデックス
   （テーブル形式）を派生生成する。`SDD_INDEX` 環境変数が有効なとき消費側はこれを優先して参照する
 - FR_001_04: ドキュメント内容の変更を検知し、未変更のドキュメントはインデックス再処理をスキップする
+- FR_001_05: front matter の `sdd-version`（生成時点のプラグインバージョン）をインデックスへ格納し、
+  消費側が世代判別・移行漏れ検知に活用できるようにする
 
 **検証方法:** テストによる検証（ユニットテストを CI で実行、A/B ハーネスで効果測定）
 
