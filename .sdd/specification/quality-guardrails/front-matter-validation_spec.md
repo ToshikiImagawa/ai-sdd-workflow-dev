@@ -63,7 +63,7 @@ front matter はオプション（後方互換）であるため人手で記述�
 | FR-001 | 対象ドキュメントの YAML front matter ブロックを抽出し、front matter がなければ info として報告し以降のチェックをスキップする | 必須  | PRD 前提条件（後方互換）／ Missing Front Matter Policy |
 | FR-002 | 共通フィールド（`id` / `title` / `type` / `status` / `created` / `updated` / `depends-on`）の有無・形式・値を検証する | 必須  | PRD FR_001（形式検証）                            |
 | FR-003 | ドキュメント種別（type）をフィールドとファイルパスから判定し、type とファイル配置の不一致を error として検出する | 必須  | PRD FR_001（形式検証）                            |
-| FR-004 | 種別固有フィールドの許容値を検証する。`sdd-phase` は種別ごとの固定値（spec=`specify` / design=`plan` / task=`tasks` / impl-log=`implement`）、PRD は `priority`/`risk`、design は `impl-status` を対象とする。`impl-status` は許容値の形式検証に限定し、コードとの実態一致は判定困難時 info に留める | 必須  | PRD FR_001（値の妥当性）                           |
+| FR-004 | 種別固有フィールドの許容値を検証する。`sdd-phase` は種別ごとの固定値（spec=`specify` / design=`plan` / task=`tasks` / impl-log=`implement`）、PRD は `priority`/`risk`、spec と design は `impl-status` を対象とする。`impl-status` は許容値の形式検証に限定し、コードとの実態一致は判定困難時 info に留める | 必須  | PRD FR_001（値の妥当性）                           |
 | FR-005 | `depends-on` が上流方向のみ（spec→prd, design→spec, task/impl-log→design）を指すことを検証し、逆転を error として検出する | 必須  | PRD FR_001（依存方向）／ 親 UR_003                  |
 | FR-006 | `--cross-ref` 指定時、プロジェクト全体を走査し ID 一意性（重複禁止・error）と `depends-on` 参照先の実在（error）を検証する。あわせて status 整合性（上流 draft × 下流 approved を warning）・status 伝播（上流 status 変更時の下流レビュー要否を info）も検証する | 必須  | PRD FR_001（ID 一意性）／ 親 UR_003                |
 | FR-007 | 検出結果を重要度（error / warning / info）付きで分類し、改善提案を添えて所定のレポート形式で出力する | 必須  | PRD FR_001（不備を検出・報告する）                      |

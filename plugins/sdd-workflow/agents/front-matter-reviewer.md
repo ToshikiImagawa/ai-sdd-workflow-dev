@@ -156,9 +156,10 @@ Based on document type, apply additional checks:
 
 **Spec** (`type: "spec"`):
 
-| Check Item                  | Severity | Description         |
-|:----------------------------|:---------|:--------------------|
-| **`sdd-phase` correctness** | warning  | Must be `"specify"` |
+| Check Item                  | Severity | Description                                             |
+|:----------------------------|:---------|:----------------------------------------------------------|
+| **`sdd-phase` correctness** | warning  | Must be `"specify"`                                       |
+| **`impl-status` validity**  | warning  | Same allowed values as Design's `impl-status` below       |
 
 **Design** (`type: "design"`):
 

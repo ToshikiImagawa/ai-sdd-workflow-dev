@@ -3,6 +3,7 @@
 - **成功**: {success_count} ファイル更新
 - **スキップ**: {skip_count} ファイル（Front Matter 既存）
 - **失敗**: {error_count} ファイル
+- **`impl-status` 追加**: {impl_status_added_count} 件の spec に単一フィールドを追加
 
 ### 更新されたファイル
 

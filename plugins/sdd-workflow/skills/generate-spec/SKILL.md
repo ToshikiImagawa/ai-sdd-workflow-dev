@@ -237,8 +237,9 @@ See `references/front_matter_spec_design.md` for full schema definition, depende
 |:------|:-----|
 | `sdd-version` | Set to the sdd-workflow plugin's current version — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` |
 
-> **Amend Mode (`--amend`)**: Do not regenerate `id`, `created`, `depends-on`, `priority`, or `risk` on the spec —
-> keep them as-is. Only `updated` and `sdd-version` refresh.
+> **Amend Mode (`--amend`)**: Do not regenerate `id`, `created`, `depends-on`, `priority`, `risk`, or `impl-status`
+> on the spec — keep them as-is. Only `updated` and `sdd-version` refresh. Appending new requirements does not
+> change whether the spec's existing content is implemented.
 
 ### Spec-Specific Field Rules
 
@@ -246,6 +247,7 @@ See `references/front_matter_spec_design.md` for full schema definition, depende
 |:------|:-----|
 | `id` | `"spec-{feature-name}"`. For hierarchical: `"spec-{parent}-{feature-name}"` |
 | `status` | `"draft"` for new specs |
+| `impl-status` | `"not-implemented"` for new specs |
 | `depends-on` | PRD ID (e.g., `["prd-user-auth"]`) |
 | `priority` | Inherit from PRD if exists, otherwise `"medium"` |
 | `risk` | Inherit from PRD if exists, otherwise `"medium"` |

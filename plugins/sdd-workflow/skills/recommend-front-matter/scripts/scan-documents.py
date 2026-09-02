@@ -17,7 +17,7 @@ from pathlib import Path
 
 # Shared modules live in plugins/sdd-workflow/scripts (three levels up + scripts).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
-from fm_parser import has_front_matter  # noqa: E402
+from fm_parser import has_front_matter, parse_front_matter  # noqa: E402
 from naming import determine_type  # noqa: E402,F401
 from doc_walker import collect_documents  # noqa: E402
 from hook_common import resolve_project_root  # noqa: E402
@@ -117,6 +117,7 @@ def main() -> None:
         # --- Phase 2: Analyze documents and build JSON ---
         with_fm_count = 0
         without_fm_count = 0
+        missing_impl_status_count = 0
         entries = []
 
         for file in documents:
@@ -124,7 +125,7 @@ def main() -> None:
             basename = file.name[:-3]  # strip .md
             filepath = str(file)
 
-            has_fm, _ = has_front_matter(lines)
+            has_fm, closing_idx = has_front_matter(lines)
             if has_fm:
                 with_fm_count += 1
             else:
@@ -140,6 +141,17 @@ def main() -> None:
             )
             title = extract_title(lines, basename)
 
+            # A spec may already have front matter but predate the impl-status
+            # field. Detected here, alongside the existing has_front_matter
+            # check, per A-002 (scripts own deterministic extraction; Claude
+            # only reads the result).
+            missing_impl_status = False
+            if doc_type == "spec" and has_fm:
+                fm_fields = parse_front_matter("\n".join(lines[1:closing_idx]))
+                missing_impl_status = "impl-status" not in fm_fields
+            if missing_impl_status:
+                missing_impl_status_count += 1
+
             try:
                 relative_path = str(file.relative_to(sdd_dir))
             except ValueError:
@@ -152,6 +164,7 @@ def main() -> None:
                     "basename": basename,
                     "type": doc_type,
                     "has_front_matter": has_fm,
+                    "missing_impl_status": missing_impl_status,
                     "title_line": title,
                 }
             )
@@ -163,6 +176,7 @@ def main() -> None:
             "total_documents": total_count,
             "documents_with_front_matter": with_fm_count,
             "documents_without_front_matter": without_fm_count,
+            "specs_missing_impl_status": missing_impl_status_count,
             "documents": entries,
         }
 
@@ -174,7 +188,7 @@ def main() -> None:
         log("Scan complete")
         log(
             f"Total: {total_count}, With Front Matter: {with_fm_count}, "
-            f"Without: {without_fm_count}"
+            f"Without: {without_fm_count}, Specs missing impl-status: {missing_impl_status_count}"
         )
 
         # --- Phase 3: Export to CLAUDE_ENV_FILE ---

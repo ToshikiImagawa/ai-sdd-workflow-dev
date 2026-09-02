@@ -3,6 +3,7 @@
 - **Success**: {success_count} files updated
 - **Skipped**: {skip_count} files (already have front matter)
 - **Failed**: {error_count} files
+- **`impl-status` added**: {impl_status_added_count} specs got the single missing field
 
 ### Updated Files
 

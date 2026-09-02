@@ -115,6 +115,7 @@ front matter の共通・種別固有フィールドの構造例（詳細スキ�
 id: "spec-{parent}-{feature-name}"   # 階層構造の場合はパスを含める
 type: "spec"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 depends-on: ["prd-{parent}-{feature-name}"]   # 上流方向のみ
 
 # design

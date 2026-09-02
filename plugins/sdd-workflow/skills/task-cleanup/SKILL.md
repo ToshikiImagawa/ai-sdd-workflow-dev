@@ -145,6 +145,7 @@ for task fields and `references/front_matter_spec_design.md` for design fields.
 | **Update/create `adr` front matter** | Set the fields defined for `type: "adr"` in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` (`id`, `title`, `status`, `created`, `updated`, `sdd-version` — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` — plus `depends-on`, and `supersedes`/`superseded-by` when this decision reverses or is reversed by another entry) |
 | **Update design doc `updated`** | If the related `*_design.md` still exists, set to current date |
 | **Update spec `status`** | Consider updating to `"approved"` if implementation validates the spec |
+| **Update spec `impl-status`** | Safety net: set to `"implemented"` if not already (the `implement` skill should have set this at completion; this catches cases where it was skipped, e.g. work resumed from a different session) |
 
 ### 8. Delete Files/Directories
 

@@ -79,6 +79,16 @@
 - **`type: "adr"` スキーマ** - `shared/references/front_matter_reference.md` に決定ログエントリの
   front matter フィールドを定義した。後の決定が以前の決定を覆す場合に、追記専用のログを書き換えずに
   記録できる `supersedes` / `superseded-by` を含む
+- **`impl-status` が Design 専用ではなく Spec でも有効なフィールドになった** - spec は、承認ライフサイクル
+  （`status`）とは独立した軸として、自身が記述する振る舞いが実装に反映されているかを記録できるようになった。
+  `generate-spec` が新規 spec に `"not-implemented"` を設定し、`implement` が実装の進行に応じて
+  `"in-progress"` / `"implemented"` へ進め、`implement` が更新し忘れた場合の安全網として `task-cleanup` も
+  更新する。`check-spec` は、仕様書に記載され実装が見つからない機能を常に Critical とするのではなく、この
+  フィールドで分岐するようになった：`implemented` なら退行として Critical、`not-implemented`/`in-progress`
+  なら意図した先行として Info、フィールド未設定なら判定不能として Warning（追加を推奨）。
+  `front-matter-reviewer` は spec の `impl-status` の許容値も検証し、`recommend-front-matter` は front matter
+  を既に持つが本フィールドだけが欠落している spec を検出し、他のフィールドには触れずに単一フィールドの
+  追加のみを推奨するようになった
 
 ### Fixed
 

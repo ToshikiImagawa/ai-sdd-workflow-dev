@@ -19,7 +19,7 @@
 | Data Model            | 🔴 NG   | {count} mismatches found |
 | Behavior              | 🟢 OK   | Matches the spec         |
 | Literal Values        | 🟡 Warn | {count} value drifts     |
-| Implementation Status | 🟡 Warn | {count} items incomplete |
+| Implementation Status | 🔴/🟡/🔵 | {critical_count} regression / {warning_count} undecidable / {info_count} expected-not-yet-implemented |
 
 > Add a **Module Structure** row only when a design draft was loaded.
 
@@ -69,32 +69,34 @@ interface User {
 
 ---
 
-#### 🟡 Incomplete Items
+#### Unimplemented Functions
 
-##### API: Password Reset Function
+A spec-documented function with no matching implementation is classified by the spec's `impl-status`:
 
-**Specified**: Yes (spec §{section}, {requirement_id})
+| Function            | Spec Location                        | Spec `impl-status` | Classification            |
+|:---------------------|:---------------------------------------|:----------------------|:----------------------------|
+| Password Reset API  | spec §{section} ({requirement_id})   | `implemented`          | 🔴 Regression              |
+| {feature_name}      | spec §{section} ({requirement_id})   | `not-implemented`      | 🔵 Expected (not due yet)  |
+| {feature_name}      | spec §{section} ({requirement_id})   | Not set               | 🟡 Undecidable             |
 
-**Implemented**: Not found
+**🔴 Regression example — API: Password Reset Function**
 
-**Recommendation**: Implement or remove from the spec
+**Impact**: The spec declares this as implemented, but no matching code was found — likely a regression
+(removed, or the field was set before the implementation actually landed).
+
+**Recommendation**: Restore the implementation, or correct the spec's `impl-status` if it was never actually
+implemented (and document why in the spec/adr). A 🟡 Undecidable row instead recommends adding `impl-status`
+to the spec's front matter (`/recommend-front-matter` can suggest it); a 🔵 Expected row needs no action.
 
 ---
-
-### Implementation Status Update
-
-Updated spec implementation status:
-
-- [x] User Login API → 🟢 Implemented
-- [x] Logout API → 🟢 Implemented
-- [ ] Password Reset API → 🔴 Not Implemented
 
 ### Next Actions
 
 1. Fix mismatches:
     - Update `src/models/user.ts:10` type definition
-2. Implement incomplete items:
-    - Implement Password Reset API or remove from the spec
+2. Address regressions (🔴 Unimplemented):
+    - Restore Password Reset API, or correct its spec `impl-status`
+3. Add `impl-status` to specs flagged as undecidable (🟡)
 
 ### Verification Commands
 

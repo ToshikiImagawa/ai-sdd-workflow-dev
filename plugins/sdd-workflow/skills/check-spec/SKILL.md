@@ -204,6 +204,23 @@ If documents contain YAML front matter, call the `front-matter-reviewer` agent t
 Pass all target document paths (the specs, plus any auxiliary design doc).
 
 After results are returned, integrate `impl-status` findings into the spec ↔ implementation consistency results.
+Record the spec's `impl-status` value (or its absence) for use in the branching below.
+
+#### Unimplemented-Function Classification by `impl-status`
+
+A spec-documented function with no corresponding implementation is not automatically a defect: whether it is
+expected or a regression depends on the spec's `impl-status` front matter field.
+
+| Spec `impl-status`                | Meaning                                     | Classification |
+|:------------------------------------|:----------------------------------------------|:-----------------|
+| `implemented`                      | Spec declares the implementation is done      | **Critical** — regression: the implementation was removed, or never matched the declared status |
+| `not-implemented` / `in-progress`  | Spec intentionally precedes the implementation | **Info** — expected: implementation has not caught up with the spec yet |
+| Missing / absent                   | No implementation-state signal available       | **Warning** — undecidable; recommend adding `impl-status` to the spec (`/recommend-front-matter`) |
+
+This branching applies **only** to "function specified in the spec but missing from the implementation."
+Public API mismatches, data model mismatches, and behavior contradicting the spec remain unconditionally
+Critical regardless of `impl-status` — `impl-status` never excuses an implementation that diverges from what
+it claims to implement, only one that simply hasn't started yet.
 
 #### spec <-> Implementation Consistency
 
@@ -261,12 +278,14 @@ Classify detected discrepancies as follows:
 **Critical (Immediate Action Required)**:
 
 - Public API mismatch (arguments, return value types, CLI options, environment variables)
-- Functions specified in the spec not implemented
+- Functions specified in the spec not implemented (see Unimplemented-Function Classification above — this is
+  Critical only for the `impl-status: "implemented"` case; the other two cases land in Warning/Info below)
 - Data model mismatch (entities, fields, types)
 - Behavior contradicting the spec
 
 **Warning (Action Recommended)**:
 
+- Functions specified in the spec not implemented, `impl-status` case: undecidable (see classification above)
 - Literal value drift (thresholds, enum values, CHECK constraint values differing between spec and implementation)
 - Requirement ID referenced by a spec registry entry missing from the traceability table
 - Implementation exceeding a constraint stated in the spec
@@ -276,6 +295,7 @@ Classify detected discrepancies as follows:
 
 **Info (Reference)**:
 
+- Functions specified in the spec not implemented, `impl-status` case: expected (see classification above)
 - Minor technology stack differences
 - Missing comments/documentation
 

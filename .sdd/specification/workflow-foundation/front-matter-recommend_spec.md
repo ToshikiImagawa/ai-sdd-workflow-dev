@@ -63,8 +63,9 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 | FR-003 | front matter のない各ドキュメントに、種別に応じた共通・固有フィールドの推奨 front matter を生成する            | 必須  | PRD FR_001                       |
 | FR-004 | 推奨レポートを生成する（既定動作。ファイルは変更しない）                                                  | 必須  | PRD FR_001                       |
 | FR-005 | `--apply` 指定時はユーザー確認のうえ推奨 front matter をファイル先頭へ適用し、結果レポートを生成する           | 必須  | PRD FR_001                       |
-| FR-006 | front matter を持つ既存ドキュメントは変更せず、後方互換を維持する                                         | 必須  | 親 PRD NFR_001（後方互換）          |
+| FR-006 | front matter を持つ既存ドキュメントの既存フィールドの値は変更せず、後方互換を維持する                          | 必須  | 親 PRD NFR_001（後方互換）          |
 | FR-007 | 出力テンプレートを `SDD_LANG`（en/ja）に応じて選択し、言語を混在させない                                    | 必須  | 親 PRD B-002                     |
+| FR-008 | front matter を持つ spec のうち `impl-status` フィールドが欠落しているものを検出し、既存フィールドは変更せずに単一フィールドの追加のみを推奨する | 必須  | 親 PRD FR_001（推奨範囲の拡張。既存フィールドの値は変更しないため FR-006 と矛盾しない） |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -79,7 +80,7 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 | 種別     | 配置場所                                                        | 名前               | 概要                                                       |
 |--------|---------------------------------------------------------------|------------------|------------------------------------------------------------|
 | skill  | `skills/recommend-front-matter/SKILL.md`                     | recommend-front-matter | ドキュメント走査・front matter 推奨・`--apply` 適用を提供する    |
-| script | `skills/recommend-front-matter/scripts/scan-documents.py`    | scan-documents    | front matter の有無・種別・タイトルを走査し JSON と環境変数を出力する |
+| script | `skills/recommend-front-matter/scripts/scan-documents.py`    | scan-documents    | front matter の有無・種別・タイトル・spec の `impl-status` 欠落を走査し JSON と環境変数を出力する |
 | template | `skills/recommend-front-matter/templates/{en,ja}/recommendation_report.md` | 推奨レポート雛形   | 推奨 front matter を提示するレポート（言語別）                   |
 | template | `skills/recommend-front-matter/templates/{en,ja}/application_result.md`     | 適用結果雛形       | `--apply` の適用結果レポート（言語別）                          |
 | template | `skills/recommend-front-matter/templates/{en,ja}/type_specific_fields.md`   | 種別別フィールド定義 | 種別ごとの固有フィールド一覧（言語別）                           |
@@ -167,7 +168,7 @@ sequenceDiagram
 
 | 確認項目        | 結果                                                                                    |
 |---------------|------------------------------------------------------------------------------------------|
-| 要求カバレッジ   | PRD FR_001（スキャン・推奨・一括適用）を FR-001〜005 に分解してカバー。B-002 を FR-007 でカバー   |
+| 要求カバレッジ   | PRD FR_001（スキャン・推奨・一括適用）を FR-001〜005・FR-008 に分解してカバー。B-002 を FR-007 でカバー   |
 | 要求 ID 参照    | 各 FR に対応する PRD（FR_001）・親 PRD（UR_004・NFR_001・B-002）の要求 ID を「根拠」列に明記      |
 | 非機能要求の反映 | 後方互換（NFR-001）を親 PRD NFR_001 に整合。走査効率・移植性を NFR-002・003 に補完             |
 | 用語整合性      | PRD の「front matter」「メタデータ」「後方互換」定義に整合                                     |

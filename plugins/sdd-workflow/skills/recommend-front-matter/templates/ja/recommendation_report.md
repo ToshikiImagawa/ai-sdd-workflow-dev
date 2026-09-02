@@ -5,6 +5,7 @@
 - **スキャンした総ドキュメント数**: {total_count}
 - **Front Matter あり**: {with_fm_count}
 - **Front Matter なし**: {without_fm_count}
+- **`impl-status` が欠落した spec**: {specs_missing_impl_status_count}
 
 {recommendations_section}
 
