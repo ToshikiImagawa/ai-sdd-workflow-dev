@@ -26,12 +26,16 @@ Verify the following exist before execution:
 
 | Prerequisite         | Verification                                    | Command to Generate          |
 |:---------------------|:------------------------------------------------|:-----------------------------|
-| **Task Breakdown**   | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md` exists            | `/task-breakdown {feature}`  |
-| **Technical Design** | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature}_design.md` exists | `/generate-spec {feature}`   |
-| **Abstract Spec**    | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature}_spec.md` exists   | `/generate-spec {feature}`   |
+| **Task Breakdown**   | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md` exists                | `/task-breakdown {feature} {ticket}` |
+| **Technical Design** | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` exists         | `/generate-spec {description} --ticket {ticket}` |
+| **Abstract Spec**    | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature}.md` **or** `{feature}_spec.md` exists | `/generate-spec {description} --ticket {ticket}` |
 
-* For hierarchical structure: Add `[{path}/]` prefix (e.g., `auth/user-login_spec.md`).
-* For parent features, use `index_spec.md`
+* The design draft is **ticket-scoped with a fixed filename**, so its path does not vary with the spec's
+  flat/hierarchical structure.
+* The `_spec` suffix is optional under `specification/`, so either `{feature}.md` or `{feature}_spec.md`
+  satisfies the Abstract Spec prerequisite.
+* For hierarchical structure: Add `[{path}/]` prefix to the spec path (e.g., `auth/user-login_spec.md`).
+* For parent features, use `index.md` or `index_spec.md`
 
 ## Input
 
@@ -47,7 +51,7 @@ Full argument string: $ARGUMENTS
 | Argument | Required | Description |
 |:--|:--|:--|
 | `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
-| `ticket-number` | - | Task directory name. Uses feature-name if omitted |
+| `ticket-number` | - | Task directory name, holding both `tasks.md` and `design-draft.md`. Uses feature-name if omitted |
 
 Read `examples/input_format.md` for input format and usage examples.
 
@@ -63,9 +67,9 @@ See `references/front_matter_impl.md` for full schema definition, dependency dir
 |:------|:-----|
 | `id` | `"impl-{feature-name}"`. For hierarchical: `"impl-{parent}-{feature-name}"` |
 | `status` | `"in-progress"` when implementation starts |
-| `depends-on` | Design doc ID (e.g., `["design-user-auth"]`) |
+| `depends-on` | Design draft ID, which is ticket-scoped (e.g., `["design-TICKET-123"]`) |
 | `ticket` | Ticket number from input argument (if provided) |
-| `tags` | Inherit from task/design doc |
+| `tags` | Inherit from task/design draft |
 | `completed` | Empty string when starting. Set to `"YYYY-MM-DD"` when implementation completes |
 | `implementer` | Name of the implementer (if known) |
 

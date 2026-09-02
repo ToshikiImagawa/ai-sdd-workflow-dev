@@ -346,7 +346,7 @@ Next steps:
 
 2. Update documents to reflect true original intent (if known)
 
-3. Run `/task-breakdown user-profile` to break down refactoring
+3. Run `/task-breakdown user-profile 72` to break down refactoring
 
 4. Execute with `/implement user-profile`
 

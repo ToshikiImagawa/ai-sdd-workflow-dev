@@ -4,7 +4,7 @@ title: "タスク分解"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-task-implementation"]
 tags: ["task-breakdown", "tasks"]
 category: "task-implementation"
@@ -49,7 +49,7 @@ flowchart LR
 ## 1.2. 機能一覧（テキスト形式）
 
 - タスク分解
-    - 技術設計書（`*_design.md`）の分析
+    - 技術設計ドラフト（`task/{ticket-number}/design-draft.md`）の分析
     - 独立テスト可能な小タスク一覧（tasks.md）の生成
     - チケット番号に紐づく task ディレクトリへの保存
 
@@ -67,7 +67,7 @@ flowchart LR
 requirementDiagram
     functionalRequirement TaskBreakdown {
         id: FR_001
-        text: "技術設計書から独立テスト可能な小タスク一覧を生成する"
+        text: "技術設計ドラフトから独立テスト可能な小タスク一覧を生成する"
         risk: high
         verifymethod: demonstration
     }
@@ -81,8 +81,8 @@ requirementDiagram
 
 ### FR_001: タスク分解
 
-技術設計書（`*_design.md`）を分析し、独立してテスト可能な小タスクの一覧（tasks.md）を生成して、
-チケット番号に対応する task ディレクトリに保存する。
+技術設計ドラフト（`task/{ticket-number}/design-draft.md`）を分析し、独立してテスト可能な小タスクの一覧
+（tasks.md）を生成して、同一のチケットディレクトリに保存する。
 [index.md](index.md) の UR_001 から派生。
 
 **トリガー方式:** 手動（開発者による `/task-breakdown` スキル呼び出し）
@@ -99,9 +99,10 @@ requirementDiagram
 
 # 4. 前提条件
 
-- 対象機能の技術設計書（`*_design.md`）が存在すること（タスク分解の入力）
+- 対象チケットの技術設計ドラフト（`task/{ticket-number}/design-draft.md`）が存在すること（タスク分解の入力）
 - 対象プロジェクトで sdd-workflow プラグインが有効化され、`.sdd/` ディレクトリが初期化済みであること
-- チケット番号の採番規則はプロジェクト運用に委ねる（本機能は指定された番号を使用する）
+- チケット番号が指定されること（技術設計ドラフトの位置と tasks.md の保存先を一意に決めるため必須）。
+  採番規則はプロジェクト運用に委ねる（本機能は指定された番号を使用する）
 
 ---
 
@@ -113,4 +114,4 @@ requirementDiagram
 - 品質チェックリストの生成・検証（[checklist-generation.md](checklist-generation.md) /
   [run-checklist.md](run-checklist.md) で扱う）
 - 実装完了後のタスクログ整理（[task-cleanup.md](task-cleanup.md) で扱う）
-- 技術設計書そのものの生成（spec-design カテゴリで扱う）
+- 技術設計ドラフトそのものの生成（spec-design カテゴリで扱う）

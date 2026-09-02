@@ -76,9 +76,10 @@ T1_2 --> T2_2
 ## 参照ドキュメント
 
 - 抽象仕様書: `${SDD_SPECIFICATION_PATH}/[{親機能名}/]{機能名}_spec.md`
-- 技術設計書: `${SDD_SPECIFICATION_PATH}/[{親機能名}/]{機能名}_design.md`
+- 技術設計ドラフト: `${SDD_TASK_PATH}/{チケット番号}/design-draft.md`
 
-※ 階層構造の場合、親機能は `index_spec.md`、`index_design.md`
+※ 階層構造の場合、親機能は `index_spec.md`。技術設計ドラフトはチケット単位なので、
+どちらの構造でもパスは同じ
 
 ## 推奨する手動検証
 

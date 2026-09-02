@@ -1,7 +1,7 @@
 ---
 name: task-breakdown
 description: "Break down tasks from technical design document, generating a list of independently testable small tasks"
-argument-hint: "<feature-name> [ticket-number]"
+argument-hint: "<feature-name> <ticket-number>"
 arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
@@ -10,7 +10,8 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)
 
 # Task Breakdown
 
-Loads technical design document (`*_design.md`) and breaks it down into independently testable small tasks.
+Loads the technical Design Doc draft (`task/{ticket-number}/design-draft.md`) and breaks it down into
+independently testable small tasks.
 
 ## Prerequisites
 
@@ -44,14 +45,18 @@ Full argument string: $ARGUMENTS
 
 | Argument | Required | Description |
 |:--|:--|:--|
-| `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`). Design doc path is resolved from this value |
-| `ticket-number` | - | Used for output directory name (e.g., `TICKET-123`) |
-| `--ci` | - | CI/non-interactive mode. Exits with error if design doc is missing instead of prompting |
+| `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`). PRD and spec paths are resolved from this value |
+| `ticket-number` | Yes | Ticket number (e.g., `TICKET-123`). Locates both the design draft to read and the `tasks.md` to write |
+| `--ci` | - | CI/non-interactive mode. Exits with error if the design draft is missing instead of prompting |
+
+`ticket-number` is required because the design draft and `tasks.md` both live under
+`${SDD_TASK_PATH}/{ticket-number}/`. This matches `/generate-spec`, which requires `--ticket` to decide
+where to write the draft.
 
 ### Input Examples
 
-- `/task-breakdown user-auth`
-- `/task-breakdown task-management TICKET-123`
+- `/task-breakdown user-auth TICKET-123`
+- `/task-breakdown auth/user-login TICKET-123`
 
 ## Front Matter Generation Rules
 
@@ -65,51 +70,53 @@ See `references/front_matter_task.md` for full schema definition, dependency dir
 |:------|:-----|
 | `id` | `"task-{feature-name}"`. For hierarchical: `"task-{parent}-{feature-name}"` |
 | `status` | `"pending"` for new task breakdowns |
-| `depends-on` | Design doc ID (e.g., `["design-user-auth"]`) |
-| `ticket` | Ticket number from input argument (if provided) |
-| `tags` | Inherit from design doc |
-| `category` | Inherit from design doc |
-| `priority` | Inherit from design doc |
+| `depends-on` | Design draft ID, which is ticket-scoped (e.g., `["design-TICKET-123"]`) |
+| `ticket` | Ticket number from input argument |
+| `tags` | Inherit from design draft |
+| `category` | Inherit from design draft |
+| `priority` | Inherit from design draft |
 
 ## Processing Flow
 
 ### 1. Load Related Documents
 
-Both flat and hierarchical structures are supported.
+**Design draft (required, same path in both structures)**:
 
-**For flat structure**:
+- Load `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/design-draft.md` (required)
+
+The design draft is **ticket-scoped with a fixed filename**, so its path does not vary with the spec's
+flat/hierarchical structure. Only the PRD and spec below follow that structure.
+
+**Upstream documents — flat structure**:
 
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md` (PRD, if exists)
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md` (if exists)
-- Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` (required)
 
-**For hierarchical structure** (when argument contains `/`):
+**Upstream documents — hierarchical structure** (when `feature-name` contains `/`):
 
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{parent-feature}/index.md` (parent feature PRD, if exists)
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{parent-feature}/{feature-name}.md` (child feature PRD, if exists)
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_spec.md` (parent feature spec, if exists)
 - Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_spec.md` (child feature spec, if exists)
-- Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_design.md` (parent feature design, if exists)
-- Load `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md` (child feature design, required)
 
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` or `_design` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under task**: Design draft uses the fixed filename `design-draft.md`
 
-**Hierarchical structure input examples**:
+**Hierarchical structure input example**:
 
-- `/task-breakdown auth/user-login`
 - `/task-breakdown auth/user-login TICKET-123`
 
-- If design document doesn't exist:
+- If the design draft doesn't exist:
   - **CI Mode (`--ci`)**: Output error message and stop processing.
-  - **Interactive**: Prompt creation with `/generate-spec` first.
+  - **Interactive**: Prompt creation with `/generate-spec <description> --ticket {ticket-number}` first.
 - If PRD/spec exists, use to verify tasks cover requirements
 
-### 2. Analyze Design Document
+### 2. Analyze Design Draft
 
-Extract the following information from design document:
+Extract the following information from the design draft:
 
 | Extraction Item      | Description                 |
 |:---------------------|:----------------------------|
@@ -159,7 +166,9 @@ The example includes 5 phases (Foundation, Core Implementation, Integration, Tes
 
 ## Output
 
-Use the `templates/${SDD_LANG:-en}/breakdown_output.md` template for output formatting. Save results to ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket_number}/tasks.md or ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature}/tasks.md.
+Use the `templates/${SDD_LANG:-en}/breakdown_output.md` template for output formatting. Save results to
+`${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/tasks.md` — the same directory as
+`design-draft.md`, so `task-cleanup` covers both with one ticket-scoped sweep.
 
 ## Requirement Coverage Verification
 
@@ -187,7 +196,7 @@ Add the following to task list end (if PRD/spec exists):
 ## Post-Generation Actions
 
 1. **Save File**:
-    - `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/tasks.md`
+    - `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/tasks.md`
 
 2. **Requirement Coverage Verification**:
     - If PRD/spec exists: Verify all requirements are covered by tasks
@@ -224,7 +233,7 @@ If Serena MCP is enabled, semantic code analysis can be leveraged to improve tas
 
 ### Behavior When Serena is Not Configured
 
-Even without Serena, task breakdown is performed based on design document.
+Even without Serena, task breakdown is performed based on the design draft.
 If impact scope analysis is needed, recommend manual verification to user.
 
 ## Post-Generation Verification
@@ -246,7 +255,7 @@ The following verifications are automatically performed during generation:
 
 ## Notes
 
-- Avoid task breakdown without design document
+- Avoid task breakdown without a design draft
 - If tasks are too large, consider further breakdown
 - Avoid implementation order that ignores dependencies
 - Completion criteria should be specific and verifiable

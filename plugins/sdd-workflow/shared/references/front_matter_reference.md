@@ -45,11 +45,11 @@ and cross-reference validation.
 | `risk`       | `high`, `medium`, `low`                     | Inherit from PRD if available          |
 | `depends-on` | `["prd-*"]`                                 | References PRD                         |
 
-#### Design (`type: "design"`)
+#### Design (`type: "design"`) — temporary draft under `task/{ticket-number}/design-draft.md`
 
 | Field         | Valid Values / Pattern                          | Notes                                    |
 |:--------------|:------------------------------------------------|:-----------------------------------------|
-| `id`          | `"design-{name}"`                               | Hierarchical: `"design-{parent}-{name}"` |
+| `id`          | `"design-{ticket-number}"`                      | Ticket-scoped, not feature-scoped        |
 | `type`        | `"design"`                                      |                                          |
 | `status`      | `draft`, `review`, `approved`, `deprecated`     |                                          |
 | `sdd-phase`   | `"plan"`                                        | Always `"plan"`                          |

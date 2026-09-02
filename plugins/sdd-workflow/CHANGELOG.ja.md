@@ -43,6 +43,10 @@
 - **`/plan-refactor` にチケット番号が必要になった** - 設計ドラフトのパスがチケット単位のため、
   `/plan-refactor` は `--ticket=<番号>` を受け取る（`--ci` モードでは必須、それ以外は対話的に解決）。
   既存の `task/{ticket-number}/design-draft.md` は Case A の補助入力として読み込まれる
+- **`/task-breakdown` にチケット番号が必須になった** - 読み込む設計ドラフトと出力する `tasks.md` の
+  いずれも `task/{ticket-number}/` 配下にあるため、チケット番号を省略できなくなった。`tasks.md` は
+  常に `task/{ticket-number}/tasks.md` へ出力され、従来の `task/{feature}/tasks.md` へのフォール
+  バックは廃止された
 
 ### Added
 
@@ -92,6 +96,25 @@
 - **`adr/` 配下の編集にもリマインダが出るようになった** - 決定ログを編集しても従来は何も出力されなかった。
   追記専用（過去エントリを書き換えない）であることと、仕様を変える決定は spec に反映する必要があることを
   促すようになった
+#### Skills
+
+- **下流スキルが技術設計書を `task/{ticket-number}/design-draft.md` から読むようになった** -
+  `task-breakdown`・`implement`・`checklist`・`clarify` が、`/generate-spec` が生成しなくなった旧
+  `specification/{feature}_design.md` を参照し続けていた。そのため `/generate-spec` →
+  `/task-breakdown` → `/implement` と順に辿るとデッドロックし、下流スキルが必須とする設計書が
+  永久に作られない状態だった。4スキルすべてがチケット単位の固定パスを参照するようになり、この
+  パスは抽象仕様書のフラット／階層構造とは独立している
+- **`checklist`・`clarify` は設計ドラフトを任意入力として扱うようになった** - 設計ドラフトは実装完了時に
+  削除されるため、不在でもこれらのスキルは停止せず、抽象仕様書（および存在する場合は PRD・`tasks.md`）
+  のみで続行する。`clarify` は設計ドラフトの位置を特定するための任意引数 `ticket-number` を受け取る
+- **`task-breakdown`・`implement` の `depends-on` がチケット単位の design ID になった** - 設計ドラフト
+  自身の `id` は `design-{ticket-number}` であるのに、指示は `design-{feature-name}` のままで、
+  `front-matter-reviewer` の cross-reference 検査が必ず失敗していた。両スキルが
+  `["design-{ticket-number}"]` を指示するようになり、`shared/references/front_matter_reference.md` の
+  `type: "design"` スキーマも同じ形式に修正した
+- **`implement` が `_spec` サフィックス有無の両方の抽象仕様書を受け付けるようになった** -
+  `specification/` 配下でサフィックスが任意になったにもかかわらず前提条件チェックは
+  `{feature}_spec.md` のみを要求していた。`{feature}.md` / `{feature}_spec.md` のいずれでも満たせる
 
 #### Skills
 
