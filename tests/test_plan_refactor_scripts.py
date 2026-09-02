@@ -39,8 +39,10 @@ def clean_env(monkeypatch):
         "SDD_ROOT",
         "SDD_REQUIREMENT_DIR",
         "SDD_SPECIFICATION_DIR",
+        "SDD_TASK_DIR",
         "SDD_REQUIREMENT_PATH",
         "SDD_SPECIFICATION_PATH",
+        "SDD_TASK_PATH",
         "CLAUDE_PROJECT_DIR",
     ):
         monkeypatch.delenv(key, raising=False)
@@ -58,6 +60,13 @@ def _run(module, argv, project_dir, monkeypatch, env=None):
 # --- scan-existing-docs.py -------------------------------------------------
 
 
+def _read_scan(project_dir, root=".sdd"):
+    return json.loads(
+        (project_dir / root / ".cache" / "plan-refactor" / "existing-docs.json")
+        .read_text(encoding="utf-8")
+    )
+
+
 class TestScanExistingDocs:
     def test_requires_feature_name(self, monkeypatch):
         monkeypatch.setattr("sys.argv", ["scan-existing-docs.py"])
@@ -67,19 +76,19 @@ class TestScanExistingDocs:
 
     def test_structure_none(self, tmp_path, monkeypatch):
         _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
-        result = json.loads(
-            (tmp_path / ".sdd" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
-        assert result == {
+        assert _read_scan(tmp_path) == {
             "prd_exists": False,
             "spec_exists": False,
-            "design_exists": False,
+            "design_draft_exists": False,
+            "legacy_design_exists": False,
             "prd_path": "",
             "spec_path": "",
-            "design_path": "",
+            "design_draft_path": "",
+            "legacy_design_path": "",
             "structure": "none",
             "feature_name": "auth",
+            "ticket_number": "",
+            "case": "B",
         }
 
     def test_flat_structure(self, tmp_path, monkeypatch):
@@ -92,17 +101,16 @@ class TestScanExistingDocs:
         (spec / "auth_design.md").write_text("design", encoding="utf-8")
 
         _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
-        result = json.loads(
-            (tmp_path / ".sdd" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
+        result = _read_scan(tmp_path)
         assert result["structure"] == "flat"
         assert result["prd_exists"] is True
         assert result["spec_exists"] is True
-        assert result["design_exists"] is True
         assert result["prd_path"] == str(req / "auth.md")
         assert result["spec_path"] == str(spec / "auth_spec.md")
-        assert result["design_path"] == str(spec / "auth_design.md")
+        # 旧永続設計書は補助入力としてのみ報告される
+        assert result["legacy_design_exists"] is True
+        assert result["legacy_design_path"] == str(spec / "auth_design.md")
+        assert result["case"] == "A"
 
     def test_flat_spec_only(self, tmp_path, monkeypatch):
         spec = tmp_path / ".sdd" / "specification"
@@ -110,14 +118,96 @@ class TestScanExistingDocs:
         (spec / "auth_spec.md").write_text("spec", encoding="utf-8")
 
         _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
-        result = json.loads(
-            (tmp_path / ".sdd" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
+        result = _read_scan(tmp_path)
         assert result["structure"] == "flat"
         assert result["spec_exists"] is True
         assert result["prd_exists"] is False
-        assert result["design_exists"] is False
+        assert result["legacy_design_exists"] is False
+        assert result["case"] == "A"
+
+    def test_flat_spec_without_suffix(self, tmp_path, monkeypatch):
+        # specification/ は単一種別ディレクトリなので _spec サフィックスは任意
+        spec = tmp_path / ".sdd" / "specification"
+        spec.mkdir(parents=True)
+        (spec / "auth.md").write_text("spec", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["structure"] == "flat"
+        assert result["spec_exists"] is True
+        assert result["spec_path"] == str(spec / "auth.md")
+        assert result["case"] == "A"
+
+    def test_suffixed_spec_wins_over_unsuffixed(self, tmp_path, monkeypatch):
+        spec = tmp_path / ".sdd" / "specification"
+        spec.mkdir(parents=True)
+        (spec / "auth_spec.md").write_text("spec", encoding="utf-8")
+        (spec / "auth.md").write_text("spec", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        assert _read_scan(tmp_path)["spec_path"] == str(spec / "auth_spec.md")
+
+    def test_legacy_design_only_is_case_b(self, tmp_path, monkeypatch):
+        # 旧永続設計書だけが残っていても Case 判定には影響しない
+        spec = tmp_path / ".sdd" / "specification"
+        spec.mkdir(parents=True)
+        (spec / "auth_design.md").write_text("design", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["structure"] == "flat"
+        assert result["spec_exists"] is False
+        assert result["legacy_design_exists"] is True
+        assert result["case"] == "B"
+
+    def test_design_draft_detected_with_ticket(self, tmp_path, monkeypatch):
+        spec = tmp_path / ".sdd" / "specification"
+        draft_dir = tmp_path / ".sdd" / "task" / "91"
+        spec.mkdir(parents=True)
+        draft_dir.mkdir(parents=True)
+        (spec / "auth_spec.md").write_text("spec", encoding="utf-8")
+        (draft_dir / "design-draft.md").write_text("draft", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth", "91"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["ticket_number"] == "91"
+        assert result["design_draft_exists"] is True
+        assert result["design_draft_path"] == str(draft_dir / "design-draft.md")
+        # ドラフトは補助入力であり Case 判定は spec の有無で決まる
+        assert result["case"] == "A"
+
+    def test_design_draft_ignored_without_ticket(self, tmp_path, monkeypatch):
+        draft_dir = tmp_path / ".sdd" / "task" / "91"
+        draft_dir.mkdir(parents=True)
+        (draft_dir / "design-draft.md").write_text("draft", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["design_draft_exists"] is False
+        assert result["design_draft_path"] == ""
+        assert result["case"] == "B"
+
+    def test_design_draft_missing_for_ticket(self, tmp_path, monkeypatch):
+        _run(scan_docs, ["scan", "auth", "91"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["ticket_number"] == "91"
+        assert result["design_draft_exists"] is False
+
+    def test_design_draft_honors_custom_task_dir(self, tmp_path, monkeypatch):
+        draft_dir = tmp_path / ".sdd" / "work" / "91"
+        draft_dir.mkdir(parents=True)
+        (draft_dir / "design-draft.md").write_text("draft", encoding="utf-8")
+
+        _run(
+            scan_docs,
+            ["scan", "auth", "91"],
+            tmp_path,
+            monkeypatch,
+            env={"SDD_TASK_DIR": "work"},
+        )
+        result = _read_scan(tmp_path)
+        assert result["design_draft_exists"] is True
+        assert result["design_draft_path"] == str(draft_dir / "design-draft.md")
 
     def test_hierarchical_child(self, tmp_path, monkeypatch):
         req = tmp_path / ".sdd" / "requirement" / "auth"
@@ -128,15 +218,25 @@ class TestScanExistingDocs:
         (spec / "user-login_design.md").write_text("design", encoding="utf-8")
 
         _run(scan_docs, ["scan", "auth/user-login"], tmp_path, monkeypatch)
-        result = json.loads(
-            (tmp_path / ".sdd" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
+        result = _read_scan(tmp_path)
         assert result["structure"] == "hierarchical"
         assert result["prd_exists"] is True
-        assert result["design_exists"] is True
+        assert result["legacy_design_exists"] is True
         assert result["spec_exists"] is False
         assert result["feature_name"] == "auth/user-login"
+        assert result["case"] == "B"
+
+    def test_hierarchical_child_spec_without_suffix(self, tmp_path, monkeypatch):
+        spec = tmp_path / ".sdd" / "specification" / "auth"
+        spec.mkdir(parents=True)
+        (spec / "user-login.md").write_text("spec", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth/user-login"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["structure"] == "hierarchical"
+        assert result["spec_exists"] is True
+        assert result["spec_path"] == str(spec / "user-login.md")
+        assert result["case"] == "A"
 
     def test_hierarchical_parent_index(self, tmp_path, monkeypatch):
         spec = tmp_path / ".sdd" / "specification" / "auth"
@@ -144,13 +244,39 @@ class TestScanExistingDocs:
         (spec / "index_spec.md").write_text("spec", encoding="utf-8")
 
         _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
-        result = json.loads(
-            (tmp_path / ".sdd" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
+        result = _read_scan(tmp_path)
         assert result["structure"] == "hierarchical-parent"
         assert result["spec_exists"] is True
         assert result["spec_path"] == str(spec / "index_spec.md")
+        assert result["case"] == "A"
+
+    def test_hierarchical_parent_index_without_suffix(self, tmp_path, monkeypatch):
+        spec = tmp_path / ".sdd" / "specification" / "auth"
+        spec.mkdir(parents=True)
+        (spec / "index.md").write_text("spec", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["structure"] == "hierarchical-parent"
+        assert result["spec_exists"] is True
+        assert result["spec_path"] == str(spec / "index.md")
+        assert result["case"] == "A"
+
+    def test_flat_prd_is_kept_when_parent_index_spec_matches(self, tmp_path, monkeypatch):
+        # フラットな PRD と階層親の spec が併存する場合、両方が報告される
+        req = tmp_path / ".sdd" / "requirement"
+        spec = tmp_path / ".sdd" / "specification" / "auth"
+        req.mkdir(parents=True)
+        spec.mkdir(parents=True)
+        (req / "auth.md").write_text("prd", encoding="utf-8")
+        (spec / "index_spec.md").write_text("spec", encoding="utf-8")
+
+        _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch)
+        result = _read_scan(tmp_path)
+        assert result["structure"] == "hierarchical-parent"
+        assert result["prd_path"] == str(req / "auth.md")
+        assert result["spec_path"] == str(spec / "index_spec.md")
+        assert result["case"] == "A"
 
     def test_custom_sdd_root(self, tmp_path, monkeypatch):
         req = tmp_path / "docs" / "requirement"
@@ -159,12 +285,10 @@ class TestScanExistingDocs:
 
         _run(scan_docs, ["scan", "auth"], tmp_path, monkeypatch, env={"SDD_ROOT": "docs"})
         # キャッシュは設定 root 配下に生成される
-        result = json.loads(
-            (tmp_path / "docs" / ".cache" / "plan-refactor" / "existing-docs.json")
-            .read_text(encoding="utf-8")
-        )
+        result = _read_scan(tmp_path, root="docs")
         assert result["structure"] == "flat"
         assert result["prd_exists"] is True
+        assert result["case"] == "B"
 
 
 # --- find-implementation-files.py: 純粋関数 --------------------------------

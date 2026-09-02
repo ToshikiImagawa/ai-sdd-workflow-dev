@@ -35,6 +35,17 @@ minor/patch release.
   comparison is limited to what it can express (public API, data model, behavior, literal values); module
   structure and technology stack are compared only while a draft exists. Projects that still keep v4.x
   `{feature}_design.md` files under `specification/` get the same auxiliary treatment for those files
+- **`/plan-refactor` decides Case A / Case B from the spec, and writes the plan into the design draft** -
+  The case used to be decided by the presence of `specification/{feature-name}_design.md`, which is no
+  longer a persistent document, so every run fell through to Case B and reverse-engineered a persisted
+  design doc that the new model had just retired. The case now comes from whether a **spec** exists
+  (matched with *and* without the `_spec` suffix), the refactoring plan and the reverse-engineered design
+  are written to `task/{ticket-number}/design-draft.md`, and the reverse-engineered spec continues to be
+  persisted under `specification/`. A leftover `*_design.md` from v4.x is still detected, but only as
+  reading context — it never decides the case and is never written to
+- **`/plan-refactor` now takes a ticket number** - The design draft path is ticket-scoped, so
+  `/plan-refactor` takes `--ticket=<number>` (required in `--ci` mode, resolved interactively otherwise).
+  An existing `task/{ticket-number}/design-draft.md` is picked up as supplementary input in Case A
 
 ### Added
 
@@ -84,6 +95,13 @@ minor/patch release.
 - **`adr/` edits now get a reminder** - Editing a decision log used to produce no output at all. It now
   reminds that decision logs are append-only and that a decision changing the specification must be
   reflected in the spec
+
+#### Skills
+
+- **`/plan-refactor` hands its decisions off to `adr/`** - The completion output now points at
+  `/task-cleanup`, which appends the settled decisions to `adr/{feature-name}.md` before the design draft
+  (and with it the refactoring plan) is deleted. The skill deliberately does not write to `adr/` itself:
+  a plan is a proposal, and only settled decisions belong in an append-only log
 
 #### Documentation
 

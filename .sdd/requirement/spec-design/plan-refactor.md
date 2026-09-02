@@ -4,7 +4,7 @@ title: "リファクタリング計画"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-spec-design"]
 tags: ["refactoring", "reverse-engineering", "design-doc"]
 category: "spec-design"
@@ -19,12 +19,14 @@ risk: "medium"
 本ドキュメントは、仕様・設計機能群（親 PRD: [index.md](index.md)）のうち、
 リファクタリング計画機能に対する要求仕様書である。
 
-仕様書が存在しない既存機能に対しても、実装コードの分析から技術設計書を逆算・整備し、
+仕様書が存在しない既存機能に対しても、実装コードの分析から仕様書・設計ドラフトを逆算・整備し、
 リファクタリング計画を立案できるようにする。
 
 **対象範囲:**
 
-- 既存実装の分析と設計書の作成・更新
+- 既存実装の分析と設計ドラフトの作成・更新
+- 設計ドラフトに基づくリファクタリング計画の立案
+- 逆生成成果物の永続性に応じた書き分け（仕様書は永続、設計は一時ドラフト）
 - 対象範囲の指定（スコープ絞り込み）
 
 要求図の記法凡例は [PRD_TEMPLATE.md](../../PRD_TEMPLATE.md) のセクション 1 を参照。
@@ -42,22 +44,26 @@ flowchart LR
 
     subgraph PlanRefactor["リファクタリング計画"]
         AnalyzeImpl([既存実装を分析する])
-        BuildDesignDoc([設計書を作成・更新する])
+        BuildDesignDraft([設計ドラフトを作成・更新する])
         PlanRefactoring([リファクタリング計画を立案する])
         ScopeTarget([対象範囲を指定する])
+        PlaceArtifacts([逆生成成果物を永続性に応じて配置する])
     end
 
     Developer --- AnalyzeImpl
     Developer --- ScopeTarget
-    BuildDesignDoc -.->|"<<包含>>"| AnalyzeImpl
+    BuildDesignDraft -.->|"<<包含>>"| AnalyzeImpl
     PlanRefactoring -.->|"<<包含>>"| AnalyzeImpl
     ScopeTarget -.->|"<<拡張>>スコープ絞り込み"| AnalyzeImpl
+    PlaceArtifacts -.->|"<<包含>>"| BuildDesignDraft
 ```
 
 ## 1.2. 機能一覧（テキスト形式）
 
 - リファクタリング計画
-    - 既存実装の分析と設計書の作成・更新
+    - 既存実装の分析と設計ドラフトの作成・更新
+    - 設計ドラフトに基づくリファクタリング計画の立案
+    - 逆生成成果物の永続性に応じた書き分け
     - 対象範囲の指定（スコープ絞り込み）
 
 ---
@@ -74,7 +80,7 @@ DC_002（言語の一貫性）が本機能にトレースする。
 requirementDiagram
     functionalRequirement RefactorPlanning {
         id: FR_001
-        text: "既存実装を分析し設計書とリファクタリング計画を作成する"
+        text: "既存実装を分析し設計ドラフトとリファクタリング計画を作成する"
         risk: medium
         verifymethod: demonstration
     }
@@ -88,7 +94,7 @@ requirementDiagram
 
 ### FR_001: リファクタリング計画
 
-既存機能の実装コードを分析し、技術設計書の作成・更新とリファクタリング計画の立案を行う。
+既存機能の実装コードを分析し、設計ドラフトの作成・更新とリファクタリング計画の立案を行う。
 分析対象はディレクトリ指定で絞り込める。開発者は任意で改善目標（context）を入力でき、
 目標に沿った焦点を絞ったリファクタリング計画を立案できる。
 大規模実装（20+ ファイル）を検出した場合は確認ダイアログを表示し、対話的にスコープを絞り込む。
@@ -98,12 +104,21 @@ requirementDiagram
 
 **検証方法:** デモンストレーションによる検証
 
+**成果物の配置と永続性:**
+
+逆生成した仕様書は永続文書として仕様書ディレクトリに配置し、逆生成した設計とリファクタリング計画は
+チケット単位の一時ドラフトとして配置する。既存ドキュメントの有無判定は仕様書の有無を基準とし、
+永続化されない設計文書の有無には依存しない。
+一時ドラフトは実装完了後に破棄されるが、そこで確定した決定を決定ログ（ADR）へ永続化する処理自体は
+本要求のスコープ外であり、task-implementation カテゴリの task-cleanup 機能が担う。
+
 **関連する制約（[index.md](index.md) で定義）:**
 
-- IR_001: 生成される設計書は命名規則（`_design.md` サフィックス必須）・テンプレート構造・
-  front matter スキーマに準拠すること
+- IR_001: 生成される成果物は命名規則・テンプレート構造・front matter スキーマに準拠すること
+  （一時ドラフトの front matter はチケット単位の識別子規約に従う）
 - DC_002: 生成物の言語は `SDD_LANG` 環境変数に従い、単一ドキュメント内で混在させないこと
 - 技術的制約: 実装分析は静的なコード読解に基づき、実行時挙動の解析は含まない
+- 技術的制約: 一時ドラフトの配置先はチケット番号でスコープされるため、チケット番号の入力が必要
 
 ---
 
@@ -111,6 +126,7 @@ requirementDiagram
 
 - 対象プロジェクトで sdd-workflow プラグインが有効化され、`.sdd/` ディレクトリが初期化済みであること
 - 分析対象の実装コードがリポジトリ内で読解可能であること
+- 設計ドラフトの配置先を決めるためのチケット番号が指定可能であること
 
 ---
 
@@ -121,3 +137,4 @@ requirementDiagram
 - PRD・要件記述を入力とする順方向の仕様書・設計書生成（兄弟機能 [generate-spec.md](generate-spec.md) が扱う）
 - 生成された設計書の品質レビュー（兄弟機能 [spec-review.md](spec-review.md) が扱う）
 - リファクタリングの実装そのもの（task-implementation カテゴリで扱う）
+- 一時ドラフトの破棄と決定ログへの統合（task-implementation カテゴリの task-cleanup 機能が扱う）

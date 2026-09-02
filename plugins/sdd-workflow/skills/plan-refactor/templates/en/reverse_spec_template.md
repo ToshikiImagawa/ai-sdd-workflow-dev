@@ -93,4 +93,4 @@ The following requirements are extracted from the current codebase:
 **Next Steps:**
 1. Review this reverse-engineered specification for accuracy
 2. Add missing requirements
-3. Proceed to design document creation or refactoring planning
+3. Proceed to design draft creation or refactoring planning

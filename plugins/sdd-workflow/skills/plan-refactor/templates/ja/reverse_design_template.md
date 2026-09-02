@@ -1,5 +1,5 @@
 ---
-id: "design-{feature-name}"
+id: "design-{ticket-number}"
 title: "{FEATURE_NAME}"
 type: "design"
 status: "review"
@@ -14,10 +14,13 @@ priority: "medium"
 risk: "medium"
 ---
 
-# {FEATURE_NAME} - 技術設計書（既存実装からの逆生成）
+# {FEATURE_NAME} - 技術設計ドラフト（既存実装からの逆生成）
 
-> **⚠️ 注意**: この設計書は{DATE}時点の既存実装から逆生成されたものです。
+> **⚠️ 注意**: この設計ドラフトは{DATE}時点の既存実装から逆生成されたものです。
 > 現在の状態を文書化したものであり、元々の設計ではありません。内容を確認の上、必要に応じて更新してください。
+>
+> **これは一時ドラフト**（`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`）です。実装完了後、
+> 確定した決定が `/task-cleanup` により `${SDD_ADR_PATH}/{feature-name}.md` へ追記されたうえで削除されます。
 
 ## 設計概要
 
@@ -111,3 +114,5 @@ risk: "medium"
 1. この設計が実際の実装と一致するか確認
 2. 技術的負債項目に対処
 3. リファクタリングを計画（以下にリファクタリング計画セクションを追加）
+4. 実装完了後に `/task-cleanup` を実行し、確定した決定を
+   `${SDD_ADR_PATH}/{feature-name}.md` へ追記してからドラフトを削除する
