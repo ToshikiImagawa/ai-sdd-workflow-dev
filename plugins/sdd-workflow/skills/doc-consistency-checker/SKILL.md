@@ -98,10 +98,16 @@ intentional scope change. This mirrors the `task-cleanup` skill's rule for `*_sp
 in `AI-SDD-PRINCIPLES.md` § Document Update Triggers. The same non-automation principle applies one level up,
 from spec to PRD.
 
+**PRD update handoff**: If the human decides to update the PRD, the update itself must go through
+`/generate-prd --amend` — never a direct/ad-hoc edit — so existing requirement IDs and sections are preserved and
+the change is captured as a normal, human-directed PRD addition (see `generate-prd/SKILL.md` for the `--amend`
+flow). This skill still only detects and reports (its `allowed-tools` is read-only); it never invokes
+`/generate-prd --amend` itself, since only a human can supply the requirement text `--amend` requires.
+
 **`prd-reviewer` handoff timing**: This skill only detects and reports (its `allowed-tools` is read-only). Once
-a human approves a PRD edit for a `[must]` PRD-contradiction finding, the calling agent should invoke
-`prd-reviewer` against the updated PRD — the same way `generate-prd` does after PRD generation. Do not call it
-before the human approves the edit.
+a human approves a PRD edit for a `[must]` PRD-contradiction finding and runs `/generate-prd --amend`, the
+calling agent should invoke `prd-reviewer` against the updated PRD — the same way `generate-prd` does after PRD
+generation. Do not call it before the human approves the edit.
 
 ### 2. spec ↔ adr Consistency
 

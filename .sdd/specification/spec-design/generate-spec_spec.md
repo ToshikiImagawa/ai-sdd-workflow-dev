@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-02"
 depends-on: ["prd-spec-design-generate-spec"]
 tags: ["specification", "design-doc", "generation"]
 category: "spec-design"
@@ -67,6 +67,7 @@ front matter の具体スキーマの詳細は [generate-spec_design.md](generat
 | FR-007 | 生成前に入力の曖昧性（Vibe Coding リスク）を評価し、高リスク時は生成前に不足情報を確認する         | 必須  | 子 PRD FR_001（vibe-detector 連携） / 親 PRD B-001（CONSTITUTION）から派生 |
 | FR-008 | 生成後に外部レビューエージェント（spec-reviewer / front-matter-reviewer）を呼び出し、原則準拠・front matter を検証して指摘を反映する | 必須  | 親 PRD IR_001（検証） |
 | FR-009 | 非対話（CI）モードでは曖昧性評価・レビューを省略し、既存ファイルの上書きを自動承認し、Design Doc を常に生成する（生成省略の確認を行わない） | 任意  | 子 PRD FR_001（CI モード対応） / 運用要求（自動化）から派生 |
+| FR-010 | `--amend` フラグで既存の抽象仕様書への追記分岐を提供し、既存の要求 ID・セクション構成を保持したまま新規差分のみを追加する | 推奨  | 子 PRD FR_001（追記モード拡張） / 運用要求（既存仕様の安全な更新）から派生 |
 
 FR-005 は生成時の PRD 整合（要求カバレッジ確認・要求 ID 参照付与）を担い、FR-008 は生成後に外部エージェントで
 原則・front matter を検証する責務であり、両者は目的が異なる。FR-007・FR-008 は生成の前後に位置する連携責務であり、
@@ -85,7 +86,7 @@ FR-005 は生成時の PRD 整合（要求カバレッジ確認・要求 ID 参�
 
 | 種別    | 配置場所                              | 名前            | 概要                                                                     |
 |-------|-----------------------------------|---------------|------------------------------------------------------------------------|
-| skill | `skills/generate-spec/SKILL.md`   | generate-spec | 入力内容から抽象仕様書・技術設計書を生成する user-invocable スキル（FR-001〜FR-009） |
+| skill | `skills/generate-spec/SKILL.md`   | generate-spec | 入力内容から抽象仕様書・技術設計書を生成する user-invocable スキル（FR-001〜FR-010） |
 
 本機能が呼び出す `spec-reviewer` / `front-matter-reviewer` エージェント（FR-008）は spec-review 機能・
 front-matter 検証機能が正典として提供するコンポーネントであり、本機能はそれらを連携利用する。
@@ -96,8 +97,9 @@ front-matter 検証機能が正典として提供するコンポーネントで�
 
 **入力**:
 
-- 要件記述テキスト（必須）。機能名を記述から抽出・推論する
+- 要件記述テキスト（必須）。機能名を記述から抽出・推論する（`--amend` 時は追加する新規要求のみを記述する）
 - `--ci` フラグ（任意）。CI / 非対話モードを指定する（FR-009）
+- `--amend` フラグ（任意）。既存の抽象仕様書への追記モードを指定する（既存仕様書が必須。FR-010）
 - 環境変数 `SDD_LANG`（出力言語）・`SDD_ROOT` / `SDD_SPECIFICATION_PATH`（出力先の解決）
 
 **出力**:
@@ -196,7 +198,7 @@ sequenceDiagram
 
 | 確認項目          | 結果                                                                                       |
 |-----------------|------------------------------------------------------------------------------------------|
-| 要求カバレッジ     | 子 PRD FR_001 とそのサブ範囲（spec 生成・design 生成・規約準拠）を FR-001〜FR-004・FR-006 でカバー。子 PRD FR_001 の拡張スコープ（vibe-detector 連携・CI モード対応）は FR-007・FR-009 でカバー |
+| 要求カバレッジ     | 子 PRD FR_001 とそのサブ範囲（spec 生成・design 生成・規約準拠）を FR-001〜FR-004・FR-006 でカバー。子 PRD FR_001 の拡張スコープ（vibe-detector 連携・CI モード対応・追記モード）は FR-007・FR-009・FR-010 でカバー |
 | 要求 ID 参照      | 各 FR に対応する子 PRD / 親 PRD の要求 ID を「根拠」列に明記                                       |
 | 非機能要求の反映   | 親 PRD IR_001・DC_001・DC_002 を FR-003・FR-006 および NFR-001〜002 に反映                       |
 | 用語整合性        | 親 PRD 用語集の「抽象仕様書」「技術設計書」定義に統一。「フラット / 階層構造」は CLAUDE.md の定義に整合  |

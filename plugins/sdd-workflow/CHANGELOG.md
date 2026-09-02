@@ -55,6 +55,12 @@ minor/patch release.
 
 #### Skills
 
+- **`/generate-prd --amend`** - New mode that appends newly-provided requirements to an existing PRD instead
+  of regenerating it. Preserves existing requirement IDs, sections, and requirements-diagram nodes, and
+  assigns new IDs continuing from the existing maximum per prefix. `finalize-prd` now accepts the existing
+  PRD text and merges the new content when called with `--amend`
+- **`/generate-spec --amend`** - New mode that appends new functional/non-functional requirements to an
+  existing spec instead of regenerating it, preserving existing requirement IDs and sections
 - **`render-adr-review`** - New skill that renders an `adr/{feature-name}-decisions.md` decision log (or
   the decision rationale section of a `*_spec.md`/`*_design.md`) into a temporary review HTML, structured
   by decision / rationale / rejected alternative rather than a plain Markdown-to-HTML conversion. Output
@@ -71,9 +77,9 @@ minor/patch release.
 #### Front Matter
 
 - **`sdd-version` common field** - Documents may record the sdd-workflow plugin version at generation time
-  in the `sdd-version` front matter field, read from `plugin.json`. `generate-spec`, `task-cleanup`, and
-  `recommend-front-matter` set it when creating new front matter. Absent in documents generated before this
-  field was introduced
+  in the `sdd-version` front matter field, read from `plugin.json`. `generate-spec`, `generate-prd`,
+  `finalize-prd`, `task-cleanup`, and `recommend-front-matter` set it when creating new front matter. Absent
+  in documents generated before this field was introduced
 
 ### Changed
 
@@ -126,6 +132,9 @@ minor/patch release.
   `/task-cleanup`, which appends the settled decisions to `adr/{feature-name}.md` before the design draft
   (and with it the refactoring plan) is deleted. The skill deliberately does not write to `adr/` itself:
   a plan is a proposal, and only settled decisions belong in an append-only log
+- **`doc-consistency-checker` points PRD-update recommendations at `/generate-prd --amend`** - When a spec
+  change contradicts a PRD requirement and a human chooses to update the PRD, the recommended path is now
+  `/generate-prd --amend` instead of an unspecified manual edit
 
 #### Documentation
 
