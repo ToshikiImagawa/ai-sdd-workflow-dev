@@ -54,7 +54,7 @@ Specify → Plan → Tasks → Implement & Review
 | **Specify**            | Clarify "what to build" and "why to build it." **Exclude technical details**                  | PRD, `*_spec.md`                          |
 | **Plan**               | Consider "how to implement." Architecture design and technology selection                     | `task/{ticket-number}/design-draft.md` (temporary draft) |
 | **Tasks**              | Break down design into independently testable small tasks                                    | Under `task/`                             |
-| **Implement & Review** | AI executes each task, continuously verifying specification compliance, and records the rationale behind key decisions | Source code, `adr/{feature}-decisions.md` |
+| **Implement & Review** | AI executes each task, continuously verifying specification compliance, and records the rationale behind key decisions | Source code, `adr/{feature}.md` |
 
 ## Project Configuration File
 
@@ -202,7 +202,7 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 ├── specification/
 │   └── {feature-name}_spec.md    # Abstract specification (SysML model) - persistent
 ├── adr/                           # Persistent decision log
-│   └── {feature-name}-decisions.md  # Decisions and rationale (append-only)
+│   └── {feature-name}.md         # Decisions and rationale (append-only)
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
         ├── design-draft.md       # Technical design draft (Design Doc), deleted after implementation
@@ -227,10 +227,10 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 │       ├── index_spec.md         # Parent feature abstract specification
 │       └── {child-feature}_spec.md   # Child feature abstract specification
 ├── adr/                           # Persistent decision log
-│   ├── {feature-name}-decisions.md   # Top-level feature (backward compatible with flat structure)
+│   ├── {feature-name}.md         # Top-level feature (backward compatible with flat structure)
 │   └── {parent-feature}/         # Parent feature directory
-│       ├── index-decisions.md        # Parent feature decision log
-│       └── {child-feature}-decisions.md # Child feature decision log
+│       ├── index.md              # Parent feature decision log
+│       └── {child-feature}.md    # Child feature decision log
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
         ├── design-draft.md       # Technical design draft (Design Doc), deleted after implementation
@@ -304,8 +304,8 @@ This convention makes it visually easy to distinguish whether the link target is
 - `specification/auth/index_spec.md` → Auth domain abstract specification
 - `specification/auth/user-login_spec.md` → User login specification under auth domain
 - `task/68/design-draft.md` → Technical design draft for ticket #68 (temporary, ticket-scoped rather than feature-scoped)
-- `adr/auth/index-decisions.md` → Auth domain decision log (persistent)
-- `adr/payment/checkout-decisions.md` → Checkout decision log under payment domain (persistent)
+- `adr/auth/index.md` → Auth domain decision log (persistent)
+- `adr/payment/checkout.md` → Checkout decision log under payment domain (persistent)
 
 ### Document Persistence Rules
 
@@ -313,8 +313,8 @@ This convention makes it visually easy to distinguish whether the link target is
 |:-----------------------------------------|:---------------|:----------------------------------------------------------------------------------------------------------------------------------|
 | `requirement/`                          | **Persistent** | Define high-level requirements (business requirements). Foundation for SysML requirements diagrams                                  |
 | `specification/*_spec.md`               | **Persistent** | Define the **abstract structure and behavior** of the system. No technical details                                                  |
-| `task/` (including `{ticket-number}/design-draft.md`, the draft technical plan) | **Temporary**  | **Delete** after implementation complete. Integrate important decisions and their rationale into `adr/{feature}-decisions.md` before deletion |
-| `adr/{feature}-decisions.md`            | **Persistent** | **Append-only** log of decisions and their rationale (including rejected alternatives). Never rewrite past entries — append new decisions as they are made |
+| `task/` (including `{ticket-number}/design-draft.md`, the draft technical plan) | **Temporary**  | **Delete** after implementation complete. Integrate important decisions and their rationale into `adr/{feature}.md` before deletion |
+| `adr/{feature}.md`            | **Persistent** | **Append-only** log of decisions and their rationale (including rejected alternatives). Never rewrite past entries — append new decisions as they are made |
 
 ### Document Dependencies
 
@@ -373,7 +373,7 @@ graph RL
 | **Purpose**           | Translate abstract specifications into **concrete technical plans**                               |
 | **Content**           | Technology stack selection, architecture design, module breakdown, rationale for design decisions |
 | **Technical Details** | **Included** (specific technology selection and implementation approach)                          |
-| **Lifecycle**         | **Delete** after implementation complete. Integrate the rationale behind key decisions into `adr/{feature}-decisions.md` before deletion |
+| **Lifecycle**         | **Delete** after implementation complete. Integrate the rationale behind key decisions into `adr/{feature}.md` before deletion |
 | **Role**              | A **working draft** used during planning; superseded by `adr/` once implementation completes                                            |
 
 **Required Sections**: Implementation Status, Design Goals, Technology Stack, Architecture, Design Decisions
@@ -387,10 +387,10 @@ graph RL
 |:--------------|:---------------------------------------------------------------------------------------------------------|
 | **Purpose**   | **Temporary work records** for implementation                                                            |
 | **Content**   | Task lists, investigation logs, implementation schedules, test case details                              |
-| **Lifecycle** | **Delete** after implementation complete. Integrate important design decisions into `adr/{feature}-decisions.md` |
+| **Lifecycle** | **Delete** after implementation complete. Integrate important design decisions into `adr/{feature}.md` |
 | **Role**      | **Prevent documentation noise**                                                                          |
 
-### 5. Architecture Decision Record (`adr/{feature}-decisions.md`)
+### 5. Architecture Decision Record (`adr/{feature}.md`)
 
 **Persistence: Persistent (append-only)** | **Focus: Why this decision was made**
 
@@ -400,7 +400,7 @@ graph RL
 | **Content**           | Decision, reasoning, rejected alternatives, and the date/context of the decision                                 |
 | **Technical Details** | Only the decisions that matter for future readers — not a full design plan                                       |
 | **Front Matter**      | `type: "adr"` (full schema: see `front_matter_reference.md`)                                                      |
-| **Lifecycle**         | One file per feature (`{feature-name}-decisions.md`), append-only. Append a new entry whenever a decision is finalized; existing entries are never rewritten |
+| **Lifecycle**         | One file per feature (`{feature-name}.md`), append-only. Append a new entry whenever a decision is finalized; existing entries are never rewritten |
 | **Role**              | Ensures **design decision transparency** survives after the temporary design draft is deleted                    |
 
 ## Related Agents
@@ -537,7 +537,7 @@ definition preserves behavior — it always starts at Specify (see Task Type Det
 Before proposing the change, identify what it affects:
 
 - The current `*_spec.md` (public API, data model, behavior) for the contract being changed
-- `adr/{feature}-decisions.md` for prior decisions the change would reverse or build on
+- `adr/{feature}.md` for prior decisions the change would reverse or build on
 - Call sites/consumers in the implementation that rely on the behavior being changed
 
 **2. Backward Compatibility Decision**
@@ -552,7 +552,7 @@ Choose one of the following and record the choice and its rationale (see step 3)
 
 **3. Migration Record**
 
-Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}-decisions.md`
+Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}.md`
 (see `front_matter_reference.md` for the `adr` schema). If the change reverses a prior decision, set
 `supersedes` on the new entry and `superseded-by` on the entry it replaces, per the ADR supersede convention
 in "Architecture Decision Record" above; never rewrite the superseded entry's text.
@@ -566,14 +566,14 @@ Manage lifecycle of files under `task/` (temporary), including the Design Doc dr
 ```
 1. Review contents under task/, including design-draft.md
    ↓
-2. Integrate important decisions and their rationale into adr/{feature}-decisions.md (append-only)
+2. Integrate important decisions and their rationale into adr/{feature}.md (append-only)
    ↓
 3. Delete files under task/ (including design-draft.md)
    ↓
 4. Commit
 ```
 
-**Content to Integrate (into `adr/{feature}-decisions.md`)**:
+**Content to Integrate (into `adr/{feature}.md`)**:
 
 - Design decisions and their rationale
 - Alternative evaluation results
@@ -593,7 +593,7 @@ Verify consistency between documents:
 |:----------------------------|:-------------------------------------------------------------------------------------------|
 | **PRD ↔ spec**              | Requirement ID to spec mapping, functional requirement coverage                            |
 | **spec ↔ design**           | API definition match, requirement reflection in design decisions, constraint consideration |
-| **design ↔ adr**            | Decision rationale is captured in `adr/{feature}-decisions.md` before `task/{ticket-number}/design-draft.md` is deleted |
+| **design ↔ adr**            | Decision rationale is captured in `adr/{feature}.md` before `task/{ticket-number}/design-draft.md` is deleted |
 | **spec ↔ Implementation**   | Public API match, data model match, behavior match per requirement ID, literal value match. **The persistent implementation check** — the spec outlives the design draft, so this is the baseline whenever no draft exists |
 | **design ↔ Implementation** | Module structure match, interface definition match. **Only valid while `task/{ticket-number}/design-draft.md` exists** (i.e. during implementation); the draft is deleted afterwards, so this check no longer applies |
 
@@ -642,7 +642,7 @@ Criteria for when to update each document:
 - Module structure changes
 - New design pattern introductions
 
-**When to Append to `adr/{feature}-decisions.md`**:
+**When to Append to `adr/{feature}.md`**:
 
 - Whenever one of the `design-draft.md` triggers above is finalized at implementation completion
 - When rejecting an alternative approach worth recording for future readers

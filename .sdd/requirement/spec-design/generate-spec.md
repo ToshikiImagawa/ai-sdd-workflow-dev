@@ -19,14 +19,16 @@ risk: "high"
 本ドキュメントは、仕様・設計機能群（親 PRD: [index.md](index.md)）のうち、
 仕様書・設計書生成機能に対する要求仕様書である。
 
-入力内容（PRD・要件記述）から「何を作るか」を定義する抽象仕様書（`*_spec.md`）と
-「どのように実現するか」を定義する技術設計書（`*_design.md`）を生成し、
-AI 実装者へのガードレールとなる 2 層のドキュメントを構築する。
+入力内容（PRD・要件記述）から「何を作るか」を定義する抽象仕様書（`specification/` 配下、
+`_spec` サフィックスは任意）と「どのように実現するか」を定義する技術設計書
+（`task/{ticket-number}/design-draft.md` の一時ドラフト）を生成し、
+AI 実装者へのガードレールとなる 2 層のドキュメントを構築する（両者の命名規則・永続性区分は
+`AI-SDD-PRINCIPLES.md` § File Naming Convention / § Document Persistence Rules を正典とする）。
 
 **対象範囲:**
 
-- 入力内容（PRD・要件記述）からの抽象仕様書（`*_spec.md`）生成
-- 抽象仕様書からの技術設計書（`*_design.md`）生成
+- 入力内容（PRD・要件記述）からの抽象仕様書（`specification/`、`_spec` サフィックス任意）生成
+- 抽象仕様書からの技術設計書（`task/{ticket-number}/design-draft.md` の一時ドラフト）生成
 - 命名規則・テンプレート・front matter への準拠
 
 要求図の記法凡例は [PRD_TEMPLATE.md](../../PRD_TEMPLATE.md) のセクション 1 を参照。
@@ -58,8 +60,8 @@ flowchart LR
 ## 1.2. 機能一覧（テキスト形式）
 
 - 仕様書・設計書生成
-    - 入力内容（PRD・要件記述）からの抽象仕様書（`*_spec.md`）生成
-    - 抽象仕様書からの技術設計書（`*_design.md`）生成
+    - 入力内容（PRD・要件記述）からの抽象仕様書（`specification/`、`_spec` サフィックス任意）生成
+    - 抽象仕様書からの技術設計書（`task/{ticket-number}/design-draft.md` の一時ドラフト）生成
     - 命名規則・テンプレート・front matter への準拠
 
 ---
@@ -90,9 +92,9 @@ requirementDiagram
 
 ### FR_001: 仕様書・設計書生成
 
-入力内容（PRD・要件記述）から抽象仕様書（`{feature-name}_spec.md`）と技術設計書
-（`{feature-name}_design.md`）を生成し、specification ディレクトリに保存する。
-[index.md](index.md) の UR_001 から派生。
+入力内容（PRD・要件記述）から抽象仕様書（`{feature-name}.md` または `{feature-name}_spec.md`）を
+`specification/` ディレクトリに生成し、技術設計書（`task/{ticket-number}/design-draft.md`）を
+一時ドラフトとして生成する。[index.md](index.md) の UR_001 から派生。
 
 生成にあたっては、生成前に入力の曖昧性（Vibe Coding リスク）を評価し、高リスク時は不足情報を確認したうえで
 生成へ進む（vibe-detector 機能との連携。曖昧性検知そのものは vibe-detector が正典）。また非対話（CI）モードでは、
@@ -106,7 +108,8 @@ requirementDiagram
 
 **関連する制約（[index.md](index.md) で定義）:**
 
-- IR_001: 生成物は命名規則（`_spec.md` / `_design.md` サフィックス必須）・テンプレート構造・
+- IR_001: 生成物は命名規則（`specification/` の `_spec` サフィックスは任意、技術設計書は
+  `task/{ticket-number}/design-draft.md` の固定ファイル名）・テンプレート構造・
   front matter スキーマに準拠すること
 - DC_001: 抽象仕様書には技術的実装詳細を含めず、技術設計書には設計判断の理由を明示すること
 - DC_002: 生成物の言語は `SDD_LANG` 環境変数に従い、単一ドキュメント内で混在させないこと
@@ -128,3 +131,5 @@ requirementDiagram
 - 生成後の品質レビュー（兄弟機能 [spec-review.md](spec-review.md) が扱う）
 - 既存実装からの設計書逆算（兄弟機能 [plan-refactor.md](plan-refactor.md) が扱う）
 - PRD 自体の生成（prd-generation カテゴリで扱う）
+- 一時ドラフト（`task/{ticket-number}/design-draft.md`）の破棄と決定ログ（ADR）への統合
+  （task-implementation カテゴリの task-cleanup 機能が扱う）

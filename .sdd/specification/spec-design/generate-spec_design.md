@@ -82,8 +82,8 @@ graph TD
     SK -->|Phase 2: 生成| GEN[Claude: 入力解析・生成]
     GEN -->|CONSTITUTION.md 読取| CONST[原則準拠]
     GEN -->|対応 PRD 確認| PRD[要求 ID / 構造]
-    GEN -->|spec 生成| SPEC[{feature}_spec.md]
-    GEN -->|design 生成| DESIGN[{feature}_design.md]
+    GEN -->|spec 生成| SPEC[specification/{feature}_spec.md]
+    GEN -->|design 生成| DESIGN[task/{ticket-number}/design-draft.md]
     SPEC --> RVS[spec / front-matter reviewer（spec）]
     DESIGN --> RVD[spec / front-matter reviewer（design）]
     RVS -->|指摘| GEN
@@ -130,11 +130,11 @@ export GENERATE_SPEC_REFERENCES="{root}/.cache/generate-spec/references"
 
 | フィールド      | spec                                    | design                                     |
 |--------------|-----------------------------------------|--------------------------------------------|
-| `id`          | `spec-{feature}` / 階層: `spec-{parent}-{feature}` | `design-{feature}` / 階層: `design-{parent}-{feature}` |
+| `id`          | `spec-{feature}` / 階層: `spec-{parent}-{feature}` | `design-{ticket-number}`（チケット番号スコープ。feature スコープではない） |
 | `type`        | `"spec"`                                | `"design"`                                 |
 | `sdd-phase`   | `"specify"`                             | `"plan"`                                   |
 | `status`      | `"draft"`（新規）                         | `"draft"`（新規）                            |
-| `impl-status` | —                                       | `"not-implemented"`（新規）                  |
+| `impl-status` | `"not-implemented"`（新規）                | `"not-implemented"`（新規）                  |
 | `depends-on`  | PRD ID（例: `["prd-{feature}"]`）         | spec ID（例: `["spec-{feature}"]`）          |
 | `priority` / `risk` | PRD から継承（無ければ `"medium"`）        | spec から継承                                |
 
@@ -142,13 +142,16 @@ export GENERATE_SPEC_REFERENCES="{root}/.cache/generate-spec/references"
 
 ## 5.3. 出力先パスの決定
 
-| 構造            | spec                                                | design                                                |
-|---------------|-----------------------------------------------------|-------------------------------------------------------|
-| フラット         | `{SDD_SPECIFICATION_PATH}/{feature}_spec.md`         | `{SDD_SPECIFICATION_PATH}/{feature}_design.md`         |
-| 階層（親機能）     | `{SDD_SPECIFICATION_PATH}/{parent}/index_spec.md`    | `{SDD_SPECIFICATION_PATH}/{parent}/index_design.md`    |
-| 階層（子機能）     | `{SDD_SPECIFICATION_PATH}/{parent}/{feature}_spec.md` | `{SDD_SPECIFICATION_PATH}/{parent}/{feature}_design.md` |
+| 構造            | spec（`specification/`、永続）                       |
+|---------------|-----------------------------------------------------|
+| フラット         | `{SDD_SPECIFICATION_PATH}/{feature}_spec.md`         |
+| 階層（親機能）     | `{SDD_SPECIFICATION_PATH}/{parent}/index_spec.md`    |
+| 階層（子機能）     | `{SDD_SPECIFICATION_PATH}/{parent}/{feature}_spec.md` |
 
 対応 PRD が階層構造で存在する場合、または入力で親機能（カテゴリ）が指定された場合に階層構造を用いる。
+
+design（`task/{ticket-number}/design-draft.md`、一時ドラフト）は上記フラット / 階層構造と無関係な、
+チケット番号スコープの固定パスである（`--ticket` で指定、または対話モードで確認して決定する）。
 
 ---
 
@@ -226,7 +229,7 @@ plugins/sdd-workflow/
 | A-002 | フックとスクリプトの責務分離       | ✅     | テンプレート/参照コピーは `prepare-spec.py`、判断・生成は Claude に分離        |
 | B-002 | 多言語対応（EN/JA）の一貫性       | ✅     | `SDD_LANG` + `templates/{en,ja}/`。プロジェクト優先テンプレートも言語一貫      |
 | D-001 | Specification-Driven          | ✅     | spec / design を生成し Specify → Plan フローを支える中核機能               |
-| D-002 | ファイル命名規則の厳守            | ✅     | `_spec` / `_design` サフィックスと構造別パスを生成フローで強制                 |
+| D-002 | ファイル命名規則の厳守            | ✅     | spec の `_spec` サフィックス（任意）と構造別パス、design の固定ファイル名 `design-draft.md` を生成フローで強制 |
 | T-002 | plugin.json 登録の徹底          | ✅     | generate-spec は標準パス `skills/` の自動検出で読み込まれる（`skills` 宣言なし） |
 | T-003 | 日本語出力の文字化け防止           | ✅     | 生成物の UTF-8 維持・mojibake / U+FFFD の混入を出力前に確認                 |
 

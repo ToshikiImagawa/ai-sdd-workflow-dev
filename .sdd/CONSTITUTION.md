@@ -113,13 +113,14 @@
 
 ### D-001: Specification-Driven
 
-**原則**: 仕様書（`*_spec.md`）・設計書（`*_design.md`）なしで実装しない
+**原則**: 仕様書（`*_spec.md`）・技術設計書（`task/{ticket-number}/design-draft.md`）なしで実装しない
 
 **適用範囲**: プラグイン自体の新機能・変更すべて
 
 **検証方法**:
 
-- [ ] `.sdd/specification/` に対応する `_spec.md` / `_design.md` が存在する
+- [ ] `.sdd/specification/` に対応する `_spec.md` が存在する
+- [ ] `.sdd/task/{ticket-number}/design-draft.md`（技術設計書の一時ドラフト）が生成されている
 - [ ] 仕様書が実装前に更新されている
 
 **違反例**:
@@ -147,7 +148,7 @@
 
 ### D-003: ドキュメント永続性ルールの遵守
 
-**原則**: `task/` は一時ディレクトリであり、実装完了後に重要な設計判断を `*_design.md` に統合してから削除する
+**原則**: `task/` は一時ディレクトリであり、実装完了後に重要な設計判断を ADR（`adr/{feature}.md`）に統合してから削除する
 
 **適用範囲**: `task-cleanup` スキルおよび関連処理全般
 
@@ -276,7 +277,7 @@
 
 原則の遵守が不可能な場合：
 
-1. **文書化**: 該当 `*_design.md` に例外理由を記載
+1. **文書化**: 該当する技術設計書（`task/{ticket-number}/design-draft.md`）に例外理由を記載
 2. **正当化**: なぜ原則に従えないか説明
 3. **レビュー**: PRレビューで承認を得る
 4. **追跡**: `CHANGELOG.md` に記録
@@ -357,7 +358,7 @@
 | `.sdd/SPECIFICATION_TEMPLATE.md` | 原則への言及セクションを含める     |
 | `.sdd/DESIGN_DOC_TEMPLATE.md`    | 原則準拠のチェックリストを含める    |
 | `*_spec.md`                      | 原則に基づいた設計を記述        |
-| `*_design.md`                    | 設計判断が原則に準拠していることを明記 |
+| `design-draft.md`                | 設計判断が原則に準拠していることを明記 |
 
 ### 原則準拠の検証
 
