@@ -381,10 +381,10 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
    （既存ファイルは上書きされません）
 2. **各 `*_design.md` から設計判断を特定する** — 技術・アーキテクチャ・アプローチをなぜ選んだかを説明している節
 3. **`adr/{feature-name}.md` を作成する**（`specification/` 配下のパスに対応させる。例:
-   `specification/auth/user-login_design.md` → `adr/auth/user-login.md`）。共通の front
-   matter フィールド（`id`、`title`、`type: "adr"`、`status`、`created`、`updated`）を設定する —
-   `adr` の詳細スキーマは `shared/references/front_matter_reference.md` にまだ定義されていないため、
-   現時点では共通フィールドのみが対象
+   `specification/auth/user-login_design.md` → `adr/auth/user-login.md`）。
+   `shared/references/front_matter_reference.md` に定義された `type: "adr"` の front matter
+   フィールド（`id`、`title`、`status`、`created`、`updated`、`depends-on`、この決定が過去の決定を
+   覆す場合は `supersedes`/`superseded-by`）を設定する
 4. **決定ごとに1エントリを追記する**。含めるのは次のみ:
    - 下した決定
    - その理由

@@ -70,6 +70,7 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   }
 }
@@ -82,6 +83,7 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
 | `root`                      | `.sdd`          | Root directory                                   |
 | `directories.requirement`   | `requirement`   | PRD/Requirements specification directory         |
 | `directories.specification` | `specification` | Abstract specification directory                 |
+| `directories.adr`           | `adr`           | Architecture Decision Record (decision log) directory |
 | `directories.task`          | `task`          | Task log/temporary work log directory (includes Design Doc drafts) |
 
 ### ID Convention Configuration (Optional)
@@ -143,9 +145,11 @@ At session start, the `session-start` hook reads `.sdd-config.json` and sets the
 | `SDD_ROOT`               | `.sdd`               | Root directory               |
 | `SDD_REQUIREMENT_DIR`    | `requirement`        | Requirements directory name  |
 | `SDD_SPECIFICATION_DIR`  | `specification`      | Specification directory name |
+| `SDD_ADR_DIR`            | `adr`                | Decision log (ADR) directory name |
 | `SDD_TASK_DIR`           | `task`               | Task log directory name      |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | Requirements full path       |
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification full path      |
+| `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (ADR) full path |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log full path           |
 
 **Path Resolution Priority:**
@@ -164,6 +168,7 @@ Agents, commands, and skills use these environment variables when referencing do
   "directories": {
     "requirement": "requirements",
     "specification": "specs",
+    "adr": "decisions",
     "task": "wip"
   }
 }
@@ -175,6 +180,7 @@ With this configuration, the directory structure becomes:
 docs/
 ├── requirements/          # PRD (Requirements Specification)
 ├── specs/                 # Specifications and Design Documents
+├── decisions/             # Persistent decision log (ADR)
 └── wip/                   # Temporary task logs
 ```
 

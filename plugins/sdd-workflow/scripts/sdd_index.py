@@ -512,7 +512,7 @@ def upsert_document(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
 def rebuild_all(project_root: str) -> None:
     paths = load_sdd_paths(project_root)
     sdd_root = paths.root
-    req_dir, spec_dir = paths.requirement_dir, paths.specification_dir
+    req_dir, spec_dir, adr_dir = paths.requirement_dir, paths.specification_dir, paths.adr_dir
     conn = connect(db_path(project_root, sdd_root))
     try:
         init_schema(conn)
@@ -523,7 +523,7 @@ def rebuild_all(project_root: str) -> None:
         except sqlite3.OperationalError:
             pass
 
-        target_files = iter_target_files(project_root, sdd_root, req_dir, spec_dir)
+        target_files = iter_target_files(project_root, sdd_root, req_dir, spec_dir, adr_dir)
         current_paths = set()
         changed = False
 

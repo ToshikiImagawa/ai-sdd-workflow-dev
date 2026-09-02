@@ -118,6 +118,12 @@ generation. Do not call it before the human approves the edit.
 | **Terminology Consistency**      | Is the same terminology used in spec and adr?                                                                             |
 | **Obsolescence Detection**       | Does an adr entry describe a decision about spec elements that were since changed or removed, with no follow-up entry?   |
 
+**Obsolescence Detection follow-up**: `adr/` is append-only, so an obsolete entry is never rewritten or deleted.
+When this check finds one, propose appending a new adr entry recording the reversal (with `depends-on` pointing
+at the current spec) and setting `superseded-by` on the obsolete entry to the new entry's `id` (see
+`${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` § ADR). The new entry's `supersedes` field
+points back at the obsolete one.
+
 **Note — out of scope for this skill**:
 
 - `task/{ticket-number}/design-draft.md` consistency with `*_spec.md`, and its integration into

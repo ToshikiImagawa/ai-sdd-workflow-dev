@@ -58,6 +58,22 @@ and cross-reference validation.
 | `risk`        | `high`, `medium`, `low`                         | Inherit from spec                        |
 | `depends-on`  | `["spec-*"]`                                    | References spec                          |
 
+#### ADR (`type: "adr"`) — persistent decision log under `adr/{feature-name}.md`
+
+| Field            | Valid Values / Pattern              | Notes                                                                  |
+|:-----------------|:-------------------------------------|:------------------------------------------------------------------------|
+| `id`             | `"adr-{name}"`                       | Hierarchical: `"adr-{parent}-{name}"`                                   |
+| `type`           | `"adr"`                              |                                                                          |
+| `status`         | `draft`, `review`, `approved`, `deprecated` |                                                                    |
+| `sdd-phase`      | `"implement"`                        | Always `"implement"`                                                    |
+| `depends-on`     | `["spec-*"]`                         | References the spec whose decisions this entry records                  |
+| `supersedes`     | list of `"adr-*"`                    | IDs of prior entries this decision replaces. Omit if this is not a reversal |
+| `superseded-by`  | `"adr-*"`                            | ID of the entry that later replaced this decision. Absent while still current |
+
+`adr/` is append-only: past entries are never rewritten. When a decision is reversed, append a new entry with
+`supersedes` pointing at the old one, and set `superseded-by` on the old entry to point at the new one — the
+old entry's text stays intact as a historical record.
+
 #### Task (`type: "task"`)
 
 | Field        | Valid Values / Pattern                             | Notes                                            |
@@ -89,12 +105,15 @@ downstream documents.
 
 ```
 prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← task (depends-on: ["design-*"])
+                                   ← adr (depends-on: ["spec-*"])
                                                                        ← impl-log (depends-on: ["design-*"])
 ```
 
 - **PRD**: May depend on parent PRDs only (`"prd-*"`)
 - **Spec**: Depends on PRD (`"prd-*"`)
 - **Design**: Depends on spec (`"spec-*"`)
+- **ADR**: Depends on spec (`"spec-*"`). `supersedes` / `superseded-by` are lateral references between ADR
+  entries, not upstream dependencies
 - **Task**: Depends on design (`"design-*"`)
 - **Implementation Log**: Depends on design (`"design-*"`)
 
@@ -104,8 +123,8 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 
 | Check Item                  | Description                                                                                      | Importance |
 |:----------------------------|:-------------------------------------------------------------------------------------------------|:-----------|
-| **`id` format**             | Matches expected pattern for type (`prd-*`, `spec-*`, `design-*`, `task-*`, `impl-*`)            | Medium     |
-| **`type` correctness**      | Matches document location (`"prd"` for `requirement/`, `"spec"`/`"design"` for `specification/`) | Medium     |
+| **`id` format**             | Matches expected pattern for type (`prd-*`, `spec-*`, `design-*`, `task-*`, `impl-*`, `adr-*`)   | Medium     |
+| **`type` correctness**      | Matches document location (`"prd"` for `requirement/`, `"spec"`/`"design"` for `specification/`, `"adr"` for `adr/`) | Medium |
 | **`depends-on` references** | All referenced IDs exist in actual documents                                                     | High       |
 | **`depends-on` direction**  | Dependencies point upstream only (spec→prd, design→spec, task→design)                            | High       |
 | **`status` validity**       | Value is one of the allowed values for the document type                                         | Low        |
@@ -122,6 +141,8 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 | Design        | **`impl-status` accuracy**  | Matches actual implementation state         | Medium     |
 | Task          | **`sdd-phase` correctness** | Must be `"tasks"`                           | Low        |
 | Impl Log      | **`sdd-phase` correctness** | Must be `"implement"`                       | Low        |
+| ADR           | **`sdd-phase` correctness** | Must be `"implement"`                       | Low        |
+| ADR           | **`supersedes`/`superseded-by` consistency** | Referenced IDs exist and the reverse pointer is set on both entries | High |
 
 ### Cross-Reference Checks
 
@@ -151,6 +172,12 @@ pending → cancelled
 ```
 in-progress → completed
 ```
+
+### ADR
+
+ADR entries are append-only and do not follow the draft/review/approved lifecycle: an entry is written once a
+decision is made. Validity is tracked by `superseded-by` rather than by rewriting `status` — an entry with
+`superseded-by` set has been replaced by a later decision but its text is never edited.
 
 ### Design `impl-status` Transitions
 

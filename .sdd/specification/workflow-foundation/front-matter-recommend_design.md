@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-09-01"
+updated: "2026-09-02"
 depends-on: ["spec-workflow-foundation-front-matter-recommend"]
 tags: ["front-matter", "metadata", "skill", "scan"]
 category: "workflow-foundation"
@@ -101,8 +101,9 @@ graph TD
 
 # 5. データ構造
 
-走査スクリプトは `${SDD_ROOT}/.cache/recommend-front-matter/scan_result.json` を生成し、
-`CLAUDE_ENV_FILE` へ `RECOMMEND_FM_*` と `SDD_LANG` を export する。
+走査スクリプトは `doc_walker.collect_documents` を介して `requirement/` / `specification/` / `task/` /
+`adr/` の各ディレクトリ配下を走査し、`${SDD_ROOT}/.cache/recommend-front-matter/scan_result.json` を
+生成する。`CLAUDE_ENV_FILE` へ `RECOMMEND_FM_*` と `SDD_LANG` を export する。
 
 ```json
 // scan_result.json

@@ -394,6 +394,14 @@ def _write_prd(tmp_path, name, content):
     return f
 
 
+def _write_adr(tmp_path, name, content):
+    adr_dir = tmp_path / ".sdd" / "adr"
+    adr_dir.mkdir(parents=True, exist_ok=True)
+    f = adr_dir / f"{name}.md"
+    f.write_text(content, encoding="utf-8")
+    return f
+
+
 class TestRebuildAll:
     def test_basic_rebuild(self, tmp_path):
         proj = _create_sdd_project(tmp_path)
@@ -459,6 +467,25 @@ class TestRebuildAll:
         si.rebuild_all(str(proj))
         conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
         assert conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 0
+
+    def test_includes_adr_docs(self, tmp_path):
+        proj = _create_sdd_project(tmp_path)
+        _write_adr(proj, "auth-decisions", textwrap.dedent("""\
+            ---
+            id: adr-auth
+            title: Auth decisions
+            type: adr
+            status: approved
+            created: 2026-01-01
+            updated: 2026-07-14
+            ---
+            # Decision log
+        """))
+        si.rebuild_all(str(proj))
+
+        conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
+        docs = conn.execute("SELECT doc_id, type FROM documents").fetchall()
+        assert ("adr-auth", "adr") in docs
         conn.close()
 
 

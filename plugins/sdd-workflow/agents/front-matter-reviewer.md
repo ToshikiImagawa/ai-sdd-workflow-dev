@@ -18,7 +18,7 @@ $ARGUMENTS
 
 | Parameter           | Required | Description                                                                      |
 |:--------------------|:---------|:---------------------------------------------------------------------------------|
-| Target file path(s) | Yes      | One or more `.sdd/` document paths (PRD, spec, design, task, impl-log)           |
+| Target file path(s) | Yes      | One or more `.sdd/` document paths (PRD, spec, design, task, impl-log, adr)      |
 | `--cross-ref`       | No       | Enable project-wide cross-reference checks (id uniqueness, dependency integrity) |
 
 ### Input Examples
