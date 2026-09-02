@@ -58,6 +58,7 @@ $ARGUMENTS
 | `requirements-description` | Yes      | Feature description text. Feature name is extracted from description                                                         |
 | `--ticket <number>`        | -        | Ticket number (GitHub issue number, JIRA key, etc.) that identifies the Design Doc draft location `task/{ticket-number}/design-draft.md`. If omitted in interactive mode, resolved during Missing Information Confirmation (step 3, before the existing-document check). Required in `--ci` mode (fails if missing) |
 | `--ci`                     | -        | CI/non-interactive mode. Skips Vibe Coding check, auto-approves overwrites, skips spec-reviewer, always generates Design Doc |
+| `--amend`                  | -        | Amend mode: append only the new content to the existing spec instead of regenerating it (requires an existing spec; error if none exists). Applies to the Abstract Specification only — the Design Doc draft is always regenerated fresh per ticket |
 
 ## Input Examples
 
@@ -142,10 +143,13 @@ See `references/existing_document_check.md` for the list of paths to check for f
 - Ensure generated spec covers PRD requirements
 - Reference PRD requirement IDs in spec's "Functional Requirements" section
 
-**If spec/design exists**:
+**If spec exists**:
 
-- **CI Mode (`--ci`)**: Overwrite without confirmation.
-- **Interactive**: Confirm with user whether to overwrite.
+| Mode                    | Action                                                                                  |
+|:------------------------|:------------------------------------------------------------------------------------------|
+| CI Mode (`--ci`)        | Overwrite without confirmation                                                          |
+| `--amend`               | Append only the new content (see "Amend Mode" under Phase 1 below); error if no spec exists |
+| Interactive (default)   | Confirm with user whether to overwrite (suggest `--amend` if the change is additive)    |
 
 ## Output Format
 
@@ -172,6 +176,19 @@ Follow these steps to prepare the template:
 - Flat structure: `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`
 - Hierarchical structure (parent feature): `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_spec.md`
 - Hierarchical structure (child feature): `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_spec.md`
+
+#### Amend Mode (`--amend`)
+
+Skip full regeneration. Instead:
+
+1. Read the existing spec in full — this is the base; do not rewrite its existing prose or tables.
+2. Extract existing functional/non-functional requirement IDs (`FR-xxx`, `NFR-xxx`) from §3 and determine the
+   highest numeric suffix per prefix.
+3. Generate only the new functional/non-functional requirements introduced by this invocation's input, numbered
+   continuing from the existing maximum.
+4. Append the new rows to the existing tables in §3, and append any new content (e.g. new API entries, new data
+   model fields) only to the relevant existing sections — never rewrite sections unrelated to the new content.
+5. Front matter: keep all existing fields except `updated` (today) and `sdd-version` (current plugin version).
 
 ### Phase 2: Technical Design Document (Plan Phase)
 
@@ -219,6 +236,9 @@ See `references/front_matter_spec_design.md` for full schema definition, depende
 | Field | Rule |
 |:------|:-----|
 | `sdd-version` | Set to the sdd-workflow plugin's current version — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` |
+
+> **Amend Mode (`--amend`)**: Do not regenerate `id`, `created`, `depends-on`, `priority`, or `risk` on the spec —
+> keep them as-is. Only `updated` and `sdd-version` refresh.
 
 ### Spec-Specific Field Rules
 

@@ -52,6 +52,11 @@
 
 #### Skills
 
+- **`/generate-prd --amend`** - 新規モード。既存 PRD を全上書きせず、新たに与えられた要求だけを追記する。
+  既存の要求 ID・セクション・要求図ノードを保持し、新規 ID は既存の最大値（プレフィックス別）の続きから
+  採番する。`finalize-prd` も `--amend` 呼び出し時は既存 PRD 本文を受け取り新規内容を統合するようになった
+- **`/generate-spec --amend`** - 新規モード。既存の抽象仕様書を全上書きせず、新たな機能要求・非機能要求
+  のみを追記する。既存の要求 ID・セクションは保持される
 - **`render-adr-review`** - `adr/{feature-name}-decisions.md` の決定ログ（または `*_spec.md`/
   `*_design.md` の決定根拠セクション）を、単純な Markdown→HTML 変換ではなく決定・理由・却下した代替案の
   軸で構造化した一時レビューHTMLとしてレンダリングする新規スキル。生成物は
@@ -69,8 +74,8 @@
 
 - **`sdd-version` 共通フィールド** - ドキュメントは front matter の `sdd-version` フィールドに、
   生成時点の sdd-workflow プラグインバージョン（`plugin.json` から取得）を記録できるようになった。
-  `generate-spec`・`task-cleanup`・`recommend-front-matter` が front matter 生成時にこの値を設定する。
-  このフィールド導入前に生成されたドキュメントには存在しない
+  `generate-spec`・`generate-prd`・`finalize-prd`・`task-cleanup`・`recommend-front-matter` が
+  front matter 生成時にこの値を設定する。このフィールド導入前に生成されたドキュメントには存在しない
 
 ### Changed
 
@@ -122,6 +127,9 @@
   （およびそこに含まれるリファクタリング計画）が削除される前に、確定した決定を `adr/{feature-name}.md` へ
   追記するよう促す。本スキル自身は `adr/` に書き込まない — 計画は提案であり、追記専用ログに載せるのは
   確定した決定のみとするため
+- **`doc-consistency-checker` の PRD 更新推奨の導線が `/generate-prd --amend` を案内するようになった** -
+  spec の変更が PRD の要求と矛盾し、人間が PRD 更新を選んだ場合、従来は手段を指定していなかったが、
+  `/generate-prd --amend` を案内するようになった
 
 #### Documentation
 

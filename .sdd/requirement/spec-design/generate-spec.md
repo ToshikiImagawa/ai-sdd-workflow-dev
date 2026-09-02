@@ -4,7 +4,7 @@ title: "仕様書・設計書生成"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-spec-design"]
 tags: ["specification", "design-doc", "generation"]
 category: "spec-design"
@@ -96,7 +96,9 @@ requirementDiagram
 
 生成にあたっては、生成前に入力の曖昧性（Vibe Coding リスク）を評価し、高リスク時は不足情報を確認したうえで
 生成へ進む（vibe-detector 機能との連携。曖昧性検知そのものは vibe-detector が正典）。また非対話（CI）モードでは、
-曖昧性評価・レビューを省略して既存ファイルの上書きを自動承認する運用にも対応する。
+曖昧性評価・レビューを省略して既存ファイルの上書きを自動承認する運用にも対応する。既存の抽象仕様書が
+存在する場合は、全上書きに加えて `--amend` フラグによる追記モード（既存の要求 ID・セクション構成を保持し、
+新規差分のみを追加する）にも対応する。
 
 **トリガー方式:** 手動（開発者による `/generate-spec` スキル呼び出し）
 

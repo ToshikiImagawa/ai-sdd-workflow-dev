@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
@@ -41,7 +41,7 @@ category: "prd-generation"
 
 | モジュール/機能                    | ステータス | 備考                                                                       |
 |----------------------------------|--------|----------------------------------------------------------------------------|
-| オーケストレーター（generate-prd）    | 🟢     | 書き込み権限を事前承認された唯一のスキル（`Edit(.sdd/**)` とスクリプト限定の `Bash`）。10 ステップの生成フロー |
+| オーケストレーター（generate-prd）    | 🟢     | 書き込み権限を事前承認された唯一のスキル（`Edit(.sdd/**)` とスクリプト限定の `Bash`）。10 ステップの生成フロー。`--amend` で既存 PRD 読込・ID採番・追記統合に対応（FR-010） |
 | 事前ロード（prepare-prd.py）         | 🟢     | Python 2 フェーズ実行。プロジェクトテンプレート優先・参照キャッシュ・環境変数エクスポート    |
 | ユースケース図生成                   | 🟢     | `context: fork` / `model: haiku` / Write・Edit・Bash 不許可（テキスト返却のみ）      |
 | 要求分析                           | 🟢     | `context: fork` / `model: sonnet` / Write・Edit・Bash 不許可                      |
@@ -203,6 +203,8 @@ plugins/sdd-workflow/
 | 準備処理の実装              | (a) Claude が逐次ファイル読込 / (b) Python スクリプトで事前ロード       | **(b) prepare-prd.py**          | テンプレート・参照ロードは決定的処理。スクリプト化しトークンを節約、Claude を判断・生成に専念させる（A-002） |
 | テンプレートの優先順位        | (a) プラグイン既定固定 / (b) プロジェクト優先・既定フォールバック         | **(b) プロジェクト優先**            | プロジェクト固有の PRD_TEMPLATE.md を尊重し、無い場合のみ言語別既定にフォールバック（DC_002）          |
 | 対話 / CI モードの分離        | (a) 別スキル / (b) `--ci` フラグで単一スキル分岐                     | **(b) 単一スキル + フラグ**         | 生成ロジックを共有しつつ、非対話環境では質問・生成後レビューを省略する（FR-009 / UR_004）              |
+| 追記モードの ID 採番方式       | (a) 専用スクリプトでカウント / (b) Claude が既存要求図を読んで最大値+1を算出 | **(b) Claude が読んで算出**        | 追記対象は要求図というテキスト構造で、決定的な数値計算ではなく既存ノードの解釈（プレフィックス判定・サブID階層）を要するため、Python 化のメリットが薄い（FR-010） |
+| 追記モードの統合責務           | (a) generate-prd が直接テキスト編集 / (b) finalize-prd に既存PRD本文を渡して統合を委譲 | **(b) finalize-prd に委譲**       | DC_001（書き込み主体の限定）を保ちつつ、既存の「統合はサブスキルに委譲」の設計と一貫させる（FR-010） |
 
 ## 9.2. 未解決の課題
 
@@ -231,6 +233,15 @@ plugins/sdd-workflow/
 ---
 
 # 11. 変更履歴
+
+## v5.0.0（未リリース）
+
+**変更内容:**
+
+- `generate-prd` / `finalize-prd` に `--amend`（既存 PRD への追記モード）を追加した（FR-010 / UR_005 / DC_004）
+- `generate-prd` / `finalize-prd` の front matter 生成ルールに `sdd-version` 共通フィールドを追加した
+
+**移行ガイド:** なし（既存の `--ci` なし呼び出しの挙動に変更はない。`--amend` は明示指定時のみ有効）
 
 ## v4.0.0
 
