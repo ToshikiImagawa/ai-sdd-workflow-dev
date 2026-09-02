@@ -84,11 +84,20 @@ class TestProcessSingleFile:
         assert "(PRD) was updated" in out
         assert "/constitution validate" in out
 
-    def test_adr_md_emits_append_only_reminder(self, tmp_path, capsys):
+    def test_adr_md_emits_append_only_reminder(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.setattr(ptu, "try_update_index", lambda *a, **k: None)
         _process(os.path.join(PATHS.adr_prefix, "user-login.md"), tmp_path)
         out = capsys.readouterr().out
         assert "(ADR) was updated" in out
         assert "append-only" in out
+
+    def test_adr_md_reindexes(self, tmp_path, monkeypatch):
+        # adr/ is now an sdd_index target (issue #92), so editing it must
+        # trigger the same reindex as specification/.
+        calls = []
+        monkeypatch.setattr(ptu, "try_update_index", lambda *a, **k: calls.append(a))
+        _process(os.path.join(PATHS.adr_prefix, "user-login.md"), tmp_path)
+        assert calls
 
     def test_other_sdd_file_no_output(self, tmp_path, capsys):
         _process(os.path.join(".sdd", "CONSTITUTION.md"), tmp_path)

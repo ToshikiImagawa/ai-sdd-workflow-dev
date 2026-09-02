@@ -80,6 +80,23 @@ minor/patch release.
   in the `sdd-version` front matter field, read from `plugin.json`. `generate-spec`, `generate-prd`,
   `finalize-prd`, `task-cleanup`, and `recommend-front-matter` set it when creating new front matter. Absent
   in documents generated before this field was introduced
+- **`type: "adr"` schema** - `shared/references/front_matter_reference.md` now defines the front matter
+  fields for decision log entries, including `supersedes` / `superseded-by` for recording when a later
+  decision reverses an earlier one without rewriting the append-only log
+
+### Fixed
+
+- **`adr/` is now scanned by the document index and by `/recommend-front-matter`** - Both previously
+  scanned only `requirement/` and `specification/` (plus `task/` for the latter), so decision logs never
+  appeared in the compressed index or in front matter recommendations
+- **Editing a decision log now refreshes the document index** - The `PostToolUse` reminder fired, but the
+  index update it triggers for other document types did not run for `adr/`
+- **`AI-SDD-PRINCIPLES.md`'s Configuration Items table and `.sdd-config.json` example now document
+  `directories.adr`** - The directory itself was already created by `sdd-init` and resolved by
+  `session-start`; only the documentation was missing
+- **`doc-consistency-checker`'s Obsolescence Detection now specifies how to record a reversal** - Propose
+  appending a new decision log entry with `supersedes` set, and `superseded-by` on the obsolete entry,
+  instead of leaving the follow-up action undefined
 
 ### Changed
 

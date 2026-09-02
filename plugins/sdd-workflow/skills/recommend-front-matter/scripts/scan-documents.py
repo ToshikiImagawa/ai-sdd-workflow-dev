@@ -50,6 +50,7 @@ def read_config(project_root: Path) -> dict:
         "requirement": directories.get("requirement") or "requirement",
         "specification": directories.get("specification") or "specification",
         "task": directories.get("task") or "task",
+        "adr": directories.get("adr") or "adr",
         "lang": config.get("lang") or "en",
     }
 
@@ -108,6 +109,7 @@ def main() -> None:
         log("Scanning AI-SDD documents...")
         documents = collect_documents(
             sdd_dir, config["requirement"], config["specification"], config["task"],
+            config["adr"],
         )
         total_count = len(documents)
         log(f"Found {total_count} total documents")
@@ -134,6 +136,7 @@ def main() -> None:
                 config["requirement"],
                 config["specification"],
                 config["task"],
+                config["adr"],
             )
             title = extract_title(lines, basename)
 

@@ -79,6 +79,7 @@ def determine_type(
     requirement_dir: str,
     specification_dir: str,
     task_dir: str,
+    adr_dir: str,
 ) -> str:
     """Classify a document type from its path and naming convention.
 
@@ -93,6 +94,8 @@ def determine_type(
         if is_design_stem(basename):
             return "design"
         return "spec"
+    if f"/{adr_dir}/" in filepath:
+        return "adr"
     if f"/{task_dir}/" in filepath:
         if "implementation_log" in basename or "impl_log" in basename:
             return "implementation-log"

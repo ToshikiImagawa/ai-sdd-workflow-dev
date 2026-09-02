@@ -79,7 +79,7 @@ DOC_REMINDERS = (
     ),
     (
         "adr_prefix",
-        False,
+        True,
         "[AI-SDD] '{rel_path}' (ADR) was updated. Decision logs are "
         "append-only: verify past entries were not rewritten, and that any "
         "decision changing the specification is reflected in the "

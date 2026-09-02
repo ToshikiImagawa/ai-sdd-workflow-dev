@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-14"
-updated: "2026-09-01"
+updated: "2026-09-02"
 depends-on: ["spec-workflow-foundation-documentation-index"]
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
@@ -78,7 +78,7 @@ risk: "medium"
 graph TD
     SS[SessionStart] -->|index 有効時| RA[sdd_index.rebuild_all]
     PTU[PostToolUse Write/Edit/MultiEdit] -->|DB 既存時| UO[sdd_index.update_one]
-    RA --> SCAN[iter_target_files: requirement/**.md + specification/**.md]
+    RA --> SCAN[iter_target_files: requirement/**.md + specification/**.md + adr/**.md]
     SCAN --> HASH{SHA-256 変更検知}
     HASH -->|変更あり| PARSE[scan_document: front matter / IDs / SysML / data / API 抽出]
     HASH -->|未変更| SKIP[スキップ]
@@ -138,6 +138,8 @@ graph TD
 - `${SDD_ROOT}/${specification_dir}/` 配下の全 `.md`（`_spec`/`_design` サフィックスは任意。Issue #84
   以前は `*_spec.md` / `*_design.md` のみが対象だったが、`specification/` が単一種別ディレクトリになった
   ため全 `.md` を対象とするよう変更した）
+- `${SDD_ROOT}/${adr_dir}/` 配下の全 `.md`（`-decisions` サフィックスは任意。`adr/` は `specification/`
+  と同じ単一種別ディレクトリのため全 `.md` が対象）
 - `${SDD_ROOT}/.cache/` は対象外（派生成果物のため）
 
 ---

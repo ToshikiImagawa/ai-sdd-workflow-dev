@@ -388,10 +388,10 @@ this is done:
 2. **Locate the design decisions** in each `*_design.md` — the section(s) explaining why a technology,
    architecture, or approach was chosen
 3. **Create `adr/{feature-name}.md`**, mirroring the feature's path under `specification/`
-   (e.g. `specification/auth/user-login_design.md` → `adr/auth/user-login.md`), with the
-   common front matter fields (`id`, `title`, `type: "adr"`, `status`, `created`, `updated` — the
-   detailed `adr` schema is not yet defined in `shared/references/front_matter_reference.md`, so only
-   the common fields apply for now)
+   (e.g. `specification/auth/user-login_design.md` → `adr/auth/user-login.md`), with the front
+   matter fields defined for `type: "adr"` in `shared/references/front_matter_reference.md`
+   (`id`, `title`, `status`, `created`, `updated`, `depends-on`, plus `supersedes`/`superseded-by`
+   when this decision reverses an earlier one)
 4. **Append one entry per decision**, keeping only:
    - The decision made
    - The reasoning behind it

@@ -76,6 +76,24 @@
   生成時点の sdd-workflow プラグインバージョン（`plugin.json` から取得）を記録できるようになった。
   `generate-spec`・`generate-prd`・`finalize-prd`・`task-cleanup`・`recommend-front-matter` が
   front matter 生成時にこの値を設定する。このフィールド導入前に生成されたドキュメントには存在しない
+- **`type: "adr"` スキーマ** - `shared/references/front_matter_reference.md` に決定ログエントリの
+  front matter フィールドを定義した。後の決定が以前の決定を覆す場合に、追記専用のログを書き換えずに
+  記録できる `supersedes` / `superseded-by` を含む
+
+### Fixed
+
+- **`adr/` がドキュメントインデックスと `/recommend-front-matter` の走査対象になった** - いずれも
+  従来は `requirement/` と `specification/`（後者は加えて `task/`）のみを走査しており、決定ログが
+  圧縮インデックスや front matter 推奨結果に一度も現れなかった
+- **決定ログの編集でドキュメントインデックスが更新されるようになった** - `PostToolUse` のリマインダー
+  自体は発火していたが、他のドキュメント種別では発火するインデックス更新が `adr/` では実行されて
+  いなかった
+- **`AI-SDD-PRINCIPLES.md` の Configuration Items 表と `.sdd-config.json` の例に `directories.adr`
+  を記載** - ディレクトリ自体は `sdd-init` が既に作成し `session-start` が既に解決していたが、
+  ドキュメントへの記載のみが欠落していた
+- **`doc-consistency-checker` の Obsolescence Detection に、決定の覆しを記録する方法を明記** -
+  未定義だった追跡対応を、新しい決定ログエントリに `supersedes` を設定し、陳腐化したエントリに
+  `superseded-by` を設定するという手順に置き換えた
 
 ### Changed
 

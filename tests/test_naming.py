@@ -109,19 +109,19 @@ class TestDetermineType:
     def test_requirement_is_prd(self):
         assert nm.determine_type(
             "/p/.sdd/requirement/login.md", "login",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "prd"
 
     def test_spec(self):
         assert nm.determine_type(
             "/p/.sdd/specification/login_spec.md", "login_spec",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "spec"
 
     def test_design(self):
         assert nm.determine_type(
             "/p/.sdd/specification/login_design.md", "login_design",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "design"
 
     def test_specification_no_suffix_is_spec(self):
@@ -129,23 +129,35 @@ class TestDetermineType:
         # suffix is optional (issue #84), so an unsuffixed name is still "spec".
         assert nm.determine_type(
             "/p/.sdd/specification/notes.md", "notes",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "spec"
 
     def test_task_implementation_log(self):
         assert nm.determine_type(
             "/p/.sdd/task/impl_log.md", "impl_log",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "implementation-log"
 
     def test_task_generic(self):
         assert nm.determine_type(
             "/p/.sdd/task/notes.md", "notes",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "task"
 
     def test_unrelated_path_unknown(self):
         assert nm.determine_type(
             "/p/src/main.py", "main",
-            "requirement", "specification", "task",
+            "requirement", "specification", "task", "adr",
         ) == "unknown"
+
+    def test_adr(self):
+        assert nm.determine_type(
+            "/p/.sdd/adr/login-decisions.md", "login-decisions",
+            "requirement", "specification", "task", "adr",
+        ) == "adr"
+
+    def test_adr_with_custom_dir(self):
+        assert nm.determine_type(
+            "/p/.sdd/decisions/login.md", "login",
+            "requirement", "specification", "task", "decisions",
+        ) == "adr"

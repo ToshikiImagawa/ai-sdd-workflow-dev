@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-09-02"
 depends-on: ["prd-workflow-foundation-front-matter-recommend"]
 tags: ["front-matter", "metadata", "skill", "scan"]
 category: "workflow-foundation"
@@ -58,7 +58,7 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 
 | ID     | 要件                                                                                            | 優先度 | 根拠（上流要求）                    |
 |--------|-----------------------------------------------------------------------------------------------|-----|----------------------------------|
-| FR-001 | `.sdd/` 配下の requirement/specification/task ドキュメントをスキャンし front matter の有無を検出する      | 必須  | PRD FR_001 / 親 UR_004            |
+| FR-001 | `.sdd/` 配下の requirement/specification/task/adr ドキュメントをスキャンし front matter の有無を検出する   | 必須  | PRD FR_001 / 親 UR_004            |
 | FR-002 | ファイルパスと命名規則からドキュメント種別を判定し、最初の `#` 見出しからタイトルを抽出する                     | 必須  | PRD FR_001                       |
 | FR-003 | front matter のない各ドキュメントに、種別に応じた共通・固有フィールドの推奨 front matter を生成する            | 必須  | PRD FR_001                       |
 | FR-004 | 推奨レポートを生成する（既定動作。ファイルは変更しない）                                                  | 必須  | PRD FR_001                       |
@@ -87,7 +87,7 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 ## 4.1. 入出力定義
 
 - **入力**: 任意オプション `--apply`（省略時は推奨レポートのみ）
-- **環境変数**: `SDD_ROOT` / `SDD_LANG` / requirement・specification・task の各ディレクトリ名
+- **環境変数**: `SDD_ROOT` / `SDD_LANG` / requirement・specification・task・adr の各ディレクトリ名
 - **出力**: 走査結果 JSON（`${SDD_ROOT}/.cache/recommend-front-matter/scan_result.json`）、推奨レポート、`--apply` 時は適用済みファイルと結果レポート
 
 ```json
@@ -107,7 +107,7 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 | 用語               | 説明                                                                    |
 |------------------|-------------------------------------------------------------------------|
 | front matter      | Markdown 先頭の `---` で囲まれた YAML メタデータブロック                          |
-| ドキュメント種別     | `prd` / `spec` / `design` / `task` / `implementation-log` の分類               |
+| ドキュメント種別     | `prd` / `spec` / `design` / `task` / `implementation-log` / `adr` の分類       |
 | depends-on 推論    | 命名規則から上流ドキュメント（spec→prd, design→spec）を推定する処理                  |
 | 後方互換           | front matter を持たない既存ドキュメントも有効として扱う性質                          |
 

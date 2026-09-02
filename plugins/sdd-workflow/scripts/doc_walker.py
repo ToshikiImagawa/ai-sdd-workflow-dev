@@ -7,6 +7,8 @@ sdd_index.iter_target_files and scan-documents.collect_documents:
 - specification/: every ``.md`` file (the ``_spec``/``_design`` suffix is optional
   since specification/ is a single-type directory identified by directory alone;
   see naming.py)
+- adr/: every ``.md`` file (single-type directory, same as specification/; the
+  ``-decisions`` suffix is optional)
 - task/: every ``.md`` file
 
 Also hosts find_spec_doc (used by the post-tool-use hook). All traversal is
@@ -39,25 +41,28 @@ def iter_all_markdown(path: PathLike) -> List[Path]:
     return sorted(p.rglob("*.md")) if p.is_dir() else []
 
 
-def iter_target_files(project_root: str, sdd_root: str,
-                      req_dir: str, spec_dir: str) -> List[str]:
-    """Indexer targets: requirement (all) + specification (all), globally sorted."""
+def iter_target_files(project_root: str, sdd_root: str, req_dir: str,
+                      spec_dir: str, adr_dir: str) -> List[str]:
+    """Indexer targets: requirement (all) + specification (all) + adr (all), globally sorted."""
     base = Path(project_root) / sdd_root
-    files = iter_requirement_docs(base / req_dir) + iter_specification_docs(base / spec_dir)
+    files = (iter_requirement_docs(base / req_dir)
+             + iter_specification_docs(base / spec_dir)
+             + iter_all_markdown(base / adr_dir))
     return sorted(str(f) for f in files)
 
 
-def collect_documents(sdd_dir: PathLike, requirement_dir: str,
-                      specification_dir: str, task_dir: str) -> List[Path]:
-    """Scan targets: requirement (all) + specification (all) + task (all).
+def collect_documents(sdd_dir: PathLike, requirement_dir: str, specification_dir: str,
+                      task_dir: str, adr_dir: str) -> List[Path]:
+    """Scan targets: requirement (all) + specification (all) + task (all) + adr (all).
 
-    Returned in section order (requirement, then specification, then task), each
-    section sorted internally.
+    Returned in section order (requirement, then specification, then task, then
+    adr), each section sorted internally.
     """
     base = Path(sdd_dir)
     docs = iter_requirement_docs(base / requirement_dir)
     docs += iter_specification_docs(base / specification_dir)
     docs += iter_all_markdown(base / task_dir)
+    docs += iter_all_markdown(base / adr_dir)
     return docs
 
 

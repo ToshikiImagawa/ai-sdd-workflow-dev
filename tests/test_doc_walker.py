@@ -29,43 +29,57 @@ def _seed(base: Path):
     (base / ".sdd" / "requirement" / "nested").mkdir(parents=True)
     (base / ".sdd" / "specification").mkdir(parents=True)
     (base / ".sdd" / "task").mkdir(parents=True)
+    (base / ".sdd" / "adr").mkdir(parents=True)
     (base / ".sdd" / "requirement" / "index.md").write_text("# i", encoding="utf-8")
     (base / ".sdd" / "requirement" / "nested" / "child.md").write_text("# c", encoding="utf-8")
     (base / ".sdd" / "specification" / "a_spec.md").write_text("# s", encoding="utf-8")
     (base / ".sdd" / "specification" / "a_design.md").write_text("# d", encoding="utf-8")
     (base / ".sdd" / "specification" / "notes.md").write_text("# n", encoding="utf-8")
     (base / ".sdd" / "task" / "log.md").write_text("# l", encoding="utf-8")
+    (base / ".sdd" / "adr" / "user-login-decisions.md").write_text("# a", encoding="utf-8")
 
 
 class TestIterTargetFiles:
     def test_requirement_and_specification_all_md(self, tmp_path):
         _seed(tmp_path)
-        targets = dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification")
+        targets = dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification", "adr")
         names = sorted(Path(p).name for p in targets)
-        # requirement: index.md, child.md; specification: every .md, suffix optional; no task
-        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md", "notes.md"]
+        # requirement: index.md, child.md; specification: every .md, suffix optional;
+        # adr: every .md, suffix optional; no task
+        assert names == [
+            "a_design.md", "a_spec.md", "child.md", "index.md", "notes.md",
+            "user-login-decisions.md",
+        ]
 
     def test_globally_sorted_strings(self, tmp_path):
         _seed(tmp_path)
-        targets = dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification")
+        targets = dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification", "adr")
         assert targets == sorted(targets)
 
     def test_missing_dirs_returns_empty(self, tmp_path):
-        assert dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification") == []
+        assert dw.iter_target_files(str(tmp_path), ".sdd", "requirement", "specification", "adr") == []
 
 
 class TestCollectDocuments:
     def test_includes_task_and_section_order(self, tmp_path):
         _seed(tmp_path)
-        docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task")
+        docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task", "adr")
         names = sorted(p.name for p in docs)
-        assert names == ["a_design.md", "a_spec.md", "child.md", "index.md", "log.md", "notes.md"]
+        assert names == [
+            "a_design.md", "a_spec.md", "child.md", "index.md", "log.md", "notes.md",
+            "user-login-decisions.md",
+        ]
 
     def test_specification_includes_plain_md(self, tmp_path):
         # Suffix is optional under specification/ (issue #84).
         _seed(tmp_path)
-        docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task")
+        docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task", "adr")
         assert "notes.md" in [p.name for p in docs]
+
+    def test_adr_included_with_suffix_optional(self, tmp_path):
+        _seed(tmp_path)
+        docs = dw.collect_documents(tmp_path / ".sdd", "requirement", "specification", "task", "adr")
+        assert "user-login-decisions.md" in [p.name for p in docs]
 
 
 class TestFindSpecDoc:

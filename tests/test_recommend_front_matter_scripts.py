@@ -70,7 +70,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/requirement/login.md", "login",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "prd"
         )
@@ -79,7 +79,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/login_spec.md", "login_spec",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "spec"
         )
@@ -88,7 +88,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/login_design.md", "login_design",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "design"
         )
@@ -99,7 +99,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/notes.md", "notes",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "spec"
         )
@@ -108,7 +108,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/task/impl_log.md", "impl_log",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "implementation-log"
         )
@@ -117,7 +117,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/task/notes.md", "notes",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "task"
         )
@@ -126,9 +126,18 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/other/x.md", "x",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "unknown"
+        )
+
+    def test_adr(self):
+        assert (
+            sd.determine_type(
+                "/p/.sdd/adr/login-decisions.md", "login-decisions",
+                "requirement", "specification", "task", "adr",
+            )
+            == "adr"
         )
 
 
@@ -169,6 +178,7 @@ class TestReadConfig:
             "requirement": "requirement",
             "specification": "specification",
             "task": "task",
+            "adr": "adr",
             "lang": "en",
         }
 
@@ -182,6 +192,7 @@ class TestReadConfig:
                         "requirement": "req",
                         "specification": "spec",
                         "task": "tasks",
+                        "adr": "decisions",
                     },
                 }
             ),
@@ -193,6 +204,7 @@ class TestReadConfig:
         assert config["requirement"] == "req"
         assert config["specification"] == "spec"
         assert config["task"] == "tasks"
+        assert config["adr"] == "decisions"
 
     def test_missing_config_exits(self, tmp_path):
         with pytest.raises(SystemExit):
@@ -209,6 +221,7 @@ class TestCollectDocuments:
             "requirement": "requirement",
             "specification": "specification",
             "task": "task",
+            "adr": "adr",
             "lang": "en",
         }
 
@@ -221,7 +234,7 @@ class TestCollectDocuments:
         (sdd_dir / "specification" / "notes.md").write_text("# n", encoding="utf-8")
 
         docs = sd.collect_documents(
-            sdd_dir, "requirement", "specification", "task",
+            sdd_dir, "requirement", "specification", "task", "adr",
         )
         names = sorted(p.name for p in docs)
         assert names == ["a_design.md", "a_spec.md", "notes.md"]
@@ -237,10 +250,22 @@ class TestCollectDocuments:
         (sdd_dir / "task" / "log.md").write_text("# l", encoding="utf-8")
 
         docs = sd.collect_documents(
-            sdd_dir, "requirement", "specification", "task",
+            sdd_dir, "requirement", "specification", "task", "adr",
         )
         names = sorted(p.name for p in docs)
         assert names == ["child.md", "index.md", "log.md"]
+
+    def test_adr_included_suffix_optional(self, tmp_path):
+        sdd_dir = tmp_path / ".sdd"
+        (sdd_dir / "adr").mkdir(parents=True)
+        (sdd_dir / "adr" / "user-login-decisions.md").write_text("# a", encoding="utf-8")
+        (sdd_dir / "adr" / "notes.md").write_text("# n", encoding="utf-8")
+
+        docs = sd.collect_documents(
+            sdd_dir, "requirement", "specification", "task", "adr",
+        )
+        names = sorted(p.name for p in docs)
+        assert names == ["notes.md", "user-login-decisions.md"]
 
 
 # --- end to end ------------------------------------------------------------
