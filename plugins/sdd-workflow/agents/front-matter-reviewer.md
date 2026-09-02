@@ -107,6 +107,10 @@ search outside this scope.
 Before starting validation, **read `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` using the Read tool** to understand the
 complete schema and validation rules.
 
+Also **read `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`'s `version` field** — this is the current plugin
+version used as the baseline for the `sdd-version generation` check in Step 4. Parse its major component
+(the first `.`-separated segment) for comparison against each document's `sdd-version` major.
+
 ### Step 2: Load Target Documents
 
 For each target document path:
@@ -142,6 +146,9 @@ Apply the following checks to all documents (from Validation Checklist — Commo
 | **`created` format**        | warning  | Matches `YYYY-MM-DD` date format                                                                                       |
 | **`updated` format**        | warning  | Matches `YYYY-MM-DD` date format                                                                                       |
 | **`depends-on` direction**  | error    | Dependencies point upstream only (spec->prd, design->spec, task->design)                                               |
+| **`sdd-version` presence**  | info     | Field absent: predates the field's introduction, not a violation (backward compatible)                                |
+| **`sdd-version` format**    | warning  | If present, must be a semver string (`"{major}.{minor}.{patch}"`)                                                      |
+| **`sdd-version` generation**| warning  | If present and its major version is lower than the current plugin's major (read from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`'s `version`), the document may predate a breaking-change migration |
 
 ### Step 5: Type-Specific Checks
 

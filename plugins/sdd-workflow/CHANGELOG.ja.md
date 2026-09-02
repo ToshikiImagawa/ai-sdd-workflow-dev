@@ -74,8 +74,15 @@
 
 - **`sdd-version` 共通フィールド** - ドキュメントは front matter の `sdd-version` フィールドに、
   生成時点の sdd-workflow プラグインバージョン（`plugin.json` から取得）を記録できるようになった。
-  `generate-spec`・`generate-prd`・`finalize-prd`・`task-cleanup`・`recommend-front-matter` が
-  front matter 生成時にこの値を設定する。このフィールド導入前に生成されたドキュメントには存在しない
+  `generate-spec`・`generate-prd`・`finalize-prd`・`task-cleanup` が front matter 生成時にこの値を
+  設定する。このフィールド導入前に生成されたドキュメント、または `recommend-front-matter` が既存
+  ドキュメントへ後付けで front matter を付与した場合は存在しない（後付け時に現行バージョンを設定すると
+  偽の生成世代情報になるため、意図的に付与しない）
+- **`sdd-version` を読み取り側でも活用** - ドキュメントインデックス（`.cache/index.md`）の Metadata
+  テーブルに `sdd-version` を含めるようになった。`front-matter-reviewer` はその semver 形式を検証し、
+  現行プラグインの major より古い場合は警告する（移行漏れの可能性を示す advisory）。
+  `doc-consistency-checker` はインデックスを使って世代の古いドキュメントを一覧化できる
+  （人間による移行レビューの候補提示）
 - **`type: "adr"` スキーマ** - `shared/references/front_matter_reference.md` に決定ログエントリの
   front matter フィールドを定義した。後の決定が以前の決定を覆す場合に、追記専用のログを書き換えずに
   記録できる `supersedes` / `superseded-by` を含む

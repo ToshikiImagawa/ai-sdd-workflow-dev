@@ -4,7 +4,7 @@ title: "ドキュメント間整合性チェック"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-quality-guardrails"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -45,11 +45,13 @@ flowchart LR
         UpdateDoc([ドキュメントを更新する])
         CheckDocs([ドキュメント間整合性を検証する])
         ReportInconsistency([不整合を報告する])
+        ListStaleGeneration([世代の古いドキュメントを列挙する])
     end
 
     Developer --- UpdateDoc
     CheckDocs -.->|"<<拡張>>"| UpdateDoc
     ReportInconsistency -.->|"<<包含>>"| CheckDocs
+    ListStaleGeneration -.->|"<<包含>>"| CheckDocs
 ```
 
 ## 2.2. 機能一覧（テキスト形式）
@@ -57,6 +59,7 @@ flowchart LR
 - ドキュメント間整合性チェック
     - PRD ↔ 抽象仕様書 ↔ 技術設計書間の整合性チェック
     - 要求 ID 参照・データモデル・API 定義・用語の不整合検出
+    - `sdd-version` が現行 major より古いドキュメントの列挙（世代判別・移行漏れ検知）
 
 ---
 
@@ -67,7 +70,7 @@ flowchart LR
 requirementDiagram
     functionalRequirement DocConsistencyCheck {
         id: FR_001
-        text: "PRDとspecとdesign間の要求ID参照や用語の不整合を検出する"
+        text: "PRDとspecとdesign間の要求ID参照や用語の不整合を検出し、sdd-versionが古いドキュメントを列挙する"
         risk: high
         verifymethod: demonstration
     }
@@ -95,6 +98,9 @@ PRD ↔ `*_spec.md` ↔ `*_design.md` 間の以下の不整合を検出する。
 - データモデルの不一致
 - API 定義の齟齬
 - 用語の不統一
+- `sdd-version` が現行プラグインの major より古いドキュメントの列挙（世代判別・移行漏れ検知）。
+  対象・不在時の扱いの判断基準は [front-matter-validation.md](front-matter-validation.md) の
+  FR_001 に従う
 
 **検証方法:** デモンストレーションによる検証
 

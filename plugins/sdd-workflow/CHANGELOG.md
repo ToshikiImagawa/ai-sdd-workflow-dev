@@ -78,8 +78,14 @@ minor/patch release.
 
 - **`sdd-version` common field** - Documents may record the sdd-workflow plugin version at generation time
   in the `sdd-version` front matter field, read from `plugin.json`. `generate-spec`, `generate-prd`,
-  `finalize-prd`, `task-cleanup`, and `recommend-front-matter` set it when creating new front matter. Absent
-  in documents generated before this field was introduced
+  `finalize-prd`, and `task-cleanup` set it when creating new front matter. Absent in documents generated
+  before this field was introduced, or when a document's front matter is added retroactively by
+  `recommend-front-matter` (which intentionally omits it rather than fabricate a false generation-time value)
+- **`sdd-version` is now read, not just written** - The document index (`.cache/index.md`) now includes
+  `sdd-version` in its Metadata table. `front-matter-reviewer` validates its semver format and warns when a
+  document's major version is older than the current plugin's major (a possible sign of a missed migration).
+  `doc-consistency-checker` can enumerate documents with a stale generation using the index, as an advisory
+  candidate list for manual migration review
 - **`type: "adr"` schema** - `shared/references/front_matter_reference.md` now defines the front matter
   fields for decision log entries, including `supersedes` / `superseded-by` for recording when a later
   decision reverses an earlier one without rewriting the append-only log

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
@@ -102,7 +102,7 @@ graph TD
 | 1    | 参照読込                                    | `shared/references/front_matter_reference.md` を読み、スキーマと検証ルールを把握                     |
 | 2    | 対象読込                                    | 各対象パスを Read し、`---` 間の front matter ブロックを抽出。無ければ info を報告しスキップ（後方互換）        |
 | 3    | 種別判定                                    | `type` フィールドとファイルパス（`SDD_*`）から種別を判定。type とファイル配置の不一致は error                    |
-| 4    | 共通チェック                                 | 必須フィールド有無（error）／ `id` 形式（warning）／ `created`・`updated` の日付形式（warning）／ `depends-on` 方向（error） |
+| 4    | 共通チェック                                 | 必須フィールド有無（error）／ `id` 形式（warning）／ `created`・`updated` の日付形式（warning）／ `depends-on` 方向（error）／ `sdd-version` の semver 形式（warning）・不在（info）・現行 major 未満（warning。`plugin.json` の `version` と比較） |
 | 5    | 種別固有チェック                              | PRD: `priority`/`risk`、spec/design/task/impl-log: `sdd-phase`、design: `impl-status` の許容値（warning） |
 | 6    | 横断チェック（`--cross-ref` 時のみ）           | Glob で全 `.md` を列挙 → Grep で `id:` 抽出 → ID レジストリ構築 → 重複（error）・`depends-on` 参照先の実在（error）を検証 |
 | 7    | 出力                                       | `shared/templates/${SDD_LANG:-en}/` のレポート形式で重要度付き結果と改善提案を出力                      |
@@ -121,8 +121,8 @@ graph TD
     {
       "document": ".sdd/specification/quality-guardrails/front-matter-validation_spec.md",
       "severity": "error | warning | info",
-      "field": "id | type | status | created | updated | depends-on | priority | risk | sdd-phase | impl-status",
-      "check": "required-field | id-format | type-correctness | status-validity | date-format | depends-on-direction | id-uniqueness | depends-on-integrity | ...",
+      "field": "id | type | status | created | updated | depends-on | priority | risk | sdd-phase | impl-status | sdd-version",
+      "check": "required-field | id-format | type-correctness | status-validity | date-format | depends-on-direction | id-uniqueness | depends-on-integrity | sdd-version-format | sdd-version-generation | ...",
       "message": "不備の要約",
       "recommendation": "改善提案"
     }
@@ -151,6 +151,12 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 
 **ID 一意性（`--cross-ref` / error）:** プロジェクト全体で `id` の重複を許さない。
 **依存整合性（`--cross-ref` / error）:** `depends-on` に記載された全 ID が実在すること。
+
+**`sdd-version`（共通フィールド。Issue #95）:**
+
+- 形式: semver 文字列（`"{major}.{minor}.{patch}"`）。不正な形式は warning
+- 不在: info（本フィールド導入前の文書として正常。後方互換）
+- 世代警告: 値の major が `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` の major 未満なら warning
 
 ---
 
@@ -207,6 +213,8 @@ plugins/sdd-workflow/
 | 横断チェックの扱い        | 常時実行 / オプション（`--cross-ref`）      | オプション化                     | ID 一意性・依存整合性は全走査が必要でコストが高い。既定は高速な単一検証に留める（spec NFR-004） |
 | 委譲の扱い            | Task で再帰探索 / Read/Glob/Grep で完結    | Task 不使用                    | 再帰探索によるコンテキスト爆発を回避し、コンテキスト効率を優先                        |
 | 欠落 front matter の扱い | error / info                        | info（違反としない）               | front matter はオプション（後方互換）。付与推奨を info で案内する（reference 欠落ポリシー） |
+| `sdd-version` 不在の扱い | error/warning / info                | info                        | 既存の欠落 front matter ポリシーと同じ扱い。`recommend-front-matter` が意図的に後付けしない（Issue #95 design decision）ため、不在は「導入前」だけでなく「後付け対象外」を含む正常状態 |
+| `sdd-version` 世代警告の重大度 | error / warning                     | warning                     | major が古いことは「移行漏れの可能性」を示す advisory であり、トレーサビリティを破壊する構造的不備（error）ではない |
 
 ## 9.2. 未解決の課題
 

@@ -133,8 +133,9 @@ export SDD_LANG="ja"
 ```
 
 適用する front matter の共通フィールドは `id` / `title` / `type` / `status` / `created` /
-`updated` / `sdd-version` / `depends-on` / `tags` / `category`。`sdd-version` は
-`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` の `version` を読み取って設定する（Issue #84）。
+`updated` / `depends-on` / `tags` / `category`。`sdd-version` は**意図的に含めない**
+（Issue #95: 既存ドキュメントへの後付け適用は生成時点のバージョンが不明なため、現行バージョンを
+設定すると偽の世代情報になる。決定理由は §9.1 を参照）。
 種別固有フィールドは `type_specific_fields.md` に従う
 （例: prd は `priority` / `risk`、spec は `sdd-phase: "specify"`、design は `sdd-phase: "plan"` + `impl-status`）。
 
@@ -192,6 +193,7 @@ plugins/sdd-workflow/
 | 走査ロジックの共通化      | (a) スキル内に固有実装 / (b) 共有モジュールを利用       | **(b) 共有モジュール**           | `fm_parser`/`naming`/`doc_walker` を他スキル・フックと共有し、検出・種別判定ロジックの重複を排除     |
 | 既定動作               | (a) 常に適用 / (b) 推奨のみ、適用は --apply           | **(b) 推奨のみが既定**           | ファイル変更は破壊的操作。安全側の既定とし、適用は明示 opt-in + AskUserQuestion 確認を必須にする       |
 | FM 検証の担当           | (a) 本スキルで検証も実施 / (b) 推奨・適用に限定         | **(b) 推奨・適用に限定**         | 検証は quality-guardrails の front-matter-reviewer が担当。責務を分離し本機能は付与支援に集中する      |
+| 後付け適用時の `sdd-version` | (a) 現行バージョンを設定 / (b) `"unknown"` 等の不明値 / (c) フィールド自体を除外 | **(c) フィールド自体を除外** | (a) は「現行世代で生成された」という偽の信号になり、front-matter-reviewer・doc-consistency-checker の世代判別・移行漏れ検知（Issue #95）を汚染する。(b) は semver 形式検証に例外を作る。(c) は既存の「不在 = 導入前」という規約と整合し実装も最小 |
 
 ## 9.2. 未解決の課題
 

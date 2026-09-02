@@ -4,7 +4,7 @@ title: "front matter 検証"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-quality-guardrails"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
@@ -46,12 +46,14 @@ flowchart LR
         CheckFormat([フィールド形式と値を検証する])
         CheckDependency([依存方向を検証する])
         CheckUniqueness([ID 一意性を検証する])
+        CheckSddVersion([sdd-versionの形式と世代を検証する])
     end
 
     Developer --- ValidateFM
     CheckFormat -.->|"<<包含>>"| ValidateFM
     CheckDependency -.->|"<<包含>>"| ValidateFM
     CheckUniqueness -.->|"<<包含>>"| ValidateFM
+    CheckSddVersion -.->|"<<包含>>"| ValidateFM
 ```
 
 ## 2.2. 機能一覧（テキスト形式）
@@ -60,6 +62,7 @@ flowchart LR
     - YAML front matter の形式・値の妥当性検証
     - 依存方向（`depends-on` は上流方向のみ）の検証
     - ID 一意性の検証
+    - `sdd-version` の semver 形式検証と世代警告（詳細は §4.1 FR_001 参照）
 
 ---
 
@@ -70,7 +73,7 @@ flowchart LR
 requirementDiagram
     functionalRequirement FrontMatterValidation {
         id: FR_001
-        text: "front matterの形式と依存方向とID一意性を検証する"
+        text: "front matterの形式・依存方向・ID一意性・sdd-versionの形式と世代を検証する"
         risk: low
         verifymethod: test
     }
@@ -91,7 +94,13 @@ DC_004（クロスプラットフォーム対応）・DC_005（多言語対応�
 ### FR_001: front matter 検証
 
 AI-SDD ドキュメントの YAML front matter に対し、フィールド形式・値の妥当性・依存方向
-（`depends-on` は上流方向のみ）・ID 一意性を検証する。[index.md](index.md) の UR_003 から派生。
+（`depends-on` は上流方向のみ）・ID 一意性を検証する。`sdd-version`（生成時点のプラグインバージョン）の
+semver 形式検証と、現行プラグインの major バージョンより古い場合の世代警告を含む。
+世代警告の対象は「値が存在し、その major が古い」場合に限る。フィールドが**不在**の場合は
+本フィールド導入前の文書、または既存ドキュメントへの後付け時に意図的に付与しない文書
+（[front-matter-recommend.md](../workflow-foundation/front-matter-recommend.md) 参照）のいずれかであり、
+どちらも「現行世代より古いと確定できる」わけではないため info（違反ではない）として扱う。
+[index.md](index.md) の UR_003 から派生。
 
 **トリガー方式:** 自動（ドキュメント生成後・整合性チェック時のレビューとして実行）。手動呼び出しも可
 

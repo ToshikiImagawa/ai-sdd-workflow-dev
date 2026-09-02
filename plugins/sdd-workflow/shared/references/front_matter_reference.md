@@ -138,6 +138,8 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 | **`depends-on` direction**  | Dependencies point upstream only (spec→prd, design→spec, task→design)                            | High       |
 | **`status` validity**       | Value is one of the allowed values for the document type                                         | Low        |
 | **`id` uniqueness**         | No duplicate IDs across all documents in the project                                             | High       |
+| **`sdd-version` format**    | If present, must be a semver string (`"{major}.{minor}.{patch}"`). Absent is not a violation (info) | Low        |
+| **`sdd-version` generation** | If present, its major must not be lower than the current plugin's major (from `plugin.json`)     | Low        |
 
 ### Type-Specific Checks
 
