@@ -155,8 +155,8 @@ When a verification tool is not configured, record `Status: SKIPPED` with the re
 
 ## Integration with Other Commands
 
-1. `/generate-spec {feature}`
-2. `/task-breakdown {feature}`
+1. `/generate-spec {description} --ticket {ticket}`
+2. `/task-breakdown {feature} {ticket}`
 3. `/checklist {feature} {ticket}` - Generate checklist
 4. `/implement {feature} {ticket}` - Implement feature
 5. `/run-checklist {feature} {ticket}` - Verify implementation

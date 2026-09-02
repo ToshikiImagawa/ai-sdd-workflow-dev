@@ -46,6 +46,10 @@ minor/patch release.
 - **`/plan-refactor` now takes a ticket number** - The design draft path is ticket-scoped, so
   `/plan-refactor` takes `--ticket=<number>` (required in `--ci` mode, resolved interactively otherwise).
   An existing `task/{ticket-number}/design-draft.md` is picked up as supplementary input in Case A
+- **`/task-breakdown` now requires a ticket number** - Both the design draft it reads and the `tasks.md`
+  it writes live under `task/{ticket-number}/`, so the ticket number can no longer be omitted.
+  `tasks.md` is always written to `task/{ticket-number}/tasks.md`; the previous fallback to
+  `task/{feature}/tasks.md` is gone
 
 ### Added
 
@@ -95,6 +99,26 @@ minor/patch release.
 - **`adr/` edits now get a reminder** - Editing a decision log used to produce no output at all. It now
   reminds that decision logs are append-only and that a decision changing the specification must be
   reflected in the spec
+#### Skills
+
+- **Downstream skills now read the Design Doc from `task/{ticket-number}/design-draft.md`** -
+  `task-breakdown`, `implement`, `checklist`, and `clarify` still pointed at the retired
+  `specification/{feature}_design.md`, which `/generate-spec` no longer produces. Following
+  `/generate-spec` → `/task-breakdown` → `/implement` therefore dead-locked: the design document the
+  downstream skills required could never be created. All four now resolve the draft at the ticket-scoped
+  fixed path, which is independent of the spec's flat/hierarchical structure
+- **`checklist` and `clarify` treat the design draft as an optional input** - The draft is deleted at
+  implementation completion, so its absence no longer blocks these skills; they continue with the
+  abstract spec (and PRD/`tasks.md` when present). `clarify` takes an optional `ticket-number` argument
+  to locate the draft
+- **`task-breakdown` and `implement` set `depends-on` to the ticket-scoped design ID** - The instructions
+  said `design-{feature-name}` while the draft's own `id` is `design-{ticket-number}`, so the
+  cross-reference check in `front-matter-reviewer` always failed. Both now instruct
+  `["design-{ticket-number}"]`, and the `type: "design"` schema in `shared/references/front_matter_reference.md`
+  was corrected to match
+- **`implement` accepts an abstract spec with or without the `_spec` suffix** - The suffix became optional
+  under `specification/`, but the prerequisite check still demanded `{feature}_spec.md`; either
+  `{feature}.md` or `{feature}_spec.md` now satisfies it
 
 #### Skills
 

@@ -212,7 +212,7 @@ The current authentication module tightly couples session management with auth l
 
 Next steps:
 1. Review the plan at: .sdd/task/68/design-draft.md
-2. Run `/task-breakdown auth` to create actionable tasks
+2. Run `/task-breakdown auth 68` to create actionable tasks
 3. Execute tasks with `/implement auth`
 4. After implementation, run `/task-cleanup auth` to append the settled decisions to .sdd/adr/auth.md —
    the draft (and this plan) is deleted at that point

@@ -14,7 +14,7 @@
 
 **次のステップ:**
 1. リファクタリング計画をレビュー: {design_draft_path}
-2. `/task-breakdown {feature-name}` を実行してリファクタリングを実行可能なタスクに分解
+2. `/task-breakdown {feature-name} {ticket-number}` を実行してリファクタリングを実行可能なタスクに分解
 3. TDDアプローチで `/implement {feature-name}` を実行
 4. 実装完了後に `/task-cleanup {feature-name}` を実行し、確定した決定を
    ${SDD_ADR_PATH}/{feature-name}.md へ追記する。この時点でドラフト（本計画を含む）は削除されるため、

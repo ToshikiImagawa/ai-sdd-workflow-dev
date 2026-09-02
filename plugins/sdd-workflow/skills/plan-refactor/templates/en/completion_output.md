@@ -14,7 +14,7 @@
 
 **Next Steps:**
 1. Review the refactoring plan at: {design_draft_path}
-2. Run `/task-breakdown {feature-name}` to break down the refactoring into actionable tasks
+2. Run `/task-breakdown {feature-name} {ticket-number}` to break down the refactoring into actionable tasks
 3. Execute tasks with `/implement {feature-name}` using TDD approach
 4. When implementation completes, run `/task-cleanup {feature-name}` to append the settled decisions to
    ${SDD_ADR_PATH}/{feature-name}.md — the draft (and this plan) is deleted at that point, so the decision

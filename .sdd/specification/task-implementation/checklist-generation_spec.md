@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-09-02"
 depends-on: ["prd-task-implementation-checklist-generation"]
 tags: ["checklist", "quality"]
 category: "task-implementation"
@@ -27,15 +27,16 @@ AI-SDD ワークフローでは、実装が仕様（真実の源）にトレー�
 検証観点を開発者の記憶や注意力に依存させると、要求の見落とし・品質のばらつきが生じ、
 [CONSTITUTION.md](../../CONSTITUTION.md) の最上位原則 B-001（Vibe Coding 防止）に反する。
 
-本機能は、仕様書・設計書・タスク分解の成果物から、構造化 ID とカテゴリを持つ品質保証チェックリストを
+本機能は、仕様書・設計ドラフト・タスク分解の成果物から、構造化 ID とカテゴリを持つ品質保証チェックリストを
 生成することで、検証観点を仕様から機械的に導出する。生成物はチェックリスト自動検証
 （[run-checklist.md](../../requirement/task-implementation/run-checklist.md)）の入力となり、
 実装品質の体系的な検証（親 PRD UR_003）を支える。
 
 # 2. 概要
 
-本機能は、対象機能の PRD・抽象仕様書（`*_spec.md`）・技術設計書（`*_design.md`）・タスク分解（tasks.md）を
-読み込み、各文書から検証可能な観点を抽出して、構造化 ID・カテゴリ・優先度を持つチェックリストを生成する。
+本機能は、対象機能の PRD・抽象仕様書（`*_spec.md`）・技術設計ドラフト
+（`task/{ticket-number}/design-draft.md`）・タスク分解（tasks.md）を読み込み、各文書から検証可能な観点を
+抽出して、構造化 ID・カテゴリ・優先度を持つチェックリストを生成する。
 主要な設計原則は以下のとおり。
 
 - **仕様からの導出**: チェックリスト項目は仕様・設計・タスクから抽出するものであり、AI が発明しない（B-001）
@@ -52,13 +53,15 @@ AI-SDD ワークフローでは、実装が仕様（真実の源）にトレー�
 
 | ID     | 要件                                                                       | 優先度 | 根拠（上流要求）                     |
 |--------|--------------------------------------------------------------------------|-----|-----------------------------------|
-| FR-001 | PRD・`*_spec.md`・`*_design.md`・tasks.md から検証可能な観点を抽出する          | 必須  | 子 PRD FR_001 / 親 PRD UR_003     |
+| FR-001 | PRD・`*_spec.md`・`design-draft.md`・tasks.md から検証可能な観点を抽出する        | 必須  | 子 PRD FR_001 / 親 PRD UR_003     |
 | FR-002 | 抽出した観点を 9 カテゴリに分類し、`CHK-{category}{nn}` 形式の構造化 ID を付与する | 必須  | 子 PRD FR_001                     |
 | FR-003 | 各項目に優先度（P1/P2/P3）を付与する                                          | 必須  | 子 PRD FR_001                     |
 | FR-004 | 生成したチェックリストを task ディレクトリ配下の `checklist.md` に保存する         | 必須  | 親 PRD IR_001                     |
 | FR-005 | 既存チェックリストの更新（`--update`）で完了状態を保持しつつ差分を反映する          | 任意  | 子 PRD FR_001（保守利用）          |
 
-抽出元のうち `*_spec.md` / `*_design.md` は必須、PRD と tasks.md は存在する場合に読み込む。
+抽出元のうち `*_spec.md` は必須、PRD・技術設計ドラフト・tasks.md は存在する場合に読み込む。
+技術設計ドラフトは実装完了後に削除される一時文書であるため任意入力として扱い、不在時は
+仕様書のみで生成を続行する（設計レビュー観点は仕様書から導出できる範囲に限定する）。
 FR-002 の 9 カテゴリは、要求レビュー・仕様レビュー・設計レビュー・実装レビュー・テストレビュー・
 ドキュメントレビュー・セキュリティレビュー・パフォーマンスレビュー・デプロイレビューとする（「5. 用語集」参照）。
 
@@ -68,7 +71,7 @@ FR-002 の 9 カテゴリは、要求レビュー・仕様レビュー・設計�
 |---------|----------|-------------------------------------------------------|--------------------------------|
 | NFR-001 | 一貫性    | ID（`CHK-101` 等）は更新をまたいで安定的に維持される              | 更新後も同一項目の ID を保持       |
 | NFR-002 | 多言語    | 出力言語を `SDD_LANG` に従い切り替え、単一文書内で混在させない      | en / ja（原則 B-002）            |
-| NFR-003 | 命名規則  | 入出力パスは AI-SDD 命名規則（`_spec` / `_design` サフィックス）に従う | requirement 無サフィックス（D-002） |
+| NFR-003 | 命名規則  | 入出力パスは AI-SDD 命名規則（`_spec` は任意 / 設計ドラフトは `design-draft.md` 固定）に従う | requirement 無サフィックス（D-002） |
 
 # 4. 提供コンポーネント
 
@@ -86,12 +89,12 @@ FR-002 の 9 カテゴリは、要求レビュー・仕様レビュー・設計�
 | 引数            | 必須 | 説明                                                          |
 |---------------|----|-------------------------------------------------------------|
 | `feature-name` | 必須 | 対象機能名またはパス（例: `user-auth`, `auth/user-login`）             |
-| `ticket-number` | 任意 | 出力ディレクトリ名。省略時は `feature-name` を使用                       |
+| `ticket-number` | 任意 | 出力ディレクトリ名。技術設計ドラフトの探索先も兼ねる。省略時は `feature-name` を使用   |
 | `--update`      | 任意 | 既存チェックリストを更新し、完了状態を保持したまま差分を反映する               |
 | `--export`      | 任意 | `github-issues` / `csv` 形式でエクスポートする                      |
 
-フラット構造・階層構造の双方に対応し、対象機能に対応する PRD・`*_spec.md`・`*_design.md`・tasks.md
-（存在するもの）を読み込む。
+フラット構造・階層構造の双方に対応し、対象機能に対応する PRD・`*_spec.md`（必須）を読み込む。
+技術設計ドラフト（`${SDD_TASK_PATH}/{ticket}/design-draft.md`）と tasks.md は存在する場合に読み込む。
 
 **出力**: 9 カテゴリに分類された構造化 ID（`CHK-{category}{nn}`）・優先度（P1/P2/P3）・完了基準を持つ
 チェックリスト文書。保存先は `${SDD_TASK_PATH}/{ticket}/checklist.md`。出力言語は `SDD_LANG` に従う。
@@ -122,11 +125,11 @@ FR-002 の 9 カテゴリは、要求レビュー・仕様レビュー・設計�
 sequenceDiagram
     participant User as 開発者
     participant Skill as checklist スキル
-    participant Docs as PRD / *_spec.md / *_design.md / tasks.md
+    participant Docs as PRD / *_spec.md / task/{ticket}/design-draft.md / tasks.md
     participant Out as checklist.md
 
     User ->> Skill: /checklist {feature-name} {ticket}
-    Skill ->> Docs: 対象文書を読み込み（spec/design は必須）
+    Skill ->> Docs: 対象文書を読み込み（*_spec.md は必須、設計ドラフト不在時は仕様書のみで続行）
     Skill ->> Skill: 検証観点を抽出
     Skill ->> Skill: 9 カテゴリへ分類・CHK-ID 採番・優先度付け
     Skill ->> Out: templates/{en,ja} を基にチェックリストを保存
@@ -149,5 +152,5 @@ sequenceDiagram
 |-------|--------------------------|----------------------------------------------------------------------|
 | B-001 | Vibe Coding 防止          | チェックリスト項目を仕様・設計から機械的に導出し、検証観点を暗黙の推測に委ねない          |
 | B-002 | 多言語対応（EN/JA）の一貫性 | `templates/{en,ja}/` と `SDD_LANG` により出力言語を一貫して切り替える           |
-| D-001 | Specification-Driven      | 仕様書・設計書を真実の源とし、そこから検証観点を抽出する                          |
-| D-002 | ファイル命名規則の厳守      | requirement は無サフィックス、specification は `_spec`/`_design` を前提に入力を解決 |
+| D-001 | Specification-Driven      | 仕様書・設計ドラフトを真実の源とし、そこから検証観点を抽出する                       |
+| D-002 | ファイル命名規則の厳守      | requirement は無サフィックス、specification は `_spec` 任意、設計ドラフトは `design-draft.md` 固定名を前提に入力を解決 |

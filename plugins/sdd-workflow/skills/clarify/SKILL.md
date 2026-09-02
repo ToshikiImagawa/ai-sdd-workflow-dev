@@ -1,8 +1,8 @@
 ---
 name: clarify
 description: "Analyze specifications and generate clarification questions to eliminate ambiguity before implementation"
-argument-hint: "<feature-name> [--interactive]"
-arguments: [feature-name]
+argument-hint: "<feature-name> [ticket-number] [--interactive]"
+arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)
@@ -23,7 +23,8 @@ before implementation.
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
 **PRD is out of scope for edits**: Although `allowed-tools` grants `Edit(.sdd/**)`, this skill only edits
-`*_spec.md` / `*_design.md`. Never write to `requirement/**` — see AI-SDD-PRINCIPLES.md § Document Update
+`*_spec.md` / `task/{ticket-number}/design-draft.md`. Never write to `requirement/**` — see
+AI-SDD-PRINCIPLES.md § Document Update
 Triggers ("Updating `requirement/` (PRD) — Never Automated").
 
 ### Relationship to Vibe Detector Skill
@@ -43,16 +44,18 @@ The `SDD_LANG` environment variable determines the language (default: `en`).
 ## Input
 
 - `feature-name`: $feature-name
+- `ticket-number`: $ticket-number
 
 Full argument string: $ARGUMENTS
 
-> **Fallback**: If the value above is empty, remains a literal `$` placeholder, or starts with `--`
-> (a flag captured positionally), treat the argument as omitted and interpret the full argument
+> **Fallback**: If a value above is empty, remains a literal `$` placeholder, or starts with `--`
+> (a flag captured positionally), treat that argument as omitted and interpret the full argument
 > string instead. Ask the user interactively when a required argument is missing.
 
 | Argument        | Required | Description                                                        |
 |:----------------|:---------|:-------------------------------------------------------------------|
 | `feature-name`  | Yes      | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
+| `ticket-number` | -        | Locates the design draft `task/{ticket-number}/design-draft.md`. Omit to analyze the PRD and spec only |
 | `--interactive` | -        | Interactive mode: Answer questions one at a time                   |
 
 ### Input Examples
@@ -65,12 +68,14 @@ Full argument string: $ARGUMENTS
 
 Both flat and hierarchical structures are supported.
 
-See `references/target_specification_loading.md` for the list of paths to load for flat and hierarchical structures.
+See `references/target_specification_loading.md` for the list of paths to load, including how the design draft
+is resolved and what to do when it is absent.
 
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` or `_design` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under task**: Design draft uses the fixed filename `design-draft.md`
 
 ### 2. Nine Category Analysis
 
@@ -91,8 +96,10 @@ Based on category analysis, generate up to 5 high-impact questions using the for
 After receiving user answers, the **main agent (this skill)** applies the integration:
 
 1. **Review Integration Proposals**: Review proposals from `clarification-assistant` agent output
-2. **Update Specifications**: Apply approved changes to appropriate `*_spec.md` or `*_design.md` using Edit/Write
-   tools (never `requirement/**` — see Prerequisites)
+2. **Update Specifications**: Apply approved changes to the appropriate `*_spec.md` or
+   `task/{ticket-number}/design-draft.md` using Edit/Write tools (never `requirement/**` — see Prerequisites).
+   When the design draft is absent, integrate design-related answers into the `*_spec.md` only where they
+   belong at the abstract level; otherwise report them as findings rather than recreating the draft
 3. **Mark Resolved**: Track which questions have been addressed
 4. **Generate Diff**: Show what was added to specifications
 

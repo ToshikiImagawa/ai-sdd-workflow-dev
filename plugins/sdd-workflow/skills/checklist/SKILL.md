@@ -10,8 +10,8 @@ allowed-tools: Read, Glob, Grep, Edit(.sdd/**)
 
 # Checklist - Quality Checklist Generation
 
-Automatically generates comprehensive quality assurance checklists from specifications, design documents, and task
-breakdowns.
+Automatically generates comprehensive quality assurance checklists from specifications, the technical design
+draft, and task breakdowns.
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ Full argument string: $ARGUMENTS
 | Argument        | Required | Description                                                        |
 |:----------------|:---------|:-------------------------------------------------------------------|
 | `feature-name`  | Yes      | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
-| `ticket-number` | -        | Used for output directory name. Uses feature-name if omitted       |
+| `ticket-number` | -        | Used for the output directory name and to locate the design draft. Uses feature-name if omitted |
 
 ### Input Format
 
@@ -67,7 +67,7 @@ Both flat and hierarchical structures are supported.
 |:--------------------------------------------------------------------------|:-----------|
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md` (PRD)  | if exists  |
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md` | required   |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` | required |
+| `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md`        | if exists  |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`               | if exists  |
 
 **For hierarchical structure** (when argument contains `/`):
@@ -78,14 +78,19 @@ Both flat and hierarchical structures are supported.
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{parent-feature}/{feature-name}.md` (child feature PRD) | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_spec.md` (parent feature spec) | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_spec.md` (child feature spec) | required |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_design.md` (parent feature design) | if exists |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md` (child feature design) | required |
+| `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` (design draft)                | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`                                      | if exists |
 
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` or `_design` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under task**: Design draft uses the fixed filename `design-draft.md`. It is ticket-scoped, so its path is
+  the same in both flat and hierarchical structures
+
+**When the design draft is absent**: `design-draft.md` is a temporary document deleted once implementation
+completes, so treat it as an optional input. Continue with the abstract spec (and PRD/tasks.md when present),
+and limit design-review items to what the spec supports — do not stop, and do not prompt for regeneration.
 
 ### 2. Extract Verification Points
 
@@ -225,9 +230,10 @@ tools.
 
 ## Integration with Other Commands
 
-The checklist fits into the overall workflow as follows: `/generate-spec {feature}` -> `/task-breakdown {feature}` ->
-`/checklist {feature} {ticket}` (generate checklist) -> `/implement {feature} {ticket}` (use checklist during
-implementation) -> review against checklist before PR.
+The checklist fits into the overall workflow as follows: `/generate-spec {description} --ticket {ticket}` ->
+`/task-breakdown {feature} {ticket}` -> `/checklist {feature} {ticket}` (generate checklist) ->
+`/implement {feature} {ticket}` (use checklist during implementation) -> review against checklist before PR.
+All four steps share the same `{ticket}`, so they read and write the same `task/{ticket}/` directory.
 
 ## Notes
 
