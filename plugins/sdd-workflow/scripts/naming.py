@@ -7,20 +7,40 @@ The AI-SDD naming rule:
   spec / a decision log respectively), so a ``_spec``/``_design``/``-decisions``
   suffix is optional. Existing suffixed files remain valid; new files may omit it.
 
-Consumed by the pre-tool-use hook (write-time validation via ``validate_naming``)
-and the recommend-front-matter skill (document classification via
-``determine_type``), so the rule is defined exactly once.
+Consumed by the pre-tool-use hook (write-time validation via ``validate_naming``),
+the recommend-front-matter skill (document classification via ``determine_type``),
+doc_walker (spec lookup) and the check-spec skill helper, so the rule is defined
+exactly once.
 """
 
 import fnmatch
 from pathlib import Path
 
-SPEC_SUFFIXES = ("_spec", "_design")
+SPEC_SUFFIX = "_spec"
+DESIGN_SUFFIX = "_design"
+SPEC_SUFFIXES = (SPEC_SUFFIX, DESIGN_SUFFIX)
 
 
 def has_spec_suffix(stem: str) -> bool:
     """Return True if ``stem`` ends with a ``_spec`` / ``_design`` suffix."""
     return stem.endswith(SPEC_SUFFIXES)
+
+
+def is_design_stem(stem: str) -> bool:
+    """Return True if ``stem`` ends with ``_design``.
+
+    Under specification/ such a file is a v4.x persisted design doc, not a spec:
+    design docs now live at ``task/{ticket-number}/design-draft.md``.
+    """
+    return stem.endswith(DESIGN_SUFFIX)
+
+
+def feature_name(stem: str) -> str:
+    """Return ``stem`` with a ``_spec`` / ``_design`` suffix stripped (suffix optional)."""
+    for suffix in SPEC_SUFFIXES:
+        if stem.endswith(suffix):
+            return stem[: -len(suffix)]
+    return stem
 
 
 def validate_naming(
@@ -70,7 +90,7 @@ def determine_type(
         # specification/ is a single-type directory (abstract specs only); an
         # explicit _design suffix is still honored for pre-ADR-migration files,
         # but any other name (suffixed or not) is a spec.
-        if basename.endswith("_design"):
+        if is_design_stem(basename):
             return "design"
         return "spec"
     if f"/{task_dir}/" in filepath:

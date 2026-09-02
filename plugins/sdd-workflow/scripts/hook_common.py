@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -53,25 +54,65 @@ def get_project_root(payload: Dict[str, Any]) -> str:
     return os.getcwd()
 
 
-def load_sdd_paths(project_root: str) -> Tuple[str, str, str]:
-    """Return (sdd_root, requirement_dir, specification_dir) names."""
-    root = ".sdd"
-    requirement_dir = "requirement"
-    specification_dir = "specification"
+@dataclass(frozen=True)
+class SddPaths:
+    """Resolved ``.sdd`` directory names, plus their project-relative prefixes.
+
+    Returned as an object rather than a tuple so adding a directory (``adr`` and
+    ``task`` arrived after ``requirement``/``specification``) does not churn every
+    call site. Keep the field names in sync with the ``directories`` keys written
+    by sdd-init.
+    """
+
+    root: str = ".sdd"
+    requirement_dir: str = "requirement"
+    specification_dir: str = "specification"
+    adr_dir: str = "adr"
+    task_dir: str = "task"
+
+    @property
+    def requirement_prefix(self) -> str:
+        return str(Path(self.root) / self.requirement_dir)
+
+    @property
+    def specification_prefix(self) -> str:
+        return str(Path(self.root) / self.specification_dir)
+
+    @property
+    def adr_prefix(self) -> str:
+        return str(Path(self.root) / self.adr_dir)
+
+    @property
+    def task_prefix(self) -> str:
+        return str(Path(self.root) / self.task_dir)
+
+
+# Field name -> .sdd-config.json "directories" key.
+_DIR_FIELDS = {
+    "requirement_dir": "requirement",
+    "specification_dir": "specification",
+    "adr_dir": "adr",
+    "task_dir": "task",
+}
+
+
+def load_sdd_paths(project_root: str) -> SddPaths:
+    """Resolve the .sdd directory layout from .sdd-config.json, else defaults."""
     config_path = Path(project_root) / ".sdd-config.json"
-    if config_path.is_file():
-        try:
-            raw = json.loads(config_path.read_text(encoding="utf-8"))
-            if raw.get("root"):
-                root = raw["root"]
-            dirs = raw.get("directories", {})
-            if dirs.get("requirement"):
-                requirement_dir = dirs["requirement"]
-            if dirs.get("specification"):
-                specification_dir = dirs["specification"]
-        except (json.JSONDecodeError, OSError):
-            pass
-    return root, requirement_dir, specification_dir
+    if not config_path.is_file():
+        return SddPaths()
+    try:
+        raw = json.loads(config_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return SddPaths()
+
+    dirs = raw.get("directories") or {}
+    resolved = {
+        field: dirs[key] for field, key in _DIR_FIELDS.items() if dirs.get(key)
+    }
+    if raw.get("root"):
+        resolved["root"] = raw["root"]
+    return SddPaths(**resolved)
 
 
 def load_naming_ignore_patterns(project_root: str) -> Tuple[str, ...]:

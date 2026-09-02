@@ -94,17 +94,20 @@ def main() -> None:
     if not rel_path:
         return
 
-    sdd_root, requirement_dir, _specification_dir = load_sdd_paths(project_root)
-    requirement_prefix = str(Path(sdd_root) / requirement_dir)
+    paths = load_sdd_paths(project_root)
 
     ignore_patterns = load_naming_ignore_patterns(project_root)
-    error = validate_naming(rel_path, requirement_prefix, ignore_patterns)
+    error = validate_naming(
+        rel_path, paths.requirement_prefix, ignore_patterns
+    )
     if error:
         emit_permission_deny("PreToolUse", error)
         return
 
-    if not Path(rel_path).is_relative_to(sdd_root):
-        maybe_inject_constitution(rel_path, project_root, sdd_root, payload.get("session_id", ""))
+    if not Path(rel_path).is_relative_to(paths.root):
+        maybe_inject_constitution(
+            rel_path, project_root, paths.root, payload.get("session_id", ""),
+        )
 
 
 if __name__ == "__main__":

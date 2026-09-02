@@ -1,9 +1,13 @@
-## Design Doc & Implementation Consistency Check
+## Spec & Implementation Consistency Check
 
 ### Target
 
-- Design Doc: `${SDD_SPECIFICATION_PATH}/[{parent}/]{feature}_design.md`
+- Spec: `${SDD_SPECIFICATION_PATH}/[{parent}/]{feature}[_spec].md`
+- Design draft (auxiliary, only if present): `${SDD_TASK_PATH}/{ticket-number}/design-draft.md`
 - Implementation: `{implementation_files}`
+
+> Omit the design draft line when no draft exists — that is the normal state after implementation
+> completes, not a finding.
 
 ### Consistency Check Results
 
@@ -11,17 +15,19 @@
 
 | Category              | Status  | Details                  |
 |:----------------------|:--------|:-------------------------|
-| API Implementation    | 🟢 OK   | All APIs implemented     |
+| Public API            | 🟢 OK   | All APIs implemented     |
 | Data Model            | 🔴 NG   | {count} mismatches found |
-| Module Structure      | 🟢 OK   | Follows design           |
+| Behavior              | 🟢 OK   | Matches the spec         |
 | Literal Values        | 🟡 Warn | {count} value drifts     |
 | Implementation Status | 🟡 Warn | {count} items incomplete |
+
+> Add a **Module Structure** row only when a design draft was loaded.
 
 #### 🔴 Mismatches
 
 ##### Data Model: User Type Definition
 
-**Design Doc**:
+**Spec**:
 
 ```typescript
 interface User {
@@ -54,13 +60,12 @@ interface User {
 ```
 [WARN] Value drift detected: {value_name}
   spec: {spec_value} ({spec_section}, {requirement_id})
-  design: {design_value} ({design_section})
   {implementation_file}: {impl_value} ← drift
 ```
 
 **Impact**: {impact description, e.g., gate threshold looser than specified}
 
-**Fix Suggestion**: Align {implementation_file} with the spec value, or update spec/design if the implementation is correct
+**Fix Suggestion**: Align {implementation_file} with the spec value, or update the spec if the implementation is correct
 
 ---
 
@@ -68,17 +73,17 @@ interface User {
 
 ##### API: Password Reset Function
 
-**Designed**: Yes (Design Doc line 45)
+**Specified**: Yes (spec §{section}, {requirement_id})
 
 **Implemented**: Not found
 
-**Recommendation**: Implement or remove from design doc
+**Recommendation**: Implement or remove from the spec
 
 ---
 
 ### Implementation Status Update
 
-Updated design doc implementation status:
+Updated spec implementation status:
 
 - [x] User Login API → 🟢 Implemented
 - [x] Logout API → 🟢 Implemented
@@ -89,7 +94,7 @@ Updated design doc implementation status:
 1. Fix mismatches:
     - Update `src/models/user.ts:10` type definition
 2. Implement incomplete items:
-    - Implement Password Reset API or remove from design
+    - Implement Password Reset API or remove from the spec
 
 ### Verification Commands
 

@@ -510,7 +510,9 @@ def upsert_document(conn: sqlite3.Connection, rec: Dict[str, Any]) -> None:
 
 
 def rebuild_all(project_root: str) -> None:
-    sdd_root, req_dir, spec_dir = load_sdd_paths(project_root)
+    paths = load_sdd_paths(project_root)
+    sdd_root = paths.root
+    req_dir, spec_dir = paths.requirement_dir, paths.specification_dir
     conn = connect(db_path(project_root, sdd_root))
     try:
         init_schema(conn)
@@ -553,7 +555,7 @@ def rebuild_all(project_root: str) -> None:
 
 
 def update_one(project_root: str, rel_path: str) -> None:
-    sdd_root, _req_dir, _spec_dir = load_sdd_paths(project_root)
+    sdd_root = load_sdd_paths(project_root).root
     db_file = db_path(project_root, sdd_root)
     if not Path(db_file).is_file():
         return

@@ -67,33 +67,46 @@ class TestGetProjectRoot:
 
 class TestLoadSddPaths:
     def test_defaults_when_config_missing(self, tmp_path):
-        assert hc.load_sdd_paths(str(tmp_path)) == (
-            ".sdd", "requirement", "specification",
-        )
+        assert hc.load_sdd_paths(str(tmp_path)) == hc.SddPaths()
 
     def test_reads_custom_paths(self, tmp_path):
         (tmp_path / ".sdd-config.json").write_text(
             json.dumps({
                 "root": "docs",
-                "directories": {"requirement": "reqs", "specification": "specs"},
+                "directories": {
+                    "requirement": "reqs",
+                    "specification": "specs",
+                    "adr": "decisions",
+                    "task": "work",
+                },
             }),
             encoding="utf-8",
         )
-        assert hc.load_sdd_paths(str(tmp_path)) == ("docs", "reqs", "specs")
+        assert hc.load_sdd_paths(str(tmp_path)) == hc.SddPaths(
+            root="docs",
+            requirement_dir="reqs",
+            specification_dir="specs",
+            adr_dir="decisions",
+            task_dir="work",
+        )
 
     def test_broken_config_falls_back_to_defaults(self, tmp_path):
         (tmp_path / ".sdd-config.json").write_text("{ broken", encoding="utf-8")
-        assert hc.load_sdd_paths(str(tmp_path)) == (
-            ".sdd", "requirement", "specification",
-        )
+        assert hc.load_sdd_paths(str(tmp_path)) == hc.SddPaths()
 
     def test_partial_config_merges_defaults(self, tmp_path):
+        # A config predating adr/ and task/ must still resolve their defaults.
         (tmp_path / ".sdd-config.json").write_text(
             json.dumps({"root": "docs"}), encoding="utf-8",
         )
-        assert hc.load_sdd_paths(str(tmp_path)) == (
-            "docs", "requirement", "specification",
-        )
+        assert hc.load_sdd_paths(str(tmp_path)) == hc.SddPaths(root="docs")
+
+    def test_prefixes_are_derived_from_root(self, tmp_path):
+        paths = hc.SddPaths(root="docs", specification_dir="specs")
+        assert paths.specification_prefix == os.path.join("docs", "specs")
+        assert paths.requirement_prefix == os.path.join("docs", "requirement")
+        assert paths.adr_prefix == os.path.join("docs", "adr")
+        assert paths.task_prefix == os.path.join("docs", "task")
 
 
 # --- load_naming_ignore_patterns -------------------------------------------

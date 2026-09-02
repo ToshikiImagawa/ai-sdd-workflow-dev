@@ -1,7 +1,7 @@
 #!/bin/sh
 # test-skill-scripts.sh
 # Regression test for the skill helper scripts that pre-scan files into a cache:
-#   plugins/sdd-workflow/skills/check-spec/scripts/find-design-docs.py
+#   plugins/sdd-workflow/skills/check-spec/scripts/find-spec-docs.py
 #   plugins/sdd-workflow/skills/constitution/scripts/validate-files.py
 #   plugins/sdd-workflow/skills/recommend-front-matter/scripts/scan-documents.py
 #
@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PLUGIN_ROOT="${REPO_ROOT}/plugins/sdd-workflow"
 
-FIND_DESIGN="${PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py"
+FIND_SPEC="${PLUGIN_ROOT}/skills/check-spec/scripts/find-spec-docs.py"
 VALIDATE_FILES="${PLUGIN_ROOT}/skills/constitution/scripts/validate-files.py"
 SCAN_DOCUMENTS="${PLUGIN_ROOT}/skills/recommend-front-matter/scripts/scan-documents.py"
 
@@ -83,29 +83,34 @@ printf '%s\n' "{\"root\":\"${ROOT}\",\"lang\":\"en\",\"directories\":{\"requirem
 printf '# design\n' > "$PROJ/${ROOT}/specification/user-login_design.md"
 printf '# spec\n'   > "$PROJ/${ROOT}/specification/user-login_spec.md"
 printf '# prd\n'    > "$PROJ/${ROOT}/requirement/user-login.md"
+# Design drafts are ticket-scoped under the configured task dir (optional input).
+mkdir -p "$PROJ/${ROOT}/task/90"
+printf '# draft\n' > "$PROJ/${ROOT}/task/90/design-draft.md"
 
 ENV_FILE="${TMP_DIR}/env_output"
 : > "$ENV_FILE"
 
-FD_CACHE="$PROJ/${ROOT}/.cache/check-spec"
+FS_CACHE="$PROJ/${ROOT}/.cache/check-spec"
 VF_CACHE="$PROJ/${ROOT}/.cache/constitution"
 SD_CACHE="$PROJ/${ROOT}/.cache/recommend-front-matter"
 
 printf '=== skill helper scripts custom-root regression (root=%s) ===\n\n' "$ROOT"
 
 # ---------------------------------------------------------------------------
-# find-design-docs.py (/check-spec)
+# find-spec-docs.py (/check-spec)
 # ---------------------------------------------------------------------------
-printf -- '--- find-design-docs.py ---\n'
-if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" python3 "$FIND_DESIGN" >/dev/null 2>&1; then
-    fail "find-design-docs.py exited non-zero"
+printf -- '--- find-spec-docs.py ---\n'
+if ! CLAUDE_PROJECT_DIR="$PROJ" CLAUDE_ENV_FILE="$ENV_FILE" python3 "$FIND_SPEC" >/dev/null 2>&1; then
+    fail "find-spec-docs.py exited non-zero"
 fi
-assert_file      "find-design-docs writes design_files.txt under the custom root" "$FD_CACHE/design_files.txt"
-assert_file      "find-design-docs writes spec_files.txt under the custom root"   "$FD_CACHE/spec_files.txt"
-assert_file      "find-design-docs writes file_mapping.json under the custom root" "$FD_CACHE/file_mapping.json"
-assert_no_file   "find-design-docs creates no bare .sdd/ directory"               "$PROJ/.sdd"
-assert_grep      "design_files.txt lists the seeded design doc"                   "user-login_design.md" "$FD_CACHE/design_files.txt"
+assert_file      "find-spec-docs writes spec_files.txt under the custom root"     "$FS_CACHE/spec_files.txt"
+assert_file      "find-spec-docs writes design_draft_files.txt under the custom root" "$FS_CACHE/design_draft_files.txt"
+assert_file      "find-spec-docs writes file_mapping.json under the custom root"  "$FS_CACHE/file_mapping.json"
+assert_no_file   "find-spec-docs creates no bare .sdd/ directory"                 "$PROJ/.sdd"
+assert_grep      "spec_files.txt lists the seeded spec doc"                       "user-login_spec.md" "$FS_CACHE/spec_files.txt"
+assert_grep      "design_draft_files.txt lists the ticket-scoped draft"           "${ROOT}/task/90/design-draft.md" "$FS_CACHE/design_draft_files.txt"
 assert_grep      "env exports CHECK_SPEC_CACHE_DIR"                               "CHECK_SPEC_CACHE_DIR"  "$ENV_FILE"
+assert_grep      "env exports CHECK_SPEC_DESIGN_DRAFT_FILES"                      "CHECK_SPEC_DESIGN_DRAFT_FILES" "$ENV_FILE"
 assert_grep      "CHECK_SPEC_CACHE_DIR points under the custom root"              "${ROOT}/.cache/check-spec" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
