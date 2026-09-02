@@ -50,7 +50,7 @@
 - **パターン:** {例: インターフェース抽出、ストラテジーパターン、リポジトリパターン}
 - **技法:** {例: 段階的移行のためのStrangler Figパターン}
 - **参考資料:**
-    - `references/refactor-patterns.md` でパターンの詳細を参照
+    - `references/refactor_patterns.md` でパターンの詳細を参照
     - Martin Fowlerのリファクタリングカタログ: {具体的なリファクタリング}
 
 **トレードオフ:**
@@ -228,8 +228,9 @@
 
 - 関連PRD: `{path_to_prd}`
 - 関連仕様書: `{path_to_spec}`
-- デザインパターン: `references/refactor-patterns.md` を参照
-- 統合ガイド: `references/design-doc-integration.md` を参照
+- 決定ログ（クリーンアップ後）: `${SDD_ADR_PATH}/{feature-name}.md`
+- デザインパターン: `references/refactor_patterns.md` を参照
+- 統合ガイド: `references/design_doc_integration.md` を参照
 
 ---
 

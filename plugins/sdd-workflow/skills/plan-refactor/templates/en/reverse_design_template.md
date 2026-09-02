@@ -1,5 +1,5 @@
 ---
-id: "design-{feature-name}"
+id: "design-{ticket-number}"
 title: "{FEATURE_NAME}"
 type: "design"
 status: "review"
@@ -14,10 +14,14 @@ priority: "medium"
 risk: "medium"
 ---
 
-# {FEATURE_NAME} - Technical Design Document (Reverse Engineered)
+# {FEATURE_NAME} - Technical Design Draft (Reverse Engineered)
 
-> **⚠️ Note**: This design document was reverse-engineered from existing implementation on {DATE}.
+> **⚠️ Note**: This design draft was reverse-engineered from existing implementation on {DATE}.
 > It documents the current state, not the original design. Review and update as needed.
+>
+> **This is a temporary draft** at `${SDD_TASK_PATH}/{ticket-number}/design-draft.md`. It is deleted
+> after implementation completes, once its settled decisions have been appended to
+> `${SDD_ADR_PATH}/{feature-name}.md` by `/task-cleanup`.
 
 ## Design Overview
 
@@ -107,3 +111,5 @@ risk: "medium"
 1. Verify this design matches actual implementation
 2. Address technical debt items
 3. Plan refactoring (add Refactoring Plan section below)
+4. After implementation, run `/task-cleanup` to append the settled decisions to
+   `${SDD_ADR_PATH}/{feature-name}.md` before this draft is deleted

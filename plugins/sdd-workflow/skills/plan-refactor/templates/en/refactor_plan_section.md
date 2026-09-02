@@ -48,7 +48,7 @@
 - **Pattern:** {e.g., Extract Interface, Strategy Pattern, Repository Pattern}
 - **Technique:** {e.g., Strangler Fig Pattern for gradual migration}
 - **References:**
-  - See `references/refactor-patterns.md` for pattern details
+  - See `references/refactor_patterns.md` for pattern details
   - Martin Fowler's Refactoring Catalog: {specific refactorings}
 
 **Trade-offs:**
@@ -225,8 +225,9 @@ If critical issues are discovered post-deployment:
 
 - Related PRD: `{path_to_prd}`
 - Related Specification: `{path_to_spec}`
-- Design Patterns: See `references/refactor-patterns.md`
-- Integration Guide: See `references/design-doc-integration.md`
+- Decision Log (after cleanup): `${SDD_ADR_PATH}/{feature-name}.md`
+- Design Patterns: See `references/refactor_patterns.md`
+- Integration Guide: See `references/design_doc_integration.md`
 
 ---
 
