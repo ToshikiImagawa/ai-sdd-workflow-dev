@@ -90,6 +90,21 @@
   を既に持つが本フィールドだけが欠落している spec を検出し、他のフィールドには触れずに単一フィールドの
   追加のみを推奨するようになった
 
+#### ワークフローガイダンス
+
+- **タスク種別判定に破壊的変更が追加された** - `AI-SDD-PRINCIPLES.md` の Task Type Determination 表と
+  Task Scale Criteria に "Breaking Change" 行が追加され、影響範囲の洗い出し・後方互換性の方針決定・
+  移行手順の記録先（`adr/`）を定義する新設の "Breaking Change Handling" 節が追加された。この表は
+  `.claude/rules/ai-sdd-instructions.md` にも転記され、原則ドキュメントを開かなくても全プロジェクトに
+  同じガイダンスが届くようになった
+- **PRD が存在しない場合の新規起草が明示的に許可された** - `AI-SDD-PRINCIPLES.md` は「PRD は自動更新しない」
+  というルールが既存 PRD の書き換えを禁じるものであり、存在しない PRD をゼロから起草する行為には適用され
+  ないことを明記した。起草した PRD は人間が承認するまで `status: "draft"` と `"reverse-engineered"` タグを
+  付ける。`/plan-refactor` は逆生成した spec に依存先の PRD が無い場合、この起草を提案するようになった
+- **`vibe-detector` が推奨開始フェーズを出力するようになった** - リスクレポートは、従来の曖昧さリスク評価に
+  加えて、依頼内容をタスク種別判定表に照らして分類し、対応する開始フェーズ（Specify/Plan/Tasks/Implement）
+  を報告する
+
 ### Fixed
 
 - **`adr/` がドキュメントインデックスと `/recommend-front-matter` の走査対象になった** - いずれも

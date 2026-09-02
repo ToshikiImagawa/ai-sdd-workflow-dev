@@ -82,6 +82,26 @@ It receives user input context for analysis.
 | **Medium** | Specs exist + some ambiguity     | Clarify ambiguous points before implementation           |
 | **Low**    | Specs exist + clear requirements | Can start implementation                                 |
 
+## Task Type Determination
+
+Independently of the ambiguity/risk assessment above, classify the request against the **Task Type
+Determination** table in `AI-SDD-PRINCIPLES.md` § Workflow Management Guidelines and report the starting
+phase that type requires — the first phase listed in that table's "Required Phases" column for the matched
+row (e.g. Breaking Change and New Feature both start at Specify; Bug Fix and Technical Investigation start
+at Tasks; Refactoring starts at Plan). Match by signal in the request:
+
+| Signal in the request                                                              | Task Type               |
+|:-------------------------------------------------------------------------------------|:-------------------------|
+| Removes/changes existing public API or behavior; existing consumers must adapt       | Breaking Change          |
+| No existing spec covers the request; new business domain or cross-feature scope      | New Feature (Large)      |
+| No existing spec covers the request; contained to an existing feature/module         | New Feature (Small)      |
+| Corrects a deviation from an existing spec; no spec change needed                    | Bug Fix                  |
+| Restructures existing code with no behavior change                                   | Refactoring               |
+| Pure investigation/analysis, no code change implied                                  | Technical Investigation  |
+
+When signals are mixed or unclear, report the closest match and note the ambiguity rather than guessing
+silently — this determination feeds the risk report's "Recommended Starting Phase" field below.
+
 ## Detection Response Flow
 
 See `references/detection_response_flow.md` for the step-by-step response flow.

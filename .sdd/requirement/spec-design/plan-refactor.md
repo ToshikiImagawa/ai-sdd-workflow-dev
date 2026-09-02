@@ -112,6 +112,12 @@ requirementDiagram
 一時ドラフトは実装完了後に破棄されるが、そこで確定した決定を決定ログ（ADR）へ永続化する処理自体は
 本要求のスコープ外であり、task-implementation カテゴリの task-cleanup 機能が担う。
 
+**PRD 不在時の扱い:** 分析対象に PRD が見つからない場合、`depends-on` を空にするだけで終わらせず、
+逆生成 spec に対応する PRD が存在しないことを計画の出力に明示し、人間承認前提の逆生成 draft PRD
+（`status: "draft"`、`tags` に `"reverse-engineered"` を含む）の起草を提案する。本機能は
+`requirement/**` への書き込み権限を持たないため、提案のみに留め、起草そのものは行わない
+（`AI-SDD-PRINCIPLES.md` § Workflow Management Guidelines の PRD 起草ポリシーに従う）。
+
 **関連する制約（[index.md](index.md) で定義）:**
 
 - IR_001: 生成される成果物は命名規則・テンプレート構造・front matter スキーマに準拠すること
