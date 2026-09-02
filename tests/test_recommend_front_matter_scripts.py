@@ -354,3 +354,78 @@ class TestEndToEnd:
         assert "/stale" not in env_contents
         assert 'export OTHER_VAR="keep"' in env_contents
         assert env_contents.count("RECOMMEND_FM_CACHE_DIR") == 1
+
+
+# --- missing_impl_status ----------------------------------------------------
+
+
+class TestMissingImplStatus:
+    def _run(self, monkeypatch, project_root, env_file):
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+        sd.main()
+
+    def _scan(self, proj):
+        scan_result = proj / ".sdd" / ".cache" / "recommend-front-matter" / "scan_result.json"
+        return json.loads(scan_result.read_text(encoding="utf-8"))
+
+    def test_spec_with_front_matter_missing_impl_status(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "---\nid: spec-a\ntype: spec\nstatus: draft\n---\n# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 1
+        assert data["documents"][0]["missing_impl_status"] is True
+
+    def test_spec_with_impl_status_present(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "---\nid: spec-a\ntype: spec\nimpl-status: not-implemented\n---\n# A\n",
+            encoding="utf-8",
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_spec_without_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_prd_with_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "requirement").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "requirement" / "a.md").write_text(
+            "---\nid: prd-a\ntype: prd\n---\n# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False

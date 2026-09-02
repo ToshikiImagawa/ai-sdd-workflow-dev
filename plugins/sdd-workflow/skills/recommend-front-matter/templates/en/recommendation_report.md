@@ -5,6 +5,7 @@
 - **Total documents scanned**: {total_count}
 - **Documents with Front Matter**: {with_fm_count}
 - **Documents without Front Matter**: {without_fm_count}
+- **Specs missing `impl-status`**: {specs_missing_impl_status_count}
 
 {recommendations_section}
 

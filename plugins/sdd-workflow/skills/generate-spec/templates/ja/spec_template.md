@@ -4,6 +4,7 @@ title: "{機能名}"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 created: "YYYY-MM-DD"
 updated: "YYYY-MM-DD"
 depends-on: []

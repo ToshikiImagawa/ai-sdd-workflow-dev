@@ -39,7 +39,7 @@ task ディレクトリを削除し、設計知見が永続ドキュメントへ
 
 - **統合前削除の禁止**: 削除は重要な設計決定の設計書への統合完了後にのみ許可する（親 PRD DC_002 / D-003）
 - **知見の選別**: 価値ある知見のみを統合し、履歴（「〜から移行」等）は残さない
-- **front matter の更新**: 統合に伴い設計書の `impl-status`・`updated`、spec の `status` を必要に応じて更新する
+- **front matter の更新**: 統合に伴い設計書の `impl-status`・`updated`、spec の `status`・`impl-status`（未更新時の安全網）を必要に応じて更新する
 - **範囲確認**: 引数なし実行時は対象ディレクトリ内容を提示しユーザー確認を得る
 
 「何を統合し何を削除するか、どの順序で保証するか」を定義し、分類基準・統合先決定・削除手順の具体的な
@@ -54,7 +54,7 @@ task ディレクトリを削除し、設計知見が永続ドキュメントへ
 | FR-001 | 対象 task ディレクトリのファイルを分析し、統合対象／削除可能に分類する               | 必須  | 子 PRD FR_001 / 親 PRD UR_004       |
 | FR-002 | 統合対象の設計決定を最も関連する `*_design.md` へ統合する                        | 必須  | 子 PRD FR_001 / 親 PRD DC_002       |
 | FR-003 | 統合完了後にのみ task ディレクトリ（ファイル）を削除する                          | 必須  | 親 PRD DC_002 / D-003               |
-| FR-004 | 統合に伴い関連文書の front matter（`impl-status`・`updated`・`status`）を更新する | 必須  | 親 PRD IR_001                        |
+| FR-004 | 統合に伴い関連文書の front matter（設計書の `impl-status`・`updated`、spec の `status`・`impl-status`）を更新する | 必須  | 親 PRD IR_001                        |
 | FR-005 | 引数なし実行時は対象内容を提示しユーザー確認を得てから処理する                       | 必須  | 子 PRD FR_001（安全性）             |
 
 FR-002 で適切な統合先が存在しない場合、関連 `*_spec.md` があれば新規 `*_design.md` を作成し、
@@ -126,7 +126,7 @@ sequenceDiagram
     Skill ->> Skill: 統合対象／削除可能に分類
     alt 統合対象あり
         Skill ->> Design: 最も関連する *_design.md へ統合（履歴を残さない）
-        Skill ->> Design: front matter（impl-status/updated/status）を更新
+        Skill ->> Design: front matter（design の impl-status/updated、spec の status/impl-status）を更新
     end
     Skill ->> Task: 統合完了後に task ディレクトリを削除
     Skill -->> User: クリーンアップ結果を報告

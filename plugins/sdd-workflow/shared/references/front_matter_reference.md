@@ -41,9 +41,18 @@ and cross-reference validation.
 | `type`       | `"spec"`                                    |                                        |
 | `status`     | `draft`, `review`, `approved`, `deprecated` |                                        |
 | `sdd-phase`  | `"specify"`                                 | Always `"specify"`                     |
+| `impl-status` | `not-implemented`, `in-progress`, `implemented` | Whether this spec's described behavior is reflected in the implementation. Independent of `status` — see "`status` vs `impl-status`" below |
 | `priority`   | `critical`, `high`, `medium`, `low`         | Inherit from PRD if available          |
 | `risk`       | `high`, `medium`, `low`                     | Inherit from PRD if available          |
 | `depends-on` | `["prd-*"]`                                 | References PRD                         |
+
+##### `status` vs `impl-status`
+
+`status` tracks the document's **approval lifecycle** (`draft` → `review` → `approved` → `deprecated`): has this
+spec been reviewed and agreed on as the source of truth? `impl-status` tracks a completely independent axis —
+**whether the implementation currently matches what the spec describes**. A spec can be `approved` and still
+`not-implemented` (an agreed-upon plan not yet built), or `draft` and `implemented` (a quick implementation whose
+spec hasn't been formally reviewed yet). Neither field can be derived from the other.
 
 #### Design (`type: "design"`) — temporary draft under `task/{ticket-number}/design-draft.md`
 
@@ -53,7 +62,7 @@ and cross-reference validation.
 | `type`        | `"design"`                                      |                                          |
 | `status`      | `draft`, `review`, `approved`, `deprecated`     |                                          |
 | `sdd-phase`   | `"plan"`                                        | Always `"plan"`                          |
-| `impl-status` | `not-implemented`, `in-progress`, `implemented` | Design-specific field                    |
+| `impl-status` | `not-implemented`, `in-progress`, `implemented` | Same meaning as the spec's `impl-status` field (see Spec section above), scoped to this ticket's draft |
 | `priority`    | `critical`, `high`, `medium`, `low`             | Inherit from spec                        |
 | `risk`        | `high`, `medium`, `low`                         | Inherit from spec                        |
 | `depends-on`  | `["spec-*"]`                                    | References spec                          |
@@ -137,6 +146,7 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 | PRD           | **`priority` validity**     | One of: `critical`, `high`, `medium`, `low` | Low        |
 | PRD           | **`risk` validity**         | One of: `high`, `medium`, `low`             | Low        |
 | Spec          | **`sdd-phase` correctness** | Must be `"specify"`                         | Low        |
+| Spec          | **`impl-status` accuracy**  | Matches actual implementation state (see `check-spec`'s Critical/Info/Warning branching) | Medium |
 | Design        | **`sdd-phase` correctness** | Must be `"plan"`                            | Low        |
 | Design        | **`impl-status` accuracy**  | Matches actual implementation state         | Medium     |
 | Task          | **`sdd-phase` correctness** | Must be `"tasks"`                           | Low        |
@@ -184,6 +194,22 @@ decision is made. Validity is tracked by `superseded-by` rather than by rewritin
 ```
 not-implemented → in-progress → implemented
 ```
+
+### Spec `impl-status` Transitions
+
+```
+not-implemented → in-progress → implemented
+```
+
+Unlike `status`, which a human reviews and advances, `impl-status` is updated mechanically by the skill that
+observes the implementation state:
+
+| Transition                        | Updated By                          | When                                                              |
+|:-----------------------------------|:-------------------------------------|:--------------------------------------------------------------------|
+| (new spec) → `not-implemented`     | `generate-spec`                      | On spec creation                                                     |
+| `not-implemented` → `in-progress`  | `implement`                          | When implementation for the spec starts                             |
+| `in-progress` → `implemented`      | `implement`                          | When implementation completes (all tasks done, verification passes) |
+| → `implemented` (safety net)       | `task-cleanup`                       | If `implement` did not set it (e.g. work resumed from a different session) |
 
 ## Missing Front Matter Policy
 

@@ -78,6 +78,20 @@ See `references/front_matter_impl.md` for full schema definition, dependency dir
 When resuming implementation (continue mode), update the `updated` field to the current date.
 When implementation completes, set `status` to `"completed"` and `completed` to the completion date.
 
+### Updating the Spec's `impl-status`
+
+The implementation log tracks this implementation run; the spec's own `impl-status` field tracks whether the
+spec's described behavior is reflected in the codebase, independent of `status` (the spec's approval lifecycle).
+Update it on the corresponding spec (found via the Abstract Spec prerequisite path) alongside the implementation
+log:
+
+| Timing                          | `impl-status` | `updated`             |
+|:---------------------------------|:---------------|:-----------------------|
+| Implementation starts (Phase 1)  | `"in-progress"` (unless already `"implemented"` from a prior increment) | Current date |
+| Implementation completes (Phase 5, after Completion Verification passes) | `"implemented"` | Current date |
+
+If the spec has no front matter, skip this update (see Missing Front Matter Policy in `references/front_matter_impl.md`).
+
 ## TDD Implementation Flow
 
 ### 5 Phases

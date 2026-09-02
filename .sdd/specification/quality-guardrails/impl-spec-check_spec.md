@@ -4,6 +4,7 @@ title: "実装と仕様の整合性チェック"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "implemented"
 created: "2026-07-07"
 updated: "2026-09-02"
 depends-on: ["prd-quality-guardrails-impl-spec-check"]
@@ -18,7 +19,7 @@ risk: "high"
 **関連 Design Doc:** [impl-spec-check_design.md](impl-spec-check_design.md)（v4.x 由来の永続 design。現行の
 Design Doc は `task/{ticket-number}/design-draft.md` の一時ドラフト）
 **関連 PRD:** [impl-spec-check.md](../../requirement/quality-guardrails/impl-spec-check.md)
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001, A-001, A-002, B-002, D-001, D-002
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md)（v2.0.0）の B-001, A-001, A-002, B-002, D-001, D-002
 
 ---
 
@@ -84,6 +85,10 @@ FR_001（実装コードと抽象仕様書の乖離を検出する）から派�
 | FR-007 | `--full` オプション指定時に `spec-reviewer` エージェントを呼び出し、ドキュメント間整合性・品質レビューを実施する      | 推奨  | PRD FR_001（乖離の報告を拡張する連携。親 PRD の doc-consistency 機能を再利用） |
 | FR-008 | 引数なし実行時は対象ファイル一覧を提示し、開発者に実行範囲を確認する                                          | 推奨  | PRD FR_001（誤操作防止）              |
 | FR-009 | `task/{ticket-number}/design-draft.md` が存在する場合のみ補助入力として取り込み、モジュール構成・技術スタックの比較を追加する。不在時はエラー・警告を出さず正常終了する | 必須  | PRD FR_001（設計ドラフトの補助参照）      |
+| FR-010 | 仕様書に記載され実装が見つからない機能を、spec の `impl-status` に応じて分類する（`implemented` → Critical(退行)／`not-implemented`・`in-progress` → Info(意図した先行)／未設定 → Warning(判定不能、フィールド追加を推奨)） | 必須  | PRD FR_001（乖離の検出の精度向上。「未実装」と「乖離」の区別） |
+
+FR-010 の分岐は「仕様書に記載され実装が見つからない」場合にのみ適用する。公開 API・データモデル・振る舞いの不一致は
+`impl-status` の値に関わらず常に Critical のままとする（意図した先行は免罪符にならない）。
 
 FR-002 の「サフィックスの有無を問わず」は、`specification/` が単一種別ディレクトリであり `_spec` サフィックス
 が任意になった命名規則に対応する。`{feature}_design.md`（v4.x 由来の永続 design）が残るプロジェクトでは、
@@ -94,8 +99,8 @@ spec ではなく設計ドラフトと同じ補助入力として扱う。
 | ID      | カテゴリ  | 要件                                                                       | 目標値                              |
 |---------|-------|--------------------------------------------------------------------------|----------------------------------|
 | NFR-001 | 安全性   | 本スキルは読み取り専用とし、実装コード・ドキュメントを一切変更しない                          | `Write` / `Edit` ツールを禁止        |
-| NFR-002 | 多言語対応 | 出力メッセージ・レポートは `SDD_LANG` に応じて EN / JA を切り替える（親 PRD B-002 準拠）    | `templates/{en,ja}/` の両方を提供     |
-| NFR-003 | 移植性   | macOS / Linux / Windows で動作する（親 PRD DC_004 準拠）                       | Python 標準ライブラリ（`pathlib`）で cross-platform |
+| NFR-002 | 多言語対応 | 出力メッセージ・レポートは `SDD_LANG` に応じて EN / JA を切り替える（親 PRD DC_005 / CONSTITUTION B-002 準拠）    | `templates/{en,ja}/` の両方を提供     |
+| NFR-003 | 移植性   | macOS / Linux / Windows で動作する（親 PRD DC_004 の macOS/Linux 要件を満たしつつ、Windows にも独自に対応）  | Python 標準ライブラリ（`pathlib`）で cross-platform |
 | NFR-004 | 効率性   | 決定的なファイル走査を Claude のツール呼び出しではなくスクリプトに委譲し、トークン消費を抑制する（A-002） | 走査は Shell スクリプトの 1 回実行に集約 |
 
 # 4. 提供コンポーネント

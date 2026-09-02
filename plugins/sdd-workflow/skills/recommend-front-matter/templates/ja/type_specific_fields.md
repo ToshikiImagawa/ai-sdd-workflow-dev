@@ -13,6 +13,7 @@ risk: "medium"
 
 ```yaml
 sdd-phase: "specify"
+impl-status: "not-implemented"
 ```
 
 **Design** (`type: "design"`):

@@ -83,6 +83,16 @@ minor/patch release.
 - **`type: "adr"` schema** - `shared/references/front_matter_reference.md` now defines the front matter
   fields for decision log entries, including `supersedes` / `superseded-by` for recording when a later
   decision reverses an earlier one without rewriting the append-only log
+- **`impl-status` is now a valid Spec field, not just Design** - A spec can now record whether its described
+  behavior is reflected in the implementation, independent of `status` (the document's approval lifecycle).
+  `generate-spec` sets it to `"not-implemented"` on new specs; `implement` advances it to `"in-progress"` /
+  `"implemented"` as work proceeds; `task-cleanup` sets it as a safety net if `implement` didn't. `check-spec`
+  now classifies a spec-documented function with no matching implementation by this field instead of always
+  flagging it Critical: `implemented` is a regression (Critical), `not-implemented`/`in-progress` is expected
+  (Info), and a missing field is undecidable (Warning, with a recommendation to add it). `front-matter-reviewer`
+  validates the field's enum value on specs, and `recommend-front-matter` now also flags specs that already
+  have front matter but are missing just this field, recommending the single field addition without touching
+  anything else
 
 ### Fixed
 

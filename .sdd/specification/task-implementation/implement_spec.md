@@ -59,9 +59,11 @@ AI-SDD ワークフローの Implement フェーズでは、実装が常に仕�
 | FR-006 | Polish 段階でリファクタリング・ドキュメント整備を行う                              | 必須  | 子 PRD FR_001_05                    |
 | FR-007 | 各段階・各タスクの完了に応じてチェックリスト進捗を逐次更新する                         | 必須  | 子 PRD FR_001 / 親 PRD UR_002       |
 | FR-008 | 仕様が曖昧・多義的な場合は実装を止め、明確化（`/clarify`）を促す                       | 必須  | 親 PRD B-001                        |
+| FR-009 | 実装開始時に対応する spec の `impl-status` を `in-progress` に、完了検証通過時に `implemented` に更新する | 必須  | 子 PRD FR_001 / 親 PRD UR_002（トレーサビリティ） |
 
 FR-003 のテストファーストは順序制約であり、テストのない Core 段階への進行を許容しない（親 PRD DC_001）。
 継続実行（continue）・段階スキップ（phase skip）・ドライラン（dry run）の実行モードを提供する。
+FR-009 の `impl-status` は spec の承認ライフサイクル（`status`）とは独立した軸であり、実装の追従状況のみを表す。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -75,7 +77,7 @@ FR-003 のテストファーストは順序制約であり、テストのない 
 
 | 種別    | 配置場所                       | 名前      | 概要                                                                     |
 |-------|----------------------------|---------|------------------------------------------------------------------------|
-| skill | `skills/implement/SKILL.md` | implement | tasks.md を入力に 5 段階 TDD で実装し進捗を更新するユーザー呼び出しスキル（FR-001〜008） |
+| skill | `skills/implement/SKILL.md` | implement | tasks.md を入力に 5 段階 TDD で実装し進捗を更新するユーザー呼び出しスキル（FR-001〜009） |
 | template | `skills/implement/templates/{en,ja}/` | implement templates | 段階規則・TDD サイクル・進捗追跡・検証・エラー等の出力テンプレート群（日英）（NFR-002） |
 
 ## 4.1. 入出力定義

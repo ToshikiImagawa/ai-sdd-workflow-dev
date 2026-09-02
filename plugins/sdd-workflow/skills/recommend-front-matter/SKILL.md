@@ -129,6 +129,16 @@ For flat structures (e.g., `specification/user-login_design.md`):
 
 Based on the `type` field, add the type-specific fields listed in `templates/${SDD_LANG}/type_specific_fields.md` (PRD / Spec / Design / Task / Implementation Log).
 
+#### 4. Existing Specs Missing `impl-status`
+
+Separately from the "without front matter" pass above, check the scan result's `documents` entries for
+`type: "spec"` with `has_front_matter: true` and `missing_impl_status: true` — specs that already have front
+matter but predate the `impl-status` field. For each:
+
+- Recommend adding a **single field**, not a full front matter block: `impl-status: "not-implemented"` (the
+  safe default — a human should confirm if the spec is actually already implemented)
+- Do not touch any other existing field or value on the document — this is strictly additive
+
 ### Phase 3: Generate Recommendation Report
 
 Use the report template at `templates/${SDD_LANG}/recommendation_report.md`.
@@ -140,9 +150,11 @@ For each document without front matter:
 4. Provide copy-paste-ready YAML block
 
 **Report Sections**:
-1. **Summary**: Total count, with/without front matter count
+1. **Summary**: Total count, with/without front matter count, count of specs missing `impl-status`
 2. **Recommendations**: One section per document with recommended YAML
-3. **Next Steps**: Instructions for applying recommendations (manual or `--apply`)
+3. **Specs Missing `impl-status`**: One section per flagged spec, showing only the single field to add (not a
+   full YAML block — these documents already have front matter)
+4. **Next Steps**: Instructions for applying recommendations (manual or `--apply`)
 
 ### Phase 4: Apply Front Matter (if `--apply` option)
 
@@ -153,6 +165,10 @@ For each document without front matter:
 Use AskUserQuestion to confirm before modifying files:
 
 **Question**: "以下の {count} 個のファイルに Front Matter を追加します。よろしいですか？" (en: "Add Front Matter to {count} files?")
+
+`{count}` is the combined total: documents without front matter (full block) plus specs missing `impl-status`
+(single field). List the two groups separately in the display below so the user knows which files get a full
+block vs. a single added field.
 
 **Display**:
 - List of files to be modified (max 10 files shown, "+ X more" if >10)
@@ -194,6 +210,18 @@ For each document without front matter (after user confirms):
 - If Edit fails for any file: Record error, continue to next file
 - Track success/skip/error counts
 
+#### 2b. Add Missing `impl-status` to Existing Specs
+
+For each spec flagged in Phase 2 step 4 (after the same user confirmation as step 1):
+
+1. **Read current file content** (Read tool)
+2. **Insert a single line** inside the existing front matter block: `impl-status: "not-implemented"`
+   (immediately after the `sdd-phase` line, to match the field ordering used elsewhere in this schema)
+3. Do not regenerate or reorder any other field — this edit touches exactly one line
+
+**Error Handling**: Same as step 2 — record errors per file, continue, and track under a separate count (do not
+mix into the "files updated" count from step 2, since these are a different kind of edit).
+
 #### 3. Generate Application Result Report
 
 Use the result template at `templates/${SDD_LANG}/application_result.md`.
@@ -204,15 +232,16 @@ Use the result template at `templates/${SDD_LANG}/application_result.md`.
 
 Generate recommendation report using `templates/${SDD_LANG}/recommendation_report.md`:
 
-1. **Summary section**: Document counts
+1. **Summary section**: Document counts, including specs missing `impl-status`
 2. **Recommendations section**: Per-document YAML recommendations with inference explanations
-3. **Next Steps**: Instructions for manual or automatic application
+3. **Specs Missing `impl-status` section**: Per-spec single-field recommendation
+4. **Next Steps**: Instructions for manual or automatic application
 
 ### With `--apply` Option
 
 After user confirmation and file updates:
 
-1. **Application result summary**: Success/skip/error counts
+1. **Application result summary**: Success/skip/error counts, plus the `impl-status`-added count
 2. **Updated file list**: Paths of successfully updated files
 3. **Next Steps**: Instructions for reviewing changes and committing
 
@@ -243,5 +272,8 @@ The following fields are inferred using pattern matching and may require manual 
 ### What This Skill Does NOT Do
 
 - Does **not** validate existing front matter (use `/check-spec --full` for validation)
-- Does **not** update outdated front matter (only adds missing front matter)
-- Does **not** modify documents that already have front matter
+- Does **not** update outdated field *values* on documents that already have front matter (e.g., a stale
+  `status`) — only adds fields that are entirely missing
+- Does **not** modify documents that already have front matter, **except** to add a spec's missing
+  `impl-status` field (see "Existing Specs Missing `impl-status`" above) — this is an addition, not a value
+  change, so it does not conflict with the backward-compatibility guarantee
