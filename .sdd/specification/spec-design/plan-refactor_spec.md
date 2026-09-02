@@ -52,6 +52,7 @@ risk: "medium"
 | FR-005 | 既存ドキュメントの有無判定を仕様書の有無で行い、サフィックス有無の両方を検出する | 必須 | **PRD FR_001**（成果物の配置と永続性）を実装。技術設計書は永続文書ではないため、判定基準に使えない |
 | FR-006 | 逆生成仕様書を永続文書、逆生成設計とリファクタリング計画を一時ドラフトとして書き分ける | 必須 | **PRD FR_001**（成果物の配置と永続性）を実装。永続文書として設計書を作らない方針に整合させる |
 | FR-007 | リファクタリング計画で確定した決定を決定ログへ永続化する導線を提示する | 必須 | **PRD FR_001**（成果物の配置と永続性）を実装。一時ドラフト破棄時に決定が失われることを防ぐ。統合処理自体は task-cleanup が担う |
+| FR-008 | Case B で PRD 不在も検知した場合、`requirement/**` へは書き込まず、人間承認前提の逆生成 draft PRD の起草を計画の出力で提案する | 必須 | **PRD FR_001**（PRD 不在時の扱い）を実装 |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -167,9 +168,12 @@ flowchart TD
 
     ScanExist -->|"Case A: 仕様書存在"| CaseA["既存仕様書を読み込む<br/>(設計ドラフトがあれば補助入力)"]
     ScanExist -->|"Case B: 仕様書不在"| CaseB["逆生成仕様書を作成<br/>(specification/ に永続化)"]
+    CaseB --> CheckPRD{"PRDも不在?"}
+    CheckPRD -->|Yes| ProposeDraftPRD["計画出力にdraft PRD起草を提案<br/>(requirement/**には書き込まない)"]
+    CheckPRD -->|No| FindImpl
+    ProposeDraftPRD --> FindImpl
 
     CaseA --> FindImpl["実装ファイルを検索"]
-    CaseB --> FindImpl
 
     FindImpl --> LargeImpl{"20+ ファイル?"}
     LargeImpl -->|Yes, 非CI| AskScope["スコープ確認ダイアログ"]
@@ -221,6 +225,7 @@ flowchart TD
 | UR_004: 既存実装から設計を整備しリファクタリングを計画できる | 親PRD [index.md](../../requirement/spec-design/index.md) | FR-001, FR-002 による完全対応 | 4. 提供コンポーネント |
 | FR_001: 既存実装を分析し設計ドラフトとリファクタリング計画を作成する（親PRD集約図では FR_004: RefactorPlanning） | 子PRD [plan-refactor.md](../../requirement/spec-design/plan-refactor.md) | FR-001, FR-002 による完全対応 | 4. 提供コンポーネント |
 | FR_001「成果物の配置と永続性」: 逆生成成果物を永続性に応じて書き分ける | 子PRD [plan-refactor.md](../../requirement/spec-design/plan-refactor.md) | FR-005, FR-006, FR-007 による完全対応 | 4.1. 入出力定義, 8. 制約事項 |
+| FR_001「PRD 不在時の扱い」: PRD 不在検知時に逆生成 draft PRD の起草を提案する | 子PRD [plan-refactor.md](../../requirement/spec-design/plan-refactor.md) | FR-008 による完全対応 | 7.2. フロー図 |
 | IR_001: 命名規則・テンプレート・front matter への準拠 | 親PRD [index.md](../../requirement/spec-design/index.md) | FR-001, FR-006 で生成時に強制 | 4.1. 入出力定義 |
 | DC_001: 抽象度の分離 | 親PRD [index.md](../../requirement/spec-design/index.md) | 設計ドラフトに技術詳細を含め、仕様との分離を保証 | 8. 制約事項 |
 | DC_002: 言語の一貫性 | 親PRD [index.md](../../requirement/spec-design/index.md) | NFR-001 で SDD_LANG に従う | 3.2. 非機能要件 |

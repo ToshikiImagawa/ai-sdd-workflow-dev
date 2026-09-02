@@ -107,3 +107,28 @@ Follow these formats for markdown links within documents:
 | **Directory**  | `[directory-name](path or URL/index.md)`   | Directory name only   | `[auth](../requirement/auth/index.md)`               |
 
 This convention makes it visually clear whether the link target is a file or directory.
+
+## Task Type Determination
+
+Before starting any task, determine which phases and deliverables it needs:
+
+| Task Type               | Required Phases                    | Deliverables                                                  |
+|:-------------------------|:------------------------------------|:----------------------------------------------------------------|
+| New Feature (Large)     | Specify → Plan → Tasks → Implement | PRD → spec → design (temporary) → task → adr                    |
+| New Feature (Small)     | Specify → Plan → Tasks → Implement | spec → design (temporary) → task → adr                          |
+| Bug Fix                 | Tasks → Implement                  | task (investigation log) → adr (if a notable decision was made) |
+| Refactoring             | Plan → Tasks → Implement           | design (change plan, temporary) → task → adr                    |
+| Breaking Change         | Specify → Plan → Tasks → Implement | PRD update proposal → spec → design (temporary) → task → adr    |
+| Technical Investigation | Tasks                              | task (investigation results) only                               |
+
+**Task Scale Criteria**:
+
+| Scale           | Criteria                                                                                                                                |
+|:-----------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| Large           | New business domain, changes spanning multiple features, external system integration                                                     |
+| Small           | Feature additions within existing features, changes contained to single module                                                            |
+| Bug Fix         | Correcting deviations from existing specifications (no spec changes)                                                                      |
+| Breaking Change | Removes or changes existing public API/behavior so that existing consumers must adapt (signature/return-value/behavior changes, removed features, incompatible config/schema changes) |
+
+For Breaking Change handling (impact analysis, backward compatibility decision, migration record) and the
+PRD-absence policy, see `AI-SDD-PRINCIPLES.md` § Workflow Management Guidelines.

@@ -70,6 +70,7 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   }
 }
@@ -82,6 +83,7 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
 | `root`                      | `.sdd`          | Root directory                                   |
 | `directories.requirement`   | `requirement`   | PRD/Requirements specification directory         |
 | `directories.specification` | `specification` | Abstract specification directory                 |
+| `directories.adr`           | `adr`           | Architecture Decision Record (decision log) directory |
 | `directories.task`          | `task`          | Task log/temporary work log directory (includes Design Doc drafts) |
 
 ### ID Convention Configuration (Optional)
@@ -143,9 +145,11 @@ At session start, the `session-start` hook reads `.sdd-config.json` and sets the
 | `SDD_ROOT`               | `.sdd`               | Root directory               |
 | `SDD_REQUIREMENT_DIR`    | `requirement`        | Requirements directory name  |
 | `SDD_SPECIFICATION_DIR`  | `specification`      | Specification directory name |
+| `SDD_ADR_DIR`            | `adr`                | Decision log (ADR) directory name |
 | `SDD_TASK_DIR`           | `task`               | Task log directory name      |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | Requirements full path       |
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification full path      |
+| `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (ADR) full path |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log full path           |
 
 **Path Resolution Priority:**
@@ -164,6 +168,7 @@ Agents, commands, and skills use these environment variables when referencing do
   "directories": {
     "requirement": "requirements",
     "specification": "specs",
+    "adr": "decisions",
     "task": "wip"
   }
 }
@@ -175,6 +180,7 @@ With this configuration, the directory structure becomes:
 docs/
 ├── requirements/          # PRD (Requirements Specification)
 ├── specs/                 # Specifications and Design Documents
+├── decisions/             # Persistent decision log (ADR)
 └── wip/                   # Temporary task logs
 ```
 
@@ -509,15 +515,47 @@ Determine required phases and documents based on task nature:
 | New Feature (Small)     | Specify → Plan → Tasks → Implement | spec → design (temporary) → task → adr               |
 | Bug Fix                 | Tasks → Implement                  | task (investigation log) → adr (if a notable decision was made) |
 | Refactoring             | Plan → Tasks → Implement           | design (change plan, temporary) → task → adr         |
+| Breaking Change         | Specify → Plan → Tasks → Implement | PRD update proposal → spec → design (temporary) → task → adr |
 | Technical Investigation | Tasks                              | task (investigation results) only                    |
 
 **Task Scale Criteria**:
 
-| Scale   | Criteria                                                                             |
-|:--------|:-------------------------------------------------------------------------------------|
-| Large   | New business domain, changes spanning multiple features, external system integration |
-| Small   | Feature additions within existing features, changes contained to single module       |
-| Bug Fix | Correcting deviations from existing specifications (no spec changes)                 |
+| Scale            | Criteria                                                                             |
+|:-----------------|:-------------------------------------------------------------------------------------|
+| Large            | New business domain, changes spanning multiple features, external system integration |
+| Small            | Feature additions within existing features, changes contained to single module       |
+| Bug Fix          | Correcting deviations from existing specifications (no spec changes)                 |
+| Breaking Change  | Removes or changes existing public API/behavior so that existing consumers must adapt (signature/return-value/behavior changes, removed features, incompatible config/schema changes) |
+
+### Breaking Change Handling
+
+A Breaking Change alters the public contract a `*_spec.md` describes, so — unlike Refactoring, which by
+definition preserves behavior — it always starts at Specify (see Task Type Determination above).
+
+**1. Impact Analysis**
+
+Before proposing the change, identify what it affects:
+
+- The current `*_spec.md` (public API, data model, behavior) for the contract being changed
+- `adr/{feature}-decisions.md` for prior decisions the change would reverse or build on
+- Call sites/consumers in the implementation that rely on the behavior being changed
+
+**2. Backward Compatibility Decision**
+
+Choose one of the following and record the choice and its rationale (see step 3):
+
+| Decision            | Meaning                                                                              |
+|:--------------------|:--------------------------------------------------------------------------------------|
+| Maintain            | Keep the old behavior available (e.g., overload, feature flag, versioned interface)  |
+| Phase out gradually | Deprecate the old behavior with a transition period before removal                   |
+| Cut immediately     | Remove the old behavior in this change; consumers must migrate before merge          |
+
+**3. Migration Record**
+
+Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}-decisions.md`
+(see `front_matter_reference.md` for the `adr` schema). If the change reverses a prior decision, set
+`supersedes` on the new entry and `superseded-by` on the entry it replaces, per the ADR supersede convention
+in "Architecture Decision Record" above; never rewrite the superseded entry's text.
 
 ### Knowledge Asset Persistence Management
 
@@ -583,6 +621,12 @@ Criteria for when to update each document:
   revert the downstream change, or accept it as an intentional scope change
 - Applies to every skill/agent with `.sdd/**` Edit access (e.g. `generate-prd`, `clarify`, `plan-refactor`),
   not only to consistency-check tooling
+- **"Never Automated" governs rewriting an existing PRD, not drafting a new one.** When `spec`/`design`/
+  implementation exist but `requirement/` has no corresponding file at all, an agent may draft a **new** PRD
+  from scratch — this is a distinct action from inferring changes backward into an existing PRD's content.
+  A drafted PRD must use `status: "draft"` and include `"reverse-engineered"` in `tags` (the same convention
+  as a reverse-engineered spec — see `plan-refactor`'s Case B), and must never be treated as an approved
+  requirement source until a human reviews it and changes its `status`
 
 **When to Update `*_spec.md`**:
 

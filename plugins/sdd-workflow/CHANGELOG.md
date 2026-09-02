@@ -94,6 +94,21 @@ minor/patch release.
   have front matter but are missing just this field, recommending the single field addition without touching
   anything else
 
+#### Workflow Guidance
+
+- **Task Type Determination now covers Breaking Changes** - The Task Type Determination table and Task
+  Scale Criteria in `AI-SDD-PRINCIPLES.md` gained a "Breaking Change" row, plus a new "Breaking Change
+  Handling" section defining impact analysis, the backward-compatibility decision, and where migration
+  steps are recorded (`adr/`). The table is now also transcribed into `.claude/rules/ai-sdd-instructions.md`
+  so every project gets the same guidance without opening the principles document
+- **Drafting a new PRD when none exists is now explicitly allowed** - `AI-SDD-PRINCIPLES.md` clarifies that
+  the "PRD is never automated" rule governs rewriting an existing PRD, not drafting a new one from scratch;
+  a drafted PRD must use `status: "draft"` and the `"reverse-engineered"` tag until a human approves it.
+  `/plan-refactor` now proposes this when its reverse-engineered spec has no PRD to depend on
+- **`vibe-detector` now recommends a starting phase** - Its risk report classifies the request against the
+  Task Type Determination table and reports the corresponding starting phase (Specify/Plan/Tasks/Implement),
+  in addition to the existing ambiguity risk assessment
+
 ### Fixed
 
 - **`adr/` is now scanned by the document index and by `/recommend-front-matter`** - Both previously

@@ -29,6 +29,12 @@ This template is the output format for Vibe Coding risk detection.
 | *_spec.md   | Exists / Missing |
 | *_design.md | Exists / Missing |
 
+### Task Type & Recommended Starting Phase
+
+| Task Type                                                                                      | Recommended Starting Phase |
+|:-------------------------------------------------------------------------------------------------|:------------------------------|
+| {New Feature (Large) / New Feature (Small) / Bug Fix / Refactoring / Breaking Change / Technical Investigation} | {Specify / Plan / Tasks / Implement} |
+
 ### Recommended Actions
 
 **For High Risk**:

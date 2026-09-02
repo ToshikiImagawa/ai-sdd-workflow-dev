@@ -96,9 +96,17 @@ requirementDiagram
         verifymethod: demonstration
     }
 
+    functionalRequirement StartingPhaseRecommendation {
+        id: FR_001_04
+        text: "依頼内容をタスク種別判定表に照らし推奨開始フェーズを出力する"
+        risk: low
+        verifymethod: demonstration
+    }
+
     VibeDetection - contains -> PatternDetection
     VibeDetection - contains -> NonBlockingInjection
     VibeDetection - contains -> PreImplAnalysis
+    VibeDetection - contains -> StartingPhaseRecommendation
 ```
 
 本ファイルの FR_001 は [index.md](index.md) の UR_002（曖昧指示の実装前検知）から派生する
@@ -123,6 +131,9 @@ DC_004（クロスプラットフォーム対応）・DC_005（多言語対応�
 - FR_001_01: 日英の曖昧表現パターン検知（例:「いい感じ」「よしなに」「なんとなく」「make it nice」「somehow」）
 - FR_001_02: 非ブロッキングでの明確化促進コンテキスト注入（プロンプト自体は拒否しない）
 - FR_001_03: 実装前の指示曖昧性分析（ユーザー呼び出し不可の自動実行スキルとして提供）
+- FR_001_04: 曖昧さ×仕様書有無によるリスク評価とは別軸で、依頼内容を `AI-SDD-PRINCIPLES.md` の
+  Task Type Determination 表に照らして分類し、対応する推奨開始フェーズ（Specify/Plan/Tasks/Implement）を
+  リスク検出レポートに含める
 
 **検証方法:** テストによる検証
 
