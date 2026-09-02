@@ -41,6 +41,32 @@ class TestHasSpecSuffix:
         assert nm.has_spec_suffix(stem) is expected
 
 
+class TestIsDesignStem:
+    def test_design_suffix_detected(self):
+        assert nm.is_design_stem("user-login_design") is True
+
+    def test_spec_suffix_is_not_design(self):
+        assert nm.is_design_stem("user-login_spec") is False
+
+    def test_suffixless_is_not_design(self):
+        assert nm.is_design_stem("user-login") is False
+
+
+class TestFeatureName:
+    def test_strips_spec_suffix(self):
+        assert nm.feature_name("user-login_spec") == "user-login"
+
+    def test_strips_design_suffix(self):
+        assert nm.feature_name("user-login_design") == "user-login"
+
+    def test_keeps_suffixless_stem(self):
+        assert nm.feature_name("user-login") == "user-login"
+
+    def test_keeps_embedded_suffix_word(self):
+        # Only a trailing suffix is stripped.
+        assert nm.feature_name("spec-review") == "spec-review"
+
+
 class TestValidateNaming:
     def test_requirement_plain_ok(self):
         assert nm.validate_naming(os.path.join(REQ, "user-login.md"), REQ) == ""

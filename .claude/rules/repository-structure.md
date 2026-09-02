@@ -25,7 +25,7 @@ ai-sdd-workflow/
 │       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
 │       ├── skills/                # 19スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
-│       │   ├── check-spec/                 # 実装とdesignの整合性チェック
+│       │   ├── check-spec/                 # 実装とspecの整合性チェック
 │       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── checklist/                  # 品質チェックリスト生成

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-09-01"
+updated: "2026-09-02"
 depends-on: ["spec-quality-guardrails-naming-enforcement"]
 tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
@@ -84,10 +84,13 @@ graph TD
 
 | モジュール名          | 責務                                                                          | 依存関係            | 配置場所                                        |
 |-------------------|-----------------------------------------------------------------------------|-----------------|-----------------------------------------------|
-| naming.py         | 命名規則の単一定義（`validate_naming` による検証、`determine_type` による種別判定）      | pathlib, fnmatch | `plugins/sdd-workflow/scripts/naming.py`        |
+| naming.py         | 命名規則の単一定義（`validate_naming` による検証、`determine_type` による種別判定、サフィックス定数 `SPEC_SUFFIX` / `DESIGN_SUFFIX` と派生ヘルパー `is_design_stem` / `feature_name`） | pathlib, fnmatch | `plugins/sdd-workflow/scripts/naming.py`        |
 | pre-tool-use.py   | 書き込み対象パスを検証し、命名規則違反時に deny を emit（`naming.validate_naming` を呼び出す） | hook_common.py, naming.py, re, tempfile, pathlib | `plugins/sdd-workflow/scripts/pre-tool-use.py`  |
 | hook_common.py    | stdin JSON 解析・プロジェクトルート解決・`.sdd-config.json` 読み込み（パス設定・無視パターン）・deny の JSON 出力 | json, os, sys, pathlib | `plugins/sdd-workflow/scripts/hook_common.py`   |
 | hooks.json        | `PreToolUse`（matcher `Write|Edit`）へのスクリプト登録                          | -               | `plugins/sdd-workflow/hooks/hooks.json`         |
+
+サフィックス文字列（`_spec` / `_design`）は `naming.py` にのみリテラルとして存在し、`doc_walker.find_spec_doc`
+と `check-spec` の `find-spec-docs.py` はそこから import する（同じ規則が複数箇所で再宣言され食い違うのを防ぐ）。
 
 `naming.py` は本機能専用ではなく、`recommend-front-matter` スキル（`scan-documents.py`）の `determine_type` 呼び出しとも
 共有される横断モジュールである（詳細は [front-matter-recommend_design.md](../workflow-foundation/front-matter-recommend_design.md) を参照）。
@@ -119,17 +122,23 @@ graph TD
 | `specification/`  | サフィックス**任意**（検証しない）        | なし（常に適合）                      | `specification/user-login.md`, `specification/user-login_spec.md`, `specification/auth/index_design.md` |
 | `adr/`            | サフィックス**任意**（プレフィックスを受け取らず常に対象外） | なし（常に適合）                      | `adr/user-login.md`, `adr/user-login-decisions.md` |
 
-プレフィックスは `str(Path(sdd_root) / requirement_dir)` で構築し、`Path(rel_path).is_relative_to(prefix)` で
-照合する（既定では `.sdd/requirement`）。パス操作はすべて `pathlib.Path` で行い、文字列の `os.path` 操作は使わない。
+プレフィックスは `SddPaths.requirement_prefix`（= `str(Path(root) / requirement_dir)`）で構築し、
+`Path(rel_path).is_relative_to(prefix)` で照合する（既定では `.sdd/requirement`）。パス操作はすべて
+`pathlib.Path` で行い、文字列の `os.path` 操作は使わない。
 
 ## 5.2. パス設定の解決（load_sdd_paths）
 
-`hook_common.load_sdd_paths(project_root)` が `(sdd_root, requirement_dir, specification_dir)` を返す。
-プロジェクトルートに `.sdd-config.json` が存在すれば `root` / `directories.requirement` /
-`directories.specification` の値で上書きし、なければ既定値（`.sdd` / `requirement` / `specification`）を用いる。
-`pre-tool-use.py` は `validate_naming` がサフィックス検証を行わなくなった `specification_dir` を
-`_specification_dir` として受け取り破棄し、`requirement_prefix` の構築にのみ用いる（他の呼び出し元
-`post-tool-use.py` / `sdd_index.py` は 3 要素とも使用するため関数自体の戻り値は変更しない）。
+`hook_common.load_sdd_paths(project_root)` が `SddPaths` データクラス
+（`root` / `requirement_dir` / `specification_dir` / `adr_dir` / `task_dir` と、
+それぞれの project-relative プレフィックスを返す property）を返す。プロジェクトルートに
+`.sdd-config.json` が存在すれば `root` と `directories.{requirement,specification,adr,task}` の値で
+上書きし、なければ既定値（`.sdd` / `requirement` / `specification` / `adr` / `task`）を用いる。
+
+**戻り値をタプルではなくオブジェクトにする理由**: `adr` / `task` は `requirement` / `specification` より
+後に追加されたディレクトリであり、位置依存のタプルを伸ばすとディレクトリ追加ごとに全呼び出し元
+（`pre-tool-use.py` / `post-tool-use.py` / `sdd_index.py`）が捨て変数のために書き換わる。属性アクセスに
+すれば必要なディレクトリだけを参照でき、追加は `SddPaths` 1 箇所で済む。`pre-tool-use.py` は
+`paths.requirement_prefix` と `paths.root` のみを使う。
 
 ## 5.2bis. 無視パターンの解決（load_naming_ignore_patterns）
 
@@ -163,7 +172,7 @@ graph TD
 ```
 plugins/sdd-workflow/
 ├── scripts/
-│   ├── naming.py            # 命名規則の単一定義（validate_naming / determine_type）。recommend-front-matter と共有
+│   ├── naming.py            # 命名規則の単一定義（validate_naming / determine_type / サフィックス定数）。recommend-front-matter・doc_walker・check-spec と共有
 │   ├── pre-tool-use.py      # PreToolUse フック本体（naming.validate_naming を呼び出し違反時 deny）
 │   └── hook_common.py       # stdin 解析・パス解決・deny emit 共通ヘルパー
 └── hooks/

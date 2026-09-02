@@ -4,7 +4,7 @@ title: "品質ガードレール"
 type: "prd"
 status: "draft"
 created: "2026-07-06"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: []
 tags: ["vibe-coding-prevention", "hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -32,7 +32,7 @@ AI 駆動開発では、ユーザーの曖昧な指示（「いい感じに」�
 - `.sdd/` 配下のファイル命名規則の強制
 - プロジェクト原則（CONSTITUTION.md）のコンテキスト自動注入
 - ドキュメント更新漏れの検知
-- 実装コードと設計書の整合性チェック
+- 実装コードと抽象仕様書の整合性チェック
 - ドキュメント間（PRD ↔ spec ↔ design）の整合性チェック
 - YAML front matter の検証
 
@@ -88,8 +88,8 @@ flowchart LR
 | Vibe Coding 兆候検知      | [vibe-detection.md](vibe-detection.md)                   | プロンプト曖昧表現の検知と明確化促進コンテキストの注入               |
 | ファイル命名規則の強制           | [naming-enforcement.md](naming-enforcement.md)           | `.sdd/` 配下の命名規則違反の書き込みブロック                |
 | CONSTITUTION 原則の自動注入  | [constitution-injection.md](constitution-injection.md)   | ソースコード編集時のプロジェクト原則コンテキスト注入                |
-| ドキュメント更新漏れ検知          | [stale-doc-detection.md](stale-doc-detection.md)         | 編集後の整合性確認・design 同期の促し                    |
-| 実装と設計の整合性チェック         | [impl-spec-check.md](impl-spec-check.md)                 | 実装コードと技術設計書の乖離検出（`/check-spec`）           |
+| ドキュメント更新漏れ検知          | [stale-doc-detection.md](stale-doc-detection.md)         | 編集後の整合性確認・spec 同期の促し                      |
+| 実装と仕様の整合性チェック         | [impl-spec-check.md](impl-spec-check.md)                 | 実装コードと抽象仕様書の乖離検出（`/check-spec`）           |
 | ドキュメント間整合性チェック        | [doc-consistency-check.md](doc-consistency-check.md)     | PRD ↔ spec ↔ design 間の不整合検出               |
 | front matter 検証       | [front-matter-validation.md](front-matter-validation.md) | YAML front matter の形式・依存方向・ID 一意性の検証      |
 
@@ -156,14 +156,14 @@ requirementDiagram
 
     functionalRequirement StaleDocDetection {
         id: FR_004
-        text: "ドキュメント編集後に整合性確認とdesign同期を促す"
+        text: "ドキュメント編集後に整合性確認とspec同期を促す"
         risk: medium
         verifymethod: test
     }
 
     functionalRequirement ImplSpecCheck {
         id: FR_005
-        text: "実装コードと技術設計書の乖離を検出する"
+        text: "実装コードと抽象仕様書の乖離を検出する"
         risk: high
         verifymethod: demonstration
     }

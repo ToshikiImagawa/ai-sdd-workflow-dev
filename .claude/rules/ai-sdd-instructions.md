@@ -29,7 +29,7 @@ Supports both flat and hierarchical structures.
 |- specification/
 |   |- {feature-name}_spec.md    # Abstract specification (persistent)
 |- adr/                          # Persistent decision log
-|   |- {feature-name}-decisions.md  # Decisions and rationale (append-only)
+|   |- {feature-name}.md         # Decisions and rationale (append-only)
 |- task/                         # Temporary task logs
     |- {ticket-number}/
         |- design-draft.md       # Technical design draft, deleted after implementation
@@ -54,10 +54,10 @@ Supports both flat and hierarchical structures.
 |       |- index_spec.md         # Parent feature abstract spec
 |       |- {child-feature}_spec.md   # Child feature abstract spec
 |- adr/                          # Persistent decision log
-|   |- {feature-name}-decisions.md  # Top-level feature
+|   |- {feature-name}.md         # Top-level feature
 |   |- {parent-feature}/         # Parent feature directory
-|       |- index-decisions.md        # Parent feature decision log
-|       |- {child-feature}-decisions.md # Child feature decision log
+|       |- index.md              # Parent feature decision log
+|       |- {child-feature}.md    # Child feature decision log
 |- task/                         # Temporary task logs
     |- {ticket-number}/
         |- design-draft.md       # Technical design draft, deleted after implementation
@@ -89,8 +89,8 @@ requirement/auth/user-login.md         # Child feature requirements (no suffix)
 specification/auth/index_spec.md       # Parent feature abstract spec (_spec optional, still valid)
 specification/auth/user-login.md       # Child feature abstract spec (no suffix, also valid)
 task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
-adr/auth/index-decisions.md            # Parent feature decision log (-decisions optional, still valid)
-adr/auth/user-login.md                 # Child feature decision log (no suffix, also valid)
+adr/auth/index.md                      # Parent feature decision log (no suffix, default for new files)
+adr/auth/user-login-decisions.md       # Child feature decision log (-decisions optional, still valid for existing files)
 
 # Incorrect Naming (never use these)
 requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix

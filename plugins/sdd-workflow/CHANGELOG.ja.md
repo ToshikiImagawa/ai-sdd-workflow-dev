@@ -24,8 +24,15 @@
 - **`/generate-spec` にチケット番号が必須になった** - 設計ドラフトのパスがチケット単位
   （`task/{ticket-number}/design-draft.md`）になったため、`/generate-spec` は `--ticket <番号>`
   を受け取る（`--ci` モードでは必須、それ以外は対話的に解決）
-- **`doc-consistency-checker` のチェック対象が PRD ↔ spec ↔ design から PRD ↔ spec ↔ adr へ変更** -
-  `design ↔ Implementation` チェックは 4.0.0 以来変わらず `/check-spec` の専任のまま
+- **`doc-consistency-checker` のチェック対象が PRD ↔ spec ↔ design から PRD ↔ spec ↔ adr へ変更**
+- **`/check-spec` の比較基準が技術設計書から抽象仕様書（spec）へ変更** - 技術設計書は
+  `task/{ticket-number}/design-draft.md` の一時ドラフトとなり実装完了後に削除されるため、恒久的な比較基準に
+  できなくなった。`/check-spec` は `specification/` 配下の spec（サフィックス任意）を第一級の比較基準とし、
+  設計ドラフトは存在する場合のみ補助入力として参照する。実装完了後にドラフトが存在しないことは正常な状態
+  であり、乖離としては報告しない。spec は抽象仕様であるため、比較は spec から読み取れる項目（公開 API・
+  データモデル・振る舞い・リテラル値）に限定し、モジュール構成・技術スタックはドラフトが存在する場合のみ
+  比較する。`specification/` 配下に v4.x の `{feature}_design.md` を残しているプロジェクトでは、
+  それらのファイルも同じ補助入力として扱う
 
 ### Added
 
@@ -65,9 +72,22 @@
   サフィックス無しのファイル名を示すようになった。既存の `-decisions.md` ファイルは引き続き有効で、
   そのまま検出・編集される。`naming.py` のバリデーションに変更はない
 
+#### Hooks
+
+- **編集後リマインダの参照先が技術設計書から spec に変更** - ソースファイル編集後、`PostToolUse` フックは
+  `specification/` 配下の対応する spec（`{stem}_spec.md` → `{stem}.md` の順）を探索し、spec の同期を促す
+  ようになった。従来は `{stem}_design.md` を探索していたため、永続ドキュメントとして存在しなくなった
+  v5.0.0 ではリマインダが発火しなかった。`.sdd/` ドキュメント編集時のリマインダも PRD ↔ spec ↔ adr を
+  参照するようになった
+- **`adr/` 配下の編集にもリマインダが出るようになった** - 決定ログを編集しても従来は何も出力されなかった。
+  追記専用（過去エントリを書き換えない）であることと、仕様を変える決定は spec に反映する必要があることを
+  促すようになった
+
 #### Documentation
 
-- **`AI-SDD-PRINCIPLES.md`** - `adr/` ディレクトリと `design-draft.md` のライフサイクルを明文化し、
+- **`AI-SDD-PRINCIPLES.md`** - Consistency Checking 表に恒久的な実装チェックとして `spec ↔ Implementation`
+  行を追加し、`design ↔ Implementation` を「設計ドラフトが存在する実装中のみ有効」と位置づけ直した。
+  `adr/` ディレクトリと `design-draft.md` のライフサイクルを明文化し、
   `requirement/`（PRD）は spec/design/実装側の変更から自動更新されないこと — 矛盾は人間の判断に委ね、
   無断で書き戻さないことを明記した
 - **`shared/references/document_dependencies.md`** - `adr/` モデルに整合するよう更新（それまで

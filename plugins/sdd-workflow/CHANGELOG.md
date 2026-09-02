@@ -25,8 +25,16 @@ minor/patch release.
 - **`/generate-spec` now requires a ticket number** - The design draft path is ticket-scoped
   (`task/{ticket-number}/design-draft.md`), so `/generate-spec` takes `--ticket <number>` (required in
   `--ci` mode, resolved interactively otherwise)
-- **`doc-consistency-checker` now checks PRD ↔ spec ↔ adr, not PRD ↔ spec ↔ design** - The
-  `design ↔ Implementation` check remains `/check-spec`'s exclusive responsibility, unchanged since 4.0.0
+- **`doc-consistency-checker` now checks PRD ↔ spec ↔ adr, not PRD ↔ spec ↔ design**
+- **`/check-spec` now compares the implementation against the spec, not against a design document** -
+  The design document is a temporary draft (`task/{ticket-number}/design-draft.md`) that is deleted after
+  implementation, so it can no longer serve as a persistent comparison baseline. `/check-spec` now takes
+  every spec under `specification/` (suffix optional) as the first-class baseline, and uses a design draft
+  only as an optional auxiliary input when one exists — a missing draft is the normal state after
+  implementation and is never reported as a discrepancy. Because a spec is an abstract specification, the
+  comparison is limited to what it can express (public API, data model, behavior, literal values); module
+  structure and technology stack are compared only while a draft exists. Projects that still keep v4.x
+  `{feature}_design.md` files under `specification/` get the same auxiliary treatment for those files
 
 ### Added
 
@@ -66,9 +74,22 @@ minor/patch release.
   the default when creating a new decision log. Existing `-decisions.md` files remain valid and are
   still discovered/edited in place; `naming.py` validation is unchanged
 
+#### Hooks
+
+- **The post-edit reminder now points at the spec, not a design document** - After a source file edit,
+  the `PostToolUse` hook looks for a matching spec (`{stem}_spec.md`, then `{stem}.md`) under
+  `specification/` and asks for the spec to be kept in sync. Previously it looked for
+  `{stem}_design.md`, which no longer exists as a persistent document, so the reminder never fired.
+  The `.sdd/` document reminders now refer to PRD ↔ spec ↔ adr
+- **`adr/` edits now get a reminder** - Editing a decision log used to produce no output at all. It now
+  reminds that decision logs are append-only and that a decision changing the specification must be
+  reflected in the spec
+
 #### Documentation
 
-- **`AI-SDD-PRINCIPLES.md`** - Documents the `adr/` directory and the `design-draft.md` lifecycle, and
+- **`AI-SDD-PRINCIPLES.md`** - Adds a `spec ↔ Implementation` row to the Consistency Checking table as
+  the persistent implementation check, and reframes `design ↔ Implementation` as valid only while a
+  design draft exists. Documents the `adr/` directory and the `design-draft.md` lifecycle, and
   makes explicit that `requirement/` (PRD) is never auto-updated from downstream spec/design/
   implementation changes — contradictions are reported for a human to resolve, not silently written back
 - **`shared/references/document_dependencies.md`** - Updated to the `adr/` model (previously still

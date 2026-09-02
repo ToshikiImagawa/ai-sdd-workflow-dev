@@ -1,7 +1,7 @@
 """doc_walker.py のユニットテスト（pytest）。
 
 対象選択ルール（requirement=全.md / specification=全.md（サフィックス任意） / task=全.md）と
-design doc 探索を検証する。
+spec 探索を検証する。
 """
 
 import importlib.util
@@ -68,14 +68,45 @@ class TestCollectDocuments:
         assert "notes.md" in [p.name for p in docs]
 
 
-class TestFindDesignDoc:
-    def test_finds_recursively(self, tmp_path):
+class TestFindSpecDoc:
+    def test_finds_suffixed_spec_recursively(self, tmp_path):
         spec = tmp_path / "spec" / "auth"
         spec.mkdir(parents=True)
-        target = spec / "user-login_design.md"
-        target.write_text("# d", encoding="utf-8")
-        assert dw.find_design_doc(str(tmp_path / "spec"), "user-login") == str(target)
+        target = spec / "user-login_spec.md"
+        target.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_doc(str(tmp_path / "spec"), "user-login") == str(target)
+
+    def test_finds_suffixless_spec(self, tmp_path):
+        # The _spec suffix is optional under specification/ (issue #84).
+        spec = tmp_path / "spec" / "auth"
+        spec.mkdir(parents=True)
+        target = spec / "user-login.md"
+        target.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_doc(str(tmp_path / "spec"), "user-login") == str(target)
+
+    def test_suffixed_spec_wins_over_suffixless(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        (spec / "user-login.md").write_text("# plain", encoding="utf-8")
+        suffixed = spec / "user-login_spec.md"
+        suffixed.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_doc(str(spec), "user-login") == str(suffixed)
+
+    def test_design_doc_never_matches(self, tmp_path):
+        # design docs are no longer a valid sync target (v5.0.0).
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        (spec / "user-login_design.md").write_text("# d", encoding="utf-8")
+        assert dw.find_spec_doc(str(spec), "user-login") == ""
+
+    def test_deterministic_when_stem_collides(self, tmp_path):
+        spec = tmp_path / "spec"
+        (spec / "b").mkdir(parents=True)
+        (spec / "a").mkdir()
+        (spec / "b" / "dup_spec.md").write_text("# b", encoding="utf-8")
+        (spec / "a" / "dup_spec.md").write_text("# a", encoding="utf-8")
+        assert dw.find_spec_doc(str(spec), "dup") == str(spec / "a" / "dup_spec.md")
 
     def test_returns_empty_when_absent(self, tmp_path):
         (tmp_path / "spec").mkdir()
-        assert dw.find_design_doc(str(tmp_path / "spec"), "missing") == ""
+        assert dw.find_spec_doc(str(tmp_path / "spec"), "missing") == ""

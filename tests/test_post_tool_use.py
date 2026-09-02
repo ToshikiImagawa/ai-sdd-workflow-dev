@@ -1,6 +1,6 @@
 """post-tool-use.py のユニットテスト（pytest）。
 
-design doc 探索、ファイルパス抽出、編集後ファイル種別ごとの
+spec 探索、ファイルパス抽出、編集後ファイル種別ごとの
 リマインダー emit 分岐を検証する。リファクタ前の安全網。
 """
 
@@ -25,26 +25,23 @@ def _load_module():
 
 ptu = _load_module()
 
-REQ = os.path.join(".sdd", "requirement")
 SPEC = os.path.join(".sdd", "specification")
+PATHS = ptu.SddPaths()
 
 
-# --- find_design_doc -------------------------------------------------------
+def _process(rel_path: str, project_root) -> None:
+    """Run the per-file hook logic against the default .sdd layout."""
+    ptu._process_single_file(rel_path, str(project_root), PATHS)
 
 
-class TestFindDesignDoc:
-    def test_finds_matching_design_doc(self, tmp_path):
-        spec_dir = tmp_path / "spec"
-        (spec_dir / "auth").mkdir(parents=True)
-        target = spec_dir / "auth" / "user-login_design.md"
-        target.write_text("# design", encoding="utf-8")
-        found = ptu.find_design_doc(str(spec_dir), "user-login")
-        assert found == str(target)
+# --- find_spec_doc ---------------------------------------------------------
 
-    def test_returns_empty_when_absent(self, tmp_path):
-        spec_dir = tmp_path / "spec"
-        spec_dir.mkdir()
-        assert ptu.find_design_doc(str(spec_dir), "missing") == ""
+
+class TestFindSpecDoc:
+    def test_reexports_the_shared_implementation(self):
+        # Behavior is covered by tests/test_doc_walker.py; assert only the wiring
+        # so a future local reimplementation is caught here.
+        assert ptu.find_spec_doc.__module__ == "doc_walker"
 
 
 # --- _extract_file_paths ---------------------------------------------------
@@ -73,49 +70,73 @@ class TestProcessSingleFile:
         self, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr(ptu, "try_update_index", lambda *a, **k: None)
-        rel = os.path.join(SPEC, "user-login_spec.md")
-        ptu._process_single_file(rel, str(tmp_path), ".sdd", REQ, SPEC)
+        _process(os.path.join(SPEC, "user-login_spec.md"), tmp_path)
         out = capsys.readouterr().out
-        assert "PRD <-> *_spec.md <-> *_design.md" in out
+        assert "PRD <-> spec <-> adr" in out
         assert "/constitution validate" in out
 
     def test_requirement_md_emits_propagation_reminder(
         self, tmp_path, capsys, monkeypatch
     ):
         monkeypatch.setattr(ptu, "try_update_index", lambda *a, **k: None)
-        rel = os.path.join(REQ, "user-login.md")
-        ptu._process_single_file(rel, str(tmp_path), ".sdd", REQ, SPEC)
+        _process(os.path.join(PATHS.requirement_prefix, "user-login.md"), tmp_path)
         out = capsys.readouterr().out
         assert "(PRD) was updated" in out
         assert "/constitution validate" in out
 
+    def test_adr_md_emits_append_only_reminder(self, tmp_path, capsys):
+        _process(os.path.join(PATHS.adr_prefix, "user-login.md"), tmp_path)
+        out = capsys.readouterr().out
+        assert "(ADR) was updated" in out
+        assert "append-only" in out
+
     def test_other_sdd_file_no_output(self, tmp_path, capsys):
-        rel = os.path.join(".sdd", "CONSTITUTION.md")
-        ptu._process_single_file(rel, str(tmp_path), ".sdd", REQ, SPEC)
+        _process(os.path.join(".sdd", "CONSTITUTION.md"), tmp_path)
         assert capsys.readouterr().out == ""
 
-    def test_source_with_matching_design_emits_sync_reminder(
+    def test_task_dir_file_no_output(self, tmp_path, capsys):
+        # task/ is temporary; the design draft there is not a sync target.
+        _process(
+            os.path.join(PATHS.task_prefix, "90", "design-draft.md"), tmp_path,
+        )
+        assert capsys.readouterr().out == ""
+
+    def test_source_with_matching_spec_emits_sync_reminder(
         self, tmp_path, capsys
     ):
         spec_abs = tmp_path / SPEC
         spec_abs.mkdir(parents=True)
-        (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
-        ptu._process_single_file(
-            os.path.join("src", "app.py"), str(tmp_path), ".sdd", REQ, SPEC,
-        )
+        (spec_abs / "app_spec.md").write_text("# s", encoding="utf-8")
+        _process(os.path.join("src", "app.py"), tmp_path)
         out = capsys.readouterr().out
+        assert "matching specification" in out
+        assert "app_spec.md" in out
         assert "keep it as the source of truth" in out
 
-    def test_source_without_design_no_output(self, tmp_path, capsys):
+    def test_source_with_suffixless_spec_emits_sync_reminder(
+        self, tmp_path, capsys
+    ):
+        spec_abs = tmp_path / SPEC
+        spec_abs.mkdir(parents=True)
+        (spec_abs / "app.md").write_text("# s", encoding="utf-8")
+        _process(os.path.join("src", "app.py"), tmp_path)
+        assert "matching specification" in capsys.readouterr().out
+
+    def test_source_with_only_design_doc_no_output(self, tmp_path, capsys):
+        # A leftover v4.x design doc is not a spec, so it must not trigger the
+        # reminder (the design doc is no longer a persistent sync target).
+        spec_abs = tmp_path / SPEC
+        spec_abs.mkdir(parents=True)
+        (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
+        _process(os.path.join("src", "app.py"), tmp_path)
+        assert capsys.readouterr().out == ""
+
+    def test_source_without_spec_no_output(self, tmp_path, capsys):
         (tmp_path / SPEC).mkdir(parents=True)
-        ptu._process_single_file(
-            os.path.join("src", "app.py"), str(tmp_path), ".sdd", REQ, SPEC,
-        )
+        _process(os.path.join("src", "app.py"), tmp_path)
         assert capsys.readouterr().out == ""
 
     def test_non_source_file_no_output(self, tmp_path, capsys):
         (tmp_path / SPEC).mkdir(parents=True)
-        ptu._process_single_file(
-            "notes.txt", str(tmp_path), ".sdd", REQ, SPEC,
-        )
+        _process("notes.txt", tmp_path)
         assert capsys.readouterr().out == ""

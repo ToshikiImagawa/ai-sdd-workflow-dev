@@ -43,8 +43,12 @@ trap cleanup EXIT
 
 # Set up a fake project with .sdd structure
 TMP_DIR="$(mktemp -d)"
-mkdir -p "$TMP_DIR/.sdd/requirement" "$TMP_DIR/.sdd/specification/auth" "$TMP_DIR/src"
-touch "$TMP_DIR/.sdd/specification/auth/user-login_design.md"
+mkdir -p "$TMP_DIR/.sdd/requirement" "$TMP_DIR/.sdd/specification/auth" "$TMP_DIR/.sdd/adr" "$TMP_DIR/src"
+touch "$TMP_DIR/.sdd/specification/auth/user-login_spec.md"
+# Suffix-free spec: the _spec suffix is optional under specification/.
+touch "$TMP_DIR/.sdd/specification/auth/user-logout.md"
+# Only a leftover v4.x design doc exists for this stem, so no reminder is due.
+touch "$TMP_DIR/.sdd/specification/auth/legacy-only_design.md"
 
 # run_hook <test-name> <script> <stdin-json> <expected-exit> <expected-output-substring>
 # expected-output-substring empty means stdout must be empty
@@ -185,11 +189,27 @@ run_hook "post: PRD edit also suggests constitution validate" "post-tool-use.py"
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/requirement/user-login.md\"}}" \
     0 "/constitution validate"
 
-run_hook "post: source edit with matching design doc reminds sync" "post-tool-use.py" \
-    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-login.py\"}}" \
-    0 "user-login_design.md"
+run_hook "post: spec edit reminds PRD-spec-adr consistency" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/specification/auth/user-login_spec.md\"}}" \
+    0 "PRD <-> spec <-> adr"
 
-run_hook "post: source edit without design doc is silent" "post-tool-use.py" \
+run_hook "post: adr edit reminds append-only and spec reflection" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/adr/user-login.md\"}}" \
+    0 "append-only"
+
+run_hook "post: source edit with matching spec reminds sync" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-login.py\"}}" \
+    0 "user-login_spec.md"
+
+run_hook "post: source edit with suffix-free spec reminds sync" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-logout.py\"}}" \
+    0 "user-logout.md"
+
+run_hook "post: source edit with only a legacy design doc is silent" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/legacy-only.py\"}}" \
+    0 ""
+
+run_hook "post: source edit without spec is silent" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/main.py\"}}" \
     0 ""
 

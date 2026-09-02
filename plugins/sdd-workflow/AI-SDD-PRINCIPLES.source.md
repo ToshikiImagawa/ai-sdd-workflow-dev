@@ -556,7 +556,8 @@ Verify consistency between documents:
 | **PRD ↔ spec**              | Requirement ID to spec mapping, functional requirement coverage                            |
 | **spec ↔ design**           | API definition match, requirement reflection in design decisions, constraint consideration |
 | **design ↔ adr**            | Decision rationale is captured in `adr/{feature}-decisions.md` before `task/{ticket-number}/design-draft.md` is deleted |
-| **design ↔ Implementation** | Module structure match, interface definition match                                         |
+| **spec ↔ Implementation**   | Public API match, data model match, behavior match per requirement ID, literal value match. **The persistent implementation check** — the spec outlives the design draft, so this is the baseline whenever no draft exists |
+| **design ↔ Implementation** | Module structure match, interface definition match. **Only valid while `task/{ticket-number}/design-draft.md` exists** (i.e. during implementation); the draft is deleted afterwards, so this check no longer applies |
 
 **Check Execution Timing**:
 
@@ -564,7 +565,8 @@ Verify consistency between documents:
 |:--------------------------|:------------------------------------|:-------------------------------------|
 | Task Start                | Verify existing document existence  | If missing, go to Specify phase      |
 | Plan Completion           | spec ↔ design consistency           | If inconsistent, modify design       |
-| Implementation Completion | design ↔ implementation consistency | If inconsistent, update design; then integrate decisions into `adr/` before deletion |
+| Implementation Completion | spec ↔ implementation consistency (plus design ↔ implementation while the draft exists) | If inconsistent, update the spec; then integrate decisions into `adr/` before deleting the draft |
+| After Implementation      | spec ↔ implementation consistency   | The design draft is gone; compare the implementation against the spec |
 | Review                    | All inter-document consistency      | Resolve inconsistencies before merge |
 
 ### Document Update Triggers

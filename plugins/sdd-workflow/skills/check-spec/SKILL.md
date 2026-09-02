@@ -1,21 +1,30 @@
 ---
 name: check-spec
-description: "Check consistency between implementation code and design documents (design), detecting discrepancies"
+description: "Check consistency between implementation code and abstract specifications (spec), detecting discrepancies"
 argument-hint: "[feature-name] [--full]"
 arguments: [feature-name]
 license: MIT
 user-invocable: true
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" *)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-spec-docs.py" *)
 disallowed-tools: Write, Edit
 ---
 
-# Check Spec - Design & Implementation Consistency Check
+# Check Spec - Specification & Implementation Consistency Check
 
-Verifies consistency between implementation code and design documents (`*_design.md`), detecting discrepancies.
+Verifies consistency between implementation code and the abstract specifications under
+`${SDD_SPECIFICATION_PATH}/`, detecting discrepancies.
 
-**Role**: This command specializes in **design <-> implementation consistency checking**.
-**Document-level consistency** (PRD <-> spec, spec <-> design) is handled by the `spec-reviewer`
+**Role**: This command specializes in **spec <-> implementation consistency checking**.
+The spec is the persistent source of truth, so it is the **first-class comparison baseline**.
+**Document-level consistency** (PRD <-> spec, spec <-> adr) is handled by the `spec-reviewer`
 agent when called with the `--full` option.
+
+**Design drafts are optional**: the technical design document lives at
+`${SDD_TASK_PATH}/{ticket-number}/design-draft.md` and is deleted once implementation completes.
+When a draft exists it is used as an **auxiliary input** for details the spec cannot express
+(module structure, technology stack). Its absence is the normal state and is never reported as a
+problem. Projects still carrying v4.x persisted `{feature}_design.md` files under
+`${SDD_SPECIFICATION_PATH}/` get the same auxiliary treatment for those files.
 
 ## Prerequisites
 
@@ -42,11 +51,11 @@ Full argument string: $ARGUMENTS
 
 > **Fallback**: If the value above is empty, remains a literal `$` placeholder, or starts with `--`
 > (a flag captured positionally), treat the argument as omitted and interpret the full argument
-> string instead (e.g., `/check-spec --full` means all design docs with the `--full` option).
+> string instead (e.g., `/check-spec --full` means all specs with the `--full` option).
 
-| Argument       | Required | Description                                                                                                  |
-|:---------------|:---------|:-------------------------------------------------------------------------------------------------------------|
-| `feature-name` | -        | Target feature name or path (e.g., `user-auth`, `auth/user-login`). If omitted, all design docs are targeted |
+| Argument       | Required | Description                                                                                                |
+|:---------------|:---------|:-----------------------------------------------------------------------------------------------------------|
+| `feature-name` | -        | Target feature name or path (e.g., `user-auth`, `auth/user-login`). If omitted, all specs are targeted     |
 
 ### Options
 
@@ -79,63 +88,96 @@ Replace placeholders with actual file names and counts.
 
 **Optimized Execution Flow**:
 
-**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-design-docs.py" [feature-name]` to scan design documents.
+**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-spec-docs.py" [feature-name]` to scan specification documents.
 
 This script:
-1. Finds all design documents (`*_design.md`) in flat or hierarchical structure
-2. Finds corresponding spec files (`*_spec.md`)
-3. Generates file mapping JSON (design → spec → implementation)
+1. Finds all spec documents under `${SDD_SPECIFICATION_PATH}/` in flat or hierarchical structure,
+   with or without the `_spec` suffix (`{feature}.md` / `{feature}_spec.md`)
+2. Collects design drafts (`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) as an optional
+   auxiliary input; an empty list is normal, not an error
+3. Generates file mapping JSON (spec → feature name → auxiliary design doc, plus the draft list)
 4. Exports environment variables to `$CLAUDE_ENV_FILE`:
-   - `CHECK_SPEC_DESIGN_FILES` - List of design files
-   - `CHECK_SPEC_SPEC_FILES` - List of spec files
+   - `CHECK_SPEC_SPEC_FILES` - List of spec files (the comparison baseline)
+   - `CHECK_SPEC_DESIGN_DRAFT_FILES` - List of design drafts (empty when none exist)
    - `CHECK_SPEC_MAPPING` - JSON mapping file
 
-**Phase 2: Claude** - Read design docs from pre-scanned lists and perform consistency check
+**Phase 2: Claude** - Read specs from pre-scanned lists and perform consistency check
 
 ### 1. Identify Target Documents
 
-Target design documents (`*_design.md`). Both flat and hierarchical structures are supported.
+Target the spec documents under `${SDD_SPECIFICATION_PATH}/`. Both flat and hierarchical
+structures are supported, and the `_spec` suffix is optional in every case.
 
 **For flat structure**:
 
-- With argument -> Target the following file: `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{argument}_design.md`
-- Without argument -> Target all `*_design.md` files under `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/` (recursively)
+- With argument -> Target `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{argument}_spec.md` and
+  `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{argument}.md` (whichever exist)
+- Without argument -> Target all spec `.md` files under
+  `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/` (recursively)
 
 **For hierarchical structure** (when argument contains `/`, or when specifying hierarchical path):
 
-- Argument in `"{parent-feature}/{feature-name}"` format -> Target the following file: `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md`
-- Argument is `"{parent-feature}"` only -> Target the following files:
-    - `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_design.md` (parent feature design)
-    - `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/*_design.md` (child feature designs)
+- Argument in `"{parent-feature}/{feature-name}"` format -> Target
+  `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_spec.md` or
+  the suffix-free `.../{feature-name}.md`
+- Argument is `"{parent-feature}"` only -> Target every spec `.md` file under
+  `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/` (the parent's
+  `index[_spec].md` and its child features)
 
 **Naming convention**:
 
-- **Under specification**: `_design` suffix optional (`index_design.md`, `{feature-name}_design.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index.md`, `index_spec.md`,
+  `{feature-name}.md`, or `{feature-name}_spec.md`)
+- **Not a spec**: `{feature-name}_design.md` under specification is a v4.x persisted design doc.
+  It is excluded from the spec list and only used as an auxiliary input (see the mapping JSON)
+
+**Auxiliary design input** (use only if present):
+
+- `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/design-draft.md` — the in-progress
+  technical design draft. The filename is fixed and ticket-scoped, so it cannot be matched to a
+  spec by name; treat every listed draft as context for the feature under implementation
+- The `design` field of each mapping entry — a v4.x persisted `{feature}_design.md`, when present
 
 **Hierarchical structure input examples**:
 
 - `/check-spec auth/user-login` — Check user-login feature under auth domain
 - `/check-spec auth` — Check entire auth domain
 
-### 2. Load Design Documents
+### 2. Load Specifications
 
-**Extract the following information from `*_design.md`**:
+The spec is an **abstract specification**: it states "what to build", not the technical detail of
+"how". Only extract what the spec can actually express, and do not expect design-level detail
+from it.
 
-| Item                        | Description                                                                              |
-|:----------------------------|:-----------------------------------------------------------------------------------------|
-| **Module Structure**        | Directory structure, file organization                                                   |
-| **Technology Stack**        | Libraries, frameworks used                                                               |
-| **Interface Definitions**   | API signatures (function names, arguments, return values), type definitions, data models |
-| **Functional Requirements** | List of features to implement                                                            |
-| **Implementation Approach** | Architecture patterns, design decisions                                                  |
-| **Literal Values**          | Thresholds, enum values, CHECK constraint values, durations, and other constants         |
+**Extract the following information from the spec**:
+
+| Item                        | Typical spec section          | Description                                                                    |
+|:----------------------------|:------------------------------|:-------------------------------------------------------------------------------|
+| **Public API**              | Provided components, I/O definitions | Public interface names, arguments, return values, CLI arguments/options, environment variables |
+| **Data Model**              | I/O definitions, glossary      | Entities, fields and their types, output file/JSON structures                  |
+| **Behavior**                | Functional requirements, behavior diagrams | Observable behavior per requirement ID (FR-xxx / NFR-xxx), branch conditions   |
+| **Functional Requirements** | Functional requirements table  | List of features to implement, with requirement IDs                            |
+| **Constraints**             | Constraints                    | Explicitly excluded behavior, prerequisites                                    |
+| **Literal Values**          | Schema Registry, body text     | Thresholds, enum values, CHECK constraint values, durations, and other constants |
+
+**Additional items — only when a design draft (or a v4.x persisted design doc) exists**:
+
+| Item                        | Description                                                        |
+|:----------------------------|:-------------------------------------------------------------------|
+| **Module Structure**        | Directory structure, file organization                             |
+| **Technology Stack**        | Libraries, frameworks used                                         |
+| **Implementation Approach** | Architecture patterns, design decisions                            |
+
+If no draft exists, **omit these items from the comparison entirely** — do not report them as
+missing or as a discrepancy.
 
 **Literal value extraction sources** (in priority order):
 
-1. **Schema Registry section** in the corresponding `*_spec.md` (a "Value Range / Threshold Registry" table), if present.
+1. **Schema Registry section** in the spec (a "Value Range / Threshold Registry" table), if present.
    Parse each entry as `{value-id, value, unit, source-requirement-id, section}`.
-2. If no registry section exists, extract literal values mentioned in the body text of `*_spec.md` and `*_design.md`
+2. If no registry section exists, extract literal values mentioned in the body text of the spec
    (e.g., "confidence threshold 70%", `default 0.7`, `CHECK (risk_level IN ('low', 'high'))`, "p95 <= 15s").
+3. A design draft, when present, may refine a value; the spec still holds the authoritative value.
 
 ### 3. Verify Implementation Code
 
@@ -152,35 +194,45 @@ Search for code corresponding to specification contents:
 
 ### 4. Consistency Check Items
 
-**Note**: This command specializes in **design <-> implementation consistency checking**. **Document-level consistency**
-(PRD <-> spec, spec <-> design) and **quality review** (CONSTITUTION.md compliance, completeness, clarity) are handled by
+**Note**: This command specializes in **spec <-> implementation consistency checking**. **Document-level consistency**
+(PRD <-> spec, spec <-> adr) and **quality review** (CONSTITUTION.md compliance, completeness, clarity) are handled by
 the `spec-reviewer` agent when using the `--full` option.
 
 #### Front Matter Consistency
 
 If documents contain YAML front matter, call the `front-matter-reviewer` agent to validate.
-Pass all target document paths (design docs and corresponding specs).
+Pass all target document paths (the specs, plus any auxiliary design doc).
 
-After results are returned, integrate `impl-status` findings into the design ↔ implementation consistency results.
+After results are returned, integrate `impl-status` findings into the spec ↔ implementation consistency results.
 
-#### design <-> Implementation Consistency
+#### spec <-> Implementation Consistency
+
+| Check Target                | Verification Content                                            | Importance |
+|:----------------------------|:----------------------------------------------------------------|:-----------|
+| **Public API**              | Do public names, arguments, return values, CLI options, and environment variables match? | High |
+| **Data Model**              | Do entities, fields, types, and output structures match?        | High       |
+| **Behavior**                | Does observable behavior match the spec per requirement ID?     | High       |
+| **Functional Requirements** | Are functions specified in the spec implemented?                | High       |
+| **Literal Values**          | Do thresholds, enum values, and constraint values match between spec and implementation? | High |
+| **Constraints**             | Does the implementation stay within the spec's stated constraints? | Medium  |
+
+#### design <-> Implementation Consistency (only when a design draft exists)
+
+Skip this table entirely when no design draft (or v4.x persisted design doc) is available.
 
 | Check Target                | Verification Content                               | Importance |
 |:----------------------------|:---------------------------------------------------|:-----------|
-| **API Signature**           | Do function names, arguments, return values match? | High       |
-| **Type Definitions**        | Do interfaces and types match?                     | High       |
 | **Module Structure**        | Does directory/file structure match?               | Medium     |
-| **Functional Requirements** | Are functions specified in specs implemented?      | High       |
-| **Literal Values**          | Do thresholds, enum values, and constraint values match across spec/design/implementation? | High |
 | **Technology Stack**        | Are documented libraries being used?               | Low        |
 
 #### Literal Value Consistency Check
 
-Compare literal values across the three layers (spec -> design -> implementation) and detect drift:
+Compare literal values between spec and implementation (adding the design draft as a third layer when one
+exists) and detect drift:
 
 1. **Build a value table**: For each value extracted in step 2 (spec registry or body text), find the corresponding
-   value in `*_design.md` and in the implementation (step 3 extraction sources). Match by value identifier, requirement
-   ID (UR/FR/NFR-xxx), or surrounding context (setting name, column name, enum name).
+   value in the implementation (step 3 extraction sources), and in the design draft when present. Match by value
+   identifier, requirement ID (UR/FR/NFR-xxx), or surrounding context (setting name, column name, enum name).
 2. **Normalize before comparison**: Treat equivalent representations as equal (e.g., `70%` and `0.7`, `15s` and
    `15000ms`). Report the comparison in the original notation of each layer.
 3. **Detect drift**: Report any layer whose value differs from the spec as a **Warning**, marking the drifting layer:
@@ -188,17 +240,18 @@ Compare literal values across the three layers (spec -> design -> implementation
    ```
    [WARN] Value drift detected: rag_confidence_threshold
      spec: 0.7 (§4.1, NFR-AI-005)
-     design: 0.7 (§9.1)
      config.py: 0.6 ← drift
    ```
 
+   Include a `design draft:` line only when a draft was actually loaded.
+
 4. **Enum / CHECK constraint completeness**: For enumerated values, compare the full member sets. A member present in
-   the implementation but missing from the design's CHECK constraint (or vice versa) is a drift, even if all other
+   the implementation but missing from the spec's enumeration (or vice versa) is a drift, even if all other
    members match.
 5. **Trace completeness**: If the spec registry entry references a requirement ID, verify the same ID appears in the
-   PRD <-> spec <-> design traceability table. Report missing IDs as a Warning.
+   PRD <-> spec traceability table. Report missing IDs as a Warning.
 
-If a value exists in only one layer (e.g., a threshold hard-coded in the implementation with no spec/design mention),
+If a value exists in only one layer (e.g., a threshold hard-coded in the implementation with no spec mention),
 report it under "Implementation not documented in specs" instead of as drift.
 
 ### 5. Discrepancy Classification
@@ -207,15 +260,17 @@ Classify detected discrepancies as follows:
 
 **Critical (Immediate Action Required)**:
 
-- API signature mismatch (arguments, return value types)
-- Functions specified in specs not implemented
-- Type definition mismatch
+- Public API mismatch (arguments, return value types, CLI options, environment variables)
+- Functions specified in the spec not implemented
+- Data model mismatch (entities, fields, types)
+- Behavior contradicting the spec
 
 **Warning (Action Recommended)**:
 
-- Literal value drift (thresholds, enum values, CHECK constraint values differing across spec/design/implementation)
+- Literal value drift (thresholds, enum values, CHECK constraint values differing between spec and implementation)
 - Requirement ID referenced by a spec registry entry missing from the traceability table
-- Module structure mismatch
+- Implementation exceeding a constraint stated in the spec
+- Module structure mismatch (only when a design draft was loaded)
 - Classes/functions existing but not in documentation
 - Naming convention mismatch
 
@@ -233,7 +288,7 @@ When the `--full` option is specified, the `spec-reviewer` agent is invoked to p
 | Check Item                      | Description                                                              |
 |:--------------------------------|:-------------------------------------------------------------------------|
 | **PRD <-> spec Traceability**   | Verify PRD requirements are covered in spec (80% coverage threshold)     |
-| **spec <-> design Consistency** | Verify spec content is properly detailed in design                       |
+| **spec <-> adr Consistency**    | Verify recorded decisions are consistent with the spec                   |
 | **CONSTITUTION.md Compliance**  | Verify compliance with project principles                                |
 | **Completeness**                | Verify required sections (purpose, API, constraints, etc.) are present   |
 | **Clarity**                     | Detect vague descriptions ("nice to have", "appropriately", etc.)        |
@@ -241,9 +296,9 @@ When the `--full` option is specified, the `spec-reviewer` agent is invoked to p
 
 #### Execution Timing
 
-- Executes after design <-> implementation consistency check is complete
-- Performs comprehensive review for target documents (PRD, spec, design)
-- Generates traceability matrix (PRD -> spec -> design correspondence)
+- Executes after spec <-> implementation consistency check is complete
+- Performs comprehensive review for target documents (PRD, spec, adr)
+- Generates traceability matrix (PRD -> spec -> implementation correspondence)
 
 **Note**: Comprehensive review requires additional execution time. For quick checks during development, run without
 `--full`, and use `--full` before PR creation or for periodic checks.
@@ -298,6 +353,10 @@ Features are limited but work language-agnostically.
 ## Notes
 
 - If specifications don't exist, recommend creating them with `/generate-spec` first
+- A missing design draft is **not** a problem: it is the normal state after implementation completes.
+  Never ask the user to create one, and never report its absence as a discrepancy
 - If many discrepancies exist, major specification updates may be needed
 - If implementation is correct and specs are outdated, update specifications
 - If specifications are correct and implementation is wrong, fix implementation
+- Detail that the spec deliberately omits (internal structure, private helpers) is out of scope:
+  record it under "Implementation not documented in specs" only when it changes observable behavior

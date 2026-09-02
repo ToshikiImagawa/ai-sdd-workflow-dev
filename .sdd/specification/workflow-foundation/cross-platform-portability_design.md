@@ -114,7 +114,7 @@ graph TD
 ```
 plugins/sdd-workflow/
 ├── skills/
-│   ├── check-spec/scripts/find-design-docs.py           # #29
+│   ├── check-spec/scripts/find-spec-docs.py             # #29
 │   ├── constitution/scripts/validate-files.py           # #29
 │   ├── plan-refactor/scripts/scan-existing-docs.py      # #30
 │   ├── plan-refactor/scripts/find-implementation-files.py # #30
