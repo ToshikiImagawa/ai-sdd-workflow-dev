@@ -1,0 +1,21 @@
+{
+  "skill_name": "task-cleanup",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-cleanup",
+      "prompt": "ticket 101 (notification-badge) は実装完了しました(.sdd/task/101/tasks.md は全タスク done、テストは全て pass)。task-cleanup を実行してクリーンアップしてください。",
+      "expected_output": "Design decisions integrated into .sdd/adr/notification-badge.md (not a new permanent *_design.md under specification/), the temporary task/101/design-draft.md removed, and impl-status judged (not silently rewritten) rather than blindly touching requirement/ (PRD).",
+      "files": [
+        "sandboxes/task-cleanup-base/.sdd/task/101/design-draft.md must NOT contain an editorial note about where task-cleanup will file the decision (e.g. \"...統合された後は削除される想定\") -- that leaks the exact expected action and makes the without_skill baseline trivially match new_skill. .sdd/CONSTITUTION.md's D-003 (task/ is temporary; integrate decisions into adr/{feature}.md before deleting) is fine to leave in, since it's a legitimate general project convention any careful agent -- skilled or not -- would read."
+      ],
+      "assertions": [
+        {"text": "Design decisions are integrated into .sdd/adr/notification-badge.md (no -decisions suffix required)", "checked_by": "file existence + content"},
+        {"text": "The temporary .sdd/task/101/design-draft.md is archived or removed as a non-persistent draft", "checked_by": "file existence / RUN_SUMMARY"},
+        {"text": "Judges whether the spec's impl-status front matter needs updating, rather than silently rewriting requirement/ (PRD)", "checked_by": "output content / RUN_SUMMARY"},
+        {"text": "Design decisions end up recorded in .sdd/adr/, not re-persisted as a new permanent *_design.md file under specification/", "checked_by": "file existence / RUN_SUMMARY"},
+        {"text": "Ticket 101 completion is recorded/dumped in some persistent history (not silently discarded)", "checked_by": "output content / RUN_SUMMARY"}
+      ]
+    }
+  ]
+}

@@ -63,11 +63,12 @@ This command initializes the project following AI-SDD principles.
 
 ### Configuration File Management
 
-**Note**: Configuration file management is handled by `init-structure.py` (Phase 1). The script automatically:
-
-1. Checks if `.sdd-config.json` exists at project root
-2. If not exists: Creates it with the default configuration. See `references/sdd_config_default.md` for the exact
-   content.
+**Note**: `.sdd-config.json` is expected to already exist when this command runs — it is created either by the
+SessionStart hook (`session-start.py`) or manually by the user beforehand, never by this command itself.
+`init-structure.py` (Phase 1) checks for it and **errors out if it is missing** (see Phase 1 below); this command
+does not create a default one, since doing so here would duplicate the SessionStart hook's ownership of that
+default and risk the two drifting out of sync. See `references/sdd_config_default.md` for the default content
+the hook writes.
 
 **Note**: The `lang` field determines the language for templates (`en` or `ja`).
 

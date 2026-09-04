@@ -1,0 +1,20 @@
+{
+  "skill_name": "generate-spec",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-new-feature",
+      "prompt": "通知バッジ機能(未読メッセージ数をアプリアイコンにバッジ表示する機能)のspecとdesign draftを生成してください。ticket番号は101です。",
+      "expected_output": "Abstract spec created under .sdd/specification/ with YAML front matter (id/type/status/sdd-version), and a ticket-scoped design draft at .sdd/task/101/design-draft.md (not a persistent *_design.md), consistent with the spec.",
+      "files": [],
+      "assertions": [
+        {"text": "Abstract spec file was created under .sdd/specification/ for notification-badge", "checked_by": "file existence"},
+        {"text": "Generated spec includes YAML front matter with id/type/status fields", "checked_by": "file content"},
+        {"text": "(new_skill only) Design draft was created at .sdd/task/101/design-draft.md (ticket-scoped, not under specification/)", "checked_by": "file existence + path"},
+        {"text": "(old_skill only) Design doc was created under .sdd/specification/ as a persistent *_design.md file", "checked_by": "file existence + path"},
+        {"text": "(new_skill only) Front matter includes sdd-version field", "checked_by": "file content"},
+        {"text": "Design content is consistent with the spec (no contradicting API/behavior)", "checked_by": "manual/LLM review"}
+      ]
+    }
+  ]
+}

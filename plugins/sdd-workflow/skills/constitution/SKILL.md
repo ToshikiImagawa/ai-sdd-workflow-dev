@@ -143,12 +143,17 @@ Add a new principle to a constitution by running `/constitution add "Library-Fir
 
 | Change Type        | Version Impact | Example        |
 |:-------------------|:---------------|:---------------|
-| Add principle      | MAJOR (X.y.z)  | 1.0.0 -> 2.0.0 |
+| Add principle      | MINOR (x.Y.z)  | 1.0.0 -> 1.1.0 |
 | Modify principle   | MAJOR (X.y.z)  | 1.0.0 -> 2.0.0 |
 | Remove principle   | MAJOR (X.y.z)  | 1.0.0 -> 2.0.0 |
 | Clarify principle  | MINOR (x.Y.z)  | 1.0.0 -> 1.1.0 |
 | Update enforcement | MINOR (x.Y.z)  | 1.0.0 -> 1.1.0 |
 | Fix typo           | PATCH (x.y.Z)  | 1.0.0 -> 1.0.1 |
+
+This must stay consistent with the "Add Principle (add)" flow above and the "Semantic Versioning" table in
+§7 (Version Management) — adding a principle is a MINOR bump in both, never MAJOR (MAJOR is reserved for
+removing or significantly changing an *existing* principle, which is a breaking change for anything relying
+on it).
 
 ### 5. Validate (validate)
 

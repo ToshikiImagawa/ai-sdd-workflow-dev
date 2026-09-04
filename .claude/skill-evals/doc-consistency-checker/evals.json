@@ -1,0 +1,20 @@
+{
+  "skill_name": "doc-consistency-checker",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-stale-adr",
+      "prompt": "notification-badge 関連ドキュメント(PRD/spec/adr)の整合性をチェックしてください。",
+      "expected_output": "Checks decision consistency between the spec and .sdd/adr/notification-badge.md (not a *_design.md), flags the spec's stale sdd-version in the formal report, and produces substantive (non-fabricated) findings.",
+      "files": [
+        "sandboxes/doc-consistency-checker-base/.sdd/specification/notification-badge.md (fixture: sdd-version deliberately set to \"3.0.0\", behind the current 4.x major)",
+        "sandboxes/doc-consistency-checker-base/.sdd/adr/notification-badge.md (fixture: ADR with a deliberate dict[str, user_id, int] type-annotation typo)"
+      ],
+      "assertions": [
+        {"text": "Checks decision consistency between the spec and .sdd/adr/notification-badge.md (not spec vs a *_design.md)", "checked_by": "output content"},
+        {"text": "Flags the spec's stale sdd-version (3.0.0, behind the current major) in the formal report as needing migration/regeneration", "checked_by": "output content"},
+        {"text": "Consistency findings are substantive and correct, not fabricated", "checked_by": "manual verification against fixture"}
+      ]
+    }
+  ]
+}

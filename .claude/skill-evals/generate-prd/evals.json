@@ -1,0 +1,21 @@
+{
+  "skill_name": "generate-prd",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-amend",
+      "prompt": "既存の .sdd/requirement/notification.md に、未読メッセージ数をバッジ表示する新要求を追加(--amend)",
+      "expected_output": "PRD amend that inserts new UR/FR into .sdd/requirement/notification.md while preserving existing UR_001/FR_001 and front matter (except updated/sdd-version), continuing the ID sequence, following an explicit --amend mode, and stamping sdd-version.",
+      "files": [
+        "sandboxes/generate-prd-base/.sdd/requirement/notification.md (fixture: id=\"prd-notification\", status=\"approved\", UR_001/FR_001)"
+      ],
+      "assertions": [
+        {"text": "Existing UR_001/FR_001 content is preserved unchanged", "checked_by": "file diff"},
+        {"text": "Existing front matter fields (status, priority, risk, tags) are left unchanged except updated/sdd-version", "checked_by": "file diff"},
+        {"text": "New requirements (badge display) are correctly added with continuing IDs", "checked_by": "file content"},
+        {"text": "sdd-version field is present in front matter", "checked_by": "file content"},
+        {"text": "An explicit --amend concept/mode exists and was followed (not an ad-hoc judgment call)", "checked_by": "agent's own report"}
+      ]
+    }
+  ]
+}

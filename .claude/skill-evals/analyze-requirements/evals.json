@@ -1,0 +1,18 @@
+{
+  "skill_name": "analyze-requirements",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-extract",
+      "prompt": "通知バッジ機能のユースケースからUR/FR/NFRを抽出",
+      "expected_output": "UR/FR/NFR extraction from the notification badge use case with full traceability (derives) and consistent Priority/Risk/Verification attributes.",
+      "files": [],
+      "assertions": [
+        {"text": "All 3 stated behaviors (badge count, 99+ cap, clear) are covered by at least one FR", "checked_by": "output content"},
+        {"text": "Every FR traces to at least one UR (derives relationship)", "checked_by": "output content"},
+        {"text": "IDs are unique and sequential", "checked_by": "output content"},
+        {"text": "Priority/Risk/Verification attributes assigned consistently", "checked_by": "output content"}
+      ]
+    }
+  ]
+}

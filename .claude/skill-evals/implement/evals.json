@@ -1,0 +1,19 @@
+{
+  "skill_name": "implement",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-tdd",
+      "prompt": "notification-badge (ticket 101) の実装を進めてください。.sdd/task/101/tasks.md のタスクリストに従って、TDDで実装してください。",
+      "expected_output": "TDD implementation of notification-badge (ticket 101): src/notification_badge.py with increment_unread/get_unread_badge_count (99+ cap), a passing test file, and impl-status updated in the spec front matter. (new_skill) Locates the Technical Design prerequisite at .sdd/task/101/design-draft.md rather than requiring a persistent *_design.md.",
+      "files": [],
+      "assertions": [
+        {"text": "(old_skill) Run is blocked at the prerequisite check because specification/notification-badge_design.md does not exist, reproducing the deadlock #89 fixed (generate-spec no longer produces that path, but implement still required it)", "checked_by": "output content / RUN_SUMMARY"},
+        {"text": "(new_skill) Run correctly locates .sdd/task/101/design-draft.md as the Technical Design prerequisite and proceeds", "checked_by": "output content / RUN_SUMMARY"},
+        {"text": "src/notification_badge.py implements increment_unread and a 99+ capping get_unread_badge_count", "checked_by": "file content"},
+        {"text": "A test file exists and actually passes when run (not just written)", "checked_by": "running pytest"},
+        {"text": "(new_skill) The spec's impl-status front matter field is updated to in-progress/implemented", "checked_by": "file content diff"}
+      ]
+    }
+  ]
+}

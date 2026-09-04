@@ -118,12 +118,16 @@ Even when user refuses specification creation, ensure minimum guardrails:
 
 ### 1. Document Inferred Specifications
 
-Read `templates/${SDD_LANG:-en}/assumed_spec.md` and use it for creating inferred specification documents.
+Read `templates/${SDD_LANG:-en}/assumed_spec.md` and use it to draft the inferred specification content.
 
 **If template does not exist**: Use `templates/${SDD_LANG:-en}/assumed_spec_fallback.md` as the document
 structure.
 
-**Save Location**: `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/assumed-spec.md`
+This skill's `allowed-tools` deliberately excludes `Write`/`Edit`/`Bash` — it fires automatically before every
+implementation, so it must stay a read-only detector and never persist files on its own. Include the fully
+drafted document content in this skill's own output (under the risk report) and instruct the calling session
+to save it to `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/assumed-spec.md`. The calling session (which
+invoked this skill and holds normal write access) performs the actual save.
 
 ### 2. Set Verification Points
 
@@ -145,5 +149,6 @@ Explicitly state potential issues due to specification gaps:
 
 - This skill **detects and warns** but does not block implementation
 - Final judgment is left to the user
-- If proceeding despite warnings, always record inferred specifications
+- If proceeding despite warnings, always include the inferred specification in the output so the calling
+  session can record it (this skill cannot write files itself)
 - Reference existing project specifications to improve detection accuracy

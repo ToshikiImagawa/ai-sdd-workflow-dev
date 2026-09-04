@@ -1,0 +1,18 @@
+{
+  "skill_name": "plan-refactor",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-breaking-change",
+      "prompt": "get_unread_badge_count(user_id) の戻り値を `int | str` から常に文字列 `str` を返す形式に変更するリファクタリングを計画してください。既存の呼び出し元は int を期待しています。",
+      "expected_output": "Classifies the request as a Breaking Change task type (impact analysis + backward-compat policy + adr/ migration record), determines the refactor Case from the spec's content/impl-status rather than a persistent design-doc filename, and produces a refactor plan.",
+      "files": [],
+      "assertions": [
+        {"text": "Classifies this as a Breaking Change task type per the Task Type Determination table, calling out impact analysis and a backward-compatibility policy", "checked_by": "output content"},
+        {"text": "Names .sdd/adr/ as the destination for recording the migration decision", "checked_by": "output content"},
+        {"text": "Determines the refactor Case based on the spec's content/impl-status rather than on the presence/naming of a persistent design doc file", "checked_by": "output content / RUN_SUMMARY"},
+        {"text": "A refactor plan document/output is produced", "checked_by": "output content"}
+      ]
+    }
+  ]
+}

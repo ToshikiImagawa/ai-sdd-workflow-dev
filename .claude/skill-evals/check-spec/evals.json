@@ -1,0 +1,19 @@
+{
+  "skill_name": "check-spec",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-drift",
+      "prompt": ".sdd/specification/notification-badge.md の仕様と src/notification_badge.py の実装が一致しているか確認してください。ズレがあれば具体的に報告してください。",
+      "expected_output": "Spec-vs-implementation consistency report that correctly flags FR-003 (clear_badge) as unimplemented Critical/must, FR-002's 99+ capping as missing Critical/must, classifies undocumented increment_unread as Info/nits, and (new_skill) does not block on the absence of a persistent design doc.",
+      "files": [],
+      "assertions": [
+        {"text": "Detects that clear_badge() (FR-003) is unimplemented despite impl-status: implemented, and classifies it as Critical/must (regression)", "checked_by": "output content"},
+        {"text": "Detects that the 99+ capping behavior (FR-002) is missing from get_unread_badge_count, classified as Critical/must", "checked_by": "output content"},
+        {"text": "Reports increment_unread as implementation not documented in specs (Info/nits), not as a false-positive discrepancy", "checked_by": "output content"},
+        {"text": "(old_skill) Run is blocked, degraded, or produces no actionable result because the required *_design.md file is absent -- this is the specific defect #90 fixed", "checked_by": "output content / RUN_SUMMARY"},
+        {"text": "(new_skill) Run completes a full consistency check despite the absence of any design draft, treating its absence as normal", "checked_by": "output content / RUN_SUMMARY"}
+      ]
+    }
+  ]
+}

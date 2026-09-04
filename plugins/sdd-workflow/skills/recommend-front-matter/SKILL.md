@@ -1,6 +1,6 @@
 ---
 name: recommend-front-matter
-description: "Scan existing AI-SDD documents and recommend YAML front matter additions"
+description: "Scan existing AI-SDD documents (including ADR decision logs) and recommend YAML front matter additions"
 argument-hint: "[--apply]"
 license: MIT
 user-invocable: true
@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**), Edit(.sdd-confi
 
 # Recommend Front Matter - Add YAML Metadata to Existing Documents
 
-Scans existing AI-SDD documents (PRD, spec, design, task) and recommends adding YAML front matter for structured metadata.
+Scans existing AI-SDD documents (PRD, spec, design, task, ADR) and recommends adding YAML front matter for structured metadata.
 
 **Purpose**: Help users add front matter to existing documents created before front matter support was added.
 
@@ -26,6 +26,7 @@ Scans existing AI-SDD documents (PRD, spec, design, task) and recommends adding 
 - `references/front_matter_prd.md` - PRD front matter schema
 - `references/front_matter_spec_design.md` - Spec/Design front matter schema
 - `references/front_matter_task.md` - Task front matter schema
+- `references/front_matter_adr.md` - ADR (decision log) front matter schema
 - `references/front_matter_impl.md` - Implementation Log front matter schema
 
 ### Language Configuration

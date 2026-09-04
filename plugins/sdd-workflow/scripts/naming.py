@@ -97,6 +97,8 @@ def determine_type(
     if f"/{adr_dir}/" in filepath:
         return "adr"
     if f"/{task_dir}/" in filepath:
+        if basename == "design-draft":
+            return "design"
         if "implementation_log" in basename or "impl_log" in basename:
             return "implementation-log"
         return "task"

@@ -128,6 +128,48 @@ minor/patch release.
 - **`doc-consistency-checker`'s Obsolescence Detection now specifies how to record a reversal** - Propose
   appending a new decision log entry with `supersedes` set, and `superseded-by` on the obsolete entry,
   instead of leaving the follow-up action undefined
+- **`adr/{feature}.md` front matter now has a `ticket` field, and `task-cleanup` sets it** - Previously,
+  when a ticket's tracker (GitHub Issue / JIRA) was unreachable, `task-cleanup` skipped step 9 (posting a
+  completion summary) with no fallback, and deleting `task/{ticket-number}/` erased the only link between
+  the ticket number and the feature. The `adr` entry created in step 7 now records `ticket`, so the
+  association survives even when no tracker is reachable
+- **`run-checklist` can now actually run tests/linters/security scanners** - `allowed-tools` had no shell
+  access at all, so the skill's core function (executing verification commands) silently fell back to
+  guessing from static analysis. Added a scoped `scripts/run-verification.py` (detects the project's
+  toolchain and runs test/lint/typecheck/security commands, per `references/verification_commands.md`)
+  and pre-approved only that single script, consistent with this repo's "no bare `Bash`" convention
+- **`checklist`'s bundled template no longer contradicts its own SKILL.md** - The template used a
+  `P0`-`P3` priority scale and sequential `CHK001` IDs, while SKILL.md's Processing Flow and canonical
+  example (`examples/checklist_full_example.md`) define `P1`-`P3` and `CHK-{category}{seq}` IDs (e.g.
+  `CHK-501`). Rewrote both language templates to match, folded the template's extra "Project Principles
+  Review" category into Requirements Review (`CHK-104`/`CHK-105`) so the category count stays at the 9
+  categories `run-checklist`'s `CHK-1xx`-`CHK-9xx` mapping assumes, and fixed a leftover "P0 items"
+  reference (there is no P0) in the Export Formats section
+- **`vibe-detector`'s Escalation step no longer instructs an action it cannot perform** - Its
+  `disallowed-tools` blocks `Write`/`Edit`/`Bash` (a deliberate constraint — this skill fires automatically
+  before every prompt, so it must stay read-only), but the Escalation section told it to save
+  `assumed-spec.md` directly. It now drafts that document's content in its own output and instructs the
+  calling session (which holds normal write access) to save it
+- **`recommend-front-matter` now knows the ADR schema** - `scan-documents.py` already scans and classifies
+  `adr/` documents, but the skill's Prerequisites and `type_specific_fields.md` templates never defined
+  ADR's fields, so a front-matter-less decision log got an incomplete or invented recommendation. Added
+  `references/front_matter_adr.md` and an ADR entry in both language `type_specific_fields.md` templates
+- **`naming.py::determine_type()` no longer misclassifies `task/{ticket}/design-draft.md` as `type: "task"`**
+  - It special-cased `implementation_log`/`impl_log` filenames but had no branch for `design-draft.md`,
+    the canonical location for the new-era design draft, so callers like `recommend-front-matter` recommended
+    the wrong type-specific fields for it
+- **`constitution`'s "Update Constitution" version-bump table no longer contradicts its own "Add
+  Principle" flow** - One table said adding a principle is a MAJOR bump, while the dedicated `add` flow and
+  the "Semantic Versioning" table both said MINOR; aligned the outlier table to MINOR
+- **`sdd-init`'s "Configuration File Management" section no longer contradicts its own script** - It said
+  `init-structure.py` auto-creates `.sdd-config.json` with defaults when missing; the script actually
+  exits with an error (by design — the SessionStart hook owns default creation, so `sdd-init` doesn't
+  duplicate that responsibility). Corrected the prose to match the actual, intended behavior
+- **`front_matter_reference.md`'s ADR schema no longer contradicts its own Status Transition Rules** - The
+  field table listed a `draft`/`review`/`approved`/`deprecated` lifecycle for ADR's `status` field, while
+  the Status Transition Rules section says ADR doesn't follow that lifecycle at all. Corrected the field
+  table to reflect that ADR `status` is always `"approved"` at write time, with reversals tracked via
+  `superseded-by` instead
 
 ### Changed
 

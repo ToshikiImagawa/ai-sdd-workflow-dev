@@ -73,9 +73,10 @@ spec hasn't been formally reviewed yet). Neither field can be derived from the o
 |:-----------------|:-------------------------------------|:------------------------------------------------------------------------|
 | `id`             | `"adr-{name}"`                       | Hierarchical: `"adr-{parent}-{name}"`                                   |
 | `type`           | `"adr"`                              |                                                                          |
-| `status`         | `draft`, `review`, `approved`, `deprecated` |                                                                    |
+| `status`         | `"approved"`                          | ADR entries are recorded only after a decision is made, so this is always `"approved"` at write time — it never transitions through `draft`/`review`, and a reversed decision is marked via `superseded-by` (see "Status Transition Rules" below), not by rewriting `status` to `deprecated` |
 | `sdd-phase`      | `"implement"`                        | Always `"implement"`                                                    |
 | `depends-on`     | `["spec-*"]`                         | References the spec whose decisions this entry records                  |
+| `ticket`         | string                               | External ticket reference (e.g., `"TICKET-123"`) of the implementation that produced this entry. Optional, but set it when the source `task/{ticket-number}/` had no reachable issue tracker to record completion in — it is the only durable link from a ticket back to this feature once `task/` is deleted |
 | `supersedes`     | list of `"adr-*"`                    | IDs of prior entries this decision replaces. Omit if this is not a reversal |
 | `superseded-by`  | `"adr-*"`                            | ID of the entry that later replaced this decision. Absent while still current |
 

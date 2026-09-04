@@ -1,0 +1,18 @@
+{
+  "skill_name": "finalize-prd",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-amend",
+      "prompt": "既存PRDテキストに新規UR/FRを統合(--amend)、テキストのみ返す",
+      "expected_output": "Text-only merge of new UR/FR into existing PRD text via an explicit --amend integration path (finalize-prd is a text-only sub-skill: context: fork, disallowed-tools Write/Edit/Bash), preserving existing content byte-for-byte and adding sdd-version to front matter.",
+      "files": [],
+      "assertions": [
+        {"text": "Existing UR_001/FR_001 preserved byte-for-byte", "checked_by": "text diff"},
+        {"text": "New UR_002/FR_002 correctly inserted at the right location", "checked_by": "text content"},
+        {"text": "sdd-version field present in returned front matter", "checked_by": "text content"},
+        {"text": "An explicit --amend concept exists and was followed", "checked_by": "agent's own report"}
+      ]
+    }
+  ]
+}

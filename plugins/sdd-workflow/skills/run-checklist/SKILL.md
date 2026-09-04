@@ -6,7 +6,7 @@ arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
 model: haiku
-allowed-tools: Read, Glob, Grep, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet
+allowed-tools: Read, Glob, Grep, Edit(.sdd/**), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" *), TaskCreate, TaskUpdate, TaskList, TaskGet
 ---
 
 # Run Checklist - Automated Quality Verification
@@ -83,21 +83,35 @@ Detect project type and available tools:
 
 ### 3. Execute Automated Verifications
 
-Read `references/verification_commands.md` for the verification command mapping table.
+Read `references/verification_commands.md` for the full command mapping table (which project-type detection files
+map to which test/lint/typecheck/security commands). This skill's `allowed-tools` only pre-approves a single
+scoped script — `scripts/run-verification.py` — rather than bare `Bash`, so run verifications through it instead
+of invoking test/lint/security commands directly:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" test
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" lint
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" typecheck
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" security
+```
+
+Run it from the project root. It detects the project's toolchain (per `references/verification_commands.md`'s
+detection priority) and returns a JSON result (`PASS`/`FAIL`/`SKIPPED`/`TOOL_NOT_FOUND`/`TIMEOUT`) on stdout —
+read that JSON to determine the checklist item's outcome; do not treat a `SKIPPED` result as a failure.
 
 #### Verification Categories
 
-| Category (CHK-xxx)         | Auto-Verifiable | Verification Method                        |
-|:---------------------------|:----------------|:-------------------------------------------|
-| Requirements (1xx)         | Partial         | `/check-spec` for spec consistency         |
-| Specification (2xx)        | Partial         | Type checking, API signature validation    |
-| Design (3xx)               | Partial         | Dependency analysis, architecture checks   |
-| Implementation (4xx)       | Yes             | Linter, static analysis                    |
-| Testing (5xx)              | Yes             | Test execution, coverage measurement       |
-| Documentation (6xx)        | Partial         | Doc coverage tools                         |
-| Security (7xx)             | Yes             | Security scanners, audit commands          |
-| Performance (8xx)          | Partial         | Benchmark tools (if configured)            |
-| Deployment (9xx)           | Partial         | Config validation                          |
+| Category (CHK-xxx)         | Auto-Verifiable | Verification Method                                            |
+|:---------------------------|:----------------|:-----------------------------------------------------------------|
+| Requirements (1xx)         | Partial         | `/check-spec` for spec consistency                              |
+| Specification (2xx)        | Partial         | `run-verification.py typecheck`, API signature validation       |
+| Design (3xx)               | Partial         | Dependency analysis, architecture checks                        |
+| Implementation (4xx)       | Yes             | `run-verification.py lint`                                      |
+| Testing (5xx)              | Yes             | `run-verification.py test`                                      |
+| Documentation (6xx)        | Partial         | Doc coverage tools                                               |
+| Security (7xx)             | Yes             | `run-verification.py security`                                  |
+| Performance (8xx)          | Partial         | Benchmark tools (if configured)                                  |
+| Deployment (9xx)           | Partial         | Config validation                                                |
 
 ### 4. Record Results
 

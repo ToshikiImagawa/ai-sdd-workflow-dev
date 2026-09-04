@@ -126,6 +126,47 @@
 - **`doc-consistency-checker` の Obsolescence Detection に、決定の覆しを記録する方法を明記** -
   未定義だった追跡対応を、新しい決定ログエントリに `supersedes` を設定し、陳腐化したエントリに
   `superseded-by` を設定するという手順に置き換えた
+- **`adr/{feature}.md` の front matter に `ticket` フィールドを追加し、`task-cleanup` がこれを設定
+  するようにした** - チケットのトラッカー（GitHub Issue / JIRA）に到達できない場合、`task-cleanup`
+  はステップ9（完了サマリの投稿）を代替手段なしにスキップしており、`task/{ticket-number}/` を削除する
+  とチケット番号と機能の唯一の対応関係が失われていた。ステップ7で作成する `adr` エントリが `ticket`
+  を記録するようになったため、トラッカーに到達できない場合でも対応関係が保持される
+- **`run-checklist` が実際にテスト・リンタ・セキュリティスキャナを実行できるようになった** -
+  `allowed-tools` にシェル実行権限が一切無く、スキルの核心機能（検証コマンドの実行）が静的解析による
+  推測に黙って後退していた。プロジェクトのツールチェーンを検出しテスト/リンタ/型検査/セキュリティ
+  コマンドを実行する `scripts/run-verification.py`（`references/verification_commands.md` のマッピングを
+  実装）を新設し、このリポジトリの「ベアな`Bash`は使わない」規約に沿ってこのスクリプトのみを事前承認した
+- **`checklist` のテンプレートが自身のSKILL.mdと矛盾しなくなった** - テンプレートは `P0`〜`P3` の優先度と
+  `CHK001` 通し番号を使っていたが、SKILL.md本文のProcessing Flowと正準例
+  （`examples/checklist_full_example.md`）は `P1`〜`P3` と `CHK-{カテゴリ}{連番}`（例: `CHK-501`）を
+  定義していた。両言語のテンプレートを正準の形式に書き換え、テンプレートにのみ存在した「10.
+  プロジェクト原則レビュー」カテゴリを要求レビュー内（`CHK-104`/`CHK-105`）に統合して
+  `run-checklist` の `CHK-1xx`〜`CHK-9xx` マッピングが前提とする9カテゴリ構成を維持し、Export
+  Formats節に残っていた（存在しない）「P0 items」という記述も修正した
+- **`vibe-detector` のEscalation手順が、実行できない操作を指示しなくなった** - `disallowed-tools` は
+  `Write`/`Edit`/`Bash` を意図的に禁止している（全プロンプトで自動発火するため読み取り専用を維持する
+  設計）が、Escalation節は `assumed-spec.md` への直接保存を指示していた。今後は推定仕様の内容を自身の
+  出力に含め、呼び出し元セッション（通常の書き込み権限を持つ）に保存を委ねる
+- **`recommend-front-matter` がADRのスキーマを認識するようになった** - `scan-documents.py` は既に
+  `adr/` を走査・分類していたが、スキルのPrerequisitesと `type_specific_fields.md` テンプレートには
+  ADRのフィールド定義が一切無く、front matterが無い決定ログへの推奨が不完全または創作的になっていた。
+  `references/front_matter_adr.md` を新設し、両言語の `type_specific_fields.md` にADRの項目を追加した
+- **`naming.py::determine_type()` が `task/{ticket}/design-draft.md` を `type: "task"` に誤分類
+  しなくなった** - `implementation_log`/`impl_log` というファイル名は特別扱いしていたが、新世代の
+  設計ドラフトの正規配置場所である `design-draft.md` の分岐が無く、`recommend-front-matter` 等の
+  呼び出し元が誤ったtype別フィールドを推奨していた
+- **`constitution` の「Update Constitution」バージョンバンプ表が、自身の「Add Principle」手順と
+  矛盾しなくなった** - 一方の表は原則追加をMAJORバンプとしていたが、専用の`add`手順と
+  「Semantic Versioning」表はいずれもMINORとしていた。矛盾していた表をMINORに統一した
+- **`sdd-init` の「Configuration File Management」節が、自身のスクリプトと矛盾しなくなった** -
+  `init-structure.py` が `.sdd-config.json` 不在時にデフォルト値で自動生成すると記述していたが、
+  実際のスクリプトはエラー終了する（意図的な設計 — デフォルト生成の責務はSessionStartフックが持ち、
+  `sdd-init`側では重複させない）。記述を実際の意図された挙動に修正した
+- **`front_matter_reference.md` のADRスキーマが、自身のStatus Transition Rulesと矛盾しなくなった** -
+  フィールド表はADRの`status`に `draft`/`review`/`approved`/`deprecated` のライフサイクルを列挙して
+  いたが、Status Transition Rules節は「ADRはそのライフサイクルに従わない」と明記していた。ADRの
+  `status` は記録時点で常に`"approved"`であり、決定の覆しは`superseded-by`で追跡する、という記述に
+  修正した
 
 ### Changed
 
