@@ -39,7 +39,6 @@ It addresses the following issues in traditional development:
 | **AI Guardrails**                | Provide **high-abstraction specifications** as guardrails to AI, eliminating ambiguity |
 | **Design Decision Transparency** | Clarify the **"why"** that code alone cannot convey through specifications             |
 | **Knowledge Asset Persistence**  | Prevent documentation bloat and maintain only the latest design intent persistently    |
-| **PRD Non-Automation**           | **Never auto-update** the PRD from downstream changes; contradictions are reported and resolved by a human, not silently reconciled |
 
 ## Four Structured Phases
 
@@ -49,12 +48,12 @@ AI-SDD transforms ad-hoc development into these four phases:
 Specify → Plan → Tasks → Implement & Review
 ```
 
-| Phase                  | Purpose                                                                                     | Deliverables                             |
-|:-----------------------|:----------------------------------------------------------------------------------------------|:------------------------------------------|
-| **Specify**            | Clarify "what to build" and "why to build it." **Exclude technical details**                  | PRD, `*_spec.md`                          |
-| **Plan**               | Consider "how to implement." Architecture design and technology selection                     | `task/{ticket-number}/design-draft.md` (temporary draft) |
-| **Tasks**              | Break down design into independently testable small tasks                                    | Under `task/`                             |
-| **Implement & Review** | AI executes each task, continuously verifying specification compliance, and records the rationale behind key decisions | Source code, `adr/{feature}.md` |
+| Phase                  | Purpose                                                                      | Deliverables     |
+|:-----------------------|:-----------------------------------------------------------------------------|:-----------------|
+| **Specify**            | Clarify "what to build" and "why to build it." **Exclude technical details** | PRD, `*_spec.md` |
+| **Plan**               | Consider "how to implement." Architecture design and technology selection    | `*_design.md`    |
+| **Tasks**              | Break down design into independently testable small tasks                    | Under `task/`    |
+| **Implement & Review** | AI executes each task, continuously verifying specification compliance       | Source code      |
 
 ## Project Configuration File
 
@@ -70,7 +69,6 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
-    "adr": "adr",
     "task": "task"
   }
 }
@@ -82,9 +80,8 @@ AI-SDD workflow supports customizing directory names via a `.sdd-config.json` fi
 |:----------------------------|:----------------|:-------------------------------------------------|
 | `root`                      | `.sdd`          | Root directory                                   |
 | `directories.requirement`   | `requirement`   | PRD/Requirements specification directory         |
-| `directories.specification` | `specification` | Abstract specification directory                 |
-| `directories.adr`           | `adr`           | Architecture Decision Record (decision log) directory |
-| `directories.task`          | `task`          | Task log/temporary work log directory (includes Design Doc drafts) |
+| `directories.specification` | `specification` | Abstract specification/design document directory |
+| `directories.task`          | `task`          | Task log/temporary work log directory            |
 
 ### ID Convention Configuration (Optional)
 
@@ -145,11 +142,9 @@ At session start, the `session-start` hook reads `.sdd-config.json` and sets the
 | `SDD_ROOT`               | `.sdd`               | Root directory               |
 | `SDD_REQUIREMENT_DIR`    | `requirement`        | Requirements directory name  |
 | `SDD_SPECIFICATION_DIR`  | `specification`      | Specification directory name |
-| `SDD_ADR_DIR`            | `adr`                | Decision log (ADR) directory name |
 | `SDD_TASK_DIR`           | `task`               | Task log directory name      |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | Requirements full path       |
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification full path      |
-| `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (ADR) full path |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log full path           |
 
 **Path Resolution Priority:**
@@ -168,7 +163,6 @@ Agents, commands, and skills use these environment variables when referencing do
   "directories": {
     "requirement": "requirements",
     "specification": "specs",
-    "adr": "decisions",
     "task": "wip"
   }
 }
@@ -180,7 +174,6 @@ With this configuration, the directory structure becomes:
 docs/
 ├── requirements/          # PRD (Requirements Specification)
 ├── specs/                 # Specifications and Design Documents
-├── decisions/             # Persistent decision log (ADR)
 └── wip/                   # Temporary task logs
 ```
 
@@ -199,13 +192,11 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 ├── DESIGN_DOC_TEMPLATE.md        # Technical design document template
 ├── requirement/          # PRD (Requirements Specification) - SysML requirements diagram format
 │   └── {feature-name}.md         # High-level requirements, business value
-├── specification/
-│   └── {feature-name}_spec.md    # Abstract specification (SysML model) - persistent
-├── adr/                           # Persistent decision log
-│   └── {feature-name}.md         # Decisions and rationale (append-only)
+├── specification/                # Persistent knowledge assets
+│   ├── {feature-name}_spec.md    # Abstract specification (SysML model)
+│   └── {feature-name}_design.md  # Technical design document (Design Doc)
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
-        ├── design-draft.md       # Technical design draft (Design Doc), deleted after implementation
         └── xxx.md
 ```
 
@@ -221,44 +212,28 @@ Both flat and hierarchical structures are supported. Choose based on project sca
 │   └── {parent-feature}/         # Parent feature directory
 │       ├── index.md              # Parent feature overview and requirements list
 │       └── {child-feature}.md    # Child feature requirements
-├── specification/
+├── specification/                # Persistent knowledge assets
 │   ├── {feature-name}_spec.md    # Top-level feature (backward compatible with flat structure)
+│   ├── {feature-name}_design.md
 │   └── {parent-feature}/         # Parent feature directory
 │       ├── index_spec.md         # Parent feature abstract specification
-│       └── {child-feature}_spec.md   # Child feature abstract specification
-├── adr/                           # Persistent decision log
-│   ├── {feature-name}.md         # Top-level feature (backward compatible with flat structure)
-│   └── {parent-feature}/         # Parent feature directory
-│       ├── index.md              # Parent feature decision log
-│       └── {child-feature}.md    # Child feature decision log
+│       ├── index_design.md       # Parent feature technical design document
+│       ├── {child-feature}_spec.md   # Child feature abstract specification
+│       └── {child-feature}_design.md # Child feature technical design document
 └── task/                         # Temporary task logs (deleted after implementation)
     └── {ticket-number}/
-        ├── design-draft.md       # Technical design draft (Design Doc), deleted after implementation
         └── xxx.md
 ```
 
 ### File Naming Convention (Important)
 
-**⚠️ `requirement/` forbids a `_spec`/`_design` suffix; it must stay distinguishable from `specification/` by
-name alone. `specification/` and `adr/` are single-type directories, so their suffix is optional.**
+**⚠️ Suffix requirements differ between requirement and specification directories. Do not confuse them.**
 
-| Directory         | File Type     | Naming Pattern                                                              | Examples                                                  |
-|:------------------|:--------------|:-------------------------------------------------------------------------------|:-------------------------------------------------------------|
-| **requirement**   | All files     | `{name}.md` (no suffix — required)                                            | `user-login.md`, `index.md`                                  |
-| **specification** | Abstract spec | `{name}.md` or `{name}_spec.md` (`_spec` suffix optional)                     | `user-login.md`, `user-login_spec.md`, `index_spec.md`        |
-| **task**          | Design draft  | `design-draft.md` (fixed filename, ticket-scoped, **temporary**)              | `task/68/design-draft.md`                                    |
-| **adr**           | Decision log  | `{name}.md` or `{name}-decisions.md` (`-decisions` suffix optional, append-only) | `user-login.md`, `user-login-decisions.md`, `index-decisions.md` |
-
-`specification/` and `adr/` are each a **single-type directory** — every file under `specification/` is an
-abstract spec, every file under `adr/` is a decision log — so the directory alone identifies document type and
-a suffix is no longer required (unlike `requirement/`, which forbids one so it stays distinguishable from
-`specification/` by name alone). Existing suffixed files (`_spec.md`, `-decisions.md`) remain valid; new files
-may use either form.
-
-**Tracking which AI-SDD generation produced a document**: inferring generation from suffix presence was
-considered and rejected — file naming should encode document type, not generation history. Instead, documents
-record the sdd-workflow plugin version at generation time in the `sdd-version` front matter field (see
-`front_matter_reference.md`). A document without this field predates its introduction.
+| Directory         | File Type     | Naming Pattern                                 | Examples                                  |
+|:------------------|:--------------|:-----------------------------------------------|:------------------------------------------|
+| **requirement**   | All files     | `{name}.md` (no suffix)                        | `user-login.md`, `index.md`               |
+| **specification** | Abstract spec | `{name}_spec.md` (`_spec` suffix required)     | `user-login_spec.md`, `index_spec.md`     |
+| **specification** | Design doc    | `{name}_design.md` (`_design` suffix required) | `user-login_design.md`, `index_design.md` |
 
 #### Naming Pattern Quick Reference
 
@@ -266,15 +241,15 @@ record the sdd-workflow plugin version at generation time in the `sdd-version` f
 # ✅ Correct naming
 requirement/auth/index.md              # Parent feature overview (no suffix)
 requirement/auth/user-login.md         # Child feature requirements (no suffix)
-specification/auth/index_spec.md       # Parent feature abstract spec (_spec optional, still valid)
-specification/auth/user-login.md       # Child feature abstract spec (no suffix, also valid)
-task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
-adr/auth/index-decisions.md            # Parent feature decision log (-decisions optional, still valid)
-adr/auth/user-login.md                 # Child feature decision log (no suffix, also valid)
+specification/auth/index_spec.md       # Parent feature abstract spec (_spec required)
+specification/auth/index_design.md     # Parent feature design doc (_design required)
+specification/auth/user-login_spec.md  # Child feature abstract spec (_spec required)
+specification/auth/user-login_design.md # Child feature design doc (_design required)
 
 # ❌ Incorrect naming (never use these)
-requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix
-specification/auth/index_design.md     # design docs no longer live under specification/ (use task/{ticket}/design-draft.md)
+requirement/auth/index_spec.md         # requirement does not need _spec
+specification/auth/user-login.md       # specification requires _spec or _design
+specification/auth/index.md            # specification requires _spec or _design
 ```
 
 ### Document Link Convention
@@ -302,36 +277,35 @@ This convention makes it visually easy to distinguish whether the link target is
 - `requirement/auth/index.md` → Auth domain overview and requirements list
 - `requirement/auth/user-login.md` → User login requirements under auth domain
 - `specification/auth/index_spec.md` → Auth domain abstract specification
+- `specification/auth/index_design.md` → Auth domain technical design document
 - `specification/auth/user-login_spec.md` → User login specification under auth domain
-- `task/68/design-draft.md` → Technical design draft for ticket #68 (temporary, ticket-scoped rather than feature-scoped)
-- `adr/auth/index.md` → Auth domain decision log (persistent)
-- `adr/payment/checkout.md` → Checkout decision log under payment domain (persistent)
+- `specification/payment/checkout_design.md` → Checkout design under payment domain
 
 ### Document Persistence Rules
 
-| Path                                   | Persistence    | Management Rules                                                                                                                     |
-|:-----------------------------------------|:---------------|:----------------------------------------------------------------------------------------------------------------------------------|
-| `requirement/`                          | **Persistent** | Define high-level requirements (business requirements). Foundation for SysML requirements diagrams                                  |
-| `specification/*_spec.md`               | **Persistent** | Define the **abstract structure and behavior** of the system. No technical details                                                  |
-| `task/` (including `{ticket-number}/design-draft.md`, the draft technical plan) | **Temporary**  | **Delete** after implementation complete. Integrate important decisions and their rationale into `adr/{feature}.md` before deletion |
-| `adr/{feature}.md`            | **Persistent** | **Append-only** log of decisions and their rationale (including rejected alternatives). Never rewrite past entries — append new decisions as they are made |
+| Path                        | Persistence    | Management Rules                                                                                                  |
+|:----------------------------|:---------------|:------------------------------------------------------------------------------------------------------------------|
+| `requirement/`              | **Persistent** | Define high-level requirements (business requirements). Foundation for SysML requirements diagrams                |
+| `specification/*_spec.md`   | **Persistent** | Define the **abstract structure and behavior** of the system. No technical details                                |
+| `specification/*_design.md` | **Persistent** | Describe **specific technical design**, architecture, and rationale for technology selection                      |
+| `task/`                     | **Temporary**  | **Delete** after implementation complete. Integrate important design decisions into `*_design.md` before deletion |
 
 ### Document Dependencies
 
 ```mermaid
 graph RL
-    IMPL[Implementation] --> TASK["task/<br/>(Task Logs + Design Draft)"]
-    TASK --> SPEC["*_spec.md<br/>(Abstract Spec)"]
+    IMPL[Implementation] --> TASK["task/<br/>(Task Logs)"]
+    TASK --> DESIGN["*_design.md<br/>(Technical Design)"]
+    DESIGN --> SPEC["*_spec.md<br/>(Abstract Spec)"]
     SPEC --> PRD["requirement/<br/>(PRD/Requirements)"]
     PRD --> CONST["CONSTITUTION.md<br/>(Project Constitution)"]
-    ADR["adr/<br/>(Decision Log, Persistent)"] --> TASK
 ```
 
 **Meaning of Dependency Direction**:
 
-- `Implementation` is created based on `task/` task logs, including the `design-draft.md` produced during the Plan phase
-- `task/design-draft.md` is created referencing `*_spec.md` (concretizing abstract "what"). It is a **temporary draft**, discarded after implementation
-- `adr/` is created by extracting the decision rationale from `task/design-draft.md` before it is deleted, and persists as an append-only log
+- `Implementation` is created based on `task/` task logs
+- `task/` references `*_design.md` for task breakdown
+- `*_design.md` is created referencing `*_spec.md` (concretizing abstract "what")
 - `*_spec.md` is created referencing `requirement` (converting business requirements to technical specifications)
 - `requirement` is created following `CONSTITUTION.md` principles (non-negotiable project principles)
 
@@ -364,17 +338,16 @@ graph RL
 **Recommended Sections**: Requirements Definition, Use Cases
 **Optional Sections**: Type Definitions, Glossary, Behavior Diagrams, Constraints
 
-### 3. Technical Design Document (`task/{ticket-number}/design-draft.md`)
+### 3. Technical Design Document (`*_design.md`)
 
-**Abstraction Level: Medium to Low** | **Focus: How to implement** | **Persistence: Temporary**
+**Abstraction Level: Medium to Low** | **Focus: How to implement**
 
 | Item                  | Details                                                                                           |
 |:----------------------|:--------------------------------------------------------------------------------------------------|
 | **Purpose**           | Translate abstract specifications into **concrete technical plans**                               |
 | **Content**           | Technology stack selection, architecture design, module breakdown, rationale for design decisions |
 | **Technical Details** | **Included** (specific technology selection and implementation approach)                          |
-| **Lifecycle**         | **Delete** after implementation complete. Integrate the rationale behind key decisions into `adr/{feature}.md` before deletion |
-| **Role**              | A **working draft** used during planning; superseded by `adr/` once implementation completes                                            |
+| **Role**              | Ensure **design decision transparency**, enabling future developers to understand design intent   |
 
 **Required Sections**: Implementation Status, Design Goals, Technology Stack, Architecture, Design Decisions
 **Optional Sections**: Data Models, Interface Definitions, Testing Strategy, Change History
@@ -383,25 +356,12 @@ graph RL
 
 **Persistence: Temporary** | **Focus: Task breakdown and execution logs**
 
-| Item          | Details                                                                                                |
-|:--------------|:---------------------------------------------------------------------------------------------------------|
-| **Purpose**   | **Temporary work records** for implementation                                                            |
-| **Content**   | Task lists, investigation logs, implementation schedules, test case details                              |
-| **Lifecycle** | **Delete** after implementation complete. Integrate important design decisions into `adr/{feature}.md` |
-| **Role**      | **Prevent documentation noise**                                                                          |
-
-### 5. Architecture Decision Record (`adr/{feature}.md`)
-
-**Persistence: Persistent (append-only)** | **Focus: Why this decision was made**
-
-| Item                  | Details                                                                                                       |
-|:----------------------|:-----------------------------------------------------------------------------------------------------------------|
-| **Purpose**           | Preserve the **rationale** behind key design and implementation decisions after `task/{ticket-number}/design-draft.md` is discarded |
-| **Content**           | Decision, reasoning, rejected alternatives, and the date/context of the decision                                 |
-| **Technical Details** | Only the decisions that matter for future readers — not a full design plan                                       |
-| **Front Matter**      | `type: "adr"` (full schema: see `front_matter_reference.md`)                                                      |
-| **Lifecycle**         | One file per feature (`{feature-name}.md`), append-only. Append a new entry whenever a decision is finalized; existing entries are never rewritten |
-| **Role**              | Ensures **design decision transparency** survives after the temporary design draft is deleted                    |
+| Item          | Details                                                                                           |
+|:--------------|:--------------------------------------------------------------------------------------------------|
+| **Purpose**   | **Temporary work records** for implementation                                                     |
+| **Content**   | Task lists, investigation logs, implementation schedules, test case details                       |
+| **Lifecycle** | **Delete** after implementation complete. Integrate important design decisions into `*_design.md` |
+| **Role**      | **Prevent documentation noise**                                                                   |
 
 ## Related Agents
 
@@ -412,7 +372,7 @@ The AI-SDD workflow provides specialized review agents for each document type.
 | Agent | Target Documents | Role |
 |:--|:--|:--|
 | `prd-reviewer` | PRD (`requirement/`) | PRD quality review and CONSTITUTION.md compliance check |
-| `spec-reviewer` | `*_spec.md`, `task/{ticket-number}/design-draft.md` | Specification/design quality review and CONSTITUTION.md compliance check |
+| `spec-reviewer` | `*_spec.md`, `*_design.md` | Specification/design quality review and CONSTITUTION.md compliance check |
 
 ### Importance of CONSTITUTION.md Compliance Check
 
@@ -509,71 +469,39 @@ Even when user refuses specification creation, ensure minimum guardrails:
 
 Determine required phases and documents based on task nature:
 
-| Task Type               | Required Phases                    | Deliverables                                       |
-|:------------------------|:-----------------------------------|:-----------------------------------------------------|
-| New Feature (Large)     | Specify → Plan → Tasks → Implement | PRD → spec → design (temporary) → task → adr         |
-| New Feature (Small)     | Specify → Plan → Tasks → Implement | spec → design (temporary) → task → adr               |
-| Bug Fix                 | Tasks → Implement                  | task (investigation log) → adr (if a notable decision was made) |
-| Refactoring             | Plan → Tasks → Implement           | design (change plan, temporary) → task → adr         |
-| Breaking Change         | Specify → Plan → Tasks → Implement | PRD update proposal → spec → design (temporary) → task → adr |
-| Technical Investigation | Tasks                              | task (investigation results) only                    |
+| Task Type               | Required Phases                    | Deliverables                      |
+|:------------------------|:-----------------------------------|:----------------------------------|
+| New Feature (Large)     | Specify → Plan → Tasks → Implement | PRD → spec → design → task        |
+| New Feature (Small)     | Specify → Plan → Tasks → Implement | spec → design → task              |
+| Bug Fix                 | Tasks → Implement                  | task (investigation log) only     |
+| Refactoring             | Plan → Tasks → Implement           | design (change plan) → task       |
+| Technical Investigation | Tasks                              | task (investigation results) only |
 
 **Task Scale Criteria**:
 
-| Scale            | Criteria                                                                             |
-|:-----------------|:-------------------------------------------------------------------------------------|
-| Large            | New business domain, changes spanning multiple features, external system integration |
-| Small            | Feature additions within existing features, changes contained to single module       |
-| Bug Fix          | Correcting deviations from existing specifications (no spec changes)                 |
-| Breaking Change  | Removes or changes existing public API/behavior so that existing consumers must adapt (signature/return-value/behavior changes, removed features, incompatible config/schema changes) |
-
-### Breaking Change Handling
-
-A Breaking Change alters the public contract a `*_spec.md` describes, so — unlike Refactoring, which by
-definition preserves behavior — it always starts at Specify (see Task Type Determination above).
-
-**1. Impact Analysis**
-
-Before proposing the change, identify what it affects:
-
-- The current `*_spec.md` (public API, data model, behavior) for the contract being changed
-- `adr/{feature}.md` for prior decisions the change would reverse or build on
-- Call sites/consumers in the implementation that rely on the behavior being changed
-
-**2. Backward Compatibility Decision**
-
-Choose one of the following and record the choice and its rationale (see step 3):
-
-| Decision            | Meaning                                                                              |
-|:--------------------|:--------------------------------------------------------------------------------------|
-| Maintain            | Keep the old behavior available (e.g., overload, feature flag, versioned interface)  |
-| Phase out gradually | Deprecate the old behavior with a transition period before removal                   |
-| Cut immediately     | Remove the old behavior in this change; consumers must migrate before merge          |
-
-**3. Migration Record**
-
-Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}.md`
-(see `front_matter_reference.md` for the `adr` schema). If the change reverses a prior decision, set
-`supersedes` on the new entry and `superseded-by` on the entry it replaces, per the ADR supersede convention
-in "Architecture Decision Record" above; never rewrite the superseded entry's text.
+| Scale   | Criteria                                                                             |
+|:--------|:-------------------------------------------------------------------------------------|
+| Large   | New business domain, changes spanning multiple features, external system integration |
+| Small   | Feature additions within existing features, changes contained to single module       |
+| Bug Fix | Correcting deviations from existing specifications (no spec changes)                 |
 
 ### Knowledge Asset Persistence Management
 
-Manage lifecycle of files under `task/` (temporary), including the Design Doc draft `task/{ticket-number}/design-draft.md`:
+Manage lifecycle of files under `task/`:
 
 **Flow at Implementation Completion**:
 
 ```
-1. Review contents under task/, including design-draft.md
+1. Review contents under task/
    ↓
-2. Integrate important decisions and their rationale into adr/{feature}.md (append-only)
+2. Integrate important design decisions into *_design.md
    ↓
-3. Delete files under task/ (including design-draft.md)
+3. Delete files under task/
    ↓
 4. Commit
 ```
 
-**Content to Integrate (into `adr/{feature}.md`)**:
+**Content to Integrate**:
 
 - Design decisions and their rationale
 - Alternative evaluation results
@@ -593,9 +521,7 @@ Verify consistency between documents:
 |:----------------------------|:-------------------------------------------------------------------------------------------|
 | **PRD ↔ spec**              | Requirement ID to spec mapping, functional requirement coverage                            |
 | **spec ↔ design**           | API definition match, requirement reflection in design decisions, constraint consideration |
-| **design ↔ adr**            | Decision rationale is captured in `adr/{feature}.md` before `task/{ticket-number}/design-draft.md` is deleted |
-| **spec ↔ Implementation**   | Public API match, data model match, behavior match per requirement ID, literal value match. **The persistent implementation check** — the spec outlives the design draft, so this is the baseline whenever no draft exists |
-| **design ↔ Implementation** | Module structure match, interface definition match. **Only valid while `task/{ticket-number}/design-draft.md` exists** (i.e. during implementation); the draft is deleted afterwards, so this check no longer applies |
+| **design ↔ Implementation** | Module structure match, interface definition match                                         |
 
 **Check Execution Timing**:
 
@@ -603,30 +529,12 @@ Verify consistency between documents:
 |:--------------------------|:------------------------------------|:-------------------------------------|
 | Task Start                | Verify existing document existence  | If missing, go to Specify phase      |
 | Plan Completion           | spec ↔ design consistency           | If inconsistent, modify design       |
-| Implementation Completion | spec ↔ implementation consistency (plus design ↔ implementation while the draft exists) | If inconsistent, update the spec; then integrate decisions into `adr/` before deleting the draft |
-| After Implementation      | spec ↔ implementation consistency   | The design draft is gone; compare the implementation against the spec |
+| Implementation Completion | design ↔ implementation consistency | If inconsistent, update design       |
 | Review                    | All inter-document consistency      | Resolve inconsistencies before merge |
 
 ### Document Update Triggers
 
 Criteria for when to update each document:
-
-**Updating `requirement/` (PRD) — Never Automated**:
-
-- The PRD records **human business decisions**. No skill or agent may rewrite `requirement/**` content by
-  inferring it backward from spec, design, or implementation changes, regardless of Edit access to `.sdd/**`
-- When a downstream change (spec/design/implementation) contradicts a PRD requirement, or introduces behavior
-  no PRD requirement covers, report the contradiction instead of editing the PRD
-- Present the conflicting change and the affected PRD requirement, and let a human decide: update the PRD,
-  revert the downstream change, or accept it as an intentional scope change
-- Applies to every skill/agent with `.sdd/**` Edit access (e.g. `generate-prd`, `clarify`, `plan-refactor`),
-  not only to consistency-check tooling
-- **"Never Automated" governs rewriting an existing PRD, not drafting a new one.** When `spec`/`design`/
-  implementation exist but `requirement/` has no corresponding file at all, an agent may draft a **new** PRD
-  from scratch — this is a distinct action from inferring changes backward into an existing PRD's content.
-  A drafted PRD must use `status: "draft"` and include `"reverse-engineered"` in `tags` (the same convention
-  as a reverse-engineered spec — see `plan-refactor`'s Case B), and must never be treated as an approved
-  requirement source until a human reviews it and changes its `status`
 
 **When to Update `*_spec.md`**:
 
@@ -635,17 +543,12 @@ Criteria for when to update each document:
 - Fundamental changes to existing behavior
 - When new requirements added in requirements diagram
 
-**When to Update `task/{ticket-number}/design-draft.md`**:
+**When to Update `*_design.md`**:
 
 - Technology stack changes (library additions/changes)
 - Important architectural decisions
 - Module structure changes
 - New design pattern introductions
-
-**When to Append to `adr/{feature}.md`**:
-
-- Whenever one of the `design-draft.md` triggers above is finalized at implementation completion
-- When rejecting an alternative approach worth recording for future readers
 
 **When Updates Are NOT Needed**:
 
