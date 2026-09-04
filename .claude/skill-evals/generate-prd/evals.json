@@ -1,20 +1,38 @@
 {
   "skill_name": "generate-prd",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
   "evals": [
     {
       "id": 0,
       "eval_name": "notification-badge-amend",
       "prompt": "既存の .sdd/requirement/notification.md に、未読メッセージ数をバッジ表示する新要求を追加(--amend)",
-      "expected_output": "PRD amend that inserts new UR/FR into .sdd/requirement/notification.md while preserving existing UR_001/FR_001 and front matter (except updated/sdd-version), continuing the ID sequence, following an explicit --amend mode, and stamping sdd-version.",
+      "expected_output": "The existing requirements preserved unchanged, with new requirements appended: IDs continuing the existing sequence without collision or gaps, attributes (Priority/Risk/Verification) consistent with existing entries, and new FRs traceable to a UR.",
       "files": [
-        "sandboxes/generate-prd-base/.sdd/requirement/notification.md (fixture: id=\"prd-notification\", status=\"approved\", UR_001/FR_001)"
+        "Fixture is an existing, already-approved PRD holding UR_001 / FR_001, so the run is an append (--amend) against real prior content rather than a from-scratch generation. Built per era by build_fixtures.py."
       ],
       "assertions": [
-        {"text": "Existing UR_001/FR_001 content is preserved unchanged", "checked_by": "file diff"},
-        {"text": "Existing front matter fields (status, priority, risk, tags) are left unchanged except updated/sdd-version", "checked_by": "file diff"},
-        {"text": "New requirements (badge display) are correctly added with continuing IDs", "checked_by": "file content"},
-        {"text": "sdd-version field is present in front matter", "checked_by": "file content"},
-        {"text": "An explicit --amend concept/mode exists and was followed (not an ad-hoc judgment call)", "checked_by": "agent's own report"}
+        {
+          "text": "既存の要求が変更されずに保持されている（非破壊的追記）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の ID が既存の連番を正しく継続している（衝突・欠番なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の属性（Priority / Risk / Verification）が既存要求と整合的に付与されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規 FR が UR に遡れる（トレーサビリティ維持）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全体再生成ではなく追記操作として実施されており、既存記述が失われていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
       ]
     }
   ]

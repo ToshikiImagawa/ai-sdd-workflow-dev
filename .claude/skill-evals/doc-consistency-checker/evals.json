@@ -1,19 +1,38 @@
 {
   "skill_name": "doc-consistency-checker",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
   "evals": [
     {
       "id": 0,
       "eval_name": "notification-badge-stale-adr",
       "prompt": "notification-badge 関連ドキュメント(PRD/spec/adr)の整合性をチェックしてください。",
-      "expected_output": "Checks decision consistency between the spec and .sdd/adr/notification-badge.md (not a *_design.md), flags the spec's stale sdd-version in the formal report, and produces substantive (non-fabricated) findings.",
+      "expected_output": "A severity-classified report of the real PRD-to-spec gaps and of the contradiction between the spec and the recorded design decisions, with no invented findings and no proposal to auto-rewrite the PRD from downstream.",
       "files": [
-        "sandboxes/doc-consistency-checker-base/.sdd/specification/notification-badge.md (fixture: sdd-version deliberately set to \"3.0.0\", behind the current 4.x major)",
-        "sandboxes/doc-consistency-checker-base/.sdd/adr/notification-badge.md (fixture: ADR with a deliberate dict[str, user_id, int] type-annotation typo)"
+        "Fixture carries two deliberate, era-independent defects for the checker to find: the spec's Public API omits `increment_unread` (present in the code), and a type annotation inside the recorded design decisions contradicts the code. Built per era by build_fixtures.py."
       ],
       "assertions": [
-        {"text": "Checks decision consistency between the spec and .sdd/adr/notification-badge.md (not spec vs a *_design.md)", "checked_by": "output content"},
-        {"text": "Flags the spec's stale sdd-version (3.0.0, behind the current major) in the formal report as needing migration/regeneration", "checked_by": "output content"},
-        {"text": "Consistency findings are substantive and correct, not fabricated", "checked_by": "manual verification against fixture"}
+        {
+          "text": "PRD ↔ spec の整合性を検査し、実在するギャップを報告する",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "spec と記録済みの設計判断（その世代における保存先）を突き合わせている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "指摘が実在し正確である（創作していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "人間が優先度判断できるよう、指摘が重大度で分類されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "下流から PRD を自動書き換えする提案をしていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
       ]
     }
   ]

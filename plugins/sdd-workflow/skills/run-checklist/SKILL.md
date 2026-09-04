@@ -66,8 +66,11 @@ Load the checklist file from `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/ch
 Parse each checklist item:
 - Extract CHK-ID (e.g., CHK-501)
 - Extract priority level (P1, P2, P3)
-- Extract verification commands from code blocks
 - Identify category from ID prefix (CHK-1xx = Requirements, CHK-5xx = Testing, etc.)
+- Extract any verification command written in the item's code blocks. This skill **cannot execute** them —
+  `allowed-tools` grants only `scripts/run-verification.py`, deliberately not bare `Bash`, so arbitrary
+  commands read out of a checklist file are never run. Record each one verbatim as a manual-verification
+  instruction for the reader. The categories that *can* be automated are handled by step 3 instead
 
 ### 2. Detect Project Environment
 

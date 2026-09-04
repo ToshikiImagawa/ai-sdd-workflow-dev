@@ -1,17 +1,32 @@
 {
   "skill_name": "finalize-prd",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
   "evals": [
     {
       "id": 0,
       "eval_name": "notification-badge-amend",
       "prompt": "既存PRDテキストに新規UR/FRを統合(--amend)、テキストのみ返す",
-      "expected_output": "Text-only merge of new UR/FR into existing PRD text via an explicit --amend integration path (finalize-prd is a text-only sub-skill: context: fork, disallowed-tools Write/Edit/Bash), preserving existing content byte-for-byte and adding sdd-version to front matter.",
+      "expected_output": "The existing text preserved byte-for-byte, new UR/FR inserted at the structurally correct positions, and both the requirements diagram and the detail tables updated consistently.",
       "files": [],
       "assertions": [
-        {"text": "Existing UR_001/FR_001 preserved byte-for-byte", "checked_by": "text diff"},
-        {"text": "New UR_002/FR_002 correctly inserted at the right location", "checked_by": "text content"},
-        {"text": "sdd-version field present in returned front matter", "checked_by": "text content"},
-        {"text": "An explicit --amend concept exists and was followed", "checked_by": "agent's own report"}
+        {
+          "text": "既存記述がバイト単位で保持されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規 UR/FR が構造的に正しい位置（該当セクション・表）に挿入されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "要求図と詳細表の**両方**が整合的に更新されている（片方だけの更新になっていない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "与えられた情報を超える内容を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
       ]
     }
   ]

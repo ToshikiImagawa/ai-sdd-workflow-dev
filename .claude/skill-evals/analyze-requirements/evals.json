@@ -1,17 +1,36 @@
 {
   "skill_name": "analyze-requirements",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
   "evals": [
     {
       "id": 0,
       "eval_name": "notification-badge-extract",
       "prompt": "通知バッジ機能のユースケースからUR/FR/NFRを抽出",
-      "expected_output": "UR/FR/NFR extraction from the notification badge use case with full traceability (derives) and consistent Priority/Risk/Verification attributes.",
+      "expected_output": "UR/FR/NFR covering every presented behavior, each FR deriving from at least one UR, unique sequential IDs, consistently applied Priority/Risk/Verification, and nothing invented beyond the presented use cases.",
       "files": [],
       "assertions": [
-        {"text": "All 3 stated behaviors (badge count, 99+ cap, clear) are covered by at least one FR", "checked_by": "output content"},
-        {"text": "Every FR traces to at least one UR (derives relationship)", "checked_by": "output content"},
-        {"text": "IDs are unique and sequential", "checked_by": "output content"},
-        {"text": "Priority/Risk/Verification attributes assigned consistently", "checked_by": "output content"}
+        {
+          "text": "提示された全ての振る舞いが、少なくとも1つの FR でカバーされている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全ての FR が少なくとも1つの UR に遡れる（derives 関係）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "ID が一意かつ連番",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "Priority / Risk / Verification が一貫して付与されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "提示されたユースケースの範囲外の要求を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
       ]
     }
   ]

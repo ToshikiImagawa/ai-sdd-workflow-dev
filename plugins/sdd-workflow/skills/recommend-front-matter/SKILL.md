@@ -88,11 +88,11 @@ Use the Read tool to read the first 100 lines of each document. This provides co
 |:-------------|:---------------------------------------------------------------------------------------------------------------------|
 | `id`         | Generate from file path and type: `"{type}-{feature-name}"` (hierarchical: `"{type}-{parent}-{feature-name}"`)      |
 | `title`      | Extract from first `#` heading (fallback: basename)                                                                  |
-| `type`       | Use `type` field from scan result (`prd`, `spec`, `design`, `task`, `implementation-log`)                           |
+| `type`       | Use `type` field from scan result (`prd`, `spec`, `design`, `task`, `adr`, `implementation-log`)                    |
 | `status`     | Default to `"draft"` for new front matter                                                                            |
 | `created`    | Use current date `YYYY-MM-DD`                                                                                        |
 | `updated`    | Same as `created` for initial front matter                                                                           |
-| `depends-on` | Infer from file naming patterns (spec → prd, design → spec, task → design). Empty list if no match found.           |
+| `depends-on` | Infer from file naming patterns (spec → prd, design → spec, task → design, adr → spec). Empty list if no match found. |
 | `tags`       | Extract from headings and content keywords (max 5 tags). Use lowercase, hyphenated format (e.g., `"user-auth"`).    |
 | `category`   | Infer from directory hierarchy or parent feature name. Empty if no clear category.                                   |
 

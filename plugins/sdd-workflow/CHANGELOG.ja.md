@@ -154,14 +154,19 @@
 - **`recommend-front-matter` がADRのスキーマを認識するようになった** - `scan-documents.py` は既に
   `adr/` を走査・分類していたが、スキルのPrerequisitesと `type_specific_fields.md` テンプレートには
   ADRのフィールド定義が一切無く、front matterが無い決定ログへの推奨が不完全または創作的になっていた。
-  `references/front_matter_adr.md` を新設し、両言語の `type_specific_fields.md` にADRの項目を追加した
+  `references/front_matter_adr.md` を新設し、両言語の `type_specific_fields.md` にADRの項目を追加した。
+  あわせて、スキル自身の `type` 列挙と `depends-on` 推論表にも `adr` を追加した（走査対象の他の型は
+  すべて列挙されていたため、これが無いと新設したリファレンスに到達しない）
 - **`naming.py::determine_type()` が `task/{ticket}/design-draft.md` を `type: "task"` に誤分類
   しなくなった** - `implementation_log`/`impl_log` というファイル名は特別扱いしていたが、新世代の
   設計ドラフトの正規配置場所である `design-draft.md` の分岐が無く、`recommend-front-matter` 等の
   呼び出し元が誤ったtype別フィールドを推奨していた
-- **`constitution` の「Update Constitution」バージョンバンプ表が、自身の「Add Principle」手順と
-  矛盾しなくなった** - 一方の表は原則追加をMAJORバンプとしていたが、専用の`add`手順と
-  「Semantic Versioning」表はいずれもMINORとしていた。矛盾していた表をMINORに統一した
+- **`constitution` の2つのバージョンバンプ表が行単位で一致するようになった** - 「Update Constitution」
+  の表は原則追加をMAJORバンプとしていたが、専用の`add`手順と「Semantic Versioning」表はいずれもMINOR
+  としていた。さらに同じ表は「Clarify principle」をMINORとする一方、「Semantic Versioning」表は同じ行為で
+  ある「Fix expression of principle」をPATCHとしており、「Conditions for Major Version Bump」節が破壊的変更
+  として挙げる優先度変更の行も欠けていた。両表が同じ変更種別を列挙し、「既存の原則が要求する内容を変えるか」
+  という単一の基準で分類する形に統一した
 - **`sdd-init` の「Configuration File Management」節が、自身のスクリプトと矛盾しなくなった** -
   `init-structure.py` が `.sdd-config.json` 不在時にデフォルト値で自動生成すると記述していたが、
   実際のスクリプトはエラー終了する（意図的な設計 — デフォルト生成の責務はSessionStartフックが持ち、

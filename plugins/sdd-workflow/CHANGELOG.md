@@ -157,14 +157,19 @@ minor/patch release.
 - **`recommend-front-matter` now knows the ADR schema** - `scan-documents.py` already scans and classifies
   `adr/` documents, but the skill's Prerequisites and `type_specific_fields.md` templates never defined
   ADR's fields, so a front-matter-less decision log got an incomplete or invented recommendation. Added
-  `references/front_matter_adr.md` and an ADR entry in both language `type_specific_fields.md` templates
+  `references/front_matter_adr.md` and an ADR entry in both language `type_specific_fields.md` templates,
+  and added `adr` to the skill's own `type` enumeration and `depends-on` inference table (which listed
+  every other scanned type, so the new reference would otherwise never be reached)
 - **`naming.py::determine_type()` no longer misclassifies `task/{ticket}/design-draft.md` as `type: "task"`**
   - It special-cased `implementation_log`/`impl_log` filenames but had no branch for `design-draft.md`,
     the canonical location for the new-era design draft, so callers like `recommend-front-matter` recommended
     the wrong type-specific fields for it
-- **`constitution`'s "Update Constitution" version-bump table no longer contradicts its own "Add
-  Principle" flow** - One table said adding a principle is a MAJOR bump, while the dedicated `add` flow and
-  the "Semantic Versioning" table both said MINOR; aligned the outlier table to MINOR
+- **`constitution`'s two version-bump tables now agree row for row** - The "Update Constitution" table said
+  adding a principle is a MAJOR bump, while the dedicated `add` flow and the "Semantic Versioning" table
+  both said MINOR. It also mapped "Clarify principle" to MINOR while the Semantic Versioning table mapped
+  "Fix expression of principle" (the same act) to PATCH, and omitted the priority change that the
+  "Conditions for Major Version Bump" section lists as breaking. Both tables now enumerate the same change
+  types, split by one stated rule — does the change alter what an existing principle demands?
 - **`sdd-init`'s "Configuration File Management" section no longer contradicts its own script** - It said
   `init-structure.py` auto-creates `.sdd-config.json` with defaults when missing; the script actually
   exits with an error (by design — the SessionStart hook owns default creation, so `sdd-init` doesn't

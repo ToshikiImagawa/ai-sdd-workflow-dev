@@ -1,17 +1,36 @@
 {
   "skill_name": "plan-refactor",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
   "evals": [
     {
       "id": 0,
       "eval_name": "notification-badge-breaking-change",
       "prompt": "get_unread_badge_count(user_id) の戻り値を `int | str` から常に文字列 `str` を返す形式に変更するリファクタリングを計画してください。既存の呼び出し元は int を期待しています。",
-      "expected_output": "Classifies the request as a Breaking Change task type (impact analysis + backward-compat policy + adr/ migration record), determines the refactor Case from the spec's content/impl-status rather than a persistent design-doc filename, and produces a refactor plan.",
+      "expected_output": "A plan that explicitly flags the backward-incompatible return-type change, analyzes affected callers and tests, leaves the compatibility policy to human judgment rather than deciding unilaterally, and grounds itself in the spec's content rather than the presence of a particular file.",
       "files": [],
       "assertions": [
-        {"text": "Classifies this as a Breaking Change task type per the Task Type Determination table, calling out impact analysis and a backward-compatibility policy", "checked_by": "output content"},
-        {"text": "Names .sdd/adr/ as the destination for recording the migration decision", "checked_by": "output content"},
-        {"text": "Determines the refactor Case based on the spec's content/impl-status rather than on the presence/naming of a persistent design doc file", "checked_by": "output content / RUN_SUMMARY"},
-        {"text": "A refactor plan document/output is produced", "checked_by": "output content"}
+        {
+          "text": "この変更が後方互換性を壊すことを明示的に指摘している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "影響を受ける呼び出し元・テストの影響分析を提示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "後方互換性の方針を独断で決めず、人間の判断材料として提示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "決定とその根拠が永続的に記録される想定になっている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "計画の根拠を仕様の**内容**に置いている（特定ファイルの有無に依存していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
       ]
     }
   ]
