@@ -26,13 +26,11 @@ Supports both flat and hierarchical structures.
 |- DESIGN_DOC_TEMPLATE.md        # Technical design template
 |- requirement/                  # PRD (Product Requirements Documents)
 |   |- {feature-name}.md
-|- specification/
-|   |- {feature-name}_spec.md    # Abstract specification (persistent)
-|- adr/                          # Persistent decision log
-|   |- {feature-name}.md         # Decisions and rationale (append-only)
+|- specification/                # Specifications and designs
+|   |- {feature-name}_spec.md    # Abstract specification
+|   |- {feature-name}_design.md  # Technical design
 |- task/                         # Temporary task logs
     |- {ticket-number}/
-        |- design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 ### Hierarchical Structure (for medium to large projects)
@@ -48,37 +46,27 @@ Supports both flat and hierarchical structures.
 |   |- {parent-feature}/         # Parent feature directory
 |       |- index.md              # Parent feature overview & requirements list
 |       |- {child-feature}.md    # Child feature requirements
-|- specification/
+|- specification/                # Specifications and designs
 |   |- {feature-name}_spec.md    # Top-level feature
+|   |- {feature-name}_design.md
 |   |- {parent-feature}/         # Parent feature directory
 |       |- index_spec.md         # Parent feature abstract spec
+|       |- index_design.md       # Parent feature technical design
 |       |- {child-feature}_spec.md   # Child feature abstract spec
-|- adr/                          # Persistent decision log
-|   |- {feature-name}.md         # Top-level feature
-|   |- {parent-feature}/         # Parent feature directory
-|       |- index.md              # Parent feature decision log
-|       |- {child-feature}.md    # Child feature decision log
+|       |- {child-feature}_design.md # Child feature technical design
 |- task/                         # Temporary task logs
     |- {ticket-number}/
-        |- design-draft.md       # Technical design draft, deleted after implementation
 ```
 
 ## File Naming Convention (Important)
 
-**Warning: `requirement/` forbids a `_spec`/`_design` suffix. `specification/` and `adr/` are single-type
-directories, so their suffix is optional. Do not confuse them.**
+**Warning: The presence of suffixes differs between requirement and specification. Do not confuse them.**
 
 | Directory         | File Type        | Naming Pattern                                 | Example                                   |
 |:------------------|:-----------------|:-----------------------------------------------|:------------------------------------------|
-| **requirement**   | All files        | `{name}.md` (no suffix — required)             | `user-login.md`, `index.md`               |
-| **specification** | Abstract spec    | `{name}.md` or `{name}_spec.md` (`_spec` optional) | `user-login.md`, `user-login_spec.md` |
-| **task**          | Design draft     | `design-draft.md` (fixed filename, ticket-scoped, temporary) | `task/68/design-draft.md`   |
-| **adr**           | Decision log     | `{name}.md` or `{name}-decisions.md` (`-decisions` optional, append-only) | `user-login.md`, `user-login-decisions.md` |
-
-`specification/` and `adr/` are each a single-type directory (every file is an abstract spec / a decision log
-respectively), so the directory alone identifies document type and a suffix is not required. Track which
-AI-SDD generation produced a document via the `sdd-version` front matter field (see `front_matter_reference.md`),
-not via suffix — a document without `sdd-version` predates its introduction.
+| **requirement**   | All files        | `{name}.md` (no suffix)                        | `user-login.md`, `index.md`               |
+| **specification** | Abstract spec    | `{name}_spec.md` (`_spec` suffix required)     | `user-login_spec.md`, `index_spec.md`     |
+| **specification** | Technical design | `{name}_design.md` (`_design` suffix required) | `user-login_design.md`, `index_design.md` |
 
 ### Naming Pattern Quick Reference
 
@@ -86,15 +74,15 @@ not via suffix — a document without `sdd-version` predates its introduction.
 # Correct Naming
 requirement/auth/index.md              # Parent feature overview (no suffix)
 requirement/auth/user-login.md         # Child feature requirements (no suffix)
-specification/auth/index_spec.md       # Parent feature abstract spec (_spec optional, still valid)
-specification/auth/user-login.md       # Child feature abstract spec (no suffix, also valid)
-task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
-adr/auth/index.md                      # Parent feature decision log (no suffix, default for new files)
-adr/auth/user-login-decisions.md       # Child feature decision log (-decisions optional, still valid for existing files)
+specification/auth/index_spec.md       # Parent feature abstract spec (_spec required)
+specification/auth/index_design.md     # Parent feature technical design (_design required)
+specification/auth/user-login_spec.md  # Child feature abstract spec (_spec required)
+specification/auth/user-login_design.md # Child feature technical design (_design required)
 
 # Incorrect Naming (never use these)
-requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix
-specification/auth/index_design.md     # design docs no longer live under specification/
+requirement/auth/index_spec.md         # requirement doesn't need _spec
+specification/auth/user-login.md       # specification requires _spec/_design
+specification/auth/index.md            # specification requires _spec/_design
 ```
 
 ## Document Link Convention
@@ -107,28 +95,3 @@ Follow these formats for markdown links within documents:
 | **Directory**  | `[directory-name](path or URL/index.md)`   | Directory name only   | `[auth](../requirement/auth/index.md)`               |
 
 This convention makes it visually clear whether the link target is a file or directory.
-
-## Task Type Determination
-
-Before starting any task, determine which phases and deliverables it needs:
-
-| Task Type               | Required Phases                    | Deliverables                                                  |
-|:-------------------------|:------------------------------------|:----------------------------------------------------------------|
-| New Feature (Large)     | Specify → Plan → Tasks → Implement | PRD → spec → design (temporary) → task → adr                    |
-| New Feature (Small)     | Specify → Plan → Tasks → Implement | spec → design (temporary) → task → adr                          |
-| Bug Fix                 | Tasks → Implement                  | task (investigation log) → adr (if a notable decision was made) |
-| Refactoring             | Plan → Tasks → Implement           | design (change plan, temporary) → task → adr                    |
-| Breaking Change         | Specify → Plan → Tasks → Implement | PRD update proposal → spec → design (temporary) → task → adr    |
-| Technical Investigation | Tasks                              | task (investigation results) only                               |
-
-**Task Scale Criteria**:
-
-| Scale           | Criteria                                                                                                                                |
-|:-----------------|:------------------------------------------------------------------------------------------------------------------------------------------|
-| Large           | New business domain, changes spanning multiple features, external system integration                                                     |
-| Small           | Feature additions within existing features, changes contained to single module                                                            |
-| Bug Fix         | Correcting deviations from existing specifications (no spec changes)                                                                      |
-| Breaking Change | Removes or changes existing public API/behavior so that existing consumers must adapt (signature/return-value/behavior changes, removed features, incompatible config/schema changes) |
-
-For Breaking Change handling (impact analysis, backward compatibility decision, migration record) and the
-PRD-absence policy, see `AI-SDD-PRINCIPLES.md` § Workflow Management Guidelines.
