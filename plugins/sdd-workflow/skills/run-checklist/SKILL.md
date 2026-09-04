@@ -83,21 +83,28 @@ Detect project type and available tools:
 
 ### 3. Execute Automated Verifications
 
-Read `references/verification_commands.md` for the full command mapping table (which project-type detection files
-map to which test/lint/typecheck/security commands). This skill's `allowed-tools` only pre-approves a single
-scoped script — `scripts/run-verification.py` — rather than bare `Bash`, so run verifications through it instead
-of invoking test/lint/security commands directly:
+This skill's `allowed-tools` only pre-approves a single scoped script — `scripts/run-verification.py` — rather
+than bare `Bash`, so run verifications through it instead of invoking test/lint/security commands directly.
 
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" test
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" lint
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" typecheck
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" security
-```
+Invoke it once per category as
+`python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" <category>`, where
+`<category>` is `test`, `lint`, `typecheck`, or `security`. Read `references/verification_commands.md` for the
+exact invocations, the project-type detection priority, and the full command mapping table the script
+implements.
 
-Run it from the project root. It detects the project's toolchain (per `references/verification_commands.md`'s
-detection priority) and returns a JSON result (`PASS`/`FAIL`/`SKIPPED`/`TOOL_NOT_FOUND`/`TIMEOUT`) on stdout —
-read that JSON to determine the checklist item's outcome; do not treat a `SKIPPED` result as a failure.
+Run it from the project root. It returns a JSON result on stdout — read that JSON to determine the checklist
+item's outcome:
+
+| Status           | Meaning                                                        | Checklist outcome     |
+|:-----------------|:---------------------------------------------------------------|:----------------------|
+| `PASS`           | The tool ran and reported success                              | Item passes           |
+| `FAIL`           | The tool ran and reported a real failure                       | Item fails            |
+| `SKIPPED`        | Nothing to verify (no tool configured, or nothing collected)   | Not a failure         |
+| `TOOL_NOT_FOUND` | No candidate tool for this category is installed               | Not a failure         |
+| `TIMEOUT`        | The tool exceeded the script's time limit                      | Needs manual review   |
+
+Only `FAIL` marks a checklist item as failed. `SKIPPED` and `TOOL_NOT_FOUND` carry a `reason` field — record it
+verbatim rather than treating the item as failed.
 
 #### Verification Categories
 

@@ -137,7 +137,11 @@ minor/patch release.
   access at all, so the skill's core function (executing verification commands) silently fell back to
   guessing from static analysis. Added a scoped `scripts/run-verification.py` (detects the project's
   toolchain and runs test/lint/typecheck/security commands, per `references/verification_commands.md`)
-  and pre-approved only that single script, consistent with this repo's "no bare `Bash`" convention
+  and pre-approved only that single script, consistent with this repo's "no bare `Bash`" convention.
+  A project with no tests configured is reported as `SKIPPED` rather than `FAIL`, so an unconfigured
+  category never fails the quality gate. The categories the script does not cover (formatter checks,
+  dependency analysis, doc coverage) are now stated explicitly in
+  `references/verification_commands.md` as manual-review items instead of being implied to be automatic
 - **`checklist`'s bundled template no longer contradicts its own SKILL.md** - The template used a
   `P0`-`P3` priority scale and sequential `CHK001` IDs, while SKILL.md's Processing Flow and canonical
   example (`examples/checklist_full_example.md`) define `P1`-`P3` and `CHK-{category}{seq}` IDs (e.g.

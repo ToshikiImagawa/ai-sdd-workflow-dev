@@ -72,6 +72,18 @@ COMMANDS = {
 
 TIMEOUT_SECONDS = 300
 
+# Non-zero exit codes that mean "there was nothing to verify" rather than
+# "verification failed", keyed by the command's executable. A project that has
+# no tests configured yet must not fail the quality gate — the checklist item
+# should read SKIPPED, the same as an uninstalled tool.
+NO_WORK_EXIT_CODES = {
+    "pytest": (5,),  # pytest exits 5 when it collects no tests
+}
+
+# Output markers with the same meaning, for tools that reuse a generic exit
+# code (e.g. `npm test` against a package.json that defines no "test" script).
+NO_WORK_OUTPUT_MARKERS = ("missing script",)
+
 
 def log(message: str) -> None:
     print(f"[run-verification] {message}", file=sys.stderr)
@@ -84,10 +96,25 @@ def detect_project_type(project_root: Path) -> Optional[str]:
     # No manifest file present. Fall back to a directory-shape heuristic so
     # minimal projects (e.g. a `tests/` folder with no packaging metadata
     # yet) still get verified instead of silently skipped.
-    if any((project_root / d).glob("test_*.py") or (project_root / d).glob("*_test.py")
-           for d in ("tests", "test") if (project_root / d).is_dir()):
-        return "python"
+    for dirname in ("tests", "test"):
+        test_dir = project_root / dirname
+        if not test_dir.is_dir():
+            continue
+        # `Path.rglob()` returns a generator, which is truthy even when it
+        # yields nothing — pull the first match explicitly so the pattern
+        # actually decides the outcome rather than the generator's identity.
+        if any(next(test_dir.rglob(pattern), None) is not None
+               for pattern in ("test_*.py", "*_test.py")):
+            return "python"
     return None
+
+
+def nothing_to_verify(tool: str, result: subprocess.CompletedProcess) -> bool:
+    """Return True if a non-zero exit means "nothing to check", not "failed"."""
+    if result.returncode in NO_WORK_EXIT_CODES.get(tool, ()):
+        return True
+    combined = f"{result.stdout or ''}\n{result.stderr or ''}".lower()
+    return any(marker in combined for marker in NO_WORK_OUTPUT_MARKERS)
 
 
 def run_command(command: str, cwd: Path) -> dict:
@@ -96,13 +123,23 @@ def run_command(command: str, cwd: Path) -> dict:
         result = subprocess.run(
             args, cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS,
         )
-        return {
-            "status": "PASS" if result.returncode == 0 else "FAIL",
+        outcome = {
             "command": command,
             "exit_code": result.returncode,
             "stdout": result.stdout[-8000:],
             "stderr": result.stderr[-4000:],
         }
+        if result.returncode == 0:
+            return {"status": "PASS", **outcome}
+        if nothing_to_verify(args[0], result):
+            return {
+                "status": "SKIPPED",
+                "reason": f"'{command}' ran but had nothing to verify (no tests "
+                          "collected, or no such script defined). This is not a "
+                          "verification failure.",
+                **outcome,
+            }
+        return {"status": "FAIL", **outcome}
     except FileNotFoundError:
         return {"status": "TOOL_NOT_FOUND", "command": command}
     except subprocess.TimeoutExpired:
