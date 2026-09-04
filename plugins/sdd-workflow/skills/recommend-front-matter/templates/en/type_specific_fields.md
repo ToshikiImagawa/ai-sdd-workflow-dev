@@ -30,6 +30,15 @@ sdd-phase: "tasks"
 ticket: ""
 ```
 
+**ADR** (`type: "adr"`):
+
+```yaml
+sdd-phase: "implement"
+```
+
+Set `ticket` only if the source `task/{ticket-number}/` had no reachable issue tracker to record completion in.
+Set `supersedes`/`superseded-by` only when this entry reverses, or is reversed by, another ADR entry.
+
 **Implementation Log** (`type: "implementation-log"`):
 
 ```yaml

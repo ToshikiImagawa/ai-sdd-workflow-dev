@@ -1,6 +1,6 @@
 ---
 name: recommend-front-matter
-description: "Scan existing AI-SDD documents and recommend YAML front matter additions"
+description: "Scan existing AI-SDD documents (including ADR decision logs) and recommend YAML front matter additions"
 argument-hint: "[--apply]"
 license: MIT
 user-invocable: true
@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**), Edit(.sdd-confi
 
 # Recommend Front Matter - Add YAML Metadata to Existing Documents
 
-Scans existing AI-SDD documents (PRD, spec, design, task) and recommends adding YAML front matter for structured metadata.
+Scans existing AI-SDD documents (PRD, spec, design, task, ADR) and recommends adding YAML front matter for structured metadata.
 
 **Purpose**: Help users add front matter to existing documents created before front matter support was added.
 
@@ -26,6 +26,7 @@ Scans existing AI-SDD documents (PRD, spec, design, task) and recommends adding 
 - `references/front_matter_prd.md` - PRD front matter schema
 - `references/front_matter_spec_design.md` - Spec/Design front matter schema
 - `references/front_matter_task.md` - Task front matter schema
+- `references/front_matter_adr.md` - ADR (decision log) front matter schema
 - `references/front_matter_impl.md` - Implementation Log front matter schema
 
 ### Language Configuration
@@ -87,11 +88,11 @@ Use the Read tool to read the first 100 lines of each document. This provides co
 |:-------------|:---------------------------------------------------------------------------------------------------------------------|
 | `id`         | Generate from file path and type: `"{type}-{feature-name}"` (hierarchical: `"{type}-{parent}-{feature-name}"`)      |
 | `title`      | Extract from first `#` heading (fallback: basename)                                                                  |
-| `type`       | Use `type` field from scan result (`prd`, `spec`, `design`, `task`, `implementation-log`)                           |
+| `type`       | Use `type` field from scan result (`prd`, `spec`, `design`, `task`, `adr`, `implementation-log`)                    |
 | `status`     | Default to `"draft"` for new front matter                                                                            |
 | `created`    | Use current date `YYYY-MM-DD`                                                                                        |
 | `updated`    | Same as `created` for initial front matter                                                                           |
-| `depends-on` | Infer from file naming patterns (spec → prd, design → spec, task → design). Empty list if no match found.           |
+| `depends-on` | Infer from file naming patterns (spec → prd, design → spec, task → design, adr → spec). Empty list if no match found. |
 | `tags`       | Extract from headings and content keywords (max 5 tags). Use lowercase, hyphenated format (e.g., `"user-auth"`).    |
 | `category`   | Infer from directory hierarchy or parent feature name. Empty if no clear category.                                   |
 

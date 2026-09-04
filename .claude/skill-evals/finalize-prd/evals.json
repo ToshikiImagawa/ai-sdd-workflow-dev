@@ -1,0 +1,33 @@
+{
+  "skill_name": "finalize-prd",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-amend",
+      "prompt": "既存PRDテキストに新規UR/FRを統合(--amend)、テキストのみ返す",
+      "expected_output": "The existing text preserved byte-for-byte, new UR/FR inserted at the structurally correct positions, and both the requirements diagram and the detail tables updated consistently.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "既存記述がバイト単位で保持されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規 UR/FR が構造的に正しい位置（該当セクション・表）に挿入されている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "要求図と詳細表の**両方**が整合的に更新されている（片方だけの更新になっていない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "与えられた情報を超える内容を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

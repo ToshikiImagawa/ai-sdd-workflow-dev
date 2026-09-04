@@ -1,0 +1,37 @@
+{
+  "skill_name": "implement",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-tdd",
+      "prompt": "notification-badge (ticket 101) の実装を進めてください。.sdd/task/101/tasks.md のタスクリストに従って、TDDで実装してください。",
+      "expected_output": "Tests written and actually passing, every FR of the spec satisfied, no functionality beyond the specified scope, and the implementation status reflected back into the documents.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "仕様・設計が定めた範囲を超える機能を実装していない（スコープクリープなし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "テストが書かれ、実行して実際に pass する",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様の各 FR を実装が満たしている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "実装状況がドキュメント側に反映され、仕様とコードの乖離が放置されていない（手段は世代依存なので問わない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "テストを後付けではなく実装と同時／先行で書いている（自己申告＋成果物で判定）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

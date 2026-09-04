@@ -1,0 +1,38 @@
+{
+  "skill_name": "task-breakdown",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-breakdown",
+      "prompt": "ticket 101 (notification-badge) の実装タスクを分解してください。",
+      "prompt_note": "Do not name the design document's path in the prompt -- that gives away the exact thing being tested (can the skill locate the design doc on its own, in whichever location its own generation uses?). Let each variant discover it by exploring the SDD document tree.",
+      "expected_output": "Tasks traceable to spec/design requirement IDs, each with an independently verifiable completion condition, ordered to respect dependencies, with tests as explicit tasks rather than implied work.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "各タスクが仕様・設計の要求 ID に遡れる",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "各タスクに独立して検証可能な完了条件がある",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "タスクの順序が依存関係を尊重している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "テストが暗黙ではなく明示的なタスクとして含まれている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様の範囲外のタスクを創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

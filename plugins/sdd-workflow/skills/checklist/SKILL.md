@@ -211,7 +211,7 @@ This will:
 
 ### GitHub Issues
 
-Run `/checklist user-auth TICKET-123 --export github-issues` to create individual GitHub issues for P0 items.
+Run `/checklist user-auth TICKET-123 --export github-issues` to create individual GitHub issues for P1 items.
 
 ### Notion/Linear
 

@@ -1,0 +1,37 @@
+{
+  "skill_name": "generate-spec",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-new-feature",
+      "prompt": "通知バッジ機能(未読メッセージ数をアプリアイコンにバッジ表示する機能)のspecとdesign draftを生成してください。ticket番号は101です。",
+      "expected_output": "An abstract specification and a separate technical design artifact, each written to the location its own generation uses. The spec stays at requirement level, traces to PRD requirement IDs, and does not contradict the design.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "抽象仕様が要求レベルに留まっており、技術詳細（実装手段・データ構造）が仕様側に混入していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様の各機能要求が PRD の要求 ID に遡れ、PRD の範囲外の要求を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "抽象仕様と技術設計が別の成果物として分離されている（ファイル名は世代依存なので問わない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "技術設計の内容が仕様と矛盾しない（API・振る舞いの齟齬なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "上流の PRD を検証なく書き換えていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

@@ -32,7 +32,9 @@ alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}.md` (append-o
 
 **Role separation**: `task/` is temporary, AI-facing working notes, deleted once cleanup completes. The ticket
 (GitHub Issue / JIRA) is the persistent, team-facing progress record — step 9 dumps a summary there so humans
-keep visibility after `task/` is gone.
+keep visibility after `task/` is gone. When no ticket tracker is reachable (step 9 is skipped), the `adr`
+entry's `ticket` field (step 7) is the only remaining link from the ticket number back to this feature —
+without it, deleting `task/{ticket-number}/` erases the ticket-to-feature association entirely.
 
 ### Language Configuration
 
@@ -142,7 +144,7 @@ for task fields and `references/front_matter_spec_design.md` for design fields.
 
 | Action | Description |
 |:-------|:------------|
-| **Update/create `adr` front matter** | Set the fields defined for `type: "adr"` in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` (`id`, `title`, `status`, `created`, `updated`, `sdd-version` — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` — plus `depends-on`, and `supersedes`/`superseded-by` when this decision reverses or is reversed by another entry) |
+| **Update/create `adr` front matter** | Set the fields defined for `type: "adr"` in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` (`id`, `title`, `status`, `created`, `updated`, `sdd-version` — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` — plus `depends-on`, `ticket` set to the identifier recorded in step 1, and `supersedes`/`superseded-by` when this decision reverses or is reversed by another entry) |
 | **Update design doc `updated`** | If the related `*_design.md` still exists, set to current date |
 | **Update spec `status`** | Consider updating to `"approved"` if implementation validates the spec |
 | **Update spec `impl-status`** | Safety net: set to `"implemented"` if not already (the `implement` skill should have set this at completion; this catches cases where it was skipped, e.g. work resumed from a different session) |
@@ -162,7 +164,9 @@ proposed (and its outcome), and which files were deleted.
 - GitHub: `gh issue comment <ticket-number> --body "<summary>"`
 - JIRA: use the `mcp-atlassian` MCP (`jira_add_comment`) with the ticket key
 
-If the ticket tracker cannot be determined, skip this step and note it in the output instead of failing.
+If the ticket tracker cannot be determined, skip this step and note it in the output instead of failing —
+but verify the `adr` entry's `ticket` field (step 7) was still set, since it is now the only surviving
+record of which ticket this feature's decisions came from.
 
 ## Output
 

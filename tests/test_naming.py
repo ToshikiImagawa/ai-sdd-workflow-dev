@@ -144,6 +144,14 @@ class TestDetermineType:
             "requirement", "specification", "task", "adr",
         ) == "task"
 
+    def test_task_design_draft_is_design(self):
+        # task/{ticket}/design-draft.md is the canonical new-era design doc
+        # location (front_matter_reference.md), not a generic task document.
+        assert nm.determine_type(
+            "/p/.sdd/task/101/design-draft.md", "design-draft",
+            "requirement", "specification", "task", "adr",
+        ) == "design"
+
     def test_unrelated_path_unknown(self):
         assert nm.determine_type(
             "/p/src/main.py", "main",

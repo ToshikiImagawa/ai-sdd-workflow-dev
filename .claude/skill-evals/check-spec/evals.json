@@ -1,0 +1,37 @@
+{
+  "skill_name": "check-spec",
+  "methodology": "v2-version-neutral",
+  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
+  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "notification-badge-drift",
+      "prompt": ".sdd/specification/notification-badge.md の仕様と src/notification_badge.py の実装が一致しているか確認してください。ズレがあれば具体的に報告してください。",
+      "expected_output": "A report of the real gaps between the spec and src/notification_badge.py -- FR-003 (clear_badge) unimplemented, FR-002 (99+ cap) missing, and increment_unread present in code but absent from the spec -- each carrying a severity, with no invented discrepancies.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "spec が実装済みと主張していても実コードを確認し、未実装の FR-003（`clear_badge`）を実在の欠落として検出する",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "FR-002（99+ 上限）の実装漏れを検出する",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様に無い `increment_unread` を「実装が仕様化されていない」側の指摘として分類し、誤検知として扱わない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "存在しない不整合を創作していない（偽陽性ゼロ）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "人間が優先度判断できるよう、指摘に重大度が付いている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}
