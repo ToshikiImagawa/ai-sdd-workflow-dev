@@ -1,16 +1,30 @@
 {
   "skill_name": "plan-refactor",
-  "methodology": "v2-version-neutral",
-  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
-  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/plan-refactor/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+541/-296 lines",
   "evals": [
     {
       "id": 0,
-      "eval_name": "notification-badge-breaking-change",
-      "prompt": "get_unread_badge_count(user_id) の戻り値を `int | str` から常に文字列 `str` を返す形式に変更するリファクタリングを計画してください。",
-      "prompt_note": "Do not state '既存の呼び出し元は int を期待しています' in the prompt -- that hands over the answer to assertion 1 (backward-incompatibility flagging) verbatim. The fixture's tests/test_notification_badge.py already asserts int-typed return values for the normal-count case, so a careful executor discovers the compatibility break on its own by reading the tests/spec.",
-      "expected_output": "A plan that explicitly flags the backward-incompatible return-type change, analyzes affected callers and tests, leaves the compatibility policy to human judgment rather than deciding unilaterally, and grounds itself in the spec's content rather than the presence of a particular file.",
-      "files": [],
+      "eval_name": "sdd-env-prefix-breaking-change",
+      "prompt": "環境変数の接頭辞を `SDD_` から `AISDD_` へ変更するリファクタリングを計画してください（`SDD_ROOT` → `AISDD_ROOT` など）。既存のスキル・エージェント・フック・スクリプトは `SDD_` を参照しています。",
+      "prompt_note": "A real breaking change with real call sites in this repository: the prefix appears in session-start.py, env_export.py, the skill prompts' path-resolution references and the shell test harness. The prompt states the compatibility problem but does not decide it, so whether the plan escalates the decision or quietly picks one is observable.",
+      "sdd_inputs": [
+        ".sdd/specification/workflow-foundation/session-config_spec.md",
+        ".sdd/specification/workflow-foundation/session-config_design.md"
+      ],
+      "input_parity": "spec and design are byte-identical on both branches; the call sites being analysed are the branch's own code, which differs. Absorbed by the per-era `without` baseline.",
+      "fixture": {},
+      "expected_output": "A refactoring plan that names the break explicitly, analyses the affected call sites and tests, presents the compatibility options for a human to choose rather than deciding unilaterally, and grounds itself in the spec's content.",
       "assertions": [
         {
           "text": "この変更が後方互換性を壊すことを明示的に指摘している",

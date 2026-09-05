@@ -1,0 +1,56 @@
+{
+  "skill_name": "run-checklist",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/run-checklist/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+268/-16 lines (adds scripts/run-verification.py)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "session-config-checklist-verify",
+      "prompt": "`.sdd/task/9003/checklist.md` の各項目を検証し、結果をチェックリストへ記録してください。",
+      "prompt_note": "The scenario checklist is built so the interesting distinctions are forced rather than hoped for: CHK-101/102/104/201 have runnable pytest commands, CHK-401/402 runnable lint commands, CHK-202/203/403 name a typechecker / vulnerability scanner / formatter that this project does not configure (so the honest result is SKIPPED or TOOL_NOT_FOUND, not FAIL), CHK-3xx/6xx are human review items, and CHK-103 is already manually checked with a note (so overwriting it is visible).",
+      "sdd_inputs": [
+        ".sdd/task/9003/checklist.md (scenario file, era-neutral)"
+      ],
+      "input_parity": "identical-on-both-branches (the scenario file is copied identically into both eras)",
+      "fixture": {
+        "copy_scenario": [
+          ".sdd/task/9003/checklist.md"
+        ]
+      },
+      "expected_output": "Each item recorded with the outcome of an actually-executed verification, or an explicit SKIPPED / TOOL_NOT_FOUND when there is nothing to run; manual-only items separated from automated ones; failures recorded with detail; CHK-103's existing manual result preserved.",
+      "assertions": [
+        {
+          "text": "検証手段を持つ全項目について、実行したコマンドと終了コードを項目ごとに記録している。実行しなかった項目は理由を明示しており、未実行と失敗を混同していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "自動検証できない項目（CHK-3xx / CHK-6xx、および未設定ツールの CHK-202 / 203 / 403）を「手動確認が必要」「対象ツール無し」として区別し、失敗として報告していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "検証結果の記録が再現可能である（コマンド・終了コード・テスト件数などの数値が、第三者が再実行して一致を確認できる粒度で書かれている）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "既存の手動チェック済み項目（CHK-103 の `[x]` と注記）を上書き・消去していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "自動検証の対象外である理由を、ツール不在（環境の問題）／検証手段が未定義（チェックリストの問題）／権限外で実行できない（スキルの制約）に区別している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.1: A1/A3/A5 を強化。A1 は終了コードの記録を要求、A3 は第三者による再現可能性を要求、A5 は「対象外」の理由を3種（環境／チェックリスト／権限）に切り分けさせる。develop の run-verification.py が導入した SKIPPED セマンティクスはこの切り分けを前提にしている。"
+}

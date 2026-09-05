@@ -1,17 +1,28 @@
 {
   "skill_name": "generate-prd",
-  "methodology": "v2-version-neutral",
-  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
-  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-prd/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+79/-15 lines",
   "evals": [
     {
       "id": 0,
-      "eval_name": "notification-badge-amend",
-      "prompt": "既存の .sdd/requirement/notification.md に、未読メッセージ数をバッジ表示する新要求を追加(--amend)",
-      "expected_output": "The existing requirements preserved unchanged, with new requirements appended: IDs continuing the existing sequence without collision or gaps, attributes (Priority/Risk/Verification) consistent with existing entries, and new FRs traceable to a UR.",
-      "files": [
-        "Fixture is an existing, already-approved PRD holding UR_001 / FR_001, so the run is an append (--amend) against real prior content rather than a from-scratch generation. Built per era by build_fixtures.py. UR_001/FR_001 is the default PRD-level format (id_conventions_config.md); the specific prefix/underscore style is whatever this project's id_conventions resolve to, not a value this fixture's author chose freely."
+      "eval_name": "run-checklist-prd-amend",
+      "prompt": "`.sdd/requirement/task-implementation/run-checklist.md` に、「検証結果を機械可読な形式でも出力し、CI から集計できるようにする」という新しい要求を追加してください。既存の要求は変更しないでください。",
+      "sdd_inputs": [
+        ".sdd/requirement/task-implementation/run-checklist.md"
       ],
+      "input_parity": "identical-on-both-branches",
+      "fixture": {},
+      "expected_output": "The existing PRD preserved byte for byte, with the new requirement appended: IDs continuing the existing sequence, attributes assigned consistently with neighbouring requirements, and the new FR traceable to a UR.",
       "assertions": [
         {
           "text": "既存の要求が変更されずに保持されている（非破壊的追記）",

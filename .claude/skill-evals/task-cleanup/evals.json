@@ -1,39 +1,58 @@
 {
   "skill_name": "task-cleanup",
-  "methodology": "v2-version-neutral",
-  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
-  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/task-cleanup/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+114/-51 lines",
   "evals": [
     {
       "id": 0,
-      "eval_name": "notification-badge-cleanup",
-      "prompt": "ticket 101 (notification-badge) は実装完了しました(.sdd/task/101/tasks.md は全タスク done、テストは全て pass)。task-cleanup を実行してクリーンアップしてください。",
-      "expected_output": "Design decisions and their rationale persisted to whichever durable location the generation uses, the temporary log removed rather than left as duplicate stale history, upstream update decisions based on verified reality, no progress-note noise promoted into durable docs, and ticket completion recorded.",
-      "files": [
-        "Harness note: the fixture's design draft must NOT contain an editorial hint about where task-cleanup will file the decision -- that leaks the expected action and lets the without-skill baseline match trivially. The project's own CONSTITUTION principle about task/ being temporary is fine to leave in, since any careful agent would read it either way."
+      "eval_name": "env-export-task-cleanup",
+      "prompt": "ticket 9004（環境変数エクスポートの共通化）は実装完了しました。`.sdd/task/9004/` をクリーンアップしてください。",
+      "prompt_note": "notes.md deliberately mixes three kinds of content: two genuine design decisions with rationale and rejected alternatives (which must survive somewhere permanent), timestamped progress noise (which must not be promoted into a permanent document), and one false claim -- 'NFR-003 の重複排除は未実装のまま残した' -- which contradicts both tasks.md (task 3 done) and the real code (env_export.rewrite_exports drops stale prefix lines). Whether the run verifies that claim against reality or copies it forward is the point of assertion 3.",
+      "sdd_inputs": [
+        ".sdd/task/9004/tasks.md (scenario file, era-neutral)",
+        ".sdd/task/9004/notes.md (scenario file, era-neutral)"
       ],
+      "input_parity": "identical-on-both-branches (the scenario files are copied identically into both eras)",
+      "fixture": {
+        "copy_scenario": [
+          ".sdd/task/9004/tasks.md",
+          ".sdd/task/9004/notes.md"
+        ]
+      },
+      "expected_output": "The two design decisions and their rationale preserved in whatever permanent location the generation uses, the temporary log not left behind as a duplicate stale history, the false 'unimplemented' claim caught by checking the code, progress noise dropped, and the ticket's completion recorded.",
       "assertions": [
         {
-          "text": "設計判断とその**根拠（なぜ）**が、一時ログの削除で失われず永続的な場所に保存されている",
+          "text": "各決定について、決定・理由・却下した代替案・却下理由の4要素が揃った形で永続化されている（代替案の名前だけで却下理由が無ければ不合格）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "一時ログが重複した陳腐化履歴として残っていない（知識資産の永続化）",
+          "text": "一時ログが削除され、かつその内容のうち永続化対象だったものが永続側から復元可能である（残存も重複も無い）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "上流ドキュメントの更新要否を、主張ではなく実態（コード・テスト）を確認して判断している",
+          "text": "統合した各決定について `*_spec.md` の更新要否を判定し、必要な場合はユーザーに提示して確認を求めている（自動編集していない）。不要な場合は不要と明示している",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "進捗メモ・実装詳細のような**ノイズを永続ドキュメントに昇格させていない**（決定のみを残す）",
+          "text": "一時ログ削除後も、チケット番号から機能への対応が永続側だけで辿れる（永続ドキュメントにチケット識別子が記録されている）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "チケットの完了が記録され、黙って破棄されていない",
+          "text": "メモの主張と実態が矛盾する場合、実態を確認した証跡（コマンド実行記録または引用）を示した上で矛盾を報告し、誤情報を永続化していない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.1: 全5件を差し替え。iteration 1 では4セル全てが 5/5 で何も測れなかった。A3 は develop が追加した「spec 更新要否の判定とユーザー提示」に対応する。この判定の発火条件リスト（When to Update `*_spec.md`）は両世代の AI-SDD-PRINCIPLES にバイト同一で存在しフィクスチャにも含まれるため、develop 固有の指示への追従を測る循環的検証にはならない。A4 は develop が明文化したチケット紐付けの保全に対応する。"
 }
