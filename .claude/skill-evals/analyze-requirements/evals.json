@@ -34,12 +34,12 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "ID が一意かつ連番であり、全 ID が `.sdd-config.json` の `id_conventions` の正規表現に適合する（適合を確認した証跡があること）",
-          "checked_by": "independent grader (reads the run transcript and the produced files)"
+          "text": "全 ID が `.sdd-config.json` の `id_conventions` の正規表現に適合し、同一表内で一意かつ連番である",
+          "checked_by": "script (grade.py check_id_conventions)"
         },
         {
           "text": "Priority / Risk / Verification が全ての要求に付与されている（1件でも欠けていれば不合格）",
-          "checked_by": "independent grader (reads the run transcript and the produced files)"
+          "checked_by": "script (grade.py check_attributes_present)"
         },
         {
           "text": "入力文書の範囲外の要求を創作していない。親文書等から補完した要求がある場合は、出典を明示し「補完・導出」であることを区別している（無出典の追加が1件でもあれば不合格）",
@@ -48,5 +48,5 @@
       ]
     }
   ],
-  "assertion_revision": "v3.1: A1/A2/A3 を天井から下げ、A5 を「創作ゼロ」から「無出典の追加ゼロ」へ再定義した。iteration 1 では A5 が4セル全て fail で識別力を失っていたが、実際にはランごとに出典明示の有無が分かれていたため、そこを見る形に変えた。"
+  "assertion_revision": "v3.1: A1/A2/A3 を天井から下げ、A5 を「創作ゼロ」から「無出典の追加ゼロ」へ再定義した。iteration 1 では A5 が4セル全て fail で識別力を失っていたが、実際にはランごとに出典明示の有無が分かれていたため、そこを見る形に変えた。 v3.2: A3 を「適合を確認した証跡があること」から事実ベース（適合しているか）へ直した。証跡の有無はスクリプトで判定できず、また文書品質として問われるべきは適合そのものである。A3 / A4 は grade.py の機械判定へ移した。"
 }

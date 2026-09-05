@@ -37,7 +37,7 @@
         },
         {
           "text": "一時ログが削除され、かつその内容のうち永続化対象だったものが永続側から復元可能である（残存も重複も無い）",
-          "checked_by": "independent grader (reads the run transcript and the produced files)"
+          "checked_by": "script (grade.py check_temp_log_removed)"
         },
         {
           "text": "統合した各決定について `*_spec.md` の更新要否を判定し、必要な場合はユーザーに提示して確認を求めている（自動編集していない）。不要な場合は不要と明示している",
@@ -45,7 +45,7 @@
         },
         {
           "text": "一時ログ削除後も、チケット番号から機能への対応が永続側だけで辿れる（永続ドキュメントにチケット識別子が記録されている）",
-          "checked_by": "independent grader (reads the run transcript and the produced files)"
+          "checked_by": "script (grade.py check_ticket_traceable)"
         },
         {
           "text": "メモの主張と実態が矛盾する場合、実態を確認した証跡（コマンド実行記録または引用）を示した上で矛盾を報告し、誤情報を永続化していない",
@@ -54,5 +54,5 @@
       ]
     }
   ],
-  "assertion_revision": "v3.1: 全5件を差し替え。iteration 1 では4セル全てが 5/5 で何も測れなかった。A3 は develop が追加した「spec 更新要否の判定とユーザー提示」に対応する。この判定の発火条件リスト（When to Update `*_spec.md`）は両世代の AI-SDD-PRINCIPLES にバイト同一で存在しフィクスチャにも含まれるため、develop 固有の指示への追従を測る循環的検証にはならない。A4 は develop が明文化したチケット紐付けの保全に対応する。"
+  "assertion_revision": "v3.1: 全5件を差し替え。iteration 1 では4セル全てが 5/5 で何も測れなかった。A3 は develop が追加した「spec 更新要否の判定とユーザー提示」に対応する。この判定の発火条件リスト（When to Update `*_spec.md`）は両世代の AI-SDD-PRINCIPLES にバイト同一で存在しフィクスチャにも含まれるため、develop 固有の指示への追従を測る循環的検証にはならない。A4 は develop が明文化したチケット紐付けの保全に対応する。 v3.2: A2 / A4 を grade.py の機械判定へ移した（採点者判定と全4セルで一致を確認済み）。"
 }
