@@ -62,7 +62,7 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 |--------|-----------------------------------------------------------------------------------------------|-----|----------------------------------|
 | FR-001 | セッション開始時に自動実行され、以降の全機能が参照する設定を初期化する                                | 必須  | PRD FR_001 / 親 UR_003            |
 | FR-002 | `.sdd-config.json` を読み込む。存在しない場合は既定値で生成する                                      | 必須  | PRD FR_001_01                    |
-| FR-003 | `SDD_ROOT` / `SDD_LANG` / requirement・specification・task の各ディレクトリ名とパスを環境変数へ設定する | 必須  | PRD FR_001_02 / 親 IR_001         |
+| FR-003 | `SDD_ROOT` / `SDD_LANG` / requirement・specification・adr・task の各ディレクトリ名とパスを環境変数へ設定する | 必須  | PRD FR_001_02 / 親 IR_001         |
 | FR-004 | AI-SDD 原則ドキュメント（AI-SDD-PRINCIPLES.md）をプラグインバージョンへ追随更新する                    | 必須  | PRD FR_001_03                    |
 | FR-005 | `.sdd` ドキュメント圧縮インデックスを構築し `SDD_INDEX` を設定する（既定有効）                          | 必須  | PRD FR_001_04                    |
 | FR-006 | 設定ファイルの欠落・不正・非真偽値があっても既定値にフォールバックして初期化を継続する                    | 必須  | 親 PRD DC_002                    |
@@ -101,6 +101,7 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   },
   "index": true
