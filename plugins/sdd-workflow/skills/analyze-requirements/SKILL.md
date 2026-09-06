@@ -41,6 +41,10 @@ This skill operates in two modes:
 
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` - Project principles (optional, for principle alignment)
 
+**Read project configuration if available:**
+
+- `${CLAUDE_PROJECT_DIR}/.sdd-config.json` - provides `id_conventions`, used in Generation Rules Step 0
+
 ## Input
 
 $ARGUMENTS
@@ -62,6 +66,15 @@ When a feature name is provided, look for:
 
 ## Generation Rules
 
+### 0. Resolve ID Conventions
+
+Determine the ID format for UR/FR/NFR before extracting requirements:
+
+1. From `id_conventions` in `.sdd-config.json` (PRD-level keys: `prd_user`, `prd_functional`, `prd_nonfunctional`),
+   derive each type's ID format from its regex (e.g. `^UR_\d{3}$` → `UR_xxx`).
+2. **Fallback**: if `.sdd-config.json` or a specific key is missing, default to `UR_xxx`, `FR_xxx`, `NFR_xxx`
+   (underscore separator). Use the resolved format consistently for every ID produced in Step 2.
+
 ### 1. Input Analysis
 
 > **CI Mode**: Skip clarifying questions. Make reasonable assumptions for ambiguous items.
@@ -82,19 +95,19 @@ For each use case and context, derive:
 1. **User Requirements (UR)**
    - High-level goals from user perspective
    - What value users expect
-   - ID format: `UR-xxx`
+   - ID format: from Step 0 / `id_conventions.prd_user` (default `UR_xxx`)
 
 2. **Functional Requirements (FR)**
    - Specific functions to fulfill user requirements
    - Derived from use cases
-   - ID format: `FR-xxx`
+   - ID format: from Step 0 / `id_conventions.prd_functional` (default `FR_xxx`)
 
 3. **Non-Functional Requirements (NFR)**
    - Performance requirements
    - Security requirements
    - Usability requirements
    - Reliability requirements
-   - ID format: `NFR-xxx`
+   - ID format: from Step 0 / `id_conventions.prd_nonfunctional` (default `NFR_xxx`)
 
 ### 3. Requirement Attributes
 
