@@ -4,6 +4,7 @@
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   },
   "id_conventions": {
