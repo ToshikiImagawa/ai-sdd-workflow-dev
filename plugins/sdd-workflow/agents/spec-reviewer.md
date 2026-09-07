@@ -63,6 +63,14 @@ This agent performs specification reviews based on AI-SDD principles.
 The following documentation uses default values, but replace with custom values if environment variables or
 configuration file exists.
 
+### ID Convention Resolution
+
+PRD requirement IDs (UR/FR/NFR, extracted from `.sdd/requirement/`) must not be assumed to be hyphenated. Resolve
+their format per `${CLAUDE_PLUGIN_ROOT}/shared/references/id_conventions_config.md` § PRD-Level ID Format
+Resolution (default `UR_xxx`, `FR_xxx`, `NFR_xxx`). This is distinct from spec-level IDs, which are hyphenated
+per `id_conventions.spec_functional`/`spec_nonfunctional` (default `FR-xxx`/`NFR-xxx`) — do not conflate the two
+when checking PRD ↔ spec traceability below.
+
 ### Index Fast Path
 
 When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
@@ -189,7 +197,8 @@ Specification).
     - **If PRD does not exist**: Skip PRD ↔ spec traceability check and note this in the report. Other checks (
       CONSTITUTION compliance, completeness, clarity, spec ↔ design) will be performed as usual.
 
-2. **Extract Requirement IDs**: Extract all requirement IDs (UR-xxx, FR-xxx, NFR-xxx) from PRD
+2. **Extract Requirement IDs**: Extract all requirement IDs (format resolved above, e.g. `UR_xxx`, `FR_xxx`,
+   `NFR_xxx`) from PRD
 
 3. **Search for Corresponding Sections in spec**: Search how each requirement ID is addressed in spec
 
@@ -207,8 +216,8 @@ Specification).
 | Check Target                              | Verification Content                                                                                | Criteria                                                                   | Importance |
 |:------------------------------------------|:----------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------|:-----------|
 | **Requirement ID Mapping**                | Search all PRD requirement IDs (UR/FR/NFR) in spec and identify corresponding sections              | Are requirement IDs explicitly documented in spec?                         | High       |
-| **Functional Requirement Coverage**       | Are PRD functional requirements (FR-xxx) covered in spec's functional requirements/API definitions? | Is implementation approach for each FR-xxx documented in spec?             | High       |
-| **Non-Functional Requirement Reflection** | Are PRD non-functional requirements (NFR-xxx) reflected in spec's constraints/quality requirements? | Are constraints/quality criteria for each NFR-xxx documented in spec?      | Medium     |
+| **Functional Requirement Coverage**       | Are PRD functional requirements (e.g. `FR_xxx`) covered in spec's functional requirements/API definitions? | Is implementation approach for each PRD FR documented in spec?             | High       |
+| **Non-Functional Requirement Reflection** | Are PRD non-functional requirements (e.g. `NFR_xxx`) reflected in spec's constraints/quality requirements? | Are constraints/quality criteria for each PRD NFR documented in spec?      | Medium     |
 | **Coverage Threshold Check**              | Verify that PRD requirement coverage in spec is 80% or higher                                       | Coverage = (Covered + Partially Covered) / Total Requirements × 100% ≥ 80% | High       |
 | **Terminology Consistency**               | Is same terminology used in PRD and spec?                                                           | Are key concepts and feature names used consistently?                      | Low        |
 

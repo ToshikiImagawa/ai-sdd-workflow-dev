@@ -44,6 +44,7 @@ This skill operates in two modes:
 **Read project configuration if available:**
 
 - `${CLAUDE_PROJECT_DIR}/.sdd-config.json` - provides `id_conventions`, used in Generation Rules Step 0
+- `references/id_conventions_config.md` - PRD-level ID format resolution algorithm and defaults, used in Step 0
 
 ## Input
 
@@ -68,12 +69,9 @@ When a feature name is provided, look for:
 
 ### 0. Resolve ID Conventions
 
-Determine the ID format for UR/FR/NFR before extracting requirements:
-
-1. From `id_conventions` in `.sdd-config.json` (PRD-level keys: `prd_user`, `prd_functional`, `prd_nonfunctional`),
-   derive each type's ID format from its regex (e.g. `^UR_\d{3}$` → `UR_xxx`).
-2. **Fallback**: if `.sdd-config.json` or a specific key is missing, default to `UR_xxx`, `FR_xxx`, `NFR_xxx`
-   (underscore separator). Use the resolved format consistently for every ID produced in Step 2.
+Determine the ID format for UR/FR/NFR before extracting requirements, per `references/id_conventions_config.md`
+§ PRD-Level ID Format Resolution (default `UR_xxx`, `FR_xxx`, `NFR_xxx`). Use the resolved format consistently
+for every ID produced in Step 2.
 
 ### 1. Input Analysis
 

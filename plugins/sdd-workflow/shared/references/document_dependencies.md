@@ -72,13 +72,15 @@ When an upstream document changes, downstream documents may need updates:
 
 #### Cross-Reference Rules
 
-Documents reference each other using requirement IDs to maintain traceability:
+Documents reference each other using requirement IDs to maintain traceability. `requirement/` (PRD) defines these
+IDs, so their format follows the PRD-level keys of `id_conventions` in `.sdd-config.json` (see
+`id_conventions_config.md` § PRD-Level ID Format Resolution for the resolution algorithm and defaults):
 
-| ID Format | Type | Example |
-|:--|:--|:--|
-| `UR-xxx` | User Requirements | `UR-001`: User can log in |
-| `FR-xxx` | Functional Requirements | `FR-001`: Authenticate via OAuth |
-| `NFR-xxx` | Non-Functional Requirements | `NFR-001`: Response time < 200ms |
+| ID Format | Type | `id_conventions` Key | Example |
+|:--|:--|:--|:--|
+| `UR_xxx` | User Requirements | `prd_user` | `UR_001`: User can log in |
+| `FR_xxx` | Functional Requirements | `prd_functional` | `FR_001`: Authenticate via OAuth |
+| `NFR_xxx` | Non-Functional Requirements | `prd_nonfunctional` | `NFR_001`: Response time < 200ms |
 
 **Traceability chain**:
 

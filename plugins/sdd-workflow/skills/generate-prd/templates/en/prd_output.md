@@ -27,7 +27,7 @@
 ### Recommended Manual Verification
 
 - [ ] Verify generated PRD content matches business requirements
-- [ ] Verify uniqueness of requirement IDs (UR-xxx, FR-xxx, NFR-xxx)
+- [ ] Verify uniqueness of requirement IDs (format resolved from `id_conventions` in `.sdd-config.json`)
 - [ ] Verify priority (MoSCoW) classification is appropriate
 - [ ] Align with stakeholders
 
