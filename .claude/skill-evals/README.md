@@ -87,11 +87,27 @@ lift(era)   = score(era/skill) − score(era/without)
 **限界**: リフト差はコーパス差を*近似的に*相殺するだけで、証明ではない。`without` が
 コーパス差に対してスキルと同じ感度を持つという仮定に依存している。だから対照群を置く（次項）。
 
-### 3. `analyze-requirements` は対照群
+### 3. 対照群は合成する
 
-このスキルは `main` と `develop` で**1行も変わっていない**（+0/−0）。したがってリフト差は 0 付近に
-出るはずである。ここで大きな差が出たら、それは測定ノイズの大きさであり、他スキルの数値を
-そのまま信じてはならないという警告になる。**削除せず必ず一緒に走らせる。**
+**改善量の数値は、対照群と並べて初めて意味を持つ。** 差が出ないはずのセルで出た差がノイズ床であり、
+それを下回る改善量は信じられない。
+
+iteration-1 では差分 +0/−0 だった `analyze-requirements` を対照群に使っていたが、**計測が見つけた欠陥
+（ID 形式のハードコード）が issue #111 / PR #114 で develop 側だけ修正され、対照群を失った**。
+計測が自分の対照群を壊したことになる。偶然変更されなかったスキルに依存する設計は、
+成果を出すたびに壊れる。
+
+そこで対照群は**合成する**。
+
+```bash
+# main のコーパス + develop のスキルで対照セルを作る（develop 側は通常の develop/skill と同じ）
+python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
+  --eval .claude/skill-evals/<skill>/evals.json --skill-from develop
+```
+
+コーパスは世代固有のまま、**スキルだけ両世代で同一にする**。構成上リフト差は 0 でなければならず、
+出た差はすべてノイズである。任意のスキルで対照セルを作れるので、測りたいスキルと同じタスク形状で
+ノイズ床を測れる（差分0のスキルを流用すると、タスク形状が違うためノイズ床が転用できない）。
 
 ### 4. プロンプトは実ドキュメントの実パスに固定する
 
@@ -113,7 +129,8 @@ lift(era)   = score(era/skill) − score(era/without)
 
 ## 対象スキル（18件）
 
-`main` → `develop` で変更のあった17スキル全部と、対照群1件。
+`main` → `develop` で変更のあった全スキル（iteration-1 時点で17件、その後 `analyze-requirements` も加わり18件）。
+対照群は特定のスキルに割り当てず、`--skill-from` で必要なスキルごとに合成する。
 
 | スキル | 差分 (+/−) | 備考 |
 |:---|:---|:---|
@@ -134,10 +151,11 @@ lift(era)   = score(era/skill) − score(era/without)
 | `implement` | +41/−15 | |
 | `clarify` | +38/−17 | |
 | `constitution` | +29/−13 | |
-| `analyze-requirements` | +0/−0 | **対照群**。差が出ないことが期待値 |
+| `analyze-requirements` | +25/−12 | iteration-1 時点は +0/−0 で対照群だったが #111 / PR #114 で修正が入った |
 
-`generate-requirements-diagram` / `generate-usecase-diagram` は差分が無く、かつファイルを書かない
-テキスト専用スキルなので v3 の対象外。
+`generate-requirements-diagram` / `generate-usecase-diagram` は差分が無く、かつ `disallowed-tools` で
+`Write` / `Edit` / `Bash` を禁じたテキスト専用スキルなので v3 の対象外。差分0なので対照群に使えそうだが、
+ファイルを書くスキルとタスク形状が違うためノイズ床が転用できない（だから合成対照群を使う）。
 
 ## v2 の資産
 

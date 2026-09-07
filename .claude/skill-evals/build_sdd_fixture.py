@@ -16,8 +16,16 @@ evaluate them against a rulebook they do not implement. This script re-renders b
 from the branch's own plugin source, i.e. it simulates "this branch has been released and
 installed" -- which is the state the branch's skills are written for.
 
+`--skill-from <ref>` builds a **synthetic control** cell: the corpus stays era-native, but the
+skill under test is replaced by another ref's copy. Give both eras the same ref and the two
+lifts differ only by noise, by construction. That is stronger than relying on a skill that
+happens not to have changed -- iteration-1 used `analyze-requirements` as a zero-diff control
+and lost it the moment the defect the measurement itself found got fixed on develop
+(issue #111 / PR #114). A control the measurement can invalidate is not a control.
+
 Usage:
     build_sdd_fixture.py <branch> <outdir> [--eval <path/to/evals.json>] [--eval-id N]
+                         [--skill-from <ref>]
 
 Exit codes: 0 = built, 1 = error.
 """
@@ -126,6 +134,33 @@ def render_rulebook(out_dir: Path, sdd_root: str, version: str) -> List[str]:
         applied.append(".claude/rules/ai-sdd-instructions.md rendered from the branch's template")
 
     return applied
+
+
+def override_skill(out_dir: Path, skill: str, ref: str, root: Path) -> List[str]:
+    """Replace one skill's directory with another ref's copy (synthetic control)."""
+    rel = f"plugins/sdd-workflow/skills/{skill}"
+    target = out_dir / rel
+    if not target.is_dir():
+        return [f"MISSING skill directory, not overridden: {rel}"]
+    shutil.rmtree(target)
+    target.mkdir(parents=True)
+    archive = subprocess.run(
+        ["git", "archive", "--format=tar", f"{ref}:{rel}"],
+        cwd=str(root),
+        capture_output=True,
+        check=False,
+    )
+    if archive.returncode != 0:
+        raise RuntimeError(
+            f"git archive {ref}:{rel} failed: {archive.stderr.decode(errors='replace')}"
+        )
+    result = subprocess.run(
+        ["tar", "-x", "-C", str(target)], input=archive.stdout, capture_output=True, check=False
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"tar extract failed: {result.stderr.decode(errors='replace')}")
+    sha = run_git(["rev-parse", ref], root).strip()[:12]
+    return [f"synthetic control: {rel} replaced with {ref} @ {sha}"]
 
 
 def drop_generated(out_dir: Path) -> List[str]:
@@ -257,6 +292,11 @@ def main() -> int:
     parser.add_argument("outdir", help="destination directory (must not already exist)")
     parser.add_argument("--eval", dest="eval_path", help="path to a skill's evals.json, to apply its fixture block")
     parser.add_argument("--eval-id", type=int, default=None, help="which eval id to use (default: the first)")
+    parser.add_argument(
+        "--skill-from",
+        dest="skill_from",
+        help="replace the skill under test with this ref's copy, for a synthetic control cell",
+    )
     args = parser.parse_args()
 
     out_dir = Path(args.outdir).resolve()
@@ -280,6 +320,10 @@ def main() -> int:
             skill, spec = load_eval_fixture(eval_path, args.eval_id)
             eval_name = spec.get("eval_name")
             applied += apply_eval_fixture(out_dir, eval_path, spec)
+            if args.skill_from:
+                applied += override_skill(out_dir, skill, args.skill_from, root)
+        elif args.skill_from:
+            raise RuntimeError("--skill-from requires --eval to know which skill to replace")
 
         write_manifest(out_dir, args.branch, sha, version, skill, eval_name, applied)
     except (RuntimeError, OSError, json.JSONDecodeError) as exc:

@@ -207,3 +207,59 @@ main/skill ランが「`analyze-requirements/references/usecase_diagram_guide.md
    改善量の定量化を諦め、実在欠陥の抽出に目的を絞る
 
 現時点の推奨は 1。ただし対照群4セル×3ランで先にノイズ床を測り、下がらなければ 2 へ切り替える。
+
+## 実在欠陥2件の修正（2026-09-06〜07）
+
+iteration-1 が見つけた実在欠陥のうち2件を、`parallel-worktree` の並列エージェントループで修正・マージした。
+
+| issue | PR | 内容 |
+|:---|:---|:---|
+| [#111](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/111) | #114 | `analyze-requirements` が `id_conventions` を無視して ID 形式をハードコードしていた問題 |
+| [#112](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/112) | #113 | `SDD_ADR_DIR` / `SDD_ADR_PATH` の環境変数契約が session-config の spec / design に未反映だった問題 |
+
+受け入れ基準は親セッションが実ファイルで全項目検証した（ループの自己申告では判定していない）。
+
+- #111: `SKILL.md` のハイフン・ハードコード0件、`:46,73,98,103,110` で `prd_user` / `prd_functional` /
+  `prd_nonfunctional` から解決、`output_format.md` の出力例0件、`:75` にフォールバック既定値
+- #112: spec `FR-003:65` が `requirement・specification・adr・task` に更新、design `:141,145` に
+  `SDD_ADR_DIR` / `SDD_ADR_PATH`、`.sdd-config.json` の `directories` に `adr` 追加、
+  追加判断の理由が design `:207` に決定表として記録（代替案「既定値に委ねて明示しない」を併記の上、
+  「他3ディレクトリは既定値と同値でも明示されているので表記方針の一貫性を優先」と選択理由を明記）
+- CI: plugin-lint 2系統・validate-marketplace・pytest 333件・shellcheck すべて exit 0
+- follow-up issue 0件（指摘は PR 内で完遂）、worktree / branch 削除済み、`phase=done`
+
+### 副作用: 計測が自分の対照群を壊した
+
+`analyze-requirements` は iteration-1 時点で差分 +0/−0 だったため対照群に使っていた。#111 の修正は
+**develop 側だけ**に入るため、この差分は **+25/−12** になり、対照群として使えなくなった。
+
+これは偶発事故ではなく、方法論に内在する緊張である。**計測が欠陥を見つけ、それを直すと、
+差分0だったスキルが被験体に変わる。** 偶然変更されていないスキルに対照群を依存させる設計は、
+成果を出すたびに壊れる。
+
+残る差分0のスキルは `generate-requirements-diagram` / `generate-usecase-diagram` の2件だが、いずれも
+`disallowed-tools` で `Write` / `Edit` / `Bash` を禁じたテキスト専用スキルであり、ファイルを書くスキルとは
+タスク形状が違う。**別形状で測ったノイズ床は転用できない**ため、代替の対照群にはならない。
+
+### 対処: 合成対照群
+
+`build_sdd_fixture.py` に `--skill-from <ref>` を追加した。コーパスは世代固有のまま、
+**スキルだけを指定 ref の版に差し替える**。両世代に同一の SKILL.md を与えれば、構成上リフト差は 0 で
+なければならず、出た差はすべてノイズである。
+
+```bash
+python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
+  --eval .claude/skill-evals/<skill>/evals.json --skill-from develop
+```
+
+利点は2つ。**任意のスキルで対照セルを作れる**ので、測りたいスキルと同じタスク形状でノイズ床を測れる。
+そして**将来また欠陥を直しても壊れない**。
+
+動作確認済み: `main` のコーパス（v5マーカー0件）に `develop` の `analyze-requirements`
+（`id_conventions` 参照5件）が入ることを確認した。
+
+### 残課題（変わらず）
+
+ノイズ床 20pt を下げる作業は未着手。次にやるべきは、この合成対照群で
+`doc-consistency-checker`（識別力のある assertion を4件持つ一方、そのすべてがエージェント判断に依存し、
+iteration-1 で `without` が 1/5 と 4/5 に分かれた最大の不安定要因）のノイズ床を複数ランで測ることである。
