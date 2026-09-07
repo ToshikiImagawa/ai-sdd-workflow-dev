@@ -11,7 +11,7 @@
   "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
   "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/finalize-prd/evals.json [--eval-id N]",
   "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
-  "skill_delta_main_to_develop": "+42/-8 lines",
+  "skill_delta_main_to_develop": "+49/-17 lines (PR #116 が PRD レベル ID 形式の解決を id_conventions 参照へ変更し、PR-xxx を削除した分を含む)",
   "evals": [
     {
       "id": 0,

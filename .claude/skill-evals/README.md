@@ -57,8 +57,15 @@ python3 .claude/skill-evals/build_sdd_fixture.py develop /path/to/sandbox \
    コミットしている。そのまま渡すと `develop` のスキルは**自分が実装していない規則**で採点される。
    再レンダリングは「このブランチがリリースされ、インストールされた状態」を再現する操作である
 
-各 eval の `fixture` ブロック（`remove` / `strip_front_matter` / `copy_scenario` / `corpus: empty-project`）は
-シナリオを作るための変形宣言。**4バリアント全てに同一の変形が適用される**ので、シナリオは再現可能。
+各 eval の `fixture` ブロック（`remove` / `remove_section` / `strip_front_matter` / `copy_scenario` /
+`corpus: empty-project`）はシナリオを作るための変形宣言。**4バリアント全てに同一の変形が適用される**ので、
+シナリオは再現可能。
+
+`remove_section` は「生成すべき成果物が既にコーパスの中にある」場合に使う。実 PRD は第2〜3節に要求図を
+持っているので、そのまま `generate-requirements-diagram` に渡すと `without` が図をコピーするだけで
+識別力がゼロになる。節だけを外せば、入力は実在の・世代固有のドキュメントのまま、成果物だけが本当に
+不在になる。見出しが一致しなければ**エラーで止まる** — 黙って残った節は答えをサンドボックスに置いたまま
+それらしいスコアを出すので、静かに失敗させてはいけない。
 
 ### 2. バリアントは4つ、比較するのは「リフトの差」
 
@@ -127,10 +134,14 @@ python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
 判定基準と、初期設計（v1）で何を誤ったかは `ASSERTION_DESIGN.md` が正典。
 **`evals.json` の assertion を書き換える際は必ず先にこれを読むこと。**
 
-## 対象スキル（18件）
+## 対象スキル（19件）
 
-`main` → `develop` で変更のあった全スキル（iteration-1 時点で17件、その後 `analyze-requirements` も加わり18件）。
-対照群は特定のスキルに割り当てず、`--skill-from` で必要なスキルごとに合成する。
+`main` → `develop` で変更のあった全スキル。iteration-1 時点で17件、`analyze-requirements`（#111 / PR #114）と
+`generate-requirements-diagram`（PR #116）が後から加わって19件になった。対照群は特定のスキルに割り当てず、
+`--skill-from` で必要なスキルごとに合成する。
+
+差分は **develop を取り込むたびに引き直す**（欠陥修正が入るたびに対象集合が変わるため）。以下は
+`develop` @ `8f258da` 時点の実測値。
 
 | スキル | 差分 (+/−) | 備考 |
 |:---|:---|:---|
@@ -142,20 +153,21 @@ python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
 | `doc-consistency-checker` | +193/−78 | |
 | `checklist` | +192/−179 | |
 | `task-cleanup` | +114/−51 | |
-| `generate-prd` | +79/−15 | |
+| `generate-prd` | +96/−22 | PR #116 で ID 形式解決が `id_conventions` 参照へ |
 | `generate-spec` | +75/−28 | |
 | `sdd-init` | +68/−25 | |
 | `vibe-detector` | +50/−3 | |
+| `finalize-prd` | +49/−17 | PR #116 で同上。`PR-xxx` 削除を含む |
 | `task-breakdown` | +49/−37 | |
-| `finalize-prd` | +42/−8 | |
 | `implement` | +41/−15 | |
 | `clarify` | +38/−17 | |
 | `constitution` | +29/−13 | |
-| `analyze-requirements` | +25/−12 | iteration-1 時点は +0/−0 で対照群だったが #111 / PR #114 で修正が入った |
+| `analyze-requirements` | +24/−12 | iteration-1 時点は +0/−0 で対照群だったが #111 / PR #114 で修正が入った |
+| `generate-requirements-diagram` | +3/−3 | PR #116 で要求抽出元の表記が変わり対象へ格上げ。assertion は v2 設計の4件をそのまま使う |
 
-`generate-requirements-diagram` / `generate-usecase-diagram` は差分が無く、かつ `disallowed-tools` で
-`Write` / `Edit` / `Bash` を禁じたテキスト専用スキルなので v3 の対象外。差分0なので対照群に使えそうだが、
-ファイルを書くスキルとタスク形状が違うためノイズ床が転用できない（だから合成対照群を使う）。
+`generate-usecase-diagram` は差分が `+0/−0` のままなので対象外。差分0なので対照群に使えそうだが、
+`disallowed-tools` で `Write` / `Edit` / `Bash` を禁じたテキスト専用スキルで、ファイルを書くスキルとは
+タスク形状が違うためノイズ床が転用できない（だから合成対照群を使う）。
 
 ## v2 の資産
 

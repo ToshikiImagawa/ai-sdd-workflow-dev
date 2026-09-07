@@ -185,6 +185,37 @@ def strip_front_matter(path: Path) -> bool:
     return True
 
 
+def remove_heading_section(path: Path, heading: str) -> None:
+    """Drop one Markdown section (its heading through the next same-or-higher heading).
+
+    Some skills generate an artifact that already sits inside the real corpus -- the
+    requirement diagram in a PRD's section 2, for instance. Handing that PRD to the eval
+    would let the `without` baseline copy the answer instead of deriving it, which is the
+    non-discriminating shape ASSERTION_DESIGN.md warns about. Removing only the section
+    keeps the input a real, era-native document while making the artifact genuinely absent.
+
+    A heading that does not match raises: a silently-kept section leaves the answer in the
+    sandbox and the run still produces a plausible-looking score, so failing loudly is the
+    only way the mistake gets noticed.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    target = heading.strip()
+    level = len(target) - len(target.lstrip("#"))
+    start = next((i for i, ln in enumerate(lines) if ln.strip() == target), None)
+    if start is None:
+        raise RuntimeError(f"{path}: heading not found: {target!r}")
+
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        stripped = lines[i].lstrip()
+        if not stripped.startswith("#"):
+            continue
+        depth = len(stripped) - len(stripped.lstrip("#"))
+        if depth <= level and stripped[depth : depth + 1] in (" ", "\t"):
+            end = i
+            break
+    path.write_text("".join(lines[:start] + lines[end:]), encoding="utf-8")
+
 def load_eval_fixture(eval_path: Path, eval_id: Optional[int]) -> Tuple[str, Dict]:
     data = json.loads(eval_path.read_text(encoding="utf-8"))
     evals = data.get("evals", [])
@@ -238,6 +269,14 @@ def apply_eval_fixture(out_dir: Path, eval_path: Path, spec: Dict) -> List[str]:
             applied.append(f"stripped front matter from {rel}")
         else:
             applied.append(f"MISSING or had no front matter: {rel}")
+
+    for entry in fixture.get("remove_section", []):
+        rel, heading = entry["path"], entry["heading"]
+        path = out_dir / rel
+        if not path.is_file():
+            raise RuntimeError(f"remove_section target is absent: {rel}")
+        remove_heading_section(path, heading)
+        applied.append(f"removed section {heading!r} from {rel}")
 
     scenario_dir = eval_path.parent / "scenario"
     for rel in fixture.get("copy_scenario", []):

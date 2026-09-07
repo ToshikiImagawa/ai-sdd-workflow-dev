@@ -11,7 +11,7 @@
   "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
   "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/analyze-requirements/evals.json [--eval-id N]",
   "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
-  "skill_delta_main_to_develop": "+25/-12 lines (issue #111 / PR #114 で修正が入り、iteration-1 時点の +0/-0 ではなくなった)",
+  "skill_delta_main_to_develop": "+24/-12 lines (issue #111 / PR #114 で修正が入り、iteration-1 時点の +0/-0 ではなくなった)",
   "control_note": "iteration-1 ではこのスキルが差分 +0/-0 だったため対照群に使っていたが、計測が見つけた欠陥（ID 形式のハードコード）が issue #111 / PR #114 で develop 側だけ修正され、対照群としては使えなくなった。計測が自分の対照群を壊したことになる。以降の対照群は `build_sdd_fixture.py --skill-from <ref>` による**合成対照群**（両世代に同一の SKILL.md を与える）を使う。偶然変更されなかったスキルに依存しないため、将来また欠陥を直しても壊れない。",
   "evals": [
     {

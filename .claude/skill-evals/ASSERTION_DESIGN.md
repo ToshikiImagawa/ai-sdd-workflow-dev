@@ -438,6 +438,16 @@ Markdown→HTML 変換との差はこの再構成にあり、そこを検証の�
 
 ## 未対象
 
-`generate-requirements-diagram` / `generate-usecase-diagram` は `main`→`develop` の差分が無く、かつ
-`Write`/`Edit`/`Bash` を禁じたテキスト専用スキルであるため v3 の対象外とした。v2 の assertion
-（上の該当節）はそのまま有効なので、再評価が必要になったらそこから復元できる。
+`generate-usecase-diagram` は `main`→`develop` の差分が `+0/-0` のままなので v3 の対象外。v2 の assertion
+（`### generate-requirements-diagram / generate-usecase-diagram` 節）はそのまま有効なので、差分が付いたら
+そこから復元できる。
+
+`generate-requirements-diagram` は当初この節に入れていたが、**PR #116 が `+3/-3` の差分を付けたため対象へ
+格上げした**。変更は要求の抽出元の表記（`UR-xxx entries from tables` → `UR entries from tables`）で、
+実 PRD の ID はアンダースコア（`UR_001`）なので、`main` 側の指示に従うと表から要求を拾えず図が欠落する。
+つまり v2 で設計済みの assertion 1「入力に含まれる要求が図に漏れなく反映されている（脱落なし）」が、
+差分が付いたことで初めて識別力を持った。**assertion は新しく起こしていない** — 既存の4件をそのまま使う。
+
+この格上げで分かったこと: 「差分ゼロだから対象外」という判定は**その時点のスナップショットに過ぎない**。
+欠陥修正が入るたびに対象集合が変わるので、`skill_delta_main_to_develop` は develop を取り込むたびに
+引き直す必要がある（`## 対照群を必ず走らせる` が合成対照へ移行したのと同じ理由）。

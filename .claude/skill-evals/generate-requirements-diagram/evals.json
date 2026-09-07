@@ -1,0 +1,54 @@
+{
+  "skill_name": "generate-requirements-diagram",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-requirements-diagram/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+3/-3 lines (PR #116 が要求抽出元の表記を `UR-xxx entries from tables` から `UR entries from tables` へ変更した。それ以前は差分ゼロで、ASSERTION_DESIGN.md の `## 未対象` 節がそれを理由に本スキルを v3 対象外としていた)",
+  "coverage_note": "ASSERTION_DESIGN.md `### generate-requirements-diagram / generate-usecase-diagram` が v2 時点で設計した4件をそのまま使う。#116 の変更で assertion 1（脱落なし）が識別力を持つようになったのが対象へ格上げした理由であり、新しい assertion は起こしていない。他スキルが5件なのに合わせて5件目を作ることはしない（件数を揃えるための水増しは採点を薄めるだけ）。 `generate-usecase-diagram` は依然 +0/-0 なので対象外のまま。",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "distribution-prd-requirement-diagram",
+      "prompt": "`.sdd/requirement/distribution.md` の要求記述をもとに、SysML の要求図（Mermaid `requirementDiagram`）を生成してください。",
+      "sdd_inputs": [
+        ".sdd/requirement/distribution.md"
+      ],
+      "input_parity": "identical-on-both-branches (the PRD is byte-identical on both branches, and its requirement diagram section is removed in both eras). Chosen because every ID that appeared inside this PRD's diagram also appears outside it (16/16), so removing the diagram leaves the requirement set fully recoverable from the remaining sections. The other era-identical PRDs fail that test -- session-config.md, for one, defines DC_003 / FR_003 / IR_001 only inside the diagram, so grading 'nothing dropped' there would penalise a correct run.",
+      "fixture": {
+        "remove_section": [
+          {
+            "path": ".sdd/requirement/distribution.md",
+            "heading": "# 3. 要求図（SysML Requirements Diagram）"
+          }
+        ]
+      },
+      "expected_output": "A Mermaid requirementDiagram, returned as text rather than written to a file, covering every UR/FR/NFR/IR/DC defined in the PRD's remaining sections (2.3 and 4.x), with relationships (derives / contains / satisfies) that match what those sections state. IDs use underscores because Mermaid rejects hyphens -- both eras' skills say so, so this is not the distinction under measurement; extracting the requirements at all is.",
+      "assertions": [
+        {
+          "text": "入力に含まれる要求・アクター・ユースケースが図に漏れなく反映されている（脱落なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "図の要素間の関係（`derives`/`contains`/`satisfies`）が入力の記述と矛盾しない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "入力に無いアクター・要求を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "出力がファイル書き込みではなくテキストとして返され、呼び出し元（`generate-prd` 等）に判断を委ねている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}
