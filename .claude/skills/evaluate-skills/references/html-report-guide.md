@@ -29,7 +29,7 @@ DOM パーサは不要）。データソースは `<report-dir>/meta_analysis.js
 
 ### セクション1: スキル改善提案（`skill_improvements`）
 
-スキルごとに `<h3>` + `<ul>` で提案を列挙する。どの run（old/skill・new/skill）から
+スキルごとに `<h3>` + `<ul>` で提案を列挙する。どの run（`main_skill` / `develop_skill`）から
 得られた指摘かを併記する。
 
 ### セクション2: 評価手法自体の改善点

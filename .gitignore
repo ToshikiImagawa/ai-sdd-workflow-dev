@@ -12,6 +12,9 @@ Thumbs.db
 .claude/settings.local.json
 .claude/worktrees/
 .agents/worktrees/
+# evaluate-skills / skill-evals の実行成果物（HTMLレポート・ラン記録・フィクスチャ）。
+# 実行日ごとに数MB増えるうえ、評価定義（evals.json）と違って再生成できるため追跡しない。
+.claude/skill-evals/reports/
 
 # Python
 __pycache__/
