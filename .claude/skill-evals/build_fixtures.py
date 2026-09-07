@@ -116,6 +116,45 @@ FR_002 - derives -> UR_002
 バッジのクリア操作のUI導線は対象外（APIのみ提供）。
 """
 
+# analyze-requirements 用: UR/FR/NFRを含まない「提示されたユースケース」のみの入力。
+# UR/FR/NFRは実行者がここから導出する対象なので、正解を含めてはならない。
+USECASE_ONLY_BODY = """# 通知バッジ機能 ユースケース
+
+## Overview
+
+ユーザーに未読メッセージ数をアプリアイコンにバッジ表示する機能。
+
+# Use Case Diagram
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    User((User))
+    subgraph System["通知バッジ機能"]
+        UC1[未読バッジ数を確認する]
+        UC2[未読バッジをクリアする]
+        UC3[99件超の未読を99+表示で確認する]
+    end
+    User --> UC1
+    User --> UC2
+    User --> UC3
+```
+
+## Actors
+
+| Actor | Description |
+|:---|:---|
+| User | アプリの利用者 |
+
+## Use Cases
+
+| Use Case | Description |
+|:---|:---|
+| 未読バッジ数を確認する | ユーザーがアプリアイコンのバッジで未読メッセージ数を確認する |
+| 未読バッジをクリアする | ユーザーが明示的な操作でバッジをクリアし未読数を0にする |
+| 99件超の未読を99+表示で確認する | 未読数が99を超える場合、数値ではなく"99+"と表示される |
+"""
+
 # generate-prd の追記テスト用: UR_002/FR_002 がまだ無い状態
 PRD_BODY_PARTIAL = """# 通知機能 要求仕様書
 
@@ -247,7 +286,9 @@ DB永続化は行わない（MVP の範囲では永続化要件がないため�
 - Python 3.11+, pytest
 """
 
-# doc-consistency-checker 用: 型注釈が実装と矛盾する記述を意図的に含める（世代非依存の不整合）
+# doc-consistency-checker 用: spec と決定ログの間に、コードを見なくても文章比較だけで検出できる
+# 矛盾を意図的に含める（世代非依存・PRD/spec/adr スコープ内の不整合）。
+# spec の「制約」節（99件超で"99+"）と、後日の決定ログエントリ（101件以上に変更）が食い違っている。
 DECISION_LOG_BODY = """# 通知バッジ機能 決定ログ
 
 このファイルは append-only の決定ログである。過去のエントリは書き換えず、決定を覆す場合は
@@ -257,14 +298,26 @@ DECISION_LOG_BODY = """# 通知バッジ機能 決定ログ
 
 ## 2026-09-01: 未読数の保持をモジュールレベル辞書に決定
 
-**決定**: `_unread_counts: dict[str, user_id, int]` をモジュールレベルの状態として保持し、
-DB永続化は行わない。
+**決定**: `_unread_counts` をモジュールレベルの状態として保持し、DB永続化は行わない。
 
 **理由**: MVPの範囲では永続化要件がなく、シンプルな実装を優先した（FR-001〜FR-003のみが対象）。
 
 **却下した代替案**:
 
 - **DBテーブルでの永続化**: プロセス再起動でバッジがリセットされる問題が出た場合に検討する。
+
+---
+
+## 2026-09-03: バッジの上限表示切り替えしきい値を101件以上に変更
+
+**決定**: 未読数が101件以上になった場合にのみ"99+"表示に切り替える（100件はそのまま数値"100"を表示する）。
+
+**理由**: ユーザーテストで、ちょうど100件のときに実数を確認したいという要望が複数件あったため、
+切り替えしきい値を当初の「99件超」から「101件以上」に変更した。
+
+**却下した代替案**:
+
+- **99件超で即座に切り替え（当初仕様のまま）**: ユーザーテストで確認された要望に応えられないため却下。
 """
 
 TASKS_ROWS = """### Phase 1: Foundation
@@ -362,6 +415,7 @@ def fm(era: str, **fields: str) -> str:
 # decisions: 決定ログを置くか（new 世代は adr/、old 世代は設計書内に追記）
 # impl:   "complete" | "incomplete" | None
 # tests:  True | False
+# usecases: analyze-requirements 専用。UR/FR/NFRを含まない「提示されたユースケース」のみを置くか
 
 SKILLS: dict[str, dict] = {
     "generate-spec": dict(prd="full", spec=False, design=False, tasks=None,
@@ -375,7 +429,7 @@ SKILLS: dict[str, dict] = {
     "finalize-prd": dict(prd="partial", spec=False, design=False, tasks=None,
                          decisions=False, impl=None, tests=False),
     "analyze-requirements": dict(prd=None, spec=False, design=False, tasks=None,
-                                 decisions=False, impl=None, tests=False),
+                                 decisions=False, impl=None, tests=False, usecases=True),
     "task-breakdown": dict(prd="full", spec=True, design=True, tasks=None,
                            decisions=False, impl=None, tests=False),
     "task-cleanup": dict(prd="full", spec=True, design=True, tasks="done",
@@ -406,6 +460,16 @@ def build(era: str, skill: str, cfg: dict, dest: Path, constitutions: dict[str, 
                status='"approved"', created='"2026-08-01"', updated='"2026-09-01"',
                depends_on="[]", tags='["notification"]', category='"notification"',
                priority='"medium"', risk='"medium"') + body,
+            encoding="utf-8")
+
+    if cfg.get("usecases"):
+        # UR/FR/NFR は実行者が導出する対象なので、front matter の status は
+        # "draft"（要求分析未実施）とし、内容にも UR/FR/NFR を含めない。
+        (sdd / "requirement" / "notification.md").write_text(
+            fm(era, id='"prd-notification"', title='"通知バッジ機能"', type='"prd"',
+               status='"draft"', created='"2026-09-01"', updated='"2026-09-01"',
+               depends_on="[]", tags='["notification"]', category='"notification"',
+               priority='"medium"', risk='"medium"') + USECASE_ONLY_BODY,
             encoding="utf-8")
 
     if cfg["spec"]:

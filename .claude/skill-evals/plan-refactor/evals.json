@@ -7,7 +7,8 @@
     {
       "id": 0,
       "eval_name": "notification-badge-breaking-change",
-      "prompt": "get_unread_badge_count(user_id) の戻り値を `int | str` から常に文字列 `str` を返す形式に変更するリファクタリングを計画してください。既存の呼び出し元は int を期待しています。",
+      "prompt": "get_unread_badge_count(user_id) の戻り値を `int | str` から常に文字列 `str` を返す形式に変更するリファクタリングを計画してください。",
+      "prompt_note": "Do not state '既存の呼び出し元は int を期待しています' in the prompt -- that hands over the answer to assertion 1 (backward-incompatibility flagging) verbatim. The fixture's tests/test_notification_badge.py already asserts int-typed return values for the normal-count case, so a careful executor discovers the compatibility break on its own by reading the tests/spec.",
       "expected_output": "A plan that explicitly flags the backward-incompatible return-type change, analyzes affected callers and tests, leaves the compatibility policy to human judgment rather than deciding unilaterally, and grounds itself in the spec's content rather than the presence of a particular file.",
       "files": [],
       "assertions": [
