@@ -45,6 +45,10 @@ themselves. This carries the same enforcement strength as the no-full-overwrite-
 
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` — For principle compliance check
 
+**Read project configuration if available:**
+
+- `${CLAUDE_PROJECT_DIR}/.sdd-config.json` — provides `id_conventions`, used in Step 5 (Resolve ID Conventions)
+
 ## Input
 
 $ARGUMENTS
@@ -96,6 +100,7 @@ Read the following files from `$GENERATE_PRD_REFERENCES`:
 | `mermaid_notation_rules.md`           | Mermaid syntax rules                     |
 | `requirements_diagram_components.md`  | SysML requirements diagram components    |
 | `front_matter_prd.md`                 | PRD front matter schema                  |
+| `id_conventions_config.md`            | PRD-level ID format resolution algorithm and defaults (Step 5) |
 
 **Load PRD template** from `$GENERATE_PRD_TEMPLATE`
 
@@ -164,18 +169,22 @@ Generate a Mermaid flowchart representing actors, use cases, and system boundari
 
 Extract structured requirements from the use case diagram and business context.
 
+**Resolve ID conventions** before assigning any ID, per `id_conventions_config.md` § PRD-Level ID Format
+Resolution (default `UR_xxx`, `FR_xxx`, `NFR_xxx`). Use the resolved format consistently for every ID produced
+below and in Step 6.
+
 **Generate three requirement tables:**
 
 1. **User Requirements (UR)**: High-level goals from user perspective
-   - ID format: `UR-xxx`
+   - ID format: from above (`id_conventions.prd_user`)
    - Include: ID, Requirement, Priority, Risk
 
 2. **Functional Requirements (FR)**: Specific functions to fulfill user requirements
-   - ID format: `FR-xxx`
-   - Include: ID, Requirement, Derived From (UR-xxx), Priority, Risk, Verification
+   - ID format: from above (`id_conventions.prd_functional`)
+   - Include: ID, Requirement, Derived From (matching UR ID format above), Priority, Risk, Verification
 
 3. **Non-Functional Requirements (NFR)**: Quality attributes
-   - ID format: `NFR-xxx`
+   - ID format: from above (`id_conventions.prd_nonfunctional`)
    - Include: ID, Requirement, Category, Priority, Risk, Verification
 
 **Requirements Summary table:**
@@ -304,7 +313,7 @@ Before saving the PRD file, verify:
 - [ ] All `<MUST>` sections have content
 - [ ] Use case diagram is valid Mermaid flowchart
 - [ ] Requirements diagram is valid Mermaid requirementDiagram
-- [ ] Requirement IDs are unique (UR-xxx, FR-xxx, NFR-xxx)
+- [ ] Requirement IDs are unique (format resolved in Step 5)
 - [ ] All FRs trace to at least one UR
 - [ ] Priority and risk values are valid
 - [ ] Verification methods are specified for all requirements

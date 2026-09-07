@@ -68,9 +68,9 @@ Extract requirements information:
 
 | Item                            | Source                            |
 |:--------------------------------|:----------------------------------|
-| **User Requirements**           | UR-xxx entries from tables        |
-| **Functional Requirements**     | FR-xxx entries with traceability  |
-| **Non-Functional Requirements** | NFR-xxx entries                   |
+| **User Requirements**           | UR entries from tables            |
+| **Functional Requirements**     | FR entries with traceability      |
+| **Non-Functional Requirements** | NFR entries                       |
 | **Relationships**               | Derived from, traces to, contains |
 
 ### 2. Diagram Generation

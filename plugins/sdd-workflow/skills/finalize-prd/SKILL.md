@@ -41,6 +41,7 @@ This skill operates in two modes:
 | File                                                    | Purpose                                  |
 |:--------------------------------------------------------|:-----------------------------------------|
 | `references/prerequisites_directory_paths.md`           | Resolve `${SDD_*}` environment variables |
+| `references/id_conventions_config.md`                   | PRD-level ID format resolution algorithm and defaults (Integration Rule 5) |
 
 **Load PRD template** (in order):
 
@@ -50,6 +51,10 @@ This skill operates in two modes:
 **Load if exists:**
 
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` — For principle compliance
+
+**Read project configuration if available:**
+
+- `${CLAUDE_PROJECT_DIR}/.sdd-config.json` — provides `id_conventions`, used in Integration Rule 5 (ID Consistency)
 
 ## Input
 
@@ -115,16 +120,8 @@ Preserve template section markers:
 
 ### 5. ID Consistency
 
-Ensure requirement IDs are consistent:
-
-| ID Format | Type                       | Example |
-|:----------|:---------------------------|:--------|
-| `UR-xxx`  | User Requirement           | UR-001  |
-| `FR-xxx`  | Functional Requirement     | FR-001  |
-| `NFR-xxx` | Non-Functional Requirement | NFR-001 |
-| `PR-xxx`  | Performance Requirement    | PR-001  |
-| `IR-xxx`  | Interface Requirement      | IR-001  |
-| `DC-xxx`  | Design Constraint          | DC-001  |
+Ensure requirement IDs are consistent. Resolve each type's ID format per `id_conventions_config.md` § PRD-Level
+ID Format Resolution (default `UR_xxx`, `FR_xxx`, `NFR_xxx`, `IR_xxx`, `DC_xxx`).
 
 > **Amend Mode (`--amend`)**: New IDs must continue from the existing PRD's maximum per prefix (the caller —
 > `generate-prd` Step 3.5 — computes and passes this). Never renumber or reuse an existing ID.
