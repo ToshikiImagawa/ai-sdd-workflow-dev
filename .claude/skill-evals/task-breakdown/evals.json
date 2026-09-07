@@ -31,6 +31,10 @@
         {
           "text": "仕様の範囲外のタスクを創作していない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "各タスクの front matter（id 命名規則・type・depends-on の向き・status 等）が、その世代でプロジェクト内の既存タスク文書が実際に使っている規約に沿っている（一般的な熟練エンジニアが規約を読まずに書く場合と区別できる、その世代固有のパターンへの準拠）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }

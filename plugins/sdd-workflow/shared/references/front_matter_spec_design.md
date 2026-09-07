@@ -57,6 +57,7 @@ that `spec-reviewer` / `front-matter-reviewer` can validate it before deletion.
 | `priority`    | `critical`, `high`, `medium`, `low`             | Inherit from spec                        |
 | `risk`        | `high`, `medium`, `low`                         | Inherit from spec                        |
 | `depends-on`  | `["spec-*"]`                                    | References spec                          |
+| `ticket`      | string                                          | External ticket reference (e.g., `"TICKET-123"`). Optional -- relevant for a persistent design doc (e.g. a project layout without an `adr/` concept, or one where `task-cleanup` found nothing to integrate into `adr/`). Set it when no `adr` entry exists to carry the link and no ticket tracker was reachable to record completion -- it becomes the only durable link from a ticket back to this feature once `task/{ticket-number}/` is deleted |
 
 ## Dependency Direction Rules
 

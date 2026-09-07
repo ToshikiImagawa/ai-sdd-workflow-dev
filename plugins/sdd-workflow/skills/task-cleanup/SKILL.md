@@ -32,9 +32,17 @@ alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}.md` (append-o
 
 **Role separation**: `task/` is temporary, AI-facing working notes, deleted once cleanup completes. The ticket
 (GitHub Issue / JIRA) is the persistent, team-facing progress record — step 9 dumps a summary there so humans
-keep visibility after `task/` is gone. When no ticket tracker is reachable (step 9 is skipped), the `adr`
-entry's `ticket` field (step 7) is the only remaining link from the ticket number back to this feature —
-without it, deleting `task/{ticket-number}/` erases the ticket-to-feature association entirely.
+keep visibility after `task/` is gone. When no ticket tracker is reachable (step 9 is skipped), step 7's
+fallback is the only remaining link from the ticket number back to this feature — without it, deleting
+`task/{ticket-number}/` erases the ticket-to-feature association entirely. The fallback target depends on
+what step 5 produced:
+
+- An `adr` entry was created or already existed for this feature -> set its `ticket` field.
+- No `adr` entry exists (nothing to integrate, or this project's generation has no `adr/` concept) but the
+  feature's design doc still exists (e.g. a persistent `*_design.md`) -> set the design doc's `ticket` field
+  instead.
+- Neither exists -> note this gap explicitly in the output; there is no remaining persistent record of the
+  ticket-to-feature association.
 
 ### Language Configuration
 
@@ -146,6 +154,7 @@ for task fields and `references/front_matter_spec_design.md` for design fields.
 |:-------|:------------|
 | **Update/create `adr` front matter** | Set the fields defined for `type: "adr"` in `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` (`id`, `title`, `status`, `created`, `updated`, `sdd-version` — read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` — plus `depends-on`, `ticket` set to the identifier recorded in step 1, and `supersedes`/`superseded-by` when this decision reverses or is reversed by another entry) |
 | **Update design doc `updated`** | If the related `*_design.md` still exists, set to current date |
+| **Set design doc `ticket` (fallback)** | Only if no `adr` entry was created/updated above (this project's generation has no `adr/` concept, or step 5 found nothing to integrate) and the related design doc still exists as a persistent document (not a temporary `task/{ticket-number}/design-draft.md` that will itself be deleted): set its `ticket` field to the identifier recorded in step 1, per `references/front_matter_spec_design.md`. This is the fallback link once `task/` is gone |
 | **Update spec `status`** | Consider updating to `"approved"` if implementation validates the spec |
 | **Update spec `impl-status`** | Safety net: set to `"implemented"` if not already (the `implement` skill should have set this at completion; this catches cases where it was skipped, e.g. work resumed from a different session) |
 
@@ -165,8 +174,9 @@ proposed (and its outcome), and which files were deleted.
 - JIRA: use the `mcp-atlassian` MCP (`jira_add_comment`) with the ticket key
 
 If the ticket tracker cannot be determined, skip this step and note it in the output instead of failing —
-but verify the `adr` entry's `ticket` field (step 7) was still set, since it is now the only surviving
-record of which ticket this feature's decisions came from.
+but verify step 7's fallback `ticket` field (on the `adr` entry, or on the design doc when no `adr` entry
+exists) was still set, since it is now the only surviving record of which ticket this feature's decisions
+came from.
 
 ## Output
 

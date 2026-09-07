@@ -22,7 +22,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "新規要求の属性（Priority / Risk / Verification）が既存要求と整合的に付与されている",
+          "text": "新規要求の属性（Priority / Risk / Verification）が、既存要求で実際に使われている値の語彙・粒度から逸脱せずに付与されている（既存に存在しない独自の値や表記を新規要求にだけ導入していない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {

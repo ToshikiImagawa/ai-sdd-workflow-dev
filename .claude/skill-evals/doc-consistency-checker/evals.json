@@ -8,17 +8,17 @@
       "id": 0,
       "eval_name": "notification-badge-stale-adr",
       "prompt": "notification-badge 関連ドキュメント(PRD/spec/adr)の整合性をチェックしてください。",
-      "expected_output": "A severity-classified report of the real PRD-to-spec gaps and of the contradiction between the spec and the recorded design decisions, with no invented findings and no proposal to auto-rewrite the PRD from downstream.",
+      "expected_output": "A severity-classified report of two real, PRD/spec/adr-scoped defects -- spec's FR-003 (clear_badge) claims traceability to PRD's FR_002, whose text never mentions clearing; and spec's constraint section (99+ threshold) contradicts a later decision-log entry that changed the threshold to 101+ -- with no invented findings, no spec-vs-code comparison (out of this skill's documented scope; that's check-spec's job), and no proposal to auto-rewrite the PRD from downstream.",
       "files": [
-        "Fixture carries two deliberate, era-independent defects for the checker to find: the spec's Public API omits `increment_unread` (present in the code), and a type annotation inside the recorded design decisions contradicts the code. Built per era by build_fixtures.py."
+        "Fixture carries two deliberate, era-independent, PRD/spec/adr-scoped defects for the checker to find: (1) spec's FR-003 cites PRD's FR_002 as its source, but FR_002's text only covers badge display/cap, never clearing -- an unjustified traceability claim; (2) the decision log (built per era: adr/{feature}.md for new, appended into *_design.md for old) contains a later entry that changed the '99+' cap threshold to 101+, which spec's own constraint section still contradicts. Both are detectable from document text alone, unlike the project's earlier fixture design which conflated this skill's scope with check-spec's (spec-vs-code) scope. Built per era by build_fixtures.py."
       ],
       "assertions": [
         {
-          "text": "PRD ↔ spec の整合性を検査し、実在するギャップを報告する",
+          "text": "spec の FR-003（clear_badge）が PRD の FR_002 を上流要求として引用しているが、FR_002 の記述内容にはバッジのクリアに関する言及が一切無いという、記述内容に基づく実在のトレーサビリティ上の疑義を検出する（コードを見なくても文章比較だけで検出できる）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "spec と記録済みの設計判断（その世代における保存先）を突き合わせている",
+          "text": "spec の制約節（99件超で\"99+\"）と、決定ログの後日エントリ（101件以上に変更）の間の実在の矛盾を、spec と記録済みの設計判断（その世代における保存先）を突き合わせて検出する（コードを見なくても文章比較だけで検出できる）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
