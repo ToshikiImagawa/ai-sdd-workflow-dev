@@ -258,8 +258,116 @@ python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
 動作確認済み: `main` のコーパス（v5マーカー0件）に `develop` の `analyze-requirements`
 （`id_conventions` 参照5件）が入ることを確認した。
 
-### 残課題（変わらず）
+## 記録済み欠陥8件の解消確認（2026-09-07）
 
-ノイズ床 20pt を下げる作業は未着手。次にやるべきは、この合成対照群で
-`doc-consistency-checker`（識別力のある assertion を4件持つ一方、そのすべてがエージェント判断に依存し、
-iteration-1 で `without` が 1/5 と 4/5 に分かれた最大の不安定要因）のノイズ床を複数ランで測ることである。
+`ASSERTION_DESIGN.md` の `## 確認した実在欠陥` 表8件を、`develop` の実ファイルで1件ずつ検証した。
+**8件すべて解消済み**。表自体は発見当時の記録として残してあるので、修正状況はここを見ること。
+
+| # | 対象 | 解消の根拠（`develop` 実ファイル） |
+|:---|:---|:---|
+| 1 | `run-checklist` | `allowed-tools` に `Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" *)`。スクリプト実在 |
+| 2 | `checklist` | SKILL.md 本文と `templates/ja` が P1〜P3 / `CHK-1xx` で一致 |
+| 3 | `vibe-detector` | `:126-129` が意図的な除外と呼び出し元への委譲を明文化 |
+| 4 | `recommend-front-matter` | `type_specific_fields.md:33` に ADR スキーマ |
+| 5 | `naming.py` | `:100` に `if basename == "design-draft":` 分岐 |
+| 6 | `constitution` | `:146` が `Add principle \| MINOR`。3箇所が一致 |
+| 7 | `sdd-init` | `:66-67` が「事前に存在している前提。このコマンドが作ることはない」と明記し `:103` の Error と `init-structure.py:48-50` の exit 1 に一致 |
+| 8 | `front_matter_reference.md` | `:76` の ADR status が常に `"approved"` と説明付きで統一 |
+
+## 実在欠陥3件目の修正: PRD レベル ID 形式（2026-09-07）
+
+記録済み8件の確認と並行して `develop` 全体を監査し、**PRD 生成の入口から出口、および検証側エージェント
+まで一貫して ID 形式がハイフンにハードコードされている**欠陥クラスを見つけた。
+[#115](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/115) / PR #116 で修正・マージ済み。
+
+真実の源は `.sdd-config.json` で、PRD はアンダースコア（`prd_*`）・spec はハイフン（`spec_*`）と
+書き分けられており、実 PRD もアンダースコアのみ（ハイフン0件）。実害は3つ:
+
+1. **同一 PRD 内で表と図の ID が食い違う** — Step 5 の表がハイフン、Step 6 の図がアンダースコア
+   （Mermaid の制約）になり、要求表と要求図を ID で突き合わせられない。トレーサビリティは AI-SDD の
+   中核価値なので、これが最も重い
+2. **検証側が正しい PRD を不合格にしうる** — `prd-reviewer:184` と `spec-reviewer:192,210,211` が
+   ハイフンを期待。`spec-reviewer` は明示的に「from PRD」と書いているので PRD レベル
+3. `generate-prd` 自身の内部不整合 — `:135` は `id_conventions` を参照するのに `:170` は無視していた
+
+受け入れ基準9項目は親セッションが実ファイルで全項目検証した。**変更してはいけない箇所**として
+`requirements_diagram_components.md:180` の `❌ Invalid: id: FR-001` と Mermaid 構文規則2箇所を
+受け入れ基準に含め、差分0で未変更を確認した（Mermaid は ID にハイフンを取れないので、
+これらは現状が正しい。一括置換すれば壊れる）。
+
+実装は指示より良い形になった。解決アルゴリズムを `shared/references/id_conventions_config.md` に集約し、
+3スキルから symlink で参照する形にしたため、#111 で `analyze-requirements` に書いた5行も共通参照へ
+統合された（内容の保全は差分で確認済み）。
+
+### 監査で自分が出した誤検出
+
+機械監査スクリプトが参照切れを19件検出したが、**すべてパス解決バグによる誤検出**だった（全ファイル実在）。
+スクリプトの出力をそのまま報告せず実ファイルで確認したので誤情報の混入は防げたが、
+**機械監査の結果は実ファイル確認を挟むまで報告しない**という手順は明文化しておく価値がある。
+
+## develop への rebase と実行系の追従（2026-09-07）
+
+ブランチを `develop` @ `8f258da` へ rebase した（コンフリクト0、`.claude/skill-evals/` の内容は
+rebase 前と差分0行）。両方が同一ツリーに揃ったところで、**疑っていた統合上の欠陥が実測で確定した**。
+
+`develop` に PR #110 で入った `.claude/skills/evaluate-skills/` は、この `skill-evals/` を
+**入力仕様として読む実行系**だが、v2 手法に固定されていた。実際に v2 ビルダーを走らせて突き合わせると:
+
+```
+v2 の出力  → old/check-spec/.sdd/specification/notification-badge_spec.md（架空機能）
+v3 の要求  → .sdd/specification/workflow-foundation/session-config_spec.md → 両世代に「なし」
+```
+
+**クラッシュせずに静かに壊れる**タイプだった。ランは即席の代替を探して出力し、グレーダーは採点し、
+`benchmark.json` は正常な形で無効な数値を出す。計測ツールとして最悪の失敗の仕方なので、
+方法論（入力仕様）と実行系は同一の変更単位として扱い、同じ PR で追従させた。
+
+追従の過程で**自分が書いた記述の誤りを2つ、実行して見つけた**。`grade.py` の CLI を
+`<skill> <eval-id> <dir>` と書いたが実際は `<dir> --skill <name>` で `--eval-id` は無く `evals[0]` 固定。
+manifest を `fixture-manifest.json` と書いたが実際は `FIXTURE.md`。
+**ドキュメントに書いたコマンドは1回走らせるまで信用しない。**
+
+### `generate-requirements-diagram` の対象格上げ
+
+rebase で `skill_delta_main_to_develop` を引き直したところ3件が陳腐化しており（#116 の影響）、
+同時に `generate-requirements-diagram` が `+0/-0` → `+3/-3` になっていた。#116 が要求の抽出元の表記を
+`UR-xxx entries from tables` → `UR entries from tables` に変えたためで、実 PRD の ID は
+アンダースコアなので `main` 側の指示に従うと表から要求を拾えず図が欠落する。
+つまり v2 時点で設計済みだった assertion 1「脱落なし」が、**差分が付いたことで初めて識別力を持った**。
+assertion は新しく起こしていない。
+
+ここから得た教訓: **「差分ゼロだから対象外」はその時点のスナップショットに過ぎない。**
+`skill_delta_main_to_develop` は develop を取り込むたびに引き直す必要がある。
+
+入力の選定で1つ落とし穴があった。実 PRD は要求図を節として持つため、そのまま渡すと `without` が
+図をコピーするだけで識別力がゼロになる。`build_sdd_fixture.py` に `remove_section` を足して節だけを
+外す形にしたが、**当初使おうとした `session-config.md` は `DC_003` / `FR_003` / `IR_001` が図の中にしか
+定義されておらず**、節を外すと正しいランを「脱落」で減点してしまう。世代同一の10 PRD を全数調査し、
+図内16件すべてが図外にも存在する `distribution.md` だけが条件を満たした。
+
+## 新たに判明した計測の穴: `sdd-version` 陳腐化検出
+
+`doc-consistency-checker/SKILL.md:138-145` に **Generation Staleness Detection**（文書の `sdd-version` の
+major が `plugin.json` の version より古いものを列挙する）がある。`main` 側の `sdd-version` 言及は0件、
+`develop` 側は6件なので、これは `develop` 専用の新規能力である。
+
+ところが **`.sdd/` の85文書すべてに `sdd-version` が1件も存在しない**。したがって:
+
+- この能力の正しい出力は両世代で「陳腐化0件」になり、**現在のコーパスでは測れない**
+- 現行の assertion 5件はどれもこの能力を対象にしていないので、**dead assertion ではなくカバレッジの欠落**
+
+`doc-consistency-checker` は差分 `+193/−78` で、かつ最大のノイズ源として名指ししているスキルなので、
+その新規能力が計測外なのは穴として大きい。対処は可能で、`sdd-version: "3.0.0"` のような古い値を注入する
+フィクスチャ変形を足せば、`main` は能力を持たず `develop` は検出するので `render-adr-review` と同じ形の
+`develop` 専用 eval になる。`plugin.json` のバージョンバンプ保留とは独立に測れる（major 比較なので
+プラグイン側が 4 のままでも `3.x` は陳腐化と判定される）。
+
+## 残課題
+
+| # | 内容 | 状態 |
+|:---|:---|:---|
+| 1 | ノイズ床 20pt の低減 | 未着手。**残り14スキルへ展開する前提条件**。次の一手は合成対照群で `doc-consistency-checker` のノイズ床を複数ラン計測すること |
+| 2 | 採点の機械化 | 4/20 のまま。差し戻した4件の理由は `grade.py` の docstring にある |
+| 3 | `sdd-version` 陳腐化検出の eval 追加 | 未着手。1 と同じタイミングで流すのが効率的 |
+| 4 | `plugin.json` のバージョンバンプ判断 | ユーザー指示で保留中。ただし `shared/references/front_matter_*.md` が `sdd-version` の例に `"5.0.0"` と書いており、**ドキュメント側は既に v5 を前提にしている**不整合が実在する |
+
