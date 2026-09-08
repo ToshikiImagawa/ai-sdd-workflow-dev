@@ -379,6 +379,30 @@ class TestFindImplementationFiles:
         assert any(f.endswith("handler.ts") for f in all_files)
         assert not any(f.endswith("other.ts") for f in all_files)
 
+    def test_match_by_name_hyphen_feature_underscore_file(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "notification_badge.py").write_text("nothing", encoding="utf-8")
+        (src / "unrelated.py").write_text("nothing", encoding="utf-8")
+
+        _run(find_impl, ["find", "notification-badge"], tmp_path, monkeypatch)
+        all_files = _read_lines(tmp_path, "all-files.txt")
+        assert any(f.endswith("notification_badge.py") for f in all_files)
+        assert not any(f.endswith("unrelated.py") for f in all_files)
+
+    def test_match_by_content_hyphen_feature_underscore_content(self, tmp_path, monkeypatch):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "handler.py").write_text(
+            "from notification_badge import increment_unread", encoding="utf-8"
+        )
+        (src / "other.py").write_text("nothing here", encoding="utf-8")
+
+        _run(find_impl, ["find", "notification-badge"], tmp_path, monkeypatch)
+        all_files = _read_lines(tmp_path, "all-files.txt")
+        assert any(f.endswith("handler.py") for f in all_files)
+        assert not any(f.endswith("other.py") for f in all_files)
+
     def test_excludes_node_modules(self, tmp_path, monkeypatch):
         nm = tmp_path / "node_modules" / "pkg"
         nm.mkdir(parents=True)

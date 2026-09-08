@@ -90,6 +90,14 @@ This skill focuses on document content consistency only.
 | **Terminology Consistency**                 | Is same terminology used in PRD and spec?                                                                                      |
 | **PRD Contradiction / Uncovered Behavior**  | Does a spec change contradict a PRD requirement (FR-xxx, NFR-xxx, etc.), or introduce new behavior no PRD requirement covers?  |
 
+**⚠️ Judge Requirement ID Mapping by the cited requirement's own text only.** When a spec item cites a specific
+upstream FR/NFR/UR ID as its source, check that ID's own description — nothing else. An unrelated PRD section
+(e.g., an "Out of Scope" note describing a different feature area) does not retroactively justify a citation
+whose cited ID says nothing about the downstream behavior — a scope boundary and a traceability claim answer
+different questions. If the cited ID's text does not support the spec item, report it as a `[must]`/`[recommend]`
+gap even if some other part of the PRD looks superficially compatible. Do not talk yourself out of a textual
+mismatch you noticed during analysis by finding a plausible but unrelated justification elsewhere in the document.
+
 **⚠️ The PRD is a record of human business decisions and must never be auto-updated by this check.** When the
 "PRD Contradiction / Uncovered Behavior" item finds a contradiction or an uncovered new behavior, always report
 it as `[must]` and stop short of editing the PRD. Present the conflicting spec change and the affected PRD

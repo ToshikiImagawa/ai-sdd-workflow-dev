@@ -92,9 +92,8 @@ class TestReadConfig:
         (tmp_path / ".sdd-config.json").write_text("{}", encoding="utf-8")
         assert fs.read_config(tmp_path) == fs.SddPaths()
 
-    def test_missing_config_exits(self, tmp_path):
-        with pytest.raises(SystemExit):
-            fs.read_config(tmp_path)
+    def test_missing_config_falls_back_to_defaults(self, tmp_path):
+        assert fs.read_config(tmp_path) == fs.SddPaths()
 
 
 class TestSortedDocs:

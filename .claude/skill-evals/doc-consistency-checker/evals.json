@@ -14,7 +14,7 @@
       ],
       "assertions": [
         {
-          "text": "spec の FR-003（clear_badge）が PRD の FR_002 を上流要求として引用しているが、FR_002 の記述内容にはバッジのクリアに関する言及が一切無いという、記述内容に基づく実在のトレーサビリティ上の疑義を検出する（コードを見なくても文章比較だけで検出できる）",
+          "text": "spec の FR-003（clear_badge）が PRD 側の対応する上流 FR（バッジ数表示/上限関連。ID表記はプロジェクトの id_conventions 次第）を引用しているが、その上流 FR の記述内容にはバッジのクリアに関する言及が一切無いという、記述内容に基づく実在のトレーサビリティ上の疑義を検出する（コードを見なくても文章比較だけで検出できる）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {

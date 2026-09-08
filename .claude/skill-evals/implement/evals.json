@@ -28,7 +28,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "テストを後付けではなく実装と同時／先行で書いている（自己申告＋成果物で判定）",
+          "text": "テストを実装と同時／先行で書いたという主張が、具体的な作業順序の記述（どのファイルをどの順で作成・変更したか）を伴う証拠で示されている（時系列の自己申告のみでは不十分。ナラティブな要約だけで「先に書いた」と述べているだけの場合はFAILとする）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]

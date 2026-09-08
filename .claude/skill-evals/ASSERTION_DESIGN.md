@@ -95,7 +95,7 @@
 2. FR-002（99+ 上限）の実装漏れを検出する
 3. 仕様に無い `increment_unread` を「実装が仕様化されていない」側の指摘として分類し、誤検知として扱わない
 4. 存在しない不整合を創作していない（偽陽性ゼロ）
-5. 重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（テンプレートの機械的コピーで満たせない）
+5. 重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（検出された全ての指摘が無差別に同一重大度になる、またはテンプレートの機械的コピーで満たせない）
 
 ### implement
 
@@ -103,7 +103,18 @@
 2. テストが書かれ、実行して実際に pass する
 3. 仕様の各 FR を実装が満たしている
 4. 実装状況がドキュメント側に反映され、仕様とコードの乖離が放置されていない（手段は世代依存なので問わない）
-5. テストを後付けではなく実装と同時／先行で書いている（自己申告＋成果物で判定）
+5. テストを実装と同時／先行で書いたという主張が、具体的な作業順序の記述（どのファイルをどの順で作成・変更
+   したか）を伴う証拠で示されている（時系列の自己申告のみでは不十分。ナラティブな要約だけで「先に書いた」
+   と述べているだけの場合はFAILとする）
+
+> **assertion 強化の経緯（2026-09-08）**: 旧5件は old/new × skill/without の4条件全てで pass_rate=1.0
+> となり、かつ skill 使用時のtool_calls数が最大3.4倍（実装スキル中最大）に増えるにもかかわらず品質差が
+> 測れていなかった。加えて全4runのgraderが「テスト先行という主張がtranscriptのナラティブ要約のみに依存
+> しており、実際のツール呼び出し順序を独立に検証できない」と繰り返し指摘した。真の機械的検証（gitコミット
+> 単位の記録等）はharness側の大改修が必要なため見送り、assertion文言を「具体的な証拠が無ければFAIL」に
+> 強化するだけにとどめた。tool_calls増加自体は、SKILL.mdの「Implementation Options」節が通常使わない
+> 3つの代替モード（Continue/Phase Skip/Dry Run）の例示を無条件に読ませていたことが主因と判明したため、
+> 該当モードが指示された場合のみ読む条件付き記述に修正した。
 
 ### generate-prd
 
@@ -112,6 +123,14 @@
 3. 新規要求の属性（Priority / Risk / Verification）が、既存要求で実際に使われている値の語彙・粒度から逸脱せずに付与されている（独自の値・表記を新規要求にだけ導入していない）
 4. 新規 FR が UR に遡れる（トレーサビリティ維持）
 5. 全体再生成ではなく追記操作として実施されており、既存記述が失われていない
+6. 新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾していない
+
+> **assertion 追加の経緯（2026-09-08）**: 旧5件は old/new × skill/without の4条件全てで pass_rate=1.0
+> となり、skill使用の価値を判別できていなかった。実際には `old_skill`/`new_skill` 両方が、fixture の
+> 既存「Out of Scope」節（「未読数のバッジ表示は対象外」）と直接矛盾する新規 FR_002（「未読メッセージ数を
+> バッジとして表示する」）を生成し、両run共にこの矛盾を自覚して `user_notes.md` に記録していたにも
+> かかわらず、旧5件のいずれにも引っかからなかった。fixture 自体は矛盾が十分明確なため変更せず、
+> 6番目のassertionを追加して既存の見逃しを検出できるようにした。
 
 ### finalize-prd
 
@@ -151,6 +170,16 @@
 > 旧5件は「良い上級エンジニアなら自然にやること」の範囲に留まり、スキルを読んだことの価値を
 > 判別できていなかったため、6番目を追加した。
 
+> **SKILL.md 修正の経緯（2026-09-08）**: `old_skill` run が6件全てFAILしていた原因は、fixture の
+> 非対称ではなく **`plugins/sdd-workflow/skills/task-breakdown/SKILL.md` 自身の old 世代対応の欠落**
+> だった。old 世代のプロジェクトには `task/{ticket}/design-draft.md` という task スコープの設計ドラフト
+> という概念自体が無く、設計は `specification/{feature}_design.md` に永続化される旧レイアウトを使う。
+> SKILL.md 本文は `design-draft.md` を固定パス必須としており、old 世代向けのフォールバックが本文に
+> 一切無かったため、`old_skill` run は必須条件を満たせず着手前に停止していた。`task-cleanup` が既に持つ
+> 「`adr` が無ければ永続 design doc の `ticket` フィールドを使う」という old/new 両対応のフォールバック
+> 文体を手本に、「1. Load Related Documents」に `design-draft.md` が無い場合の
+> `specification/{feature-name}_design.md` へのフォールバックを追記した。
+
 ### task-cleanup
 
 1. 設計判断とその**根拠（なぜ）**が、一時ログの削除で失われず永続的な場所に保存されている
@@ -174,7 +203,9 @@
 
 1. この変更が後方互換性を壊すことを明示的に指摘している
 2. 影響を受ける呼び出し元・テストの影響分析を提示している
-3. 後方互換性の方針を独断で決めず、人間の判断材料として提示している
+3. 後方互換性について、少なくとも1つの具体的な代替アプローチ（例: 移行期間を設けたdeprecation、新旧シム
+   関数の並存提供、即時breaking change）を比較提示し、かつ実装への反映は行わずレビュー可能な状態で人間の
+   判断に委ねている（どちらか一方だけでは不十分）
 4. 決定とその根拠が永続的に記録される想定になっている
 5. 計画の根拠を仕様の**内容**に置いている（特定ファイルの有無に依存していない）
 
@@ -184,10 +215,21 @@
 > 戻り値を期待するテストを含むため、この一文を削除しても実行者は実コード・テストを読めば同じ事実に
 > 到達できる。prompt からこの一文を削除した。
 
+> **assertion 3 言い換えの経緯（2026-09-08）**: 旧文言「後方互換性の方針を独断で決めず、人間の判断材料
+> として提示している」は、4 run全てのgraderが独立に同じ論点（「複数の代替案を比較提示すること」と
+> 「実行せずレビューゲートを残すこと」のどちらを求めているか曖昧）を指摘していた。実際にold_withoutのみ
+> 具体的な代替案（別名関数の新設、Union型のまま正規化、TypedDict化）を比較提示し、old_skill/new_skillは
+> 代替案を一切提示せず「レビュー承認待ち」という実行タイミングの保留のみで済ませていたが、旧文言では
+> いずれも同じくPASSしてしまっていた。比較提示とレビューゲートの両方を明示的なAND条件にして解消した。
+> なお `scripts/find-implementation-files.py` がfeature-name（ハイフン区切り）とソースコードの
+> モジュール名（アンダースコア区切り）の表記差で0件を返す実バグも同時に修正した（fixture固有ではなく
+> 一般的な欠陥）。
+
 ### doc-consistency-checker
 
-1. spec の FR-003（clear_badge）が PRD の FR_002 を上流要求として引用しているが、FR_002 の記述内容には
-   バッジのクリアに関する言及が一切無いという、記述内容に基づく実在のトレーサビリティ上の疑義を検出する
+1. spec の FR-003（clear_badge）が PRD 側の対応する上流 FR（バッジ数表示/上限関連。ID表記はプロジェクトの
+   id_conventions 次第）を引用しているが、その上流 FR の記述内容にはバッジのクリアに関する言及が一切無い
+   という、記述内容に基づく実在のトレーサビリティ上の疑義を検出する
 2. spec の制約節（99件超で"99+"）と、決定ログの後日エントリ（101件以上に変更）の間の実在の矛盾を検出する
 3. 指摘が実在し正確である（創作していない）
 4. 人間が優先度判断できるよう、指摘が重大度で分類されている
@@ -277,7 +319,7 @@ skill-vs-without（図の正確性・網羅性）に置く。
 3. 入力に無いアクター・要求を創作していない
 4. 出力がファイル書き込みではなくテキストとして返され、呼び出し元（`generate-prd` 等）に判断を委ねている
 
-## 確認した実在欠陥（残り9スキル）
+## 確認した欠陥（残り9スキル、履歴）
 
 当初はfork実行制約（サブエージェント再委任不可）により静的解析のみで欠陥候補を洗い出したが、その後
 オーケストレーター（メインセッション）が直接、9スキル×2世代×2variant=36回のエージェント実行と9件の
@@ -285,16 +327,21 @@ skill-vs-without（図の正確性・網羅性）に置く。
 としていたが、実際には`ce3fea3`（本プロジェクトのold世代基準コミット）より前の別コミットで既に失われており、
 古い世代のフィクスチャにも欠陥が混入している点を修正済み）。
 
+**2026-09-08 追記**: 以下 #1〜#8 は、課題3の事実確認（Explore agent 3体による現行コードとの対比）で
+`3b380cf`（PR #108「スキル評価で見つかった自己矛盾・欠落を修正する」、2026-09-04）により**既に解消済み**と
+判明した。表自体を更新せず古い状態を記録し続けていたため、過去の検出記録として残すが現行コードには対応しない。
+
 | # | スキル | 欠陥 | 根拠 |
 |:---|:---|:---|:---|
-| 1 | `run-checklist` | `allowed-tools`に`Bash`が無く、スキルの核心機能（テスト・リンタ・セキュリティスキャナの実行）が実行不能。SKILL.md:3「Runs tests, linters, security scanners」、Section 3「Execute Automated Verifications」と矛盾する。2026-07-28のコミット`7e3e6c0`で`Read, Write, Edit, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList, TaskGet` → `Read, Glob, Grep, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet`に絞られた際の退行だが、このコミットは本プロジェクトの「old世代」基準コミット`ce3fea3`（2026-08-19）より前のため、old/new両方の実行で同一の欠陥が再現した（4実行中4実行がBash不可を報告し、静的解析で代替）。加えて`Write`も無いため、SKILL.mdが要求する新規ファイル`verification_report.md`の作成もEdit(.sdd/**)だけでは不可能（2実行が実際にこの壁にぶつかった） | `plugins/sdd-workflow/skills/run-checklist/SKILL.md:9`、`git log --follow -p`、実行ログ4件 |
-| 2 | `checklist` | SKILL.md本文のProcessing Flow（P1/P2/P3の3段階、9カテゴリ、`CHK-{category}{nn}`形式）と、同スキルが自ら参照する`templates/ja/checklist_template.md`（P0〜P3の4段階、10カテゴリ、`CHK001`通し番号）が矛盾している。Export Formats節の「P0項目をGitHub Issue化する」という記述はテンプレート側のP0に基づくものだが、SKILL.md本文はP0を定義していない自己矛盾。old/new両世代、独立した2回の実行（`old/skill`・`new/skill`）が同一の矛盾を発見し、いずれもSKILL.md本文側を優先する同じ判断を下した。加えて`gh issue create`の実行には`Bash`が必要だが`allowed-tools`に無い | `plugins/sdd-workflow/skills/checklist/SKILL.md:170-184`（本文の定義）と`templates/ja/checklist_template.md`（矛盾するテンプレート）、`SKILL.md:214`（P0への言及）、`SKILL.md:8`（allowed-tools）、実行ログ2件（`old/skill`, `new/skill`） |
-| 3 | `vibe-detector` | `disallowed-tools: Write, Edit, Bash`により、本文の「Escalation When Specifications Are Insufficient」節が指示する`task/{ticket}/assumed-spec.md`への推定仕様書き込みが実行不能。old/new両世代の実行が同一の権限矛盾を報告し、書き込むはずだった内容をテキストで代替提示することで対応した | `plugins/sdd-workflow/skills/vibe-detector/SKILL.md:7-8`（front matter）と`SKILL.md:115-126`（Escalation節）、実行ログ2件 |
-| 4 | `recommend-front-matter` | `scripts/scan-documents.py`が使う`naming.determine_type`は`adr/`配下も走査・分類するが、SKILL.mdのPrerequisitesと`templates/{lang}/type_specific_fields.md`にADRのスキーマ定義が無い。old/new両世代の`skill`実行が独立にこのギャップを発見し、正しいスキーマ源（`shared/references/front_matter_reference.md`）を自力で探索して代替した一方、`without`実行（スキル無し）は世代を問わずADR推奨で`sdd-phase`等を欠落させた（4実行中2実行が同一assertionで失点、原因も一致） | `plugins/sdd-workflow/skills/recommend-front-matter/SKILL.md:19-23`、`templates/en/type_specific_fields.md`（ADR行なし）、正しい参照例: `plugins/sdd-workflow/agents/front-matter-reviewer.md:40`、実行ログ4件 |
-| 5 | `naming.py::determine_type()`（共有モジュール） | `task/{ticket}/`配下のファイルは`implementation_log`/`impl_log`という名前パターンのみ`"implementation-log"`と判定し、それ以外は無条件に`"task"`と分類する。`design-draft.md`という新世代の設計ドラフト（`front_matter_reference.md`が定義する正規の配置場所）を特別扱いする分岐が無いため、`type: "design"`であるべき文書が`type: "task"`に誤分類される。`recommend-front-matter`の`new/skill`実行がこの誤分類を実地で発見し、`<!-- id候補: design-101 -->`というファイル内のヒントを根拠に`type: "design"`へ手動補正して切り抜けた。`determine_type`の唯一の呼び出し元は`scan-documents.py`のみ（docstringが挙げる`doc_walker`/`check-spec`は現状未使用）だが、影響範囲は今後この関数を再利用するツールにも及ぶ | `plugins/sdd-workflow/scripts/naming.py:91-101`（`determine_type`本体、design-draft分岐なし）、対比: `plugins/sdd-workflow/shared/references/front_matter_reference.md:57`（design型の正規配置） |
-| 6 | `constitution` | SKILL.md内で原則追加時のバージョンバンプ規則が矛盾している。「2. Add Principle (add)」節（122行目）と巻末のセマンティックバージョニング表（236行目）はいずれも「原則追加 → Minor」とするが、「4. Update Constitution (update)」節の「Version Bump Rules」表（146行目）は同じ「Add principle」を「MAJOR」と定義している。4実行全てが同じ矛盾を認識した上でMinorを採用し（`add`サブコマンドの手順を優先）、一貫した判断を下したためgrading上は減点していないが、SKILL.md自体の記述矛盾は解消が必要 | `plugins/sdd-workflow/skills/constitution/SKILL.md:122`, `:146`, `:236` |
-| 7 | `sdd-init` | SKILL.md自体が`.sdd-config.json`不在時の挙動について自己矛盾している。「Configuration File Management」節（66-70行目）は「スクリプトが自動的に...存在しなければデフォルト設定で作成する」と説明するが、その直後の「Execution Flow」節（100-102行目）は同じスクリプトについて「存在しなければError（事前作成かsession-startフックが必要）」と正反対の説明をしている。実装（`init-structure.py:47-50`）は後者と一致し、`.sdd-config.json`が無いと`ERROR: .sdd-config.json not found`でexit 1する（フォールバック実装なし）。old/new両世代の`skill`実行が独立にこの矛盾に遭遇し、手動で`.sdd-config.json`を作成してから再実行することで切り抜けた。`old/skill`実行はこの後の後始末（`.sdd/AI-SDD-PRINCIPLES.md`等、CLAUDE.mdが参照するファイルの生成）を「SessionStartフックの責務」として意図的にスキップし壊れた参照を残したのに対し、`new/skill`実行は`session-start.py`を手動実行して補完した——同じ欠陥への対応の質が実行ごとにばらついた点も、SKILL.mdのharness外運用時の手順が明文化されていないことの表れ | `plugins/sdd-workflow/skills/sdd-init/SKILL.md:66-70`（自動生成すると記述）vs`:100-102`（Errorすると記述）、`scripts/init-structure.py:47-50`（実装はError側と一致）、実行ログ2件（`old/skill`, `new/skill`） |
-| 8 | `front_matter_reference.md`（共有リファレンス） | ADR（`type: "adr"`）の`status`フィールド定義表（76行目）は`draft, review, approved, deprecated`を有効値として列挙するが、直後の「Status Transition Rules」節のADRの項（189-193行目）は「ADR entries are append-only and do not follow the draft/review/approved lifecycle」と明記しており、同一ドキュメント内で自己矛盾している | `plugins/sdd-workflow/shared/references/front_matter_reference.md:76`, `:189-193` |
+| 1 | `run-checklist` | `allowed-tools`に`Bash`が無く、スキルの核心機能（テスト・リンタ・セキュリティスキャナの実行）が実行不能。SKILL.md:3「Runs tests, linters, security scanners」、Section 3「Execute Automated Verifications」と矛盾する。2026-07-28のコミット`7e3e6c0`で`Read, Write, Edit, Glob, Grep, Bash, TaskCreate, TaskUpdate, TaskList, TaskGet` → `Read, Glob, Grep, Edit(.sdd/**), TaskCreate, TaskUpdate, TaskList, TaskGet`に絞られた際の退行だが、このコミットは本プロジェクトの「old世代」基準コミット`ce3fea3`（2026-08-19）より前のため、old/new両方の実行で同一の欠陥が再現した（4実行中4実行がBash不可を報告し、静的解析で代替）。加えて`Write`も無いため、SKILL.mdが要求する新規ファイル`verification_report.md`の作成もEdit(.sdd/**)だけでは不可能（2実行が実際にこの壁にぶつかった）。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: `allowed-tools`にスコープ付き`Bash(python3 .../run-verification.py *)`が追加され、本文もスコープ内実行に限定する旨を明示 | `plugins/sdd-workflow/skills/run-checklist/SKILL.md:9`、`git log --follow -p`、実行ログ4件 |
+| 2 | `checklist` | SKILL.md本文のProcessing Flow（P1/P2/P3の3段階、9カテゴリ、`CHK-{category}{nn}`形式）と、同スキルが自ら参照する`templates/ja/checklist_template.md`（P0〜P3の4段階、10カテゴリ、`CHK001`通し番号）が矛盾している。Export Formats節の「P0項目をGitHub Issue化する」という記述はテンプレート側のP0に基づくものだが、SKILL.md本文はP0を定義していない自己矛盾。old/new両世代、独立した2回の実行（`old/skill`・`new/skill`）が同一の矛盾を発見し、いずれもSKILL.md本文側を優先する同じ判断を下した。加えて`gh issue create`の実行には`Bash`が必要だが`allowed-tools`に無い。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: テンプレートを本文の正準形式（P1-P3・9カテゴリ・`CHK-{category}{nn}`）に統一 | `plugins/sdd-workflow/skills/checklist/SKILL.md:170-184`（本文の定義）と`templates/ja/checklist_template.md`（矛盾するテンプレート）、`SKILL.md:214`（P0への言及）、`SKILL.md:8`（allowed-tools）、実行ログ2件（`old/skill`, `new/skill`） |
+| 3 | `vibe-detector` | `disallowed-tools: Write, Edit, Bash`により、本文の「Escalation When Specifications Are Insufficient」節が指示する`task/{ticket}/assumed-spec.md`への推定仕様書き込みが実行不能。old/new両世代の実行が同一の権限矛盾を報告し、書き込むはずだった内容をテキストで代替提示することで対応した。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: 本文が「このスキル自身は書き込まず、呼び出し元セッションが保存する」設計を明示的に説明する記述に修正 | `plugins/sdd-workflow/skills/vibe-detector/SKILL.md:7-8`（front matter）と`SKILL.md:115-126`（Escalation節）、実行ログ2件 |
+| 4 | `recommend-front-matter` | `scripts/scan-documents.py`が使う`naming.determine_type`は`adr/`配下も走査・分類するが、SKILL.mdのPrerequisitesと`templates/{lang}/type_specific_fields.md`にADRのスキーマ定義が無い。old/new両世代の`skill`実行が独立にこのギャップを発見し、正しいスキーマ源（`shared/references/front_matter_reference.md`）を自力で探索して代替した一方、`without`実行（スキル無し）は世代を問わずADR推奨で`sdd-phase`等を欠落させた（4実行中2実行が同一assertionで失点、原因も一致）。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: `references/front_matter_adr.md`を新設し、両言語の`type_specific_fields.md`にもADR行を追加 | `plugins/sdd-workflow/skills/recommend-front-matter/SKILL.md:19-23`、`templates/en/type_specific_fields.md`（ADR行なし）、正しい参照例: `plugins/sdd-workflow/agents/front-matter-reviewer.md:40`、実行ログ4件 |
+| 5 | `naming.py::determine_type()`（共有モジュール） | `task/{ticket}/`配下のファイルは`implementation_log`/`impl_log`という名前パターンのみ`"implementation-log"`と判定し、それ以外は無条件に`"task"`と分類する。`design-draft.md`という新世代の設計ドラフト（`front_matter_reference.md`が定義する正規の配置場所）を特別扱いする分岐が無いため、`type: "design"`であるべき文書が`type: "task"`に誤分類される。`recommend-front-matter`の`new/skill`実行がこの誤分類を実地で発見し、`<!-- id候補: design-101 -->`というファイル内のヒントを根拠に`type: "design"`へ手動補正して切り抜けた。`determine_type`の唯一の呼び出し元は`scan-documents.py`のみ（docstringが挙げる`doc_walker`/`check-spec`は現状未使用）だが、影響範囲は今後この関数を再利用するツールにも及ぶ。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: `design-draft`分岐を追加し`type: "design"`を返すよう修正、回帰テストも追加 | `plugins/sdd-workflow/scripts/naming.py:91-101`（`determine_type`本体、design-draft分岐なし）、対比: `plugins/sdd-workflow/shared/references/front_matter_reference.md:57`（design型の正規配置） |
+| 6 | `constitution` | SKILL.md内で原則追加時のバージョンバンプ規則が矛盾している。「2. Add Principle (add)」節（122行目）と巻末のセマンティックバージョニング表（236行目）はいずれも「原則追加 → Minor」とするが、「4. Update Constitution (update)」節の「Version Bump Rules」表（146行目）は同じ「Add principle」を「MAJOR」と定義している。4実行全てが同じ矛盾を認識した上でMinorを採用し（`add`サブコマンドの手順を優先）、一貫した判断を下したためgrading上は減点していないが、SKILL.md自体の記述矛盾は解消が必要。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: 3箇所とも「原則追加=MINOR」に統一し、2表を行単位で一致させる旨を明記 | `plugins/sdd-workflow/skills/constitution/SKILL.md:122`, `:146`, `:236` |
+| 7 | `sdd-init` | SKILL.md自体が`.sdd-config.json`不在時の挙動について自己矛盾している。「Configuration File Management」節（66-70行目）は「スクリプトが自動的に...存在しなければデフォルト設定で作成する」と説明するが、その直後の「Execution Flow」節（100-102行目）は同じスクリプトについて「存在しなければError（事前作成かsession-startフックが必要）」と正反対の説明をしている。実装（`init-structure.py:47-50`）は後者と一致し、`.sdd-config.json`が無いと`ERROR: .sdd-config.json not found`でexit 1する（フォールバック実装なし）。old/new両世代の`skill`実行が独立にこの矛盾に遭遇し、手動で`.sdd-config.json`を作成してから再実行することで切り抜けた。`old/skill`実行はこの後の後始末（`.sdd/AI-SDD-PRINCIPLES.md`等、CLAUDE.mdが参照するファイルの生成）を「SessionStartフックの責務」として意図的にスキップし壊れた参照を残したのに対し、`new/skill`実行は`session-start.py`を手動実行して補完した——同じ欠陥への対応の質が実行ごとにばらついた点も、SKILL.mdのharness外運用時の手順が明文化されていないことの表れ。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: 「自動生成する」という記述を削除し「Errorになる」に統一、実装と一致 | `plugins/sdd-workflow/skills/sdd-init/SKILL.md:66-70`（自動生成すると記述）vs`:100-102`（Errorすると記述）、`scripts/init-structure.py:47-50`（実装はError側と一致）、実行ログ2件（`old/skill`, `new/skill`） |
+| 8 | `front_matter_reference.md`（共有リファレンス） | ADR（`type: "adr"`）の`status`フィールド定義表（76行目）は`draft, review, approved, deprecated`を有効値として列挙するが、直後の「Status Transition Rules」節のADRの項（189-193行目）は「ADR entries are append-only and do not follow the draft/review/approved lifecycle」と明記しており、同一ドキュメント内で自己矛盾している。**解消済み（`3b380cf`, PR #108, 2026-09-04）**: `status`列を単一固定値`"approved"`に絞り、Transition Rules節の記述と一致させた | `plugins/sdd-workflow/shared/references/front_matter_reference.md:76`, `:189-193` |
+| 9 | `find-spec-docs.py` / `prepare-prd.py` / `prepare-spec.py`（check-spec / generate-prd / generate-spec の共有スクリプトパターン、修正済み） | 3スクリプトが独立に同じ `read_config()` を持ち、`.sdd-config.json` が無いと `sys.exit(1)` でハード停止していた。一方 `shared/references/prerequisites_directory_paths.md` の「Path Resolution Priority」は「環境変数 → `.sdd-config.json` → デフォルト値」の3段階フォールバックを明記しており矛盾。2026-09-08 の評価で3スキル全ての `_skill` run が独立にこの壁にぶつかった（`meta_analysis.json` の `skill_improvements[0]`）。find-spec-docs.py は既に `hook_common.load_sdd_paths()`（config無しならデフォルト）を呼んでいたが、その手前の独自ゲートがフォールバックを潰していた。prepare-prd.py/prepare-spec.py は `sdd-init/scripts/update-claude-md.py` にあった正しい実装 `resolve_lang_and_root()` を `hook_common.py` に共有化し、3ヶ所目の再実装を避けて解決した | `plugins/sdd-workflow/skills/check-spec/scripts/find-spec-docs.py`（旧37-40行目）、`plugins/sdd-workflow/skills/generate-prd/scripts/prepare-prd.py`（旧32-35行目）、`plugins/sdd-workflow/skills/generate-spec/scripts/prepare-spec.py`（旧32-35行目）、`plugins/sdd-workflow/scripts/hook_common.py`（`resolve_lang_and_root`追加先） |
 
 ## 削除した assertion とその理由
 

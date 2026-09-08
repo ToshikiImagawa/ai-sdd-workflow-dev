@@ -32,6 +32,10 @@
         {
           "text": "全体再生成ではなく追記操作として実施されており、既存記述が失われていない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }

@@ -10,7 +10,8 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)
 
 # Task Breakdown
 
-Loads the technical Design Doc draft (`task/{ticket-number}/design-draft.md`) and breaks it down into
+Loads the technical design (`task/{ticket-number}/design-draft.md`, or the spec's persistent
+`{feature-name}_design.md` when this generation has no task-scoped draft) and breaks it down into
 independently testable small tasks.
 
 ## Prerequisites
@@ -80,12 +81,20 @@ See `references/front_matter_task.md` for full schema definition, dependency dir
 
 ### 1. Load Related Documents
 
-**Design draft (required, same path in both structures)**:
+**Design source (required)**:
 
-- Load `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/design-draft.md` (required)
+- Load `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/design-draft.md` if it exists. This is
+  **ticket-scoped with a fixed filename**, so its path does not vary with the spec's flat/hierarchical
+  structure.
+- If it does not exist, this project's generation may have no task-scoped design-draft concept at all
+  (the design is persisted directly alongside the spec instead). Fall back to the spec's persistent design
+  sibling instead: `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` (flat), or
+  `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md`
+  (hierarchical, when `feature-name` contains `/`).
+- If neither exists, this is a missing design draft — see the fallback flow below.
 
-The design draft is **ticket-scoped with a fixed filename**, so its path does not vary with the spec's
-flat/hierarchical structure. Only the PRD and spec below follow that structure.
+Only the PRD and spec below follow the spec's flat/hierarchical structure regardless of which design
+source above was used.
 
 **Upstream documents — flat structure**:
 
@@ -103,18 +112,20 @@ flat/hierarchical structure. Only the PRD and spec below follow that structure.
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
 - **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
-- **Under task**: Design draft uses the fixed filename `design-draft.md`
+- **Under task**: Design draft uses the fixed filename `design-draft.md`; when absent, the fallback
+  design source under specification/ uses the `_design` suffix (`{feature-name}_design.md`), distinct from
+  the `_spec` suffix above
 
 **Hierarchical structure input example**:
 
 - `/task-breakdown auth/user-login TICKET-123`
 
-- If the design draft doesn't exist:
+- If neither the design draft nor its fallback exists:
   - **CI Mode (`--ci`)**: Output error message and stop processing.
   - **Interactive**: Prompt creation with `/generate-spec <description> --ticket {ticket-number}` first.
 - If PRD/spec exists, use to verify tasks cover requirements
 
-### 2. Analyze Design Draft
+### 2. Analyze Design Source
 
 Extract the following information from the design draft:
 

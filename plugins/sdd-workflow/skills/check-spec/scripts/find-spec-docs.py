@@ -33,11 +33,7 @@ def log(message: str) -> None:
 
 
 def read_config(project_root: Path) -> SddPaths:
-    """Resolve the .sdd layout, requiring an initialized project"""
-    config_file = project_root / ".sdd-config.json"
-    if not config_file.exists():
-        print("ERROR: .sdd-config.json not found", file=sys.stderr)
-        sys.exit(1)
+    """Resolve the .sdd layout: .sdd-config.json if present, else defaults"""
     return load_sdd_paths(str(project_root))
 
 

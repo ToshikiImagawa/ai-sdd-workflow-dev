@@ -115,6 +115,29 @@ def load_sdd_paths(project_root: str) -> SddPaths:
     return SddPaths(**resolved)
 
 
+def resolve_lang_and_root(project_root: Path) -> Tuple[str, str]:
+    """Read SDD_LANG and SDD_ROOT from .sdd-config.json (priority over environment variable).
+
+    This ensures consistency with init-structure.py.
+    """
+    config_file = project_root / ".sdd-config.json"
+    config_lang = ""
+    config_root = ""
+    if config_file.is_file():
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            config_lang = config.get("lang") or ""
+            config_root = config.get("root") or ""
+        except (json.JSONDecodeError, OSError):
+            config_lang = ""
+            config_root = ""
+
+    sdd_lang = config_lang or os.environ.get("SDD_LANG") or "en"
+    sdd_root = config_root or os.environ.get("SDD_ROOT") or ".sdd"
+    return sdd_lang, sdd_root
+
+
 def load_naming_ignore_patterns(project_root: str) -> Tuple[str, ...]:
     """Return the naming.ignore_patterns glob list from .sdd-config.json, or () if absent.
 

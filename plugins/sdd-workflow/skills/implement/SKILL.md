@@ -204,21 +204,24 @@ Read `templates/${SDD_LANG:-en}/output_format.md` for output format reference ta
 
 ## Implementation Options
 
+These three modes are alternatives to the default single-pass flow above. Skip this entire section for a
+normal single-pass run — read the relevant example only when the input actually requests that mode.
+
 ### Continue Mode
 
-Resume interrupted implementation:
+Resume interrupted implementation. Only when this mode is requested:
 
 Read `examples/option_continue.md` for continue mode usage.
 
 ### Phase Skip Mode
 
-Skip to specific phase (use with caution):
+Skip to specific phase (use with caution). Only when this mode is requested:
 
 Read `examples/option_phase_skip.md` for phase skip mode usage.
 
 ### Dry Run Mode
 
-Simulate implementation without changes:
+Simulate implementation without changes. Only when this mode is requested:
 
 Read `examples/option_dry_run.md` for dry run mode usage.
 
