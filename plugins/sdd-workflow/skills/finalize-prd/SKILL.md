@@ -70,6 +70,12 @@ $ARGUMENTS
 | `--amend`           | -             | Amend mode: merge the artifacts above into `existing-prd-text` instead of building a PRD from scratch |
 | `existing-prd-text` | When `--amend` | Full text of the existing PRD to append to                    |
 
+> **Required input missing**: `usecase-text` / `analysis-text` / `diagram-text` are marked Required above because
+> they are the actual new content to integrate — if any is empty, a placeholder, or absent despite the caller
+> claiming to invoke this skill, that is a caller error, not something to fill in by inference. Do not invent
+> UR/FR/NFR content to compensate for missing input. Report the missing input in the output instead, and in
+> `--amend` mode return `existing-prd-text` unchanged rather than fabricating new requirements.
+
 ### Input Format
 
 The skill receives structured text blocks from previous skills. See `references/input_format.md` for the exact shape.

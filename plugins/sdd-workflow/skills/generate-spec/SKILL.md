@@ -306,7 +306,11 @@ For hierarchical structure, parent feature PRD is `${CLAUDE_PROJECT_DIR}/${SDD_R
 
 2. **Consistency Check**:
     - If PRD exists: Verify and reflect PRD <-> spec consistency
-    - Verify spec <-> design consistency
+    - Verify spec <-> design consistency: concretely, re-read spec's Public API section and design's Interface
+      Definition section side by side and confirm every member (name, parameters, return type, sync vs. async)
+      matches. If design intentionally restructures an interface from what spec declares (e.g., splitting a
+      method into a separate interface, or changing sync to async), record that change and its rationale in
+      Design Decisions — do not let the two documents drift silently out of sync
 
 ## Output
 
@@ -320,6 +324,9 @@ The following verifications are automatically performed during generation:
 
 - [x] **Principle Compliance Check via spec-reviewer**: Verify compliance with CONSTITUTION.md
 - [x] **PRD Consistency Check**: Confirm requirement ID references and functional requirement coverage
+- [x] **Spec-Design API Consistency Check**: Confirm every member of spec's Public API section appears in
+  design's Interface Definition section with a matching signature; any intentional restructuring is recorded
+  in Design Decisions (see "Consistency Check" under Post-Generation Actions above)
 - [x] **Template Compliance Check**: Verify presence of required sections
 - [x] **No Marker Residue Check**: Confirm `<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>` markers are removed from headings
 
