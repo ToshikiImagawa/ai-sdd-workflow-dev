@@ -34,7 +34,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾していない",
+          "text": "新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾する場合、その矛盾が黙って見過ごされていない（矛盾を検出した上で報告し人間の判断に委ねている、または適切な確認を伴って解消している場合はPASS。検出されず矛盾が未報告のまま残っている場合はFAIL）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
