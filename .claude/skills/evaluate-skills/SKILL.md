@@ -82,6 +82,13 @@ Workflow スクリプトの設計方針:
   独立グレーダーサブエージェントを起動する（`agentType` は既定のまま、grader.md の
   Process をプロンプトに埋め込む）。`grading.json` を
   `<report-dir>/runs/<skill>/<eval-id>/<condition>/grading.json` に保存する
+- **executor プロンプトへの安全ガード（必須）**: 「ツールのパーミッション確認（サンドボックスの
+  破壊的操作確認等）がブロックされた場合、別のコマンド・別の呼び出し経路（例: `/bin/rm -rf` で
+  `rm -r` の確認を回避する等）で確認を迂回してはならない。ブロックされたらその時点で作業を停止し、
+  ブロックされた操作と理由を transcript.md / user_notes.md に記録して報告すること」という一文を
+  必ず含める（2026-09-08 のフルスイート再実行で、task-cleanup の `new_skill` executor がこの回避を
+  実際に行ったことが確認されている。対象はこのrun専用の使い捨てworkdirに限られ実害はなかったが、
+  同種の振る舞いを許可し続けないためこのガードを追加した）
 
 ### Step 4: 集計
 
