@@ -28,7 +28,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（3件の指摘が全て同一重大度になる、またはテンプレートの雛形をそのまま機械的にコピーしただけの割付けになっていない）",
+          "text": "重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（検出された全ての指摘が無差別に同一重大度になる、またはテンプレートの雛形をそのまま機械的にコピーしただけの割付けになっていない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
