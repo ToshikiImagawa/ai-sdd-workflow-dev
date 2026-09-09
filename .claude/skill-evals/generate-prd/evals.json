@@ -10,7 +10,7 @@
       "prompt": "既存の .sdd/requirement/notification.md に、未読メッセージ数をバッジ表示する新要求を追加(--amend)",
       "expected_output": "The existing requirements preserved unchanged, with new requirements appended: IDs continuing the existing sequence without collision or gaps, attributes (Priority/Risk/Verification) consistent with existing entries, and new FRs traceable to a UR.",
       "files": [
-        "Fixture is an existing, already-approved PRD holding UR_001 / FR_001, so the run is an append (--amend) against real prior content rather than a from-scratch generation. Built per era by build_fixtures.py."
+        "Fixture is an existing, already-approved PRD holding UR_001 / FR_001, so the run is an append (--amend) against real prior content rather than a from-scratch generation. Built per era by build_fixtures.py. UR_001/FR_001 is the default PRD-level format (id_conventions_config.md); the specific prefix/underscore style is whatever this project's id_conventions resolve to, not a value this fixture's author chose freely."
       ],
       "assertions": [
         {

@@ -12,7 +12,7 @@
       "files": [],
       "assertions": [
         {
-          "text": "spec が実装済みと主張していても実コードを確認し、未実装の FR-003（`clear_badge`）を実在の欠落として検出する",
+          "text": "spec が実装済みと主張していても実コードを確認し、未実装の FR-003（`clear_badge`。ID表記はプロジェクトの id_conventions 次第で、ここではspec-levelのデフォルト形式で例示）を実在の欠落として検出する",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {

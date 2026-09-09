@@ -7,9 +7,11 @@
     {
       "id": 0,
       "eval_name": "notification-badge-amend",
-      "prompt": "既存PRDテキストに新規UR/FRを統合(--amend)、テキストのみ返す",
-      "expected_output": "The existing text preserved byte-for-byte, new UR/FR inserted at the structurally correct positions, and both the requirements diagram and the detail tables updated consistently.",
-      "files": [],
+      "prompt": "対象PRD: .sdd/requirement/notification.md の内容を existing-prd-text として使い、以下の新規要求を統合(--amend)してください。テキストのみ返してください（ファイルへの書き込みは不要）。\n\n## Use Case Diagram\n（新規追加分）\n- Actor: User\n- 新規Use Case: 未読バッジを確認する — ユーザーが新着メッセージの未読数をアプリアイコンのバッジで確認する\n\n## Requirements Analysis\n### User Requirements\n| ID | Requirement | Priority | Risk |\n|:---|:---|:---|:---|\n| UR_002 | ユーザーは未読メッセージ数をアプリアイコンのバッジで確認したい | Should | Low |\n\n### Functional Requirements\n| ID | Requirement | Derived From | Priority | Risk | Verification |\n|:---|:---|:---|:---|:---|:---|\n| FR_002 | システムはアプリアイコンに未読メッセージ数をバッジ表示し、99件を超える場合は99+と表示する | UR_002 | Should | Low | Test |\n\n## Requirements Diagram\n```mermaid\nrequirementDiagram\nrequirement UR_002 {\n  id: UR_002\n  text: \"ユーザーは未読メッセージ数をアプリアイコンのバッジで確認したい\"\n  risk: low\n}\nfunctionalRequirement FR_002 {\n  id: FR_002\n  text: \"システムはアプリアイコンに未読メッセージ数をバッジ表示し、99件を超える場合は99+と表示する\"\n  risk: low\n}\nFR_002 - derives -> UR_002\n```\n\n（注: UR_002/FR_002という番号は、既存の UR_001/FR_001 の最大値を単純に+1した機械的な継続値であり、実際のパイプラインでは呼び出し元 generate-prd Step 3.5 が同じ規則で計算して渡す値。finalize-prdの評価としてこの番号自体に創作的な意味はない。）",
+      "expected_output": "The existing text preserved byte-for-byte, the given UR_002/FR_002 (and only those, nothing invented) inserted at the structurally correct positions in both the requirements diagram and the detail tables, with the new use case reflected in the Use Case Diagram section as well.",
+      "files": [
+        "The prompt now inlines actual usecase-text/analysis-text/diagram-text content (a new 'badge display' requirement, matching the Out of Scope note already present in the fixture PRD: '未読数のバッジ表示は対象外'), so this eval tests finalize-prd's actual merge/insertion behavior instead of only its creator-error (missing-input) branch. The UR_002/FR_002 numbering is a mechanical continuation of the existing PRD's UR_001/FR_001 max-per-prefix -- per finalize-prd/SKILL.md Integration Rule 5, this is something the caller (generate-prd Step 3.5) computes, not a value finalize-prd or this eval's author invents. Any concrete ID shown here (or in other skills' evals/fixtures) is only a representative sample of that mechanical computation, not an endorsed convention -- actual ID format is resolved per id_conventions_config.md."
+      ],
       "assertions": [
         {
           "text": "既存記述がバイト単位で保持されている",
