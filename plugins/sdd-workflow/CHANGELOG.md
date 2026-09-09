@@ -179,6 +179,14 @@ minor/patch release.
   the Status Transition Rules section says ADR doesn't follow that lifecycle at all. Corrected the field
   table to reflect that ADR `status` is always `"approved"` at write time, with reversals tracked via
   `superseded-by` instead
+- **`finalize-prd`'s Rule 7 (Amend Mode Integration) no longer contradicts its own PRD template** - It
+  described new UR/FR/NFR row insertion as appending to "the end of the matching table in §4 (Detailed
+  Requirements)", but §4 in `templates/{en,ja}/prd_template.md` is prose (`### FR_001: {name}` headings),
+  not a table. Corrected the description to match the template (append a new subsection matching the style
+  of existing entries). Also added a default policy for which existing use case a new
+  `<<include>>`/`<<extend>>` relationship should attach to when the caller doesn't specify, and a rule to
+  surface (rather than silently drop) input attributes that have no corresponding slot in the existing PRD
+  structure (e.g. `Priority`)
 
 ### Changed
 

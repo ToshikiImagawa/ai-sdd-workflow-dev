@@ -36,11 +36,11 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "要求図と詳細表の**両方**が整合的に更新されている（片方だけの更新になっていない）",
+          "text": "要求図と要求の詳細説明（プローズまたは表セクション）の**両方**が整合的に更新されている（片方だけの更新になっていない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "与えられた情報を超える内容を創作していない",
+          "text": "与えられた情報を超える内容を創作していない（既存規約に基づく構造的判断—例:関係線の接続先選択—は創作に含めない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]

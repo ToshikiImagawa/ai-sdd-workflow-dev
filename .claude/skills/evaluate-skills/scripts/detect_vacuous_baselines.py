@@ -31,7 +31,13 @@ def main():
             eval_dir = os.path.join(skill_dir, eval_id)
             if not os.path.isdir(eval_dir):
                 continue
-            for era in ("old", "new"):
+            subdirs = {d for d in os.listdir(eval_dir) if os.path.isdir(os.path.join(eval_dir, d))}
+            eras = sorted(
+                d[: -len("_without")]
+                for d in subdirs
+                if d.endswith("_without") and f"{d[: -len('_without')]}_skill" in subdirs
+            )
+            for era in eras:
                 without_dir = os.path.join(eval_dir, f"{era}_without")
                 skill_run_dir = os.path.join(eval_dir, f"{era}_skill")
                 wo_path = os.path.join(without_dir, "grading.json")

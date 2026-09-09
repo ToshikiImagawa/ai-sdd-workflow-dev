@@ -149,14 +149,19 @@ verbatim and inserting only the new content — never regenerate or rewrite sect
 
 | Insertion                                    | Where                                                                                        |
 |:-----------------------------------------------|:------------------------------------------------------------------------------------------------|
-| New UR/FR/NFR rows                             | Appended to the end of the matching table in §4 (Detailed Requirements)                        |
+| New UR/FR/NFR rows                             | §4 (Detailed Requirements) is prose, not a table (see `templates/{en,ja}/prd_template.md`: `### FR_001: {name}` headings) — append each new requirement as a new `### {ID}: {name}` subsection under the matching §4.x heading, matching the style of existing entries |
 | New requirements diagram nodes & relationships | Appended inside the existing `requirementDiagram` Mermaid block, before its closing code fence |
-| New actors/use cases (if any)                  | Appended inside the existing use case diagram's `subgraph` and tables                          |
+| New actors/use cases (if any)                  | Appended inside the existing use case diagram's `subgraph` and tables. If the caller does not specify which existing use case a new `<<include>>`/`<<extend>>` relationship should attach to, default to the use case within the same functional category/`subgraph`, and state that judgment call in the output rather than silently guessing |
 | Front matter                                   | Preserve every existing field except `updated` (today) and `sdd-version` (current plugin version) |
 
 Everything else in `existing-prd-text` — prose, existing IDs, existing diagram nodes, existing front matter
 fields — must come through byte-for-byte unchanged. If the caller did not pass `existing-prd-text`, this is a
 caller error; do not attempt to reconstruct the existing PRD from memory.
+
+If an input artifact carries an attribute that has no corresponding slot in the existing PRD's structure (e.g.
+a `Priority` value when the existing §4 entries are prose that doesn't surface priority per-item), do not drop
+it silently — surface it inline in the new subsection's prose (e.g. as a `- Priority: ...` bullet) instead of
+omitting it.
 
 ## Front Matter Generation Rules
 

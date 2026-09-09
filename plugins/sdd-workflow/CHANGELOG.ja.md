@@ -176,6 +176,13 @@
   いたが、Status Transition Rules節は「ADRはそのライフサイクルに従わない」と明記していた。ADRの
   `status` は記録時点で常に`"approved"`であり、決定の覆しは`superseded-by`で追跡する、という記述に
   修正した
+- **`finalize-prd` の Rule 7（Amend Mode Integration）が、自身のPRDテンプレートと矛盾しなくなった** -
+  新規UR/FR/NFR行の挿入先を「§4（Detailed Requirements）内の表の末尾」と記述していたが、
+  `templates/{en,ja}/prd_template.md` の §4 は `### FR_001: {name}` というプローズ見出し形式であり
+  テーブルは存在しない。記述をテンプレート実態（新規サブセクションを既存エントリと同じ体裁で追加する）
+  に修正した。あわせて、新規ユースケースの関係線（`<<include>>`/`<<extend>>`）の接続先が呼び出し元から
+  明示されない場合のデフォルト方針と、入力側にはあるが既存PRD構造に対応する欄が無い属性（例:
+  Priority）を黙って落とさずプローズ内に明記する方針を追加した
 
 ### Changed
 

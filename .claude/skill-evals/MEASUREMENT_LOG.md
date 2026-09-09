@@ -371,3 +371,33 @@ major が `plugin.json` の version より古いものを列挙する）があ�
 | 3 | `sdd-version` 陳腐化検出の eval 追加 | 未着手。1 と同じタイミングで流すのが効率的 |
 | 4 | `plugin.json` のバージョンバンプ判断 | ユーザー指示で保留中。ただし `shared/references/front_matter_*.md` が `sdd-version` の例に `"5.0.0"` と書いており、**ドキュメント側は既に v5 を前提にしている**不整合が実在する |
 
+## `finalize-prd` 単独実行と実在欠陥の修正（2026-09-09）
+
+`--skills finalize-prd` のみを対象にフルスイート評価（eval 0件のみ、1セル1ラン）を実行した。
+結果は **main・develop 両世代とも without_skill と with_skill が完全同点（pass_rate 1.0 = 1.0、
+zero_lift_full_pass）**。両era同時のこのパターンは iteration-1 時点の記録には無い新規ケース。
+
+メタ評価が4仮説診断を行い、以下の実在欠陥3件を特定・修正した（PRへの反映は本コミット）。
+
+1. **`detect_vacuous_baselines.py` / `diff_recurring_findings.py` の era ハードコード** -
+   両スクリプトとも `for era in ("old", "new")` を直書きしており、v3 手法の現行命名
+   （`main_skill`/`main_without`/`develop_skill`/`develop_without`）と一致せず、素朴実行では
+   vacuous baseline を誤って0件と報告した（正しくは2件）。`eval_dir` 配下のディレクトリ名から
+   `{prefix}_without`/`{prefix}_skill` のペアが揃っている `prefix` を動的に抽出する方式に修正し、
+   修正後は手動補正なしで正しい2件が検出されることを確認した
+2. **`finalize-prd/SKILL.md` Rule 7 が自身のPRDテンプレートと矛盾** - 新規UR/FR/NFR行の挿入先を
+   「§4内の表の末尾」と記述していたが、`templates/{en,ja}/prd_template.md` の §4 は
+   `### FR_001: {name}` のプローズ見出し形式でテーブルは無い。テンプレート実態に合わせて修正した
+3. **`finalize-prd/SKILL.md` の仕様ギャップ2件**（4 run全てで独立に観測） - (a) 新規ユースケースの
+   関係線（include/extend）の接続先選択基準が無い、(b) 入力側にあるが既存PRD構造に対応する欄が
+   無い属性（Priority等）の扱いが未定義。両方にデフォルト方針を追加した
+
+`.claude/skill-evals/finalize-prd/evals.json` の assertion 3・4 の文言も、実際のPRD構造
+（プローズ形式）と食い違う「表」表記、および構造的判断と事実の捏造を区別できない曖昧さを修正した
+（eval prompt 本文・脚注は変更していない — 変更するとprompt_leakageの診断結果自体が変わるため、
+別途の再計測判断が必要と判断し今回は見送った）。
+
+**測定上の注意**: 1セル1ランのみの実行であり、iteration-1のノイズ床(20pt)を踏まえると、この
+zero_lift_full_passがノイズなのか構造的な問題なのかは本実行だけでは切り分けられない。上記の
+skill改修が実際にリフトを生むかは、セルあたりのラン数を増やした再計測でのみ確認できる（未実施）。
+
