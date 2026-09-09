@@ -1,6 +1,6 @@
 ---
 name: evaluate-skills
-description: "plugins/sdd-workflow 配下の全スキルを実際に実行して動作評価し、改善点をHTMLレポートで出力する。既存の .claude/skill-evals/ にある dual-era fixture 比較インフラ（old/new レイアウト × skill/without の4条件を同一世代内でのみ比較する v2 手法）を再利用し、Workflow ツールで実行をファンアウトし、独立グレーダーで採点し、skill-creator の eval-viewer を土台にしたHTMLで「スキル自体の改善点」と「評価手法自体の改善点」の両方を報告する。ユーザーが「スキルの評価をして」「skill-evals を実行して」「プラグインのスキルの品質を測って」「19スキルの動作確認をして」「定期的にスキル品質をチェックしたい」と言ったときは必ず使用する。frontmatter設計・入出力セクションの有無など静的なドキュメント品質レビューは review-plugin スキルの担当であり、本スキルはそれとは重複しない——実際にスキルを実行して有効性を測る動作評価専用。"
+description: "plugins/sdd-workflow 配下の全スキルを実際に実行して動作評価し、改善点をHTMLレポートで出力する。既存の .claude/skill-evals/ にある dual-era fixture 比較インフラ（old/new レイアウト × skill/without の4条件を同一世代内でのみ比較する v2 手法）を再利用し、Workflow ツールで実行をファンアウトし、独立グレーダーで採点し、skill-creator の eval-viewer を土台にしたHTMLで「without_skill が with_skill と同点/優位になる vacuous baseline の4仮説診断（skill自体が不要／assertionが本質を捉えていない／コストが悪化している／eval promptやfixtureが漏洩している）」「スキル自体の改善点」「評価手法自体の改善点」を報告する。ユーザーが「スキルの評価をして」「skill-evals を実行して」「プラグインのスキルの品質を測って」「19スキルの動作確認をして」「定期的にスキル品質をチェックしたい」と言ったときは必ず使用する。frontmatter設計・入出力セクションの有無など静的なドキュメント品質レビューは review-plugin スキルの担当であり、本スキルはそれとは重複しない——実際にスキルを実行して有効性を測る動作評価専用。"
 license: MIT
 argument-hint: "[--skills <name1,name2,...>] [--report-dir <path>]"
 allowed-tools: Read, Glob, Grep, Bash, Workflow
@@ -31,9 +31,22 @@ $ARGUMENTS
   の4条件、**同一世代内での比較のみ有効**）を理解してから進める
 - `.claude/skill-evals/ASSERTION_DESIGN.md` を読み、assertion の判定基準
   （バージョン中立に書く、等）を把握する。**未確認のまま assertion を書き換えない**
+- `references/vacuous-baseline-diagnostic.md` を読む。`without_skill` が `with_skill` と
+  同点または上回る（特に両方とも1.0=完全なタイ）run は、フルスイート評価が
+  スキルの有効性を測れていない最重要の失敗モードであり、4仮説（skill自体が不要／
+  assertionが本質を捉えていない／コストが悪化している／eval promptやfixtureが
+  漏洩している）で分類・報告する（Step 4〜5で実施）
 - skill-creator プラグインがインストールされている必要がある。インストールパスは
   固定ではないため、`scripts/resolve_skill_creator_path.sh` を実行して都度解決する
   （以下 `$SKC` と表記）
+- **コスト計測の優先順位**: 仮説「skill使用時のコストが悪化している」を検証するため、
+  1) executor に `outputs/metrics.json`（tool_calls・output_chars等。スキーマは
+  `$SKC/references/schemas.md` の `metrics.json` 定義）を必ず書かせる（後述 Step 3）。
+  これが一次指標。2) wall-clock時間は Workflow の `agent()` 戻り値に per-agent の
+  duration が含まれないため、executor 自身に Bash の `date +%s` で開始・終了を
+  自己記録させる以外に手段が無い。自己記録である以上、並行実行時のスケジューリング
+  競合の影響を受けうる**近似値**として扱い、`benchmark.json` には
+  `"self_reported_approximate": true` 相当の注記を添える。主指標は必ず 1) とする
 
 ## 処理フロー
 
@@ -61,11 +74,27 @@ python3 .claude/skill-evals/build_fixtures_hard.py <report-dir>/fixtures
 vibe-detector 等テキスト専用で `.sdd/` ツリーを前提にしないスキルは、fixture 無しで
 プロンプトのみのラン（後述 Step 3）になる。
 
+続けて、eval prompt / fixture が対象スキルの `SKILL.md` の指示内容をどれだけ
+漏洩してしまっているか（仮説「eval promptのコンテキスト量が膨大でskillと大差ない」）を
+LLM を使わず安価にスコアリングする:
+
+```bash
+python3 .claude/skills/evaluate-skills/scripts/score_eval_leakage.py \
+  .claude/skill-evals \
+  plugins/sdd-workflow/skills \
+  <report-dir>/fixtures \
+  <report-dir>/eval_leakage_scores.json
+```
+
+これは粗い一次フィルタであり判定ではない（深い判定は Step 5 で行う）。次の Step 3 の
+確認ゲートで、overlap ratio が高い上位候補を一緒に提示する。
+
 ### Step 3: Workflow による実行ファンアウト
 
 **Workflow ツールを使う。** Workflow はユーザーの明示的な opt-in を要求する仕組みなので、
 本スキルの起動指示だけでは opt-in とみなさず、実行直前に対象スキル数・想定エージェント数
-（対象スキル数 × 4条件 × 平均eval数）を提示してユーザーに確認を取る。
+（対象スキル数 × 4条件 × 平均eval数）に加え、`eval_leakage_scores.json` の overlap ratio が
+高い上位候補（例: 上位3件）を一緒に提示してユーザーに確認を取る。
 
 Workflow スクリプトの設計方針:
 
@@ -78,6 +107,15 @@ Workflow スクリプトの設計方針:
   各 `agent()` のプロンプトには、対応する fixture ディレクトリを作業対象として与え、
   `_skill` 系条件では対象スキルの `SKILL.md` を読み込んで従うよう明記する。出力は
   `<report-dir>/runs/<skill>/<eval-id>/<condition>/outputs/` に保存させる
+- **コスト計測の必須化（executor プロンプトへの必須指示）**: 完了時に
+  `outputs/metrics.json` を `{tool_calls, total_tool_calls, total_steps, files_created,
+  errors_encountered, output_chars, transcript_chars}`（`$SKC/references/schemas.md` の
+  `metrics.json` 定義）の形式で必ず書かせる。加えて、最初の Bash 呼び出しの直前と
+  最後の Bash 呼び出しの直後に `date +%s` を実行させ、その差分を
+  `<report-dir>/runs/<skill>/<eval-id>/<condition>/timing.json` に
+  `{"duration_seconds": ..., "self_reported_approximate": true}` として保存させる
+  （前提条件節の「コスト計測の優先順位」参照。metrics.json が一次指標、timing.json は
+  近似値の補助指標）
 - `gradeStage(execResult, skill)`: 各 run について `references/grading-guide.md` に従い
   独立グレーダーサブエージェントを起動する（`agentType` は既定のまま、grader.md の
   Process をプロンプトに埋め込む）。`grading.json` を
@@ -98,12 +136,50 @@ Workflow スクリプトの設計方針:
    （`$SKC/references/schemas.md`）が定める `benchmark.json` スキーマに従って生成する。
    `configuration` は `with_skill` / `without_skill` の2値固定（viewer がこの文字列で
    色分けする）。old/new の区別は `eval_name` に世代を含めて表現する
-   （例: `"old: notification-badge-extract"`）
+   （例: `"old: notification-badge-extract"`）。**`eval_name` はスキルをまたいで衝突しうる**
+   （同じ eval 名を複数スキルが使うケースが実際に発生した）。この衝突は viewer の表示上の
+   問題に留まり、後述 3 の判定には影響しない（3 は `eval_name` を使わず `runs/` の
+   ディレクトリ構造から直接判定するため）
+3. `<report-dir>/vacuous_baseline_candidates.json` を生成する
+   （`without_skill.pass_rate >= with_skill.pass_rate` となる (skill, era) 組の機械的検出。
+   LLMの算術判断に頼らず決定的スクリプトで行う）:
+   ```bash
+   python3 .claude/skills/evaluate-skills/scripts/detect_vacuous_baselines.py <report-dir>
+   ```
+4. `<report-dir>/recurring_findings_candidates.json` を生成する（前回以前のレポートと比較し、
+   同じ assertion の弱さが何回再発しているかを機械的に検出。`<reports-root>` は
+   `<report-dir>` の親ディレクトリ、通常 `.claude/skill-evals/reports`）:
+   ```bash
+   python3 .claude/skills/evaluate-skills/scripts/diff_recurring_findings.py \
+     <reports-root> <report-dir>
+   ```
+5. `<report-dir>/run_artifact_audit.json` を生成する（**evaluate-skills 自身**の実行品質の
+   機械点検。対象スキルの評価データではなく、runs/ 配下のアーティファクトの健全性
+   ——transcript.md/outputs/grading.json/metrics.json/timing.jsonの欠落率、grading.json の
+   誤配置、安全ガード違反を示す事後キーワードの出現——を集計する）:
+   ```bash
+   python3 .claude/skills/evaluate-skills/scripts/audit_run_artifacts.py <report-dir>
+   ```
 
-### Step 5: メタ評価（評価手法自体の改善点）
+### Step 5: メタ評価（評価手法自体の改善点、および evaluate-skills 自身の改善点）
 
-`references/analysis-guide.md` に従い、全 grading データを俯瞰するメタ評価エージェントを
-1体起動する。出力は `<report-dir>/meta_analysis.json`。
+`references/analysis-guide.md` に従い、全 grading データ・`vacuous_baseline_candidates.json`・
+`eval_leakage_scores.json`・`recurring_findings_candidates.json`・`run_artifact_audit.json` を
+俯瞰するメタ評価エージェントを1体起動する。出力は `<report-dir>/meta_analysis.json`。
+
+**最重要**: `vacuous_baseline_candidates.json` の各候補を
+`references/vacuous-baseline-diagnostic.md` の4仮説（skill自体が不要／assertionが本質を
+捉えていない／コストが悪化している／eval promptやfixtureが漏洩している）で分類し、
+`meta_analysis.json` の `vacuous_baselines` フィールドに出力する。
+**この分類・推奨アクションは提示のみで、`evals.json`/`SKILL.md`/fixture を自動的に
+書き換えない**（Step 0 の非侵襲方針と同様）。
+
+**evaluate-skills 自身の自己反省**: `run_artifact_audit.json` の集計結果（欠落率・誤配置・
+安全ガード関連キーワードの候補ヒット）を読み、`likely_cause` 判定と同じ非侵襲方針で
+`evaluate_skills_self_review` フィールドに評価対象10スキルとは別枠でまとめる。
+キーワードヒットは事後判定候補であり確定した違反ではない点に注意し、疑わしい候補は
+該当 run の transcript.md/user_notes.md を実際に読んで確認した上で報告する（本skillは
+自分自身の SKILL.md/scripts を自動的に書き換えない。改善提案の提示のみ）。
 
 ### Step 6: HTML出力
 
@@ -115,16 +191,24 @@ python3 "$SKC/eval-viewer/generate_review.py" <report-dir>/runs \
 ```
 
 `references/html-report-guide.md` の手順で、生成された `report.html` に
-「スキル改善提案」「評価手法自体の改善点」の2セクションを `meta_analysis.json` の内容から
-追記する。
+「ベースライン(skill無し)満点診断」「スキル改善提案」「評価手法自体の改善点」
+「evaluate-skills 自身の実行品質」の4セクションを `meta_analysis.json` の内容から
+**この順番で**追記する（1番目のセクションが最優先の理由は
+`references/vacuous-baseline-diagnostic.md` 参照。4番目は対象スキルとは別枠の自己反省
+であるため最後に置く）。
 
 ## 出力形式
 
 - `<report-dir>/report.html`: ブラウザで開けるレポート。skill-creator 標準の
-  Outputs/Benchmark タブに加え、「スキル改善提案」「評価手法自体の改善点」セクションを持つ
+  Outputs/Benchmark タブに加え、「ベースライン(skill無し)満点診断」「スキル改善提案」
+  「評価手法自体の改善点」「evaluate-skills 自身の実行品質」の4セクションを持つ
 - 実行完了後、レポートの絶対パスを提示し `open <path>` で開くことを促す
-- `<report-dir>/meta_analysis.json` と各 `grading.json` は生データとして残す
-  （次回実行時の比較や、手動での深掘りに使える）
+- `<report-dir>/meta_analysis.json`、`<report-dir>/vacuous_baseline_candidates.json`、
+  `<report-dir>/eval_leakage_scores.json`、`<report-dir>/recurring_findings_candidates.json`、
+  `<report-dir>/run_artifact_audit.json`、各 `grading.json`/`metrics.json`/`timing.json` は
+  生データとして残す
+  （次回実行時の比較や、手動での深掘りに使える。特に `recurring_findings_candidates.json`
+  は次回実行時に本レポートが「過去レポート」として参照されるため削除しないこと）
 
 ## 注意
 
