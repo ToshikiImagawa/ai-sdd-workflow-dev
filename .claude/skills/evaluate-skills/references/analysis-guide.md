@@ -11,9 +11,12 @@
    `.claude/skill-evals/ASSERTION_DESIGN.md` が定める「バージョン中立」の基準に
    違反していないか（特定世代のファイルパス・フィールド名・語彙を assertion に
    埋め込んでいないか）を確認する
-2. **世代間比較の誤用チェック**: old/without と new/without を比較して差分を
-   報告している箇所がないか（ASSERTION_DESIGN.md が明確に禁止している比較）。
-   有効な比較は同一世代内（old/skill vs old/without、new/skill vs new/without）のみ
+2. **世代間比較の誤用チェック**: `main_without` と `develop_without` を直接比較して差分を
+   報告している箇所がないか、`main_skill` と `develop_skill` の生スコアを並べて優劣を語って
+   いる箇所がないか（ASSERTION_DESIGN.md が明確に禁止している比較）。有効なのは同一世代内の
+   リフト（`era_skill` vs `era_without`）と、その差 `lift(develop) − lift(main)` だけ。
+   **リフトの差を取ることは禁止に当たらない** — 比較している量が生スコアではなくリフトなので、
+   世代ごとのコーパスの違いは両辺の `without` に吸収される
 3. **grader の eval_feedback 集約**: 全 run 分の `grading.json` の
    `eval_feedback.suggestions` をスキルごとに集約し、複数 run で同じ指摘が出ている
    ものを優先度高として報告する
@@ -69,7 +72,7 @@
 ```json
 {
   "skill_improvements": [
-    {"skill": "...", "suggestions": ["..."], "source_runs": ["old/skill", "new/skill"]}
+    {"skill": "...", "suggestions": ["..."], "source_runs": ["main_skill", "develop_skill"]}
   ],
   "assertion_design_violations": [
     {"skill": "...", "assertion": "...", "issue": "..."}
@@ -78,7 +81,7 @@
     {"skill": "...", "assertion": "...", "reason": "with/withoutの両方で常にpassしている"}
   ],
   "invalid_generation_comparisons": [
-    {"skill": "...", "issue": "old/withoutとnew/withoutを直接比較している"}
+    {"skill": "...", "issue": "main_without と develop_without を直接比較している"}
   ],
   "coverage_gaps": {
     "missing_evals": ["skill-name", "..."],

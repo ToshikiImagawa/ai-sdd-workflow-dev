@@ -1,39 +1,54 @@
 {
   "skill_name": "doc-consistency-checker",
-  "methodology": "v2-version-neutral",
-  "fixtures": "Built by the sibling build_fixtures*.py scripts. Each era gets its own fixture tree ('old' = pre-v5.0.0 layout, 'new' = current layout) so a skill is graded inside its own generation's world rather than against another generation's file layout.",
-  "comparison": "Valid skill-effect comparisons are within a single era only: old/skill vs old/without, or new/skill vs new/without. Never compare old/without against new/without -- both lack the skill, so any difference between them says nothing about the skill.",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/doc-consistency-checker/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+193/-78 lines",
   "evals": [
     {
       "id": 0,
-      "eval_name": "notification-badge-stale-adr",
-      "prompt": "notification-badge 関連ドキュメント(PRD/spec/adr)の整合性をチェックしてください。",
-      "expected_output": "A severity-classified report of two real, PRD/spec/adr-scoped defects -- spec's FR-003 (clear_badge) claims traceability to PRD's FR_002, whose text never mentions clearing; and spec's constraint section (99+ threshold) contradicts a later decision-log entry that changed the threshold to 101+ -- with no invented findings, no spec-vs-code comparison (out of this skill's documented scope; that's check-spec's job), and no proposal to auto-rewrite the PRD from downstream.",
-      "files": [
-        "Fixture carries two deliberate, era-independent, PRD/spec/adr-scoped defects for the checker to find: (1) spec's FR-003 cites PRD's FR_002 as its source, but FR_002's text only covers badge display/cap, never clearing -- an unjustified traceability claim; (2) the decision log (built per era: adr/{feature}.md for new, appended into *_design.md for old) contains a later entry that changed the '99+' cap threshold to 101+, which spec's own constraint section still contradicts. Both are detectable from document text alone, unlike the project's earlier fixture design which conflated this skill's scope with check-spec's (spec-vs-code) scope. Built per era by build_fixtures.py."
+      "eval_name": "sdd-init-doc-consistency",
+      "prompt": "プロジェクト初期化機能（sdd-init）に関する `.sdd/` 配下のドキュメント一式の整合性をチェックしてください。",
+      "prompt_note": "The document set is named by feature, not by path, so locating the PRD / spec / design (and, in the generation that has them, the decision log) is part of the task.",
+      "sdd_inputs": [
+        ".sdd/requirement/workflow-foundation/sdd-init.md",
+        ".sdd/specification/workflow-foundation/sdd-init_spec.md",
+        ".sdd/specification/workflow-foundation/sdd-init_design.md"
       ],
+      "input_parity": "identical-on-both-branches (the whole PRD -> spec -> design triple is byte-identical)",
+      "fixture": {},
+      "expected_output": "A severity-classified report of real PRD<->spec<->design gaps, with no invented findings and no proposal to rewrite the PRD from downstream documents.",
       "assertions": [
         {
-          "text": "spec の FR-003（clear_badge）が PRD 側の対応する上流 FR（バッジ数表示/上限関連。ID表記はプロジェクトの id_conventions 次第）を引用しているが、その上流 FR の記述内容にはバッジのクリアに関する言及が一切無いという、記述内容に基づく実在のトレーサビリティ上の疑義を検出する（コードを見なくても文章比較だけで検出できる）",
+          "text": "指摘が依頼されたドキュメント集合（sdd-init の PRD / spec / design と親 PRD）の範囲に収まっている。コーパス全体に及ぶ別問題を含める場合は「範囲外」と明示して区別している",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "spec の制約節（99件超で\"99+\"）と、決定ログの後日エントリ（101件以上に変更）の間の実在の矛盾を、spec と記録済みの設計判断（その世代における保存先）を突き合わせて検出する（コードを見なくても文章比較だけで検出できる）",
+          "text": "引用した行番号と引用文が実ファイルと一致している（1件でもずれていれば不合格）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "指摘が実在し正確である（創作していない）",
+          "text": "PRD がカバーしていない spec の振る舞い、または PRD と矛盾する spec 変更を、最重要度（[must] 相当）で報告している",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "人間が優先度判断できるよう、指摘が重大度で分類されている",
+          "text": "PRD の更新が必要と判断した場合、直接編集ではなく既存の要求 ID とセクションを保持する追記フロー経由で行うよう引き渡し、人間の承認を前提にしている",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "下流から PRD を自動書き換えする提案をしていない",
+          "text": "同一の根本原因に由来する複数の症状を1件に束ね、重複計上していない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.1: 全5件を差し替え。iteration 1 では4セル全てが 5/5。A1（依頼範囲の遵守）と A5（根本原因での束ね）は、iteration 1 で main/without が20件（うち複数がコーパス全域の別問題）を報告した実測に基づく。A2 は同ランの引用行番号が最大34行ずれていた実測に基づく。A4 は develop が追加した PRD 更新の引き渡し規約に対応する。"
 }

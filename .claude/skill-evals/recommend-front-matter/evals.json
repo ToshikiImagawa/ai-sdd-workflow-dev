@@ -1,0 +1,94 @@
+{
+  "skill_name": "recommend-front-matter",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/recommend-front-matter/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+196/-14 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "spec-review-front-matter-recommend",
+      "prompt": "`.sdd/` 配下で front matter が欠落しているドキュメントを検出し、それぞれに推奨する front matter を提示してください。",
+      "sdd_inputs": [
+        ".sdd/requirement/spec-design/spec-review.md",
+        ".sdd/specification/spec-design/spec-review_spec.md",
+        ".sdd/specification/spec-design/spec-review_design.md"
+      ],
+      "input_parity": "identical-on-both-branches (all three stripped documents are byte-identical on both branches)",
+      "fixture": {
+        "strip_front_matter": [
+          ".sdd/requirement/spec-design/spec-review.md",
+          ".sdd/specification/spec-design/spec-review_spec.md",
+          ".sdd/specification/spec-design/spec-review_design.md"
+        ],
+        "note": "Ground truth for every recommendation is the stripped front matter itself, recoverable with `git show <branch>:<path>`."
+      },
+      "expected_output": "The three documents detected as missing front matter, each given a recommendation matching its own generation's schema for its type, inferred from the document's own content, with no invented IDs and no overwriting of existing values elsewhere.",
+      "assertions": [
+        {
+          "text": "front matter が無い文書を検出し、**その世代のスキーマ**に沿った推奨を提示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "推奨内容が既存の記述内容（タイトル・依存関係）から矛盾なく推論されている（架空の ID を作らない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "適用を行う場合、ユーザー確認なしに既存文書の値を書き換えていない（追加のみ）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "他の文書の既存 front matter フィールドの**値**（例: 古い `status`）を上書き提案していない（欠落フィールドの補完のみ）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "文書種別の判定が配置と内容に一致している（`type` の誤分類がない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "adr-front-matter-recommend",
+      "prompt": "`.sdd/adr/` 配下のドキュメントに front matter が欠落しています。推奨する front matter を提示してください。",
+      "prompt_note": "develop-only: `adr/` does not exist on main, so this eval has no main counterpart and no cross-era lift difference. It exists because the ADR-schema gap (ASSERTION_DESIGN.md defect 4) is what the +196 lines on develop were largely for; measuring it needs the develop/skill vs develop/without lift alone. Do not report a main number for it.",
+      "sdd_inputs": [
+        ".sdd/adr/workflow-foundation/task-type-determination.md"
+      ],
+      "input_parity": "develop-only (no adr/ in main's corpus)",
+      "main_counterpart": "none -- report lift within develop only",
+      "fixture": {
+        "strip_front_matter": [
+          ".sdd/adr/workflow-foundation/task-type-determination.md"
+        ]
+      },
+      "expected_output": "An ADR front matter recommendation carrying the fields the ADR schema requires (including sdd-phase and the append-only status semantics), inferred from the decision log's own content.",
+      "assertions": [
+        {
+          "text": "ADR 用のスキーマに沿った推奨を提示している（`type: \"adr\"` に必要なフィールドが揃っている）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "append-only の決定ログという性質と `status` の扱いが整合している（draft/review のライフサイクルを当てはめていない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "推奨内容が決定ログの記述内容から推論されている（架空の ID・依存関係を作らない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "文書種別を `adr` として正しく判定している（`task` 等への誤分類がない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

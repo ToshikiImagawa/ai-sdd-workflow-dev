@@ -48,7 +48,13 @@ def current_mechanical_candidates(current_report_dir):
             eval_dir = os.path.join(skill_dir, eval_id)
             if not os.path.isdir(eval_dir):
                 continue
-            for era in ("old", "new"):
+            subdirs = {d for d in os.listdir(eval_dir) if os.path.isdir(os.path.join(eval_dir, d))}
+            eras = sorted(
+                d[: -len("_without")]
+                for d in subdirs
+                if d.endswith("_without") and f"{d[: -len('_without')]}_skill" in subdirs
+            )
+            for era in eras:
                 wo = load_json(os.path.join(eval_dir, f"{era}_without", "grading.json"))
                 sk = load_json(os.path.join(eval_dir, f"{era}_skill", "grading.json"))
                 if not wo or not sk:

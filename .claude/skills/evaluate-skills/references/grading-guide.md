@@ -12,9 +12,11 @@
   意味を持たないため無視してよい
 - `grading.json` の保存先は `<report-dir>/runs/<skill>/<eval-id>/<condition>/grading.json`
   とする（grader.md 本来の既定 `{outputs_dir}/../grading.json` と同じ相対関係）
-- **世代（old/new）をまたいで採点内容を比較しない。** old fixture 上で実行した run は
-  old 世代の CONSTITUTION.md・SKILL.md の世界の中でのみ評価する。new 世代の語彙や
-  ファイル配置と比較して「古い」「対応していない」と減点してはならない
+- **世代（main / develop）をまたいで採点内容を比較しない。** `main` のフィクスチャ上で
+  実行した run は、`main` 世代の CONSTITUTION.md・AI-SDD-PRINCIPLES.md・SKILL.md の世界の中で
+  のみ評価する。`develop` 世代の語彙やファイル配置（`adr/`、`design-draft.md` 等）と比較して
+  「古い」「対応していない」と減点してはならない。フィクスチャは各ブランチの実 `.sdd/` ツリー
+  なので、世代ごとの規則書はそれぞれ正しい
   （判定基準の正典は `.claude/skill-evals/ASSERTION_DESIGN.md`）
 - Step 6「Critique the Evals」で得られる `eval_feedback` は必ず出力させる。空でも
   `"overall": "No suggestions, evals look solid"` のように明示する。これが

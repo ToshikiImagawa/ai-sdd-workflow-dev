@@ -1,6 +1,6 @@
 ---
 name: evaluate-skills
-description: "plugins/sdd-workflow 配下の全スキルを実際に実行して動作評価し、改善点をHTMLレポートで出力する。既存の .claude/skill-evals/ にある dual-era fixture 比較インフラ（old/new レイアウト × skill/without の4条件を同一世代内でのみ比較する v2 手法）を再利用し、Workflow ツールで実行をファンアウトし、独立グレーダーで採点し、skill-creator の eval-viewer を土台にしたHTMLで「without_skill が with_skill と同点/優位になる vacuous baseline の4仮説診断（skill自体が不要／assertionが本質を捉えていない／コストが悪化している／eval promptやfixtureが漏洩している）」「スキル自体の改善点」「評価手法自体の改善点」を報告する。ユーザーが「スキルの評価をして」「skill-evals を実行して」「プラグインのスキルの品質を測って」「19スキルの動作確認をして」「定期的にスキル品質をチェックしたい」と言ったときは必ず使用する。frontmatter設計・入出力セクションの有無など静的なドキュメント品質レビューは review-plugin スキルの担当であり、本スキルはそれとは重複しない——実際にスキルを実行して有効性を測る動作評価専用。"
+description: "plugins/sdd-workflow 配下の全スキルを実際に実行して動作評価し、改善点をHTMLレポートで出力する。既存の .claude/skill-evals/ にあるブランチ固有コーパス比較インフラ（main/develop それぞれの実 .sdd/ ツリー × skill/without の4条件を組み、世代ごとのリフトの差で改善量を出す v3 手法）を再利用し、Workflow ツールで実行をファンアウトし、独立グレーダーで採点し、skill-creator の eval-viewer を土台にしたHTMLで「without_skill が with_skill と同点/優位になる vacuous baseline の4仮説診断（skill自体が不要／assertionが本質を捉えていない／コストが悪化している／eval promptやfixtureが漏洩している）」「スキル自体の改善点」「評価手法自体の改善点」を報告する。ユーザーが「スキルの評価をして」「skill-evals を実行して」「プラグインのスキルの品質を測って」「19スキルの動作確認をして」「定期的にスキル品質をチェックしたい」と言ったときは必ず使用する。frontmatter設計・入出力セクションの有無など静的なドキュメント品質レビューは review-plugin スキルの担当であり、本スキルはそれとは重複しない——実際にスキルを実行して有効性を測る動作評価専用。"
 license: MIT
 argument-hint: "[--skills <name1,name2,...>] [--report-dir <path>]"
 allowed-tools: Read, Glob, Grep, Bash, Workflow
@@ -22,13 +22,19 @@ $ARGUMENTS
   `evals.json` があるスキル全部が対象
 - `--report-dir <path>`: レポート保存先。省略時は `.claude/skill-evals/reports/<実行日 YYYY-MM-DD>/`
 
-19スキル×4条件のフルスイート評価は非常にコストが高い。初回実行や動作確認では
+フルスイートは19スキル・20 eval で **76セル**（`develop` 専用 eval 2件は2条件、残り18件は
+4条件）。これに採点エージェントが加わるので非常にコストが高い。初回実行や動作確認では
 `--skills` で1〜2スキルに絞ったスモールランを強く推奨する。
+
+**1セル1ランでは改善量は測れない**（iteration-1 のノイズ床は 20pt）。有意な数値が必要な場合は
+セルあたりのラン数を増やし、それをしていない実行では結果に測定限界を明記する。
 
 ## 前提条件
 
-- `.claude/skill-evals/README.md` の評価手法（dual-era fixture比較: old/new × skill/without
-  の4条件、**同一世代内での比較のみ有効**）を理解してから進める
+- `.claude/skill-evals/README.md` の評価手法（ブランチ固有コーパス比較: `main` / `develop`
+  それぞれの実 `.sdd/` ツリー × skill/without の4条件）を理解してから進める。**生の pass rate を
+  世代間で直接比較してはならない** — コーパス自体が世代で違うため、比較できるのは
+  `lift(era) = score(era/skill) − score(era/without)` の**差**だけ
 - `.claude/skill-evals/ASSERTION_DESIGN.md` を読み、assertion の判定基準
   （バージョン中立に書く、等）を把握する。**未確認のまま assertion を書き換えない**
 - `references/vacuous-baseline-diagnostic.md` を読む。`without_skill` が `with_skill` と
@@ -64,15 +70,36 @@ $ARGUMENTS
 
 ### Step 2: Fixture構築
 
+フィクスチャは **eval 単位**で作る。v3 の `fixture` ブロック（`remove` / `remove_section` /
+`strip_front_matter` / `copy_scenario` / `corpus: empty-project`）は eval ごとに違う変形を宣言するため、
+スキル単位で1つ作ると eval 間で変形が混ざる。
+
+対象スキルの各 eval × 2世代について実行する。
+
 ```bash
-python3 .claude/skill-evals/build_fixtures.py      <report-dir>/fixtures
-python3 .claude/skill-evals/build_fixtures_2.py    <report-dir>/fixtures
-python3 .claude/skill-evals/build_fixtures_hard.py <report-dir>/fixtures
+python3 .claude/skill-evals/build_sdd_fixture.py <origin/main|develop> \
+  <report-dir>/fixtures/<era>/<skill>/<eval-id> \
+  --eval .claude/skill-evals/<skill>/evals.json --eval-id <eval-id>
 ```
 
-`<report-dir>/fixtures/{old,new}/<skill>/` が生成されたことを Glob で確認する。
-vibe-detector 等テキスト専用で `.sdd/` ツリーを前提にしないスキルは、fixture 無しで
-プロンプトのみのラン（後述 Step 3）になる。
+各出力ディレクトリに `FIXTURE.md`（ブランチ・コミット・適用した変形の記録）が生成される。
+**`## Transforms applied` の全行を確認する** — `MISSING` で始まる行があれば宣言した変形が効いて
+いないので、そのセルは無効として扱い、評価を続行せず原因を報告する。`FIXTURE.md` 自身は
+コーパスの一部ではないので、ランのプロンプトで参照させない。
+
+`main` に対応物が無い `develop` 専用 eval（`render-adr-review` の全 eval、`recommend-front-matter`
+の eval 1）は develop 側だけを構築し、リフト差ではなく **develop 内のリフトのみ**を報告する。
+
+ノイズ床を知りたい場合は合成対照群を追加で構築する。`--skill-from <ref>` は対象スキルだけを
+別 ref のコピーへ差し替えるので、両世代が同一の `SKILL.md` を持つ状態になり、リフト差は
+**構造上ゼロでなければならない**。出た差はそのままノイズの大きさである。
+
+`build_fixtures{,_2,_hard}.py`（v2 の合成フィクスチャ生成）は**使わない**。v2 の出力は
+`notification-badge` のような架空機能の `.sdd/` ツリーで、v3 の eval が名指しする実パス
+（`.sdd/specification/workflow-foundation/session-config_spec.md` 等）を含まない。渡すとランは
+即席の代替を探して出力し、グレーダーは採点し、`benchmark.json` は正常な形で無効な数値を出す。
+`vibe-detector` のようにテキスト専用でコーパスに依存しないスキルも、`.sdd/` を参照する
+`without` 条件との対比のためフィクスチャは構築する。
 
 続けて、eval prompt / fixture が対象スキルの `SKILL.md` の指示内容をどれだけ
 漏洩してしまっているか（仮説「eval promptのコンテキスト量が膨大でskillと大差ない」）を
@@ -92,18 +119,21 @@ python3 .claude/skills/evaluate-skills/scripts/score_eval_leakage.py \
 ### Step 3: Workflow による実行ファンアウト
 
 **Workflow ツールを使う。** Workflow はユーザーの明示的な opt-in を要求する仕組みなので、
-本スキルの起動指示だけでは opt-in とみなさず、実行直前に対象スキル数・想定エージェント数
-（対象スキル数 × 4条件 × 平均eval数）に加え、`eval_leakage_scores.json` の overlap ratio が
-高い上位候補（例: 上位3件）を一緒に提示してユーザーに確認を取る。
+本スキルの起動指示だけでは opt-in とみなさず、実行直前に対象スキル数・想定エージェント数に加え、
+`eval_leakage_scores.json` の overlap ratio が高い上位候補（例: 上位3件）を一緒に提示して
+ユーザーに確認を取る。セル数は eval 単位で数える（`develop` 専用 eval は2、それ以外は4条件）。
+採点エージェントも1セルにつき1体加わる。
 
 Workflow スクリプトの設計方針:
 
 - `args` として対象スキルの配列を渡す。各要素は
-  `{ name, evalsPath, oldFixtureDir, newFixtureDir, skillMdPath }`
+  `{ name, evalsPath, skillMdPath, evals: [{ id, mainFixtureDir, developFixtureDir }] }`
+  （フィクスチャは eval 単位なので、スキル単位に1組ではなく eval ごとに持たせる）
 - `pipeline(skills, executeStage, gradeStage)` を使う。あるスキルの採点が進んでいる間に
   別スキルの実行を並行させ、フルスイートの総待ち時間を縮める
 - `executeStage(skill)`: `evalsPath` の `evals.json` を読み、eval ごとに4条件
-  （`old_without` / `old_skill` / `new_without` / `new_skill`）を `parallel()` で実行する。
+  （`main_without` / `main_skill` / `develop_without` / `develop_skill`）を `parallel()` で実行する。
+  `develop` 専用 eval は develop 側の2条件のみ。
   各 `agent()` のプロンプトには、対応する fixture ディレクトリを作業対象として与え、
   `_skill` 系条件では対象スキルの `SKILL.md` を読み込んで従うよう明記する。出力は
   `<report-dir>/runs/<skill>/<eval-id>/<condition>/outputs/` に保存させる
@@ -116,10 +146,26 @@ Workflow スクリプトの設計方針:
   `{"duration_seconds": ..., "self_reported_approximate": true}` として保存させる
   （前提条件節の「コスト計測の優先順位」参照。metrics.json が一次指標、timing.json は
   近似値の補助指標）
-- `gradeStage(execResult, skill)`: 各 run について `references/grading-guide.md` に従い
-  独立グレーダーサブエージェントを起動する（`agentType` は既定のまま、grader.md の
-  Process をプロンプトに埋め込む）。`grading.json` を
-  `<report-dir>/runs/<skill>/<eval-id>/<condition>/grading.json` に保存する
+- `gradeStage(execResult, skill)`: まず `grade.py` でスクリプト判定可能な assertion を採点する。
+
+  ```bash
+  python3 .claude/skill-evals/grade.py <run-outputs-dir> --skill <skill> --json
+  ```
+
+  登録があるのは `analyze-requirements`（A3 / A4）と `task-cleanup`（A2 / A4）だけで、それ以外の
+  スキルは exit 1 と「機械検査は定義されていない」を返す。これは異常ではなく既定の状態なので、
+  その場合は全 assertion をエージェント判定に回す。判定が `????`（`UNPARSEABLE`）で返った
+  assertion もエージェント判定へ回す。また `grade.py` は `evals[0]` 固定なので、eval が複数ある
+  スキル（`recommend-front-matter`）では eval 0 以外に使わない。
+
+  残りの assertion を `references/grading-guide.md` に従い独立グレーダーサブエージェントに回す
+  （`agentType` は既定のまま、grader.md の Process をプロンプトに埋め込む）。スクリプト判定とエージェント判定を
+  マージした `grading.json` を `<report-dir>/runs/<skill>/<eval-id>/<condition>/grading.json`
+  に保存し、各 assertion がどちらで判定されたかを `evidence` に残す。
+
+  **`grade.py` の結果をエージェント判定で上書きしない。** 逆に、`grade.py` の登録を増やす判断は
+  この場でしない — 機械化を試して差し戻した4件とその理由は `grade.py` の docstring にあり、
+  同じ罠を踏み直さないための記録である
 - **executor プロンプトへの安全ガード（必須）**: 「ツールのパーミッション確認（サンドボックスの
   破壊的操作確認等）がブロックされた場合、別のコマンド・別の呼び出し経路（例: `/bin/rm -rf` で
   `rm -r` の確認を回避する等）で確認を迂回してはならない。ブロックされたらその時点で作業を停止し、
@@ -131,12 +177,18 @@ Workflow スクリプトの設計方針:
 ### Step 4: 集計
 
 1. 全 `grading.json` を読み、スキル×世代ごとに
-   `lift = pass_rate(skill条件) - pass_rate(without条件)` を計算する
-2. `<report-dir>/benchmark.json` を skill-creator の `references/schemas.md`
+   `lift(era) = pass_rate(era/skill) − pass_rate(era/without)` を計算する
+2. スキルごとに **改善量 = `lift(develop) − lift(main)`** を出す。これが報告すべき数値である。
+   `main/skill` と `develop/skill` の生スコアを並べて優劣を語ってはならない（コーパス自体が
+   世代で違うため）。`develop` 専用 eval は `lift(develop)` のみを載せ、改善量の欄は空にする
+3. 合成対照群を走らせた場合は、その改善量（構造上ゼロであるべき値）を**ノイズ床**として併記する。
+   ノイズ床を下回る改善量は「差が無い」と読む。ノイズ床が未測定なら、そう明記する —
+   数値だけを出して読み手に有意性の判断を委ねてはならない
+4. `<report-dir>/benchmark.json` を skill-creator の `references/schemas.md`
    （`$SKC/references/schemas.md`）が定める `benchmark.json` スキーマに従って生成する。
    `configuration` は `with_skill` / `without_skill` の2値固定（viewer がこの文字列で
-   色分けする）。old/new の区別は `eval_name` に世代を含めて表現する
-   （例: `"old: notification-badge-extract"`）。**`eval_name` はスキルをまたいで衝突しうる**
+   色分けする）。世代の区別は `eval_name` に含めて表現する
+   （例: `"main: distribution-prd-requirement-diagram"`）。**`eval_name` はスキルをまたいで衝突しうる**
    （同じ eval 名を複数スキルが使うケースが実際に発生した）。この衝突は viewer の表示上の
    問題に留まり、後述 3 の判定には影響しない（3 は `eval_name` を使わず `runs/` の
    ディレクトリ構造から直接判定するため）
@@ -216,6 +268,10 @@ python3 "$SKC/eval-viewer/generate_review.py" <report-dir>/runs \
   `review-plugin` に委ねる（重複させない）
 - **定期実行の仕組みは本スキル自身には持たせない**。`/loop` や `CronCreate` など
   外部のスケジューリング機構から本スキルを定期的に呼び出す運用を想定する
-- 世代間（old vs new）の生の pass rate を直接比較して優劣を語らない。有効な比較は
-  同一世代内（`old/skill` vs `old/without`、`new/skill` vs `new/without`）のみ
-  （`.claude/skill-evals/ASSERTION_DESIGN.md` 参照）
+- 世代間の**生の pass rate** を直接比較して優劣を語らない。`main` と `develop` では `.sdd/`
+  コーパス自体が違うため、生スコアの差には「スキルが良くなった」以外の要因が混ざる。
+  有効なのは同一世代内のリフト（`era/skill` vs `era/without`）と、その**リフトの差**
+  （`lift(develop) − lift(main)`）だけ（`.claude/skill-evals/ASSERTION_DESIGN.md` 参照）
+- 1セル1ランでは改善量を測れない。iteration-1 のノイズ床は 20pt で、`doc-consistency-checker`
+  では `without` 条件のばらつきがスキルの効果を上回った（`MEASUREMENT_LOG.md` 参照）。
+  セルあたりのラン数を増やすか、測れない旨を明示して報告する
