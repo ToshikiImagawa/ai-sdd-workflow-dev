@@ -143,6 +143,10 @@ Check Quality Checks items before returning output.
 When `--amend` is set, `existing-prd-text` is the current PRD in full. Build the output by taking that text
 verbatim and inserting only the new content — never regenerate or rewrite sections that already exist.
 
+> Reminder: the caller-error rule under **## Input** above still applies here. If `usecase-text` / `analysis-text` /
+> `diagram-text` were empty or absent, do not invent rows to insert into the tables below — return
+> `existing-prd-text` unchanged.
+
 | Insertion                                    | Where                                                                                        |
 |:-----------------------------------------------|:------------------------------------------------------------------------------------------------|
 | New UR/FR/NFR rows                             | Appended to the end of the matching table in §4 (Detailed Requirements)                        |

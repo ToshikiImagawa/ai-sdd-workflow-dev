@@ -78,3 +78,7 @@ pending → cancelled
 - Do **not** treat missing front matter as a violation.
 - When generating new documents, always include front matter.
 - When updating existing documents that lack front matter, do not add it unless explicitly requested.
+- task-breakdown's typical operation — converting an existing informal/unstructured `tasks.md` into individual
+  structured task documents — counts as *generating new documents* (the individual task files did not exist
+  before), so the "always include front matter" rule above applies. This is not "updating an existing document
+  that lacks front matter."

@@ -156,7 +156,7 @@ for task fields and `references/front_matter_spec_design.md` for design fields.
 | **Update design doc `updated`** | If the related `*_design.md` still exists, set to current date |
 | **Set design doc `ticket` (fallback)** | Only if no `adr` entry was created/updated above (this project's generation has no `adr/` concept, or step 5 found nothing to integrate) and the related design doc still exists as a persistent document (not a temporary `task/{ticket-number}/design-draft.md` that will itself be deleted): set its `ticket` field to the identifier recorded in step 1, per `references/front_matter_spec_design.md`. This is the fallback link once `task/` is gone |
 | **Update spec `status`** | Consider updating to `"approved"` if implementation validates the spec |
-| **Update spec `impl-status`** | Safety net: set to `"implemented"` if not already (the `implement` skill should have set this at completion; this catches cases where it was skipped, e.g. work resumed from a different session) |
+| **Update spec `impl-status`** | Before setting, verify against reality: read the relevant source under the feature's implementation path and run the test suite. Do not rely solely on `tasks.md`'s self-reported completion. Set to `"implemented"` only once this check confirms the spec's requirements are met (this is the safety net for cases where the `implement` skill's own update was skipped, e.g. work resumed from a different session) |
 
 ### 8. Delete Files/Directories
 

@@ -282,6 +282,9 @@ Fill in the template with:
     - **If approach specified in context**: Use it (e.g., "Strangler Figパターン", "react-window使用")
 - Migration plan (phased tasks)
 - Impact analysis (breaking changes, affected components, rollback plan)
+    - **If this refactoring breaks backward compatibility**: compare at least 2 concrete alternative approaches
+      (e.g., immediate breaking change / phased deprecation with a migration window / dual old-new shim). Do not
+      implement any of them — present the comparison and leave the choice for human review.
 - Testing strategy
 - Success criteria
 - Risks and mitigations

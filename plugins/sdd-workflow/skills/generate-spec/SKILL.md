@@ -170,6 +170,11 @@ Follow these steps to prepare the template:
 - Sections with `<MUST>` markers are required, `<RECOMMENDED>` are recommended, `<OPTIONAL>` are optional
 - Remove section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) from headings in the final output — they are author-facing guides only and must not appear in the generated document
 - Reference PRD requirement IDs (UR-xxx, FR-xxx, NFR-xxx) in functional requirements
+- If a functional/non-functional requirement's content cannot be directly derived from the PRD requirement ID it
+  cites (i.e., it is an inference or assumption filling a gap the PRD left open), disclose that inference in the
+  spec itself next to the requirement (e.g., append "（推測・要確認）" / "(inferred — needs confirmation)").
+  Disclosing it only in a separate design doc or user notes is not enough — the spec is the document treated as
+  ground truth downstream.
 
 **Save Location**:
 

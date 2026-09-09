@@ -116,6 +116,18 @@
 - [ ] Internal API only (no external impact)
 - [ ] Public API changes (requires version bump and migration guide)
 
+**Alternative Approaches Comparison (required when breaking changes apply):**
+
+If anything other than "None (backward compatible)" is checked above, compare at least 2 concrete alternative
+approaches. Do not implement any of them — present the comparison and leave the choice for human review.
+
+| Approach | Summary | Pros | Cons |
+|:--|:--|:--|:--|
+| {Approach 1: e.g., immediate breaking change} | {description} | {pros} | {cons} |
+| {Approach 2: e.g., phased deprecation with migration window} | {description} | {pros} | {cons} |
+
+**Recommendation:** {which one and why; final decision is left to human review}
+
 **Affected Components:**
 
 | Component | Type | Impact | Mitigation |
