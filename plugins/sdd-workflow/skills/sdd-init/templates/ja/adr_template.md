@@ -17,9 +17,11 @@ category: ""
 1機能につき1ファイルで、**追記のみ（append-only）**。一時ドラフトである
 `${SDD_TASK_PATH}/{ticket-number}/design-draft.md` を削除した後も、重要な決定の根拠を残すために使います。
 
-> **注意**: このテンプレートはプラグインのフォールバック用です。
-> プロジェクトで使用する際は、プロジェクトの規約に合わせてカスタマイズし、
-> `${SDD_ROOT}/ADR_TEMPLATE.md` として保存してください。
+> **注意**: `/sdd-init` がこのファイルを `${SDD_ROOT}/ADR_TEMPLATE.md` にコピーし、
+> **そのコピーがプロジェクトのテンプレート**になります。規約に合わせたカスタマイズはコピー側で行ってください
+> （`/sdd-init` を再実行しても上書きされません）。`/task-cleanup` は `${SDD_ROOT}/ADR_TEMPLATE.md` があれば
+> それを読み、無い場合は `AI-SDD-PRINCIPLES.md` § Architecture Decision Record のエントリ形式を使います。
+> カスタマイズする場合も、追記されたエントリを機械的に読めるよう、下記の必須項目は維持してください。
 
 ## ファイルの構成
 

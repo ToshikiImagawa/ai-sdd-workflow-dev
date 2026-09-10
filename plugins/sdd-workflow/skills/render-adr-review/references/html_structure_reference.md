@@ -28,7 +28,7 @@ Render bottom-up: fill each `alternative_row.md` copy, join them into `{alternat
 | `{decision_date}` | card | Date/context recorded with the entry, if any |
 | `{decision_status_class}` | card | `superseded` when a later entry supersedes this one, otherwise empty (drives the dimmed card styling) |
 | `{decision_badge_label}` | card | Localized state label ("Decision"/"Superseded" or "決定"/"失効") |
-| `{decision_supersession}` | card | The rendered `<p class="decision-supersession">` note(s) linking this entry to the entry it replaced and/or the entry that replaced it; empty string when neither applies |
+| `{decision_supersession}` | card | The rendered `<p class="decision-supersession">` note(s) linking this entry to the entry it replaced and/or the entry that replaced it, including the reversing entry's "what changed" line. Links must target the other card's `{decision_anchor}` in this same file, not a Markdown anchor copied from the source. Empty string when neither applies |
 | `{decision_rationale}` | card | Why this option was chosen |
 | `{alternative_rows}` | card | Concatenated rendered `alternative_row.md` blocks (adopted row first, then rejected) |
 | `{option_name}` | row | Name of the option (the adopted decision, or a rejected alternative) |
@@ -42,8 +42,9 @@ Render bottom-up: fill each `alternative_row.md` copy, join them into `{alternat
 The comparison table always lists the adopted decision as its first row (`verdict-adopted`,
 highlighted) followed by every rejected alternative recorded in the source entry
 (`verdict-rejected`, muted/struck-through). If the source entry recorded no rejected
-alternatives, omit the table and render only the rationale section — do not invent alternatives
-that were not in the source.
+alternatives — including when it says so explicitly with `None considered` — omit the table and
+render only the rationale section. Do not invent alternatives that were not in the source, and do
+not turn `None considered` into a `verdict-rejected` row.
 
 **Rejected and superseded are different axes; never render one as the other.** A rejected
 alternative was never adopted — it is a row inside one entry's comparison table. A superseded

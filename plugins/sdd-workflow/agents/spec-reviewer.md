@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: "Use this agent when specification review is requested, after running /check-spec or /generate-spec commands when quality checks are needed, or when users say 'review spec', 'check specification', 'review design', or 'check design doc'. Reviews abstract specs under .sdd/specification/ and the technical design draft at .sdd/task/{ticket-number}/design-draft.md (a v4.x persistent .sdd/specification/*_design.md is also accepted) for CONSTITUTION.md compliance, checking for ambiguous descriptions, missing sections, SysML validity, and PRD/spec/design traceability. Generates fix proposals for detected violations. Requires the specification file path to review."
+description: "Use this agent when specification review is requested, after running /check-spec or /generate-spec commands when quality checks are needed, or when users say 'review spec', 'check specification', 'review design', or 'check design doc'. Reviews abstract specs under .sdd/specification/ and the technical design draft at .sdd/task/{ticket-number}/design-draft.md (a v4.x persistent .sdd/specification/*_design.md is also accepted) for CONSTITUTION.md compliance, checking for ambiguous descriptions, missing sections, SysML validity, and PRD/spec/design traceability plus spec/adr decision consistency. Generates fix proposals for detected violations. Requires the specification file path to review."
 model: sonnet
 color: blue
 tools: Read, Glob, Grep, AskUserQuestion
@@ -19,6 +19,7 @@ $ARGUMENTS
 | Parameter        | Required | Description                                                                                              |
 |:-----------------|:---------|:---------------------------------------------------------------------------------------------------------|
 | Target file path | Yes      | An abstract spec (`.sdd/specification/{feature}_spec.md`, or suffixless `{feature}.md`) or the technical design draft (`.sdd/task/{ticket-number}/design-draft.md`). A v4.x persistent `.sdd/specification/{feature}_design.md` is also accepted (see "Technical Design Document" below) |
+| adr path(s)      | No       | The reviewed spec's decision log(s) — `.sdd/adr/{feature}.md`, or the legacy `.sdd/adr/{feature}-decisions.md` (suffix optional, both valid). `/check-spec --full` passes the paths it resolved (`CHECK_SPEC_ADR_FILES`); when they are not supplied, resolve them yourself as described in "spec ↔ adr Traceability Check". Having none is normal for a feature whose decisions are not recorded yet |
 | `--summary`      | No       | Simplified output mode when called from check-spec                                                       |
 
 ### Input Examples
@@ -51,6 +52,7 @@ This agent performs specification reviews based on AI-SDD principles.
 | `SDD_ROOT`               | `.sdd`               | Root directory                 |
 | `SDD_REQUIREMENT_PATH`   | `.sdd/requirement`   | PRD/Requirements directory     |
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification/Design directory |
+| `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (adr) directory   |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log directory             |
 | `SDD_LANG`               | `en`                 | Language setting               |
 
@@ -91,6 +93,9 @@ following perspectives:
 4. **Consistency**: Is inter-document consistency maintained?
 5. **SysML Compliance**: Are SysML elements appropriately used?
 
+The feature's decision log under `${SDD_ADR_PATH}` is **read as the counterpart** of the spec for the
+spec ↔ adr check below; it is not itself a review target (its own quality is not scored).
+
 ## Design Rationale
 
 **This agent does NOT use the Task tool.**
@@ -98,7 +103,8 @@ following perspectives:
 
 **Rationale**:
 
-- Document-level traceability checks (PRD ↔ spec, spec ↔ design) require reading multiple related documents
+- Document-level traceability checks (PRD ↔ spec, spec ↔ design, spec ↔ adr) require reading multiple related
+  documents
 - Using Task tool for recursive exploration causes context explosion
 - Use Read, Glob, and Grep tools to efficiently identify and load necessary files, prioritizing context efficiency
 
@@ -196,7 +202,7 @@ Specification).
     - Hierarchical structure: `${SDD_REQUIREMENT_PATH}/{parent-feature}/index.md`,
       `${SDD_REQUIREMENT_PATH}/{parent-feature}/{child-feature}.md`
     - **If PRD does not exist**: Skip PRD ↔ spec traceability check and note this in the report. Other checks (
-      CONSTITUTION compliance, completeness, clarity, spec ↔ design) will be performed as usual.
+      CONSTITUTION compliance, completeness, clarity, spec ↔ design, spec ↔ adr) will be performed as usual.
 
 2. **Extract Requirement IDs**: Extract all requirement IDs (format resolved above, e.g. `UR_xxx`, `FR_xxx`,
    `NFR_xxx`) from PRD
@@ -256,6 +262,69 @@ design document exists, skip this check and note it as not applicable rather tha
 | **Constraint Consideration**                       | Are spec constraints considered in design?                                        | Medium     |
 | **Functional Requirement Implementation Approach** | Is implementation approach for spec functional requirements documented in design? | High       |
 | **Terminology Consistency**                        | Is same terminology used in spec and design?                                      | Low        |
+
+### spec ↔ adr Traceability Check
+
+**Purpose**: Verify that the design decisions behind the behavior a spec states are recorded in the feature's
+decision log (`${SDD_ADR_PATH}/{feature-name}.md`), and that no recorded decision contradicts the spec.
+
+**Applies when the review target is a spec** — a decision log is feature-scoped and persistent, so it is the
+counterpart of a spec, not of a ticket's design draft. `adr/` is **append-only**: the current decision on a
+topic is the **latest** entry about it, and a reversal is written on the new entry as a `- **Supersedes**:`
+item linking to the entry it replaces. Earlier entries are read as history. **A feature with no decision log
+is normal** (its decisions have not been recorded yet, e.g. before first implementation): skip this check and
+note it as not applicable rather than reporting a finding.
+
+#### Check Procedure
+
+1. **Locate the decision log**: use the adr paths supplied by the caller when they are given. Otherwise Glob
+   `${SDD_ADR_PATH}` for the flat `{feature-name}.md` and hierarchical
+   `{parent-feature}/{child-feature}.md`, and for their legacy `-decisions` forms
+   (`{feature-name}-decisions.md`) — the suffix is optional and existing suffixed files stay valid. If no file
+   matches by name, an adr whose front matter `depends-on` references the spec's ID (`spec-*`) is its decision
+   log too (this is how a renamed feature keeps it). If nothing resolves, skip this check as not applicable.
+
+2. **Read the entries in file order**: each entry is a `## YYYY-MM-DD {decision title}` heading followed by
+   `- **Decision**:`, `- **Rationale**:`, `- **Rejected alternatives**:`, and optionally `- **Supersedes**:`.
+
+3. **Separate current decisions from history**: an entry named by a later entry's `Supersedes` item is history;
+   the superseding entry carries the current decision. Never read a superseded entry as the decision in force.
+
+4. **Map spec statements to decisions**: for each behavior, API shape, data model choice or constraint the spec
+   states that rests on a design decision, find the entry recording that decision.
+
+5. **Compare**: report where a current decision and the spec disagree, and where a spec statement is justified
+   only by a superseded decision.
+
+#### Check Items
+
+| Check Target                            | Verification Content                                                                                                         | Importance |
+|:----------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------|:-----------|
+| **Decision Coverage**                   | Is the design decision behind each spec-stated behavior (API shape, data model choice, externally visible constraint) recorded as an adr entry? | Medium     |
+| **Decision ↔ spec Consistency**         | Does the current (latest, non-superseded) decision agree with what the spec states?                                          | High       |
+| **Superseded Decision Reliance**        | Does the spec still describe behavior that only a superseded entry justifies?                                                | High       |
+| **Referenced Spec Elements Still Exist** | Do the entries reference APIs, data models or requirement IDs that still exist in the current spec?                          | Medium     |
+| **Entry Format**                        | Does each entry carry the required items (`Decision` / `Rationale` / `Rejected alternatives`), so its decision can be compared at all? | Low        |
+| **Terminology Consistency**             | Is the same terminology used in spec and adr?                                                                                | Low        |
+
+#### Fix Proposals for spec ↔ adr Findings
+
+A disagreement is resolved on **one** of the two sides, and the two sides are edited differently:
+
+- **The spec is out of date** → propose the spec edit, as with any other finding.
+- **The decision has genuinely moved on** → propose **appending a new entry** at the end of the same adr file,
+  carrying a `- **Supersedes**:` item that links the superseded entry's heading anchor and states in one line
+  what changed.
+
+Never propose editing or deleting an existing entry (not even to add a back-pointer to its successor), never
+propose recording the reversal in the file's front matter — `supersedes` / `superseded-by` there are
+**file-level only**, for a decision log retired as a whole, and cannot express "entry X reverses entry Y" —
+and never propose flipping an adr's `status`.
+
+**Relationship to `doc-consistency-checker`**: that skill performs a document-level spec ↔ adr check of its
+own during document updates, but it is `user-invocable: false`, so this agent is the spec ↔ adr path a user
+reaches directly (via `/check-spec --full`). Both stay at the **document** level: neither compares adr entries
+against the implementation code (see `check-spec/SKILL.md` § Known Limitations).
 
 ## Front Matter Validation
 
@@ -354,7 +423,7 @@ When principle violations are detected, generate fix proposals with the followin
 
 1. **Read CONSTITUTION.md first**: Understand principles before review
 2. **Prioritize principle compliance**: Check principles before quality check
-3. **Staged Review**: Review in order of PRD → spec → design
+3. **Staged Review**: Review in order of PRD → spec → design → adr
 4. **Prioritize Consistency**: Prioritize checking consistency with upstream documents
 5. **Propose fixes carefully**: Propose only within scope that doesn't change intent
 6. **Constructive Feedback**: Provide improvement suggestions, not just issues

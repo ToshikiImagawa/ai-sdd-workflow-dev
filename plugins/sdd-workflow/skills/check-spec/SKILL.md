@@ -105,13 +105,20 @@ This script:
 2. Selects the design drafts (`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) that belong to this run
    as an optional auxiliary input; an empty list is normal, not an error. Drafts of other tickets are
    **not** attached (see "Auxiliary design input" below)
-3. Generates file mapping JSON (spec → feature name → auxiliary design doc, plus the selected draft list,
-   the selection basis `design_draft_scope`, and any `unscoped_design_drafts`)
-4. Exports environment variables to `$CLAUDE_ENV_FILE`:
+3. Resolves each target spec's decision log under `${SDD_ADR_PATH}/` — the suffix-free `{feature}.md` and the
+   legacy `{feature}-decisions.md`, at the same relative position as the spec (so
+   `specification/auth/user-login.md` maps to `adr/auth/user-login.md`); when neither name exists, an adr whose
+   front matter `depends-on` references the spec's ID. An empty result is normal, not an error
+4. Generates file mapping JSON: per spec, its feature name, auxiliary design doc, `adr` documents and the
+   attribution basis `adr_basis` (`name` / `depends-on` / `none`); plus the selected draft list, the
+   selection basis `design_draft_scope`, any `unscoped_design_drafts`, and the flat `adr_documents` list
+5. Exports environment variables to `$CLAUDE_ENV_FILE`:
    - `CHECK_SPEC_SPEC_FILES` - List of spec files (the comparison baseline)
    - `CHECK_SPEC_DESIGN_DRAFT_FILES` - List of selected design drafts (empty when none apply)
    - `CHECK_SPEC_DESIGN_DRAFT_SCOPE` - How the drafts were selected: `none` / `ticket` / `depends-on` /
      `sole-draft` / `unscoped`
+   - `CHECK_SPEC_ADR_FILES` - List of the decision logs attributed to the target specs (empty when the
+     features' decisions are not recorded yet). Input for the `--full` spec ↔ adr review
    - `CHECK_SPEC_MAPPING` - JSON mapping file
 
 **Phase 2: Claude** - Read specs from pre-scanned lists and perform consistency check
@@ -152,6 +159,13 @@ structures are supported, and the `_spec` suffix is optional in every case.
   spec by name. Use **only the drafts listed in `CHECK_SPEC_DESIGN_DRAFT_FILES`**; never glob
   `${SDD_TASK_PATH}/` yourself, because another ticket's design would be mixed into the check
 - The `design` field of each mapping entry — a v4.x persistent `{feature}_design.md`, when present
+
+**Decision logs (`--full` only)**:
+
+The `adr` field of each mapping entry, and the flat list in `CHECK_SPEC_ADR_FILES`, hold the decision logs
+resolved for the target specs. They are **not** used by the spec ↔ implementation check; they are passed to the
+`spec-reviewer` agent for the spec ↔ adr document review under `--full` (see step 6). An empty list is the
+normal state for a feature whose decisions are not recorded yet, and is never reported as a discrepancy.
 
 **How a draft is selected** (`design_draft_scope` in the mapping JSON):
 
@@ -360,12 +374,24 @@ Classify detected discrepancies as follows:
 
 When the `--full` option is specified, the `spec-reviewer` agent is invoked to perform comprehensive review.
 
+#### Agent Invocation (what to pass)
+
+Invoke `spec-reviewer` per target spec with:
+
+1. The **spec path** from `CHECK_SPEC_SPEC_FILES` (the review target)
+2. The spec's **decision logs** — the entry's `adr` field in `CHECK_SPEC_MAPPING`, or the flat
+   `CHECK_SPEC_ADR_FILES` list. Pass them explicitly so the agent reviews the same files this run resolved
+   instead of re-globbing `${SDD_ADR_PATH}/`. When the list is empty, say so: the agent then records spec ↔ adr
+   as **not applicable**, which is the correct result for a feature whose decisions are not recorded yet — not
+   a finding, and not "consistent" either
+3. `--summary` when the review is embedded in this skill's report
+
 #### Review Content
 
 | Check Item                      | Description                                                              |
 |:--------------------------------|:-------------------------------------------------------------------------|
 | **PRD <-> spec Traceability**   | Verify PRD requirements are covered in spec (80% coverage threshold)     |
-| **spec <-> adr Consistency**    | Verify recorded decisions are consistent with the spec (document level only — adr <-> implementation drift stays out of scope, see Known Limitations) |
+| **spec <-> adr Consistency**    | Verify the decision log's current (latest, non-superseded) decisions agree with the spec, that the spec does not rely on a superseded decision, and that spec-driving decisions are recorded at all. Document level only — adr <-> implementation drift stays out of scope, see Known Limitations |
 | **CONSTITUTION.md Compliance**  | Verify compliance with project principles                                |
 | **Completeness**                | Verify required sections (purpose, API, constraints, etc.) are present   |
 | **Clarity**                     | Detect vague descriptions ("nice to have", "appropriately", etc.)        |
@@ -376,6 +402,26 @@ When the `--full` option is specified, the `spec-reviewer` agent is invoked to p
 - Executes after spec <-> implementation consistency check is complete
 - Performs comprehensive review for target documents (PRD, spec, adr)
 - Generates traceability matrix (PRD -> spec -> implementation correspondence)
+
+#### Reporting the spec <-> adr Result
+
+Report the agent's spec ↔ adr outcome in one of three states, never collapsing them:
+
+| Outcome              | When                                                                     |
+|:---------------------|:-------------------------------------------------------------------------|
+| Consistent           | A decision log was reviewed and no disagreement was found                 |
+| Inconsistent ({n})   | A decision log was reviewed and disagreements were found                  |
+| Not applicable       | No decision log resolved for the feature — normal, and **not** consistent |
+
+A fix for an inconsistency lands either in the spec, or in a **new appended** adr entry carrying a
+`Supersedes` item that links the entry it replaces; `adr/` is append-only, so never edit or delete an existing
+entry.
+
+"Not applicable" here is scoped to the **decision log**: no `adr/{feature}.md` was resolved for this feature.
+It does not claim the feature's decisions are unrecorded — in a project carried over from v4.x they may still
+live in a persistent `specification/{feature}_design.md`. The `doc-consistency-checker` skill covers that case
+as **spec ↔ design (v4.x legacy)** and calls the no-source-at-all case `not checked`; both vocabularies mean
+"this area was not verified", so neither report may render it as `Consistent`.
 
 **Note**: Comprehensive review requires additional execution time. For quick checks during development, run without
 `--full`, and use `--full` before PR creation or for periodic checks.

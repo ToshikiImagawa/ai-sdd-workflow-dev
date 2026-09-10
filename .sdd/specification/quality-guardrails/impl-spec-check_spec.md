@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-09-02"
+updated: "2026-09-10"
 depends-on: ["prd-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
@@ -130,7 +130,9 @@ spec ではなく設計ドラフトと同じ補助入力として扱う。
 export CHECK_SPEC_CACHE_DIR=".sdd/.cache/check-spec"                  # キャッシュ出力先
 export CHECK_SPEC_SPEC_FILES=".../spec_files.txt"                    # spec 文書一覧（第一級の比較基準）
 export CHECK_SPEC_DESIGN_DRAFT_FILES=".../design_draft_files.txt"    # 設計ドラフト一覧（存在時のみ非空）
-export CHECK_SPEC_MAPPING=".../file_mapping.json"                    # spec → feature → 補助 design の対応
+export CHECK_SPEC_DESIGN_DRAFT_SCOPE="ticket"                        # ドラフトの絞り込み根拠（ticket / depends-on / sole / none 等）
+export CHECK_SPEC_ADR_FILES=".../adr_files.txt"                      # 決定ログ一覧（不在時は空。空は「該当なし」で異常ではない）
+export CHECK_SPEC_MAPPING=".../file_mapping.json"                    # spec → feature → 補助 design / adr の対応
 ```
 
 ### 出力

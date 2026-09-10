@@ -86,6 +86,9 @@ printf '# prd\n'    > "$PROJ/${ROOT}/requirement/user-login.md"
 # Design drafts are ticket-scoped under the configured task dir (optional input).
 mkdir -p "$PROJ/${ROOT}/task/90"
 printf '# draft\n' > "$PROJ/${ROOT}/task/90/design-draft.md"
+# Decision log for the same feature, resolved by name (optional input).
+mkdir -p "$PROJ/${ROOT}/adr"
+printf '# user-login Decision Log\n' > "$PROJ/${ROOT}/adr/user-login.md"
 
 ENV_FILE="${TMP_DIR}/env_output"
 : > "$ENV_FILE"
@@ -111,6 +114,9 @@ assert_grep      "spec_files.txt lists the seeded spec doc"                     
 assert_grep      "design_draft_files.txt lists the ticket-scoped draft"           "${ROOT}/task/90/design-draft.md" "$FS_CACHE/design_draft_files.txt"
 assert_grep      "env exports CHECK_SPEC_CACHE_DIR"                               "CHECK_SPEC_CACHE_DIR"  "$ENV_FILE"
 assert_grep      "env exports CHECK_SPEC_DESIGN_DRAFT_FILES"                      "CHECK_SPEC_DESIGN_DRAFT_FILES" "$ENV_FILE"
+assert_file      "find-spec-docs writes adr_files.txt under the custom root"      "$FS_CACHE/adr_files.txt"
+assert_grep      "adr_files.txt lists the name-matched decision log"              "${ROOT}/adr/user-login.md" "$FS_CACHE/adr_files.txt"
+assert_grep      "env exports CHECK_SPEC_ADR_FILES"                               "CHECK_SPEC_ADR_FILES" "$ENV_FILE"
 assert_grep      "CHECK_SPEC_CACHE_DIR points under the custom root"              "${ROOT}/.cache/check-spec" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------

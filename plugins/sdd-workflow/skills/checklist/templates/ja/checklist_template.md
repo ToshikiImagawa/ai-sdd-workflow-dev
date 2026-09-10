@@ -8,10 +8,12 @@
 | チケット番号       | {チケット番号}                                       |
 | 対象仕様書        | `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`   |
 | 対象設計ドラフト     | `${SDD_TASK_PATH}/{チケット番号}/design-draft.md`（削除済みなら省略） |
+| v4.x の永続設計書   | `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md`（プロジェクトに存在しなければ省略） |
 | 生成日          | YYYY-MM-DD                                     |
 | チェックリストバージョン | 1.0                                            |
 
-※ 階層構造の場合、親機能は `index_spec.md`。設計ドラフトはチケット単位なのでどちらの構造でもパスは同じ
+※ 階層構造の場合、親機能は `index_spec.md`、`index_design.md`。設計ドラフトはチケット単位なので
+どちらの構造でもパスは同じ
 
 ## チェックリストサマリー
 
@@ -522,6 +524,8 @@
 - 抽象仕様書: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`
 - 技術設計ドラフト: `${SDD_TASK_PATH}/{チケット番号}/design-draft.md`（一時文書。実装完了時に削除済みなら
   この行を省略する）
+- v4.x の永続設計書: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md`（v4.x から引き継いだ
+  プロジェクトでの補助入力。プロジェクトに存在しなければこの行を省略する）
 
-※ 階層構造の場合、親機能は `index.md`、`index_spec.md`。設計ドラフトはチケット単位なので
+※ 階層構造の場合、親機能は `index.md`、`index_spec.md`、`index_design.md`。設計ドラフトはチケット単位なので
 どちらの構造でもパスは同じ

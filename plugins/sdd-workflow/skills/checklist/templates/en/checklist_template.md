@@ -8,6 +8,7 @@
 | Ticket Number     | {Ticket Number}                          |
 | Specification     | `${SDD_SPECIFICATION_PATH}/{feature}_spec.md`   |
 | Design Draft      | `${SDD_TASK_PATH}/{ticket}/design-draft.md` (omit if already deleted) |
+| v4.x Design Doc   | `${SDD_SPECIFICATION_PATH}/[{path}/]{feature}_design.md` (omit if the project has none) |
 | Generated Date    | YYYY-MM-DD                               |
 | Checklist Version | 1.0                                      |
 
@@ -520,6 +521,8 @@ All items (including P3) should be complete:
 - Abstract Specification: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_spec.md`
 - Technical Design Draft: `${SDD_TASK_PATH}/{ticket}/design-draft.md` (temporary; omit this line if it was
   already deleted at implementation completion)
+- v4.x Persistent Design Doc: `${SDD_SPECIFICATION_PATH}/[{path}/]{name}_design.md` (supplementary input in a
+  project carried over from v4.x; omit this line if the project has none)
 
-※ For hierarchical structure, parent features use `index.md`, `index_spec.md`. The design draft is
-ticket-scoped, so its path is the same in both structures
+※ For hierarchical structure, parent features use `index.md`, `index_spec.md`, `index_design.md`. The design
+draft is ticket-scoped, so its path is the same in both structures

@@ -167,8 +167,10 @@ Step 3A.1.
 
 **If `legacy_design_exists` is `true`**, tell the user that the file is read as supplementary input but not
 updated, and that it **remains valid** where it is. Its decisions may eventually move to `adr/{feature}.md`
-(see "Migration from v4.x" in the plugin README), but that is a human judgment call: do not migrate it
-yourself, and never report it as a naming violation or a deletion candidate.
+— the steps are in `${CLAUDE_PLUGIN_ROOT}/README.md`, section "Extracting Existing `*_design.md` Files into
+`adr/`" under "Migration from v4.x" (`README.ja.md` next to it holds the Japanese version) — but that is a
+human judgment call: do not migrate it yourself, and never report it as a naming violation or a deletion
+candidate.
 
 ---
 
@@ -327,11 +329,15 @@ Analyze implementation files and extract:
 
 - Functional requirements (what the feature does)
 - Non-functional requirements (performance, security, etc.)
-- Interface specifications (APIs, function signatures)
+- Interface specifications (APIs, function signatures, and the internal module boundaries other code depends on)
 - Dependencies
 - Data model
+- Externally observable data flow (entry points, external calls and side effects, results returned)
 
 Use template: read `${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/templates/${SDD_LANG}/reverse_spec_template.md`.
+
+This spec is the **only persistent** output of the reverse-engineering, so anything extracted in Step 3B.3
+that belongs here must land here — see "Reverse-Engineered Analysis — What Persists and What Does Not".
 
 **Step 3B.2: Write Specification Document**
 
@@ -364,6 +370,11 @@ Analyze implementation files and extract:
   They Persist")
 
 Use template: read `${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/templates/${SDD_LANG}/reverse_design_template.md`.
+
+Most of this list does **not** survive the draft's deletion, and only part of it belongs in the spec written
+in Step 3B.2. Before writing the draft, settle each item against the mapping in "Reverse-Engineered Analysis
+— What Persists and What Does Not". The spec-bound parts must not be left here only: the spec was already
+written in Step 3B.2, so go back and add them to it (its `updated` field moves to the current date).
 
 **Step 3B.4: Write the Design Draft**
 
@@ -405,6 +416,9 @@ Verify the refactoring plan includes all required sections:
 - [ ] References (to PRD, spec, patterns)
 - [ ] Every Technical Debt Observation names a persistent destination (`adr/` entry at cleanup / tracker item /
       spec update proposal) — see "Technical Debt Observations — Where They Persist"
+- [ ] Case B only: every spec-bound item extracted in Step 3B.3 is present in the reverse-engineered spec
+      (Public API / Internal Interfaces / Data Model / Behavior and Data Flow / Architecture Pattern) — see
+      "Reverse-Engineered Analysis — What Persists and What Does Not"
 
 If any required section is missing, add it before proceeding.
 
@@ -413,7 +427,8 @@ If any required section is missing, add it before proceeding.
 Output a summary and recommend next steps. See `templates/${SDD_LANG:-en}/completion_output.md` for the "Next Steps
 Summary" format.
 
-Always include the Decision Log Hand-off below in the recommended next steps.
+Always include the Decision Log Hand-off below in the recommended next steps, and — in Case B — the persistence
+boundary from "Reverse-Engineered Analysis — What Persists and What Does Not".
 
 ### Decision Log Hand-off (`adr/`)
 
@@ -428,6 +443,45 @@ plan settles on must be persisted elsewhere:
    settled decisions belong in the append-only log
 
 Tell the user this explicitly in the completion output, so the plan is not left as the only record.
+
+### Reverse-Engineered Analysis — What Persists and What Does Not
+
+Step 3B.3 extracts more from the code than a spec is allowed to hold, and the design draft that receives it is
+deleted at `/task-cleanup`. Each extracted item therefore has exactly one of two fates: it goes into the
+persistent reverse-engineered spec (Step 3B.2), or it is knowingly discarded with the draft. The mapping is
+fixed:
+
+| Extracted item                                                                    | Persistent home                                                                                                                       |
+|:----------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------|
+| API design (public functions, classes, endpoints, signatures)                     | Spec § "Interface Specifications" → "Public API"                                                                                       |
+| Module boundaries other code depends on                                            | Spec § "Interface Specifications" → "Internal Interfaces" — the boundary and its contract, not the components behind it                |
+| Database schema, data structures                                                   | Spec § "Data Model"                                                                                                                    |
+| Data flow, **externally observable part only** (entry points, external calls and side effects, results returned) | Spec § "Behavior and Data Flow"                                                                        |
+| Architecture overview, **pattern name only** (e.g. layered, MVC, event-driven)      | Spec § "Implementation Notes" → "Architecture Pattern"                                                                                 |
+| Component structure (component inventory, per-component responsibilities and dependencies, directory layout) | **None — discarded with the draft, by design**                                                              |
+| Data flow between private components (internal call sequence)                       | **None — discarded with the draft, by design**                                                                                         |
+| Key algorithms, state management internals, error-handling patterns, current test coverage figures | **None — discarded with the draft, by design**                                                                        |
+
+The "None" rows are a deliberate limit, not a gap to be fixed:
+
+- They are **derived information**: re-running this skill re-derives them from the code, and a persisted copy
+  starts drifting from the code the moment the code changes
+- `adr/` is not the answer: it records **decisions**, not know-how or structure descriptions
+  (`AI-SDD-PRINCIPLES.md` § Knowledge Asset Persistence Management). Only a *decision about* the structure
+  ("split the fetch layer out of the view component, because ...") persists, and `/task-cleanup` appends that
+  as an `adr/{feature-name}.md` entry
+- The spec is not the answer either: `generate-spec`'s `spec_template.md` § "What NOT to Include" routes
+  "Architecture and module structure", "Directory structure and file placement" and "Test strategy and
+  coverage goals" **away** from the spec. Writing them there would contradict the spec template and create a
+  second, stale description of the code's structure
+- Do not invent a new document for them
+
+In Case A the spec already exists and this skill never rewrites it. The same boundary applies to the draft's
+analysis sections; when the implementation contradicts the behavior the spec describes, propose a spec
+correction for human approval instead (see "Technical Debt Observations — Where They Persist").
+
+State this in the Phase 5 output: name the spec sections the reverse-engineering wrote to, and say plainly
+that the draft's component structure and internal flow go away with the draft.
 
 ### Technical Debt Observations — Where They Persist
 
@@ -455,7 +509,9 @@ Rules:
 
 - **Case A**: Design draft (`task/{ticket-number}/design-draft.md`) created or updated with a "Refactoring Plan" section
 - **Case B**:
-    - New specification document under `specification/` (reverse-engineered, persistent)
+    - New specification document under `specification/` (reverse-engineered, persistent) — the only lasting
+      record of the analysis; what it does and does not carry is fixed by "Reverse-Engineered Analysis — What
+      Persists and What Does Not"
     - New design draft under `task/{ticket-number}/` (reverse-engineered, temporary, with the refactoring plan)
 
 Output format: see the "Output Format" section in `templates/${SDD_LANG:-en}/completion_output.md`.

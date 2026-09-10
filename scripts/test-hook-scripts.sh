@@ -209,6 +209,13 @@ run_hook "post: source edit with only a legacy design doc points at adr migratio
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/legacy-only.py\"}}" \
     0 "v4.x design document"
 
+# The migration pointer must name a file the agent can open plus the section
+# inside it, not just "the plugin README". The path prefix depends on whether
+# CLAUDE_PLUGIN_ROOT is exported, so only the resolvable tail is asserted.
+run_hook "post: adr migration reminder names an openable README path" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/legacy-only.py\"}}" \
+    0 "/README.md', section \\\"Extracting Existing"
+
 run_hook "post: source edit without spec is silent" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/main.py\"}}" \
     0 ""

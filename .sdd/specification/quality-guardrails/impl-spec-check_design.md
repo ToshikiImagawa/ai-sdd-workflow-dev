@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-09-02"
+updated: "2026-09-10"
 depends-on: ["spec-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
@@ -79,7 +79,7 @@ graph TD
     Dev[開発者] -->|/check-spec| Skill[check-spec SKILL.md]
     Skill -->|Phase 1| Script[find-spec-docs.py]
     Config[.sdd-config.json / SDD_*] --> Script
-    Script -->|走査結果| Cache[".sdd/.cache/check-spec/<br/>spec_files.txt / design_draft_files.txt / file_mapping.json"]
+    Script -->|走査結果| Cache[".sdd/.cache/check-spec/<br/>spec_files.txt / design_draft_files.txt / adr_files.txt / file_mapping.json"]
     Script -->|export| Env[CLAUDE_ENV_FILE]
     Env -->|Phase 2| Claude[Claude 整合性判断]
     Cache --> Claude
@@ -110,6 +110,9 @@ graph TD
 
 `spec_documents` が第一級の比較基準、`design_drafts` は存在する場合のみ非空になる補助入力。
 `design`（v4.x 由来の永続 `{feature}_design.md`）も存在する場合のみ非空になる。
+`adr` は当該 spec に帰属した決定ログのリスト、`adr_basis` はその帰属根拠（`name` / `depends-on` / `none`）。
+決定ログが無い機能では `adr` が空・`adr_basis` が `none` になり、これは異常ではない（`--full` の
+spec ↔ adr は「該当なし」と報告する）。
 
 ```json
 {
@@ -117,10 +120,15 @@ graph TD
     {
       "spec": ".sdd/specification/quality-guardrails/impl-spec-check_spec.md",
       "feature_name": "impl-spec-check",
-      "design": ".sdd/specification/quality-guardrails/impl-spec-check_design.md"
+      "design": ".sdd/specification/quality-guardrails/impl-spec-check_design.md",
+      "adr": [".sdd/adr/quality-guardrails/impl-spec-check.md"],
+      "adr_basis": "name"
     }
   ],
-  "design_drafts": [".sdd/task/90/design-draft.md"]
+  "design_drafts": [".sdd/task/90/design-draft.md"],
+  "design_draft_scope": "ticket",
+  "unscoped_design_drafts": [],
+  "adr_documents": [".sdd/adr/quality-guardrails/impl-spec-check.md"]
 }
 ```
 
@@ -130,6 +138,8 @@ graph TD
 export CHECK_SPEC_CACHE_DIR="<PROJECT_ROOT>/.sdd/.cache/check-spec"
 export CHECK_SPEC_SPEC_FILES="<CACHE>/spec_files.txt"
 export CHECK_SPEC_DESIGN_DRAFT_FILES="<CACHE>/design_draft_files.txt"
+export CHECK_SPEC_DESIGN_DRAFT_SCOPE="ticket"
+export CHECK_SPEC_ADR_FILES="<CACHE>/adr_files.txt"
 export CHECK_SPEC_MAPPING="<CACHE>/file_mapping.json"
 ```
 

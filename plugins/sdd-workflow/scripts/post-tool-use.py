@@ -13,6 +13,7 @@ Detects potential document update omissions after a file edit:
   message, since the design doc is not a spec sync target).
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -27,6 +28,18 @@ from hook_common import (  # noqa: E402
     relative_to_project,
 )
 from doc_walker import find_legacy_design_doc, find_spec_doc  # noqa: E402
+
+
+def readme_pointer() -> str:
+    """A path the agent can open for the "Migration from v4.x" README section.
+
+    The reminder text is consumed by the AI agent, so it names a file rather
+    than "the plugin README". Falls back to the ``${CLAUDE_PLUGIN_ROOT}`` token
+    when the hook process did not inherit the variable, which is still
+    resolvable in-session.
+    """
+    base = os.environ.get("CLAUDE_PLUGIN_ROOT", "") or "${CLAUDE_PLUGIN_ROOT}"
+    return f"{base}/README.md"
 
 
 def try_update_index(project_root: str, rel_path: str) -> None:
@@ -147,8 +160,9 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
         "design doc as supplementary input (it stays valid, and it is not a "
         "naming violation). It may stay until the decisions it records have "
         f"been moved into '{paths.adr_prefix}/{{feature-name}}.md' - that "
-        "migration is human-paced, see \"Migration from v4.x\" in the plugin "
-        "README. Keep the design doc until that is done.",
+        f"migration is human-paced; the steps are in '{readme_pointer()}', "
+        "section \"Extracting Existing `*_design.md` Files into `adr/`\" under "
+        "\"Migration from v4.x\". Keep the design doc until that is done.",
     )
 
 

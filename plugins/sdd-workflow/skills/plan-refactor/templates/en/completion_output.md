@@ -12,6 +12,13 @@
 **Refactoring Plan Location:**
 {design_draft_path} - "Refactoring Plan" section
 
+**Reverse-Engineered Analysis (Case B only) — what persists:**
+- Carried into {spec_path}: {Public API | Internal Interfaces | Data Model | Behavior and Data Flow |
+  Architecture Pattern — list the sections actually written}
+- Discarded with the draft, by design: component inventory, directory layout, per-component dependencies,
+  internal call sequence, key algorithms, state management internals, test coverage figures. They are
+  re-derivable from the code; re-run `/plan-refactor` when they are needed again
+
 **Technical Debt Observations — persistent destinations:**
 | Observation | Destination |
 |:--|:--|

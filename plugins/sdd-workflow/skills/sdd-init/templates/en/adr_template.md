@@ -17,9 +17,11 @@ This document is a template for the **persistent decision log** stored at
 `${SDD_ADR_PATH}/{feature-name}.md`. One file per feature, **append-only**: it preserves the rationale
 behind key decisions after the temporary `${SDD_TASK_PATH}/{ticket-number}/design-draft.md` is deleted.
 
-> **Note**: This template is a fallback for the plugin.
-> When using in a project, customize it according to your conventions,
-> and save it as `${SDD_ROOT}/ADR_TEMPLATE.md`.
+> **Note**: `/sdd-init` copies this file to `${SDD_ROOT}/ADR_TEMPLATE.md`, and **that copy is the project's
+> template** — customize it there to match your conventions (re-running `/sdd-init` never overwrites it).
+> `/task-cleanup` reads `${SDD_ROOT}/ADR_TEMPLATE.md` when it exists, and falls back to the entry format in
+> `AI-SDD-PRINCIPLES.md` § Architecture Decision Record when it does not. A customized copy must therefore
+> keep the required entry items below, so the appended entries stay machine-readable.
 
 ## File Shape
 

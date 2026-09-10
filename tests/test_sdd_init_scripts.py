@@ -167,6 +167,89 @@ class TestShippedAdrTemplates:
         # 1ファイルに複数エントリを追記する形が分かること
         assert content.count("## YYYY-MM-DD ") >= 2
         assert "None considered" in content
+
+
+class TestUpdateGitignore:
+    """`${SDD_ROOT}/.cache/` を .gitignore へ冪等に追記すること。"""
+
+    def test_creates_gitignore_when_absent(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+        assert content.endswith(".sdd/.cache/\n")
+        assert init_structure.GITIGNORE_COMMENT in content
+
+    def test_appends_and_preserves_existing_content(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/\n*.log\n", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.startswith("node_modules/\n*.log\n")
+        assert ".sdd/.cache/\n" in content
+
+    def test_adds_newline_before_appending_when_missing(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/", encoding="utf-8")  # 末尾改行なし
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.startswith("node_modules/\n")
+        assert "node_modules/#" not in content
+        assert content.endswith(".sdd/.cache/\n")
+
+    def test_empty_gitignore_gets_no_leading_blank_line(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        assert gitignore.read_text(encoding="utf-8") == (
+            f"{init_structure.GITIGNORE_COMMENT}\n.sdd/.cache/\n"
+        )
+
+    def test_is_idempotent_across_runs(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".sdd")
+        first = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+        second = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+        assert first == second
+        assert second.count(".sdd/.cache/") == 1
+
+    @pytest.mark.parametrize(
+        "existing_line", [".sdd/.cache/", "/.sdd/.cache/", ".sdd/.cache", "/.sdd/.cache"]
+    )
+    def test_equivalent_existing_entry_is_left_untouched(self, tmp_path, existing_line):
+        gitignore = tmp_path / ".gitignore"
+        original = f"node_modules/\n{existing_line}\n"
+        gitignore.write_text(original, encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        assert gitignore.read_text(encoding="utf-8") == original
+
+    def test_commented_or_negated_line_does_not_count_as_ignored(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("# .sdd/.cache/\n!.sdd/.cache/\n", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.endswith(f"{init_structure.GITIGNORE_COMMENT}\n.sdd/.cache/\n")
+
+    def test_custom_root_is_honored(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".ai-docs")
+
+        content = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+        assert ".ai-docs/.cache/\n" in content
+        assert ".sdd" not in content
+
+
+class TestExportEnvVars:
     def test_writes_all_sdd_vars(self, tmp_path, monkeypatch):
         env_file = tmp_path / "env"
         env_file.write_text("", encoding="utf-8")

@@ -37,6 +37,13 @@ risk: "medium"
 
 ## Architecture
 
+> **Working material for this ticket.** Of the content below, only the externally observable data flow and
+> the module boundaries other code depends on are carried into the persistent spec
+> (`{feature-name}_spec.md` § "Behavior and Data Flow" / § "Internal Interfaces"). The component inventory,
+> the directory layout and the per-component dependencies are discarded together with this draft — by design,
+> because they are re-derivable from the code. See "Reverse-Engineered Analysis — What Persists and What Does
+> Not" in the `plan-refactor` skill.
+
 ### Component Structure
 
 ```

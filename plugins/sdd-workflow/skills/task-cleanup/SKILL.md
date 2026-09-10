@@ -24,10 +24,11 @@ alternatives into `${CLAUDE_PROJECT_DIR}/${SDD_ADR_PATH}/{feature}.md` (append-o
 
 ### Tool Permissions
 
-`allowed-tools` above deliberately **omits `Bash`**. This skill runs `git rm` / `git rm -r` (step 9) and
-`gh issue comment` (step 10), and deleting tracked files must never be pre-approved. Consequently **every
-shell command this skill runs asks the user for confirmation at the moment it runs** — `ls` and `git log`
-(step 2), `git rm` (step 9), `gh issue comment` (step 10). That is the intended configuration, not a
+`allowed-tools` above deliberately **omits `Bash`**. This skill deletes files (step 9) and comments on a
+ticket (step 10), and deleting files must never be pre-approved. Consequently **every shell command this
+skill runs asks the user for confirmation at the moment it runs** — `ls` and `git log` (step 2),
+`git ls-files` and then `git rm` / `git rm -r` or `rm` / `rm -r` (step 9), `gh issue comment`
+(step 10). That is the intended configuration, not a
 misconfiguration: do not propose widening `allowed-tools`, and do not route around the prompt. If a
 confirmation cannot be answered (non-interactive session), the command fails — report the pending deletion
 in the output and leave `task/` in place rather than retrying.
@@ -131,6 +132,7 @@ Review content of each file and classify as follows:
 | **Task lists**                    | Lists of completed tasks                            |
 | **Date-dependent information**    | Information dependent on specific periods or dates  |
 | **Technical tips / troubleshooting / reusable patterns** | Implementation know-how, performance findings, debugging notes |
+| **Structure descriptions derived from code** | The design draft's architecture overview, component inventory, directory layout, internal data flow |
 
 **Know-how is not a decision**: implementation tips, performance findings, debugging notes and reusable
 patterns are **not** appended to `adr/` just because they are useful — `adr/` records decisions
@@ -139,6 +141,12 @@ it belongs somewhere it stays verifiable — a code comment, the test that pins 
 when it changes the specified behavior (step 6) — and name that destination in the output so the user can act
 on it. Such knowledge enters an ADR entry only as the **Rationale** of a decision that is being recorded
 anyway.
+
+**Structure descriptions are not decisions either**: the draft's architecture overview, component inventory,
+directory layout and internal data flow are derived from the code and stay re-derivable from it
+(`/plan-refactor` regenerates them on demand). Delete them without naming a destination — a persisted copy
+would only drift from the code. What does persist is a *decision about* the structure ("split the fetch layer
+out of the view component, because ...") — that is appended as its own entry in step 5.
 
 ### 4. Determine Integration Target
 
@@ -153,9 +161,17 @@ When there is information to integrate, determine the appropriate `adr/{feature}
 
 ### 5. Integrate Information
 
-Append **one `##` entry per decision** at the end of `adr/{feature}.md`, in the entry format defined in
-`AI-SDD-PRINCIPLES.md` § Architecture Decision Record → Entry Format. One file holds many entries; the entry
-shape is fixed:
+Append **one `##` entry per decision** at the end of `adr/{feature}.md`. Resolve the entry format in this
+order:
+
+1. Check if `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md` exists
+2. **If exists**: use that template — it is the project's own entry format (`/sdd-init` copies it there and
+   never overwrites an edited copy)
+3. **If not exists**: fall back to the entry format defined in `AI-SDD-PRINCIPLES.md` § Architecture Decision
+   Record → Entry Format
+
+One file holds many entries. The items below are required either way; when the project's template adds
+sections of its own, follow the template and keep these items:
 
 | Item                                      | Required | Content                                                                                                 |
 |:------------------------------------------|:---------|:--------------------------------------------------------------------------------------------------------|
@@ -227,12 +243,30 @@ When step 5 found nothing to integrate, there is nothing to verify: record that 
 
 ### 9. Delete Files/Directories
 
-Only after step 8 passed for this target. Delete individual files with
-`git rm ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/{file}`, or delete the entire directory after all files
-are processed with `git rm -r ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/`.
+Only after step 8 passed for this target.
 
-`Bash` is not pre-approved (see "Tool Permissions"), so each `git rm` asks for confirmation. If the user
-declines, stop and report it — do not attempt another deletion route.
+**First determine whether git tracks the target**, because `git rm` only works on tracked paths:
+
+`git ls-files -- ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/`
+
+Judge by its **output**, not its exit status: `git ls-files` exits 0 whether or not anything matched.
+
+Then delete according to the result:
+
+| `git ls-files` result                           | Delete with                                                                                                                                           |
+|:------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists the target's files (tracked)              | `git rm ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/{file}` per file, or `git rm -r ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/` for the whole directory once all files are processed |
+| Empty (nothing under the target is tracked)     | `rm ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/{file}` per file, or `rm -r ${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{target}/` for the whole directory |
+| Lists some files but not others (mixed)         | `git rm` the listed paths, `rm` the unlisted ones. Never pass an untracked path to `git rm`                                                            |
+
+The `rm` fallback is the **normal** route for a `task/` directory that was never committed, not a workaround:
+`git rm` on an untracked path fails with `fatal: pathspec '...' did not match any files` and deletes nothing,
+which would leave the cleanup unfinished with no way forward.
+
+`Bash` is not pre-approved (see "Tool Permissions"), so `git ls-files` and each delete command ask for
+confirmation. If the user declines the deletion itself, stop and report it — do not switch to the other
+delete command to get around the prompt. Choosing `rm` over `git rm` is only valid when `git ls-files`
+showed the path is untracked.
 
 ### 10. Dump Summary to Ticket
 
@@ -267,7 +301,8 @@ Use the `templates/${SDD_LANG:-en}/cleanup_output.md` template for output format
 
 ### Deletion Principles
 
-- **Verify before deleting**: never run `git rm` on a target whose step 8 verification has not passed
+- **Verify before deleting**: never run a delete command (`git rm` or `rm`) on a target whose step 8
+  verification has not passed
 - **Don't leave history**: Don't add notations like "migrated from ..." during migration
 - **Minimal migration**: Migrate only truly valuable information (decisions and rejected alternatives only)
 - **Avoid duplication**: Don't migrate content already documented in `adr/{feature}.md`
