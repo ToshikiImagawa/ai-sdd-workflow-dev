@@ -183,6 +183,13 @@ Before returning output, verify:
 - Ensure all functional requirements derive from user requirements
 - Non-functional requirements should trace to affected functional requirements
 
+**When completeness and readability conflict** (e.g. a requirement has many sub-requirements that would
+push a diagram past the 10-15 guideline): completeness wins. Prefer splitting into a per-subsystem
+diagram first. When splitting is not applicable (the sub-requirements are all branches of one requirement,
+not a separate subsystem), it is acceptable to represent them as a single compressed node with a note —
+but the output must say explicitly which sub-requirements were compressed and why, so the caller can tell
+"omitted" from "combined."
+
 ### Integration
 
 - This skill is typically called by `/generate-prd --ci` with `--ci` flag

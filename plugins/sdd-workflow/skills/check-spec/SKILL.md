@@ -174,7 +174,7 @@ normal state for a feature whose decisions are not recorded yet, and is never re
 | `none`        | No draft exists — the normal state after implementation completes                          | Skip every design ↔ implementation check; report nothing |
 | `ticket`      | `--ticket <number>` was given; only that ticket's draft is used                             | Use it as auxiliary input |
 | `depends-on`  | The draft's front matter `depends-on` references a target spec's ID (`spec-*`)              | Use it as auxiliary input |
-| `sole-draft`  | Exactly one draft exists project-wide, so there is no other ticket to confuse it with       | Use it as auxiliary input |
+| `sole-draft`  | Exactly one draft exists project-wide, and its `depends-on` (if declared) does not exclude the target spec(s) | Use it as auxiliary input |
 | `unscoped`    | Several drafts exist and none could be tied to this run; **none** were selected             | Treat the run as having no draft, and report the notice below |
 
 For the `unscoped` case, report an Info-level notice listing `unscoped_design_drafts` and stating that the
@@ -245,6 +245,10 @@ the `spec-reviewer` agent when using the `--full` option.
 
 If documents contain YAML front matter, call the `front-matter-reviewer` agent to validate.
 Pass all target document paths (the specs, plus any auxiliary design doc).
+
+**If agent delegation is unavailable in the current execution environment**, do not silently skip this
+check or report it as completed. State explicitly in the output that front matter validation was not
+performed and why, and list it as a manual review item for a human to run separately.
 
 After results are returned, integrate `impl-status` findings into the spec ↔ implementation consistency results.
 Record the spec's `impl-status` value (or its absence) for use in the branching below.

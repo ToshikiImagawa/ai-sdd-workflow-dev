@@ -37,6 +37,10 @@
 `CHK-1xx`=Requirements, `CHK-2xx`=Specification, `CHK-3xx`=Design, `CHK-4xx`=Implementation, `CHK-5xx`=Testing,
 `CHK-6xx`=Documentation, `CHK-7xx`=Security, `CHK-8xx`=Performance, `CHK-9xx`=Deployment
 
+**Basis** (per item, required): which document and statement the item was extracted from
+(e.g. `PRD FR-003`, `design §6 Architecture`), or `synthesized from: {component}` when derived from an
+implementation component's existence rather than quoted from a document.
+
 ---
 
 ## Requirements Review
@@ -46,6 +50,8 @@
 - [ ] All functional requirements (FR-xxx) from PRD are implemented
 - [ ] Each requirement maps to specific implementation
 - [ ] No requirements are partially implemented
+
+**Basis**: PRD FR-xxx (extracted)
 
 **Verification**:
 
@@ -60,6 +66,8 @@
 - [ ] Performance requirements (NFR-xxx) are met
 - [ ] Security requirements are implemented
 - [ ] Scalability requirements are addressed
+
+**Basis**: PRD NFR-xxx (extracted)
 
 **Verification**:
 

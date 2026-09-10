@@ -160,6 +160,13 @@ skip these items when neither exists):
 
 Transform extracted points into actionable checklist items:
 
+**Basis disclosure (required per item)**: State which document and which specific statement each item
+was derived from (e.g. "spec §4.2 FR-003", "design §6 Architecture"). An item may legitimately be
+synthesized from a general QA concern implied by an implementation component's existence rather than
+quoted from a document (e.g. "config input fallback behavior" inferred from a config-loading module) —
+that is not fabrication, but say so explicitly ("synthesized from: ...") instead of implying it was
+extracted verbatim. This basis line is what lets a reviewer tell "extracted" apart from "invented."
+
 **ID Assignment Format**: `CHK-{category}{nn}` (e.g., `CHK-101`, `CHK-102`, ... for Category 1;
 `CHK-201`, `CHK-202`, ... for Category 2; `CHK-301`, `CHK-302`, ... for Category 3)
 

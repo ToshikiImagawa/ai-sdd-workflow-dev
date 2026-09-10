@@ -183,6 +183,28 @@ class TestSelectDesignDrafts:
         assert unscoped == drafts
         assert scope == "unscoped"
 
+    def test_single_draft_with_conflicting_depends_on_is_unscoped(self, tmp_path):
+        # depends-on names a different spec entirely -- positive evidence the
+        # draft belongs to another feature, unlike an untagged draft that
+        # happens to be the only one on disk.
+        drafts = [_draft(tmp_path, "12", "spec-billing")]
+        selected, unscoped, scope = fs.select_design_drafts(
+            drafts, "", {"spec-auth"}
+        )
+        assert selected == []
+        assert unscoped == drafts
+        assert scope == "unscoped"
+
+    def test_conflicting_draft_is_excluded_leaving_untagged_sole_draft(self, tmp_path):
+        conflicting = _draft(tmp_path, "12", "spec-billing")
+        untagged = _draft(tmp_path, "90")
+        selected, unscoped, scope = fs.select_design_drafts(
+            [conflicting, untagged], "", {"spec-auth"}
+        )
+        assert selected == [untagged]
+        assert unscoped == []
+        assert scope == "sole-draft"
+
 
 class TestSpecIdentifiers:
     def test_declared_and_derived_ids(self, tmp_path):

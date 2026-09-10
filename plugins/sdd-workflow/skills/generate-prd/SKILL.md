@@ -285,6 +285,10 @@ After PRD generation:
 3. Apply approved fixes from both reviews
 4. Include results in output
 
+**If agent delegation is unavailable in the current execution environment**, do not silently skip these
+reviews or report them as completed. State explicitly in the output that principle/front-matter review
+was not performed and why, and list it as a manual review item for a human to run separately.
+
 If CONSTITUTION.md missing: Skip check, recommend `/sdd-init`.
 
 ### 2. Consistency Check
@@ -332,6 +336,10 @@ After PRD generation:
 2. Call front-matter-reviewer agent (pass PRD file path)
 3. Apply approved fixes from both reviews
 4. Include results in output
+
+**If agent delegation is unavailable in the current execution environment**, do not silently skip these
+reviews or report them as completed. State explicitly in the output that principle/front-matter review
+was not performed and why, and list it as a manual review item for a human to run separately.
 
 If CONSTITUTION.md missing: Skip check, recommend `/sdd-init`.
 

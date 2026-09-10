@@ -26,6 +26,23 @@ For each category, classify clarity as:
 | **Partial** | Concept exists but details missing     | "Handle errors appropriately"       |
 | **Missing** | Not mentioned in specifications        | No mention of authentication flow   |
 
+## Category Analysis Summary (Required Output)
+
+Record the Clear / Partial / Missing classification for **all 9 categories**, not only the ones that
+become questions. A category that turns into no question still needs its classification and a one-line
+basis (the specific statement, or its absence, that the classification rests on) recorded in the output.
+Without this, the analysis's actual coverage — which categories were checked and how thoroughly — is
+invisible to the reader, and detection granularity becomes unverifiable run to run.
+
+```markdown
+### Category Analysis Summary
+
+| # | Category               | Classification | Basis                                    |
+|:--|:------------------------|:----------------|:------------------------------------------|
+| 1 | Functional Scope        | Clear/Partial/Missing | {statement, or "not mentioned"}     |
+| ... (all 9 rows) |
+```
+
 ## Question Prioritization
 
 Generate up to 5 high-impact questions prioritizing:
