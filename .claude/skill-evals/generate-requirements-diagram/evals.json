@@ -33,7 +33,7 @@
       "expected_output": "A Mermaid requirementDiagram, returned as text rather than written to a file, covering every UR/FR/NFR/IR/DC defined in the PRD's remaining sections (2.3 and 4.x), with relationships (derives / contains / satisfies) that match what those sections state. IDs use underscores because Mermaid rejects hyphens -- both eras' skills say so, so this is not the distinction under measurement; extracting the requirements at all is.",
       "assertions": [
         {
-          "text": "入力に含まれる要求・アクター・ユースケースが図に漏れなく反映されている（脱落なし）",
+          "text": "入力に含まれる要求が図に漏れなく反映されている（脱落なし）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -41,11 +41,11 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "入力に無いアクター・要求を創作していない",
+          "text": "入力に無い要求を創作していない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "出力がファイル書き込みではなくテキストとして返され、呼び出し元（`generate-prd` 等）に判断を委ねている",
+          "text": "outputs_dir 以外の .sdd/ 配下ファイルを書き換えていない（対象文書へ直接ダイアグラムを追記していない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -55,5 +55,5 @@
       ]
     }
   ],
-  "assertion_revision": "v3.4 (2026-09-10): A5（入力の ID を文字単位で保つ）を追加。既存4件はこれを見ていなかった——A1（脱落なし）は表記が変わった ID も『反映されている』と読めてしまい、A3（創作なし）は改番を新規要求の創作とは見ない。しかし要求表と要求図を ID で突き合わせられなくなる時点でトレーサビリティは失われており、MEASUREMENT_LOG の『実在欠陥3件目: PRD レベル ID 形式』で最も重い実害として記録したのがまさにこの症状である（同一 PRD 内で表と図の ID が食い違う）。ID 形式を設定から解決する層が入ったことで、解決結果を図へどう持ち込むかが観測可能になったため、その成果だけを assertion にした。文面に具体的な区切り文字・フィールド名・解決元のパスを書いていないので、どの世代・どの ID 規約のプロジェクトでも同じ基準で採点できる（『入力にあった表記と一致するか』しか問うていない）。逆に『アンダースコアであること』は書いていない——それは特定プロジェクトの規約であり、規約自体を assertion に埋めると設定を尊重しない実行を PASS にしてしまう。"
+  "assertion_revision": "v3.4 (2026-09-10): A5（入力の ID を文字単位で保つ）を追加。既存4件はこれを見ていなかった——A1（脱落なし）は表記が変わった ID も『反映されている』と読めてしまい、A3（創作なし）は改番を新規要求の創作とは見ない。しかし要求表と要求図を ID で突き合わせられなくなる時点でトレーサビリティは失われており、MEASUREMENT_LOG の『実在欠陥3件目: PRD レベル ID 形式』で最も重い実害として記録したのがまさにこの症状である（同一 PRD 内で表と図の ID が食い違う）。ID 形式を設定から解決する層が入ったことで、解決結果を図へどう持ち込むかが観測可能になったため、その成果だけを assertion にした。文面に具体的な区切り文字・フィールド名・解決元のパスを書いていないので、どの世代・どの ID 規約のプロジェクトでも同じ基準で採点できる（『入力にあった表記と一致するか』しか問うていない）。逆に『アンダースコアであること』は書いていない——それは特定プロジェクトの規約であり、規約自体を assertion に埋めると設定を尊重しない実行を PASS にしてしまう。 | v3.5 (2026-09-10): A1/A3 からアクター・ユースケースの言及を除去した。requirementDiagram にはそれらを表すノード型が無く、共有節（generate-usecase-diagram との）由来のこの部分が毎回無条件で「該当なし」を通す判別力ゼロの一節だった（main_skill/develop_without/develop_skill の3 grader が独立に指摘）。A4 を「テキストで返す」から「outputs_dir 以外の .sdd/ 配下を書き換えていない」に書き換えた。旧文言は評価ハーネスが with/without 問わず全 run に outputs_dir 保存を義務づけるため『ファイルに書いたか』という観測事実が4条件で常に同一になり、実質『SKILL.md の disallowed-tools を読んで設計意図を言語化したか』を測っていた（ASSERTION_DESIGN.md 判定基準が避けるべきとする「スキル本文固有の語」型）。新文言は原文書への直接書き込みという実害を伴う成果を問うため、ハーネスの保存義務と衝突せず世代非依存に判定できる。"
 }
