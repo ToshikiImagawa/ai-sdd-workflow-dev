@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`check-spec` no longer attaches another ticket's design draft when exactly one draft exists** -
+  `find-spec-docs.py`'s sole-draft fallback used to accept the only draft on disk even when its
+  `depends-on` front matter named a different spec entirely — positive evidence it belongs to another
+  feature, not merely an untagged draft that happens to be alone. That draft is now excluded from the
+  sole-draft exception and the run falls back to `unscoped` (or to a remaining untagged draft, if one
+  exists)
+
+### Changed
+
+- **`check-spec`'s front-matter-reviewer delegation now states explicitly when it could not run** -
+  Previously, an environment where agent delegation is unavailable silently skipped front matter
+  validation while still reporting the check as done. It now says so and lists it as a manual review item
+- **`generate-prd`'s prd-reviewer / front-matter-reviewer delegation has the same explicit fallback** -
+  Same fix as above, applied to both call sites (initial generation and `--amend`)
+- **`checklist` items now disclose their basis** - Each item states which document and statement it was
+  derived from, or `synthesized from: {component}` when inferred from an implementation component's
+  existence rather than quoted from a document, so a reviewer can tell "extracted" from "invented"
+- **`clarify` now records a Clear/Partial/Missing classification for all 9 categories**, not only the
+  ones that became a question, so the analysis's actual coverage is visible in the output
+- **`generate-requirements-diagram` states a priority when completeness and the 10-15-requirement
+  readability guideline conflict** - Completeness wins; split into a per-subsystem diagram first, and
+  only compress sub-requirements into a single annotated node when splitting does not apply, stating
+  explicitly which sub-requirements were compressed and why
+
 ## [5.0.0] - 2026-09-10
 
 **Note**: This is a major release with breaking changes to the document model. Read

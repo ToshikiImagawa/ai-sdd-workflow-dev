@@ -193,7 +193,10 @@ def select_design_drafts(
     Attaching every draft in ``task/`` would mix another ticket's design into the
     check, so a draft is only used when the ticket argument or its front matter
     ``depends-on`` ties it to the target specs. A single draft is the one
-    exception: with only one ticket in flight there is nothing to mix in.
+    exception: with only one ticket in flight there is nothing to mix in. That
+    exception does not apply to a draft whose ``depends-on`` names specs that
+    exclude the target -- that is positive evidence it belongs to another
+    feature, not merely an untagged draft that happens to be alone.
     """
     if not drafts:
         return [], [], "none"
@@ -207,17 +210,29 @@ def select_design_drafts(
         return scoped, [], "ticket"
 
     if spec_ids:
-        linked = [
-            d for d in drafts
-            if set(read_front_matter(Path(d)).get("depends-on", []) or [])
-            & set(spec_ids)
-        ]
+        depends_on = {d: set(read_front_matter(Path(d)).get("depends-on", []) or []) for d in drafts}
+        linked = [d for d in drafts if depends_on[d] & set(spec_ids)]
         if linked:
             log(
                 f"Using {len(linked)} design draft(s) linked to the target "
                 "spec(s) via depends-on"
             )
             return linked, [], "depends-on"
+
+        # A draft whose depends-on is non-empty but shares nothing with spec_ids
+        # is positive evidence it belongs to another feature -- unlike a draft
+        # with no depends-on at all, it must not fall through to the sole-draft
+        # exception below even when it is the only draft on disk.
+        conflicting = [d for d in drafts if depends_on[d]]
+        candidates = [d for d in drafts if d not in conflicting]
+        if conflicting and not candidates:
+            log(
+                f"WARNING: the only design draft found declares depends-on that "
+                "does not match this check's spec(s); treating it as unscoped "
+                "rather than the sole-draft exception"
+            )
+            return [], drafts, "unscoped"
+        drafts = candidates
 
     if len(drafts) == 1:
         log("Using the single design draft found (only ticket in flight)")

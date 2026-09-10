@@ -169,7 +169,7 @@ python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
 | `doc-consistency-checker` | +193/−78 | |
 | `checklist` | +192/−179 | |
 | `task-cleanup` | +114/−51 | |
-| `generate-prd` | +96/−22 | PR #116 で ID 形式解決が `id_conventions` 参照へ |
+| `generate-prd` | +96/−22 | PR #116 で ID 形式解決が `id_conventions` 参照へ。eval 1 は `documentation-index.md`（複数要求）への `--amend`。eval 0（`run-checklist.md`、既存要求1件のみ）で属性語彙の逸脱チェックが「唯一の既存値をコピーしたか」に縮退していたため追加（2026-09-10） |
 | `generate-spec` | +75/−28 | |
 | `sdd-init` | +68/−25 | |
 | `vibe-detector` | +50/−3 | |
