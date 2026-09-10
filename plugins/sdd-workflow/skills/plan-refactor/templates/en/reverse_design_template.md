@@ -99,9 +99,14 @@ risk: "medium"
 
 ## Technical Debt Observations
 
+This draft is deleted at `/task-cleanup`, so every item below names where it survives.
+
 1. **{Debt Item 1}**: {Description}
    - Severity: {High/Medium/Low}
    - Location: `{file_path}`
+   - Persistent destination: {Resolved by this refactoring -> rationale of the `adr/{feature-name}.md` entry
+     appended by `/task-cleanup` | Deferred -> tracker item `{issue/ticket id, or "to be created"}` |
+     Contradicts the spec -> proposed `{feature-name}_spec.md` correction (human approval)}
 
 2. **{Debt Item 2}**: ...
 
@@ -109,7 +114,7 @@ risk: "medium"
 
 **Next Steps:**
 1. Verify this design matches actual implementation
-2. Address technical debt items
+2. Address technical debt items, or create the tracker items for the deferred ones
 3. Plan refactoring (add Refactoring Plan section below)
 4. After implementation, run `/task-cleanup` to append the settled decisions to
    `${SDD_ADR_PATH}/{feature-name}.md` before this draft is deleted

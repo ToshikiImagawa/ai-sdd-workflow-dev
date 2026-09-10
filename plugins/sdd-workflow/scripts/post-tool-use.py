@@ -6,8 +6,11 @@ Detects potential document update omissions after a file edit:
 - .sdd adr/ edited: reminds that decision logs are append-only and must stay
   consistent with the spec
 - source file edited with a matching spec: reminds to keep the spec in sync.
-  The sync target is the spec, not a design doc: design docs are temporary
+  The sync target is the spec, not a design doc: new design docs are temporary
   drafts under task/{ticket-number}/ and are deleted after implementation.
+- source file edited where only a v4.x persisted specification/{stem}_design.md
+  matches: reminds to migrate that file's decisions into adr/ (a separate
+  message, since the design doc is not a spec sync target).
 """
 
 import sys
@@ -23,7 +26,7 @@ from hook_common import (  # noqa: E402
     read_stdin_json,
     relative_to_project,
 )
-from doc_walker import find_spec_doc  # noqa: E402
+from doc_walker import find_legacy_design_doc, find_spec_doc  # noqa: E402
 
 
 def try_update_index(project_root: str, rel_path: str) -> None:
@@ -118,16 +121,34 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
         return
 
     spec_doc = find_spec_doc(str(spec_dir), rel.stem)
-    if not spec_doc:
+    if spec_doc:
+        spec_rel = str(Path(spec_doc).relative_to(Path(project_root)))
+        emit_additional_context(
+            "PostToolUse",
+            f"[AI-SDD] '{rel_path}' was updated and a matching specification "
+            f"'{spec_rel}' exists. If the public API, data model, or behavior "
+            "changed, update the specification to keep it as the source of "
+            "truth (/check-spec verifies spec <-> implementation consistency).",
+        )
         return
 
-    spec_rel = str(Path(spec_doc).relative_to(Path(project_root)))
+    # No spec, but a v4.x persisted design doc may still describe this file.
+    # It stays valid as supplementary input, so the reminder points at the adr/
+    # migration rather than treating the design doc as a sync target.
+    design_doc = find_legacy_design_doc(str(spec_dir), rel.stem)
+    if not design_doc:
+        return
+
+    design_rel = str(Path(design_doc).relative_to(Path(project_root)))
     emit_additional_context(
         "PostToolUse",
-        f"[AI-SDD] '{rel_path}' was updated and a matching specification "
-        f"'{spec_rel}' exists. If the public API, data model, or behavior "
-        "changed, update the specification to keep it as the source of "
-        "truth (/check-spec verifies spec <-> implementation consistency).",
+        f"[AI-SDD] '{rel_path}' was updated and a v4.x design document "
+        f"'{design_rel}' exists, but no specification matches it. Read the "
+        "design doc as supplementary input (it stays valid, and it is not a "
+        "naming violation). It may stay until the decisions it records have "
+        f"been moved into '{paths.adr_prefix}/{{feature-name}}.md' - that "
+        "migration is human-paced, see \"Migration from v4.x\" in the plugin "
+        "README. Keep the design doc until that is done.",
     )
 
 

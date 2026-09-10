@@ -39,7 +39,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "append-only の決定ログの各エントリが、時系列と supersedes / superseded-by 関係を保って提示されている",
+          "text": "append-only の決定ログの各エントリが元のログの追記順を保って提示され、エントリの並べ替え・統合・分割をしていない。あるエントリが別のエントリを覆している場合は、元のログがその関係を記録している形のまま読み取れる（記録されていない覆し関係を作っていない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -48,5 +48,6 @@
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.3 (2026-09-10): A4 を書き換えた。旧文言は覆し関係を front matter の `supersedes` / `superseded-by` フィールドで示す前提だったが、(a) このスキルの SKILL.md は supersede に一切言及しておらず、(b) コーパスの唯一の ADR（`task-type-determination.md`）は4エントリともエントリ間の覆しを持たず front matter にも当該フィールドが無いため、旧文言は「存在しない関係を保てたか」を問う空振り（採点者によって PASS とも FAIL とも読める）だった。レンダリングスキルに対して実際に検証できる不変条件——追記順の保存とエントリ境界の保存、および記録されている覆し関係の捏造なし——に置き換えた。エントリ本文の記法（`- **Supersedes**:` 等）は assertion に書いていない: 記法は世代依存であり、`ASSERTION_DESIGN.md` の「スキル本文の語彙依存」で削除済みの形状に当たる。"
 }

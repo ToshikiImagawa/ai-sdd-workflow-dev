@@ -27,11 +27,17 @@ Verify the following exist before execution:
 | Prerequisite         | Verification                                    | Command to Generate          |
 |:---------------------|:------------------------------------------------|:-----------------------------|
 | **Task Breakdown**   | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md` exists                | `/task-breakdown {feature} {ticket}` |
-| **Technical Design** | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` exists         | `/generate-spec {description} --ticket {ticket}` |
+| **Technical Design** | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` exists — **or**, in a project carried over from v4.x, `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/[{path}/]{feature}_design.md` exists | `/generate-spec {description} --ticket {ticket}` |
 | **Abstract Spec**    | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature}.md` **or** `{feature}_spec.md` exists | `/generate-spec {description} --ticket {ticket}` |
 
 * The design draft is **ticket-scoped with a fixed filename**, so its path does not vary with the spec's
   flat/hierarchical structure.
+* **v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+  still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+  normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+  never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+  have been migrated to `adr/{feature}.md`. When `design-draft.md` is absent but such a file exists, it
+  satisfies the Technical Design prerequisite for this run — read it instead of asking for a fresh draft.
 * The `_spec` suffix is optional under `specification/`, so either `{feature}.md` or `{feature}_spec.md`
   satisfies the Abstract Spec prerequisite.
 * For hierarchical structure: Add `[{path}/]` prefix to the spec path (e.g., `auth/user-login_spec.md`).
@@ -52,6 +58,17 @@ Full argument string: $ARGUMENTS
 |:--|:--|:--|
 | `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
 | `ticket-number` | - | Task directory name, holding both `tasks.md` and `design-draft.md`. Uses feature-name if omitted |
+
+`ticket-number` may be passed positionally (`/implement {feature-name} {ticket-number}`) or as a flag; both
+flag spellings — `--ticket {number}` and `--ticket={number}` — are accepted and mean the same thing.
+
+**When `ticket-number` is omitted**, `feature-name` becomes the task directory name: this skill reads
+`${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/tasks.md`, **not** `task/{ticket-number}/tasks.md`.
+State the resolved task directory in the output before loading from it, so the user can see which one was
+used. If `tasks.md` is not found there, report the resolved path, name the omitted `ticket-number` as the
+likely cause, and give both remedies — re-run as `/implement {feature-name} {ticket-number}` if the breakdown
+lives under a ticket directory, or run `/task-breakdown {feature-name} {ticket-number}` if it was never
+generated. Never silently search other task directories, and never start implementing without `tasks.md`.
 
 Read `examples/input_format.md` for input format and usage examples.
 

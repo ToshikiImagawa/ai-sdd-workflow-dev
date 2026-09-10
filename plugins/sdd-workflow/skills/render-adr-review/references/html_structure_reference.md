@@ -26,6 +26,9 @@ Render bottom-up: fill each `alternative_row.md` copy, join them into `{alternat
 | `{decision_anchor}` | card | Slug for the `id` attribute (anchor links from the header) |
 | `{decision_title}` | card | The decision statement itself |
 | `{decision_date}` | card | Date/context recorded with the entry, if any |
+| `{decision_status_class}` | card | `superseded` when a later entry supersedes this one, otherwise empty (drives the dimmed card styling) |
+| `{decision_badge_label}` | card | Localized state label ("Decision"/"Superseded" or "決定"/"失効") |
+| `{decision_supersession}` | card | The rendered `<p class="decision-supersession">` note(s) linking this entry to the entry it replaced and/or the entry that replaced it; empty string when neither applies |
 | `{decision_rationale}` | card | Why this option was chosen |
 | `{alternative_rows}` | card | Concatenated rendered `alternative_row.md` blocks (adopted row first, then rejected) |
 | `{option_name}` | row | Name of the option (the adopted decision, or a rejected alternative) |
@@ -41,6 +44,13 @@ highlighted) followed by every rejected alternative recorded in the source entry
 (`verdict-rejected`, muted/struck-through). If the source entry recorded no rejected
 alternatives, omit the table and render only the rationale section — do not invent alternatives
 that were not in the source.
+
+**Rejected and superseded are different axes; never render one as the other.** A rejected
+alternative was never adopted — it is a row inside one entry's comparison table. A superseded
+decision *was* adopted and later reversed by another entry — it is the state of a whole card. An
+entry whose decision was later superseded still shows its own adopted row as `verdict-adopted`
+inside its table: at the time, that is what was chosen, and rewriting that history would misreport
+the log. The reversal is carried by the card's state and its `{decision_supersession}` note.
 
 ## Non-Goals
 

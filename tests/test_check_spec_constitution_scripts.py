@@ -5,7 +5,10 @@ find-spec-docs.py / validate-files.py の関数単位・E2E 挙動を検証す�
   - custom root 配下への .cache 生成
   - フラット / 階層 / 部分一致での spec 文書検出（サフィックス有無の両方）
   - design doc が 0 件でも spec 一覧が出力されること
-  - design draft の任意入力としての取り込み
+  - design draft の任意入力としての取り込みと、対象チケットへの絞り込み
+    （`--ticket` / `--ticket=` の両書式、front matter の depends-on、単一ドラフト、
+    絞り込み根拠が無い複数ドラフトの unscoped 扱い）
+  - 引数パース（フラグを機能名と誤認しない）
   - file_mapping.json / scan_summary.json の内容
   - CLAUDE_ENV_FILE への環境変数エクスポート
 """
@@ -123,6 +126,92 @@ class TestFindDesignDrafts:
         assert [Path(d).parent.name for d in drafts] == ["12", "90"]
 
 
+def _draft(tmp_path: Path, ticket: str, depends_on: str = "") -> str:
+    """Create task/{ticket}/design-draft.md and return its path string."""
+    (tmp_path / ticket).mkdir(parents=True, exist_ok=True)
+    fm = ['---', f'id: "design-{ticket}"', 'type: "design"']
+    if depends_on:
+        fm.append(f'depends-on: ["{depends_on}"]')
+    fm += ['---', '# design', '']
+    path = tmp_path / ticket / "design-draft.md"
+    path.write_text("\n".join(fm), encoding="utf-8")
+    return str(path)
+
+
+class TestSelectDesignDrafts:
+    def test_no_draft_is_scope_none(self):
+        assert fs.select_design_drafts([]) == ([], [], "none")
+
+    def test_ticket_argument_excludes_other_tickets(self, tmp_path):
+        drafts = [_draft(tmp_path, "12"), _draft(tmp_path, "90")]
+        selected, unscoped, scope = fs.select_design_drafts(drafts, "90")
+        assert [Path(d).parent.name for d in selected] == ["90"]
+        assert unscoped == []
+        assert scope == "ticket"
+
+    def test_unknown_ticket_selects_nothing(self, tmp_path):
+        drafts = [_draft(tmp_path, "12"), _draft(tmp_path, "90")]
+        assert fs.select_design_drafts(drafts, "77") == ([], [], "ticket")
+
+    def test_depends_on_links_draft_to_target_spec(self, tmp_path):
+        drafts = [
+            _draft(tmp_path, "12", "spec-auth"),
+            _draft(tmp_path, "90", "spec-billing"),
+        ]
+        selected, unscoped, scope = fs.select_design_drafts(
+            drafts, "", {"spec-auth"}
+        )
+        assert [Path(d).parent.name for d in selected] == ["12"]
+        assert unscoped == []
+        assert scope == "depends-on"
+
+    def test_single_draft_is_used_without_a_basis(self, tmp_path):
+        drafts = [_draft(tmp_path, "12")]
+        assert fs.select_design_drafts(drafts, "", {"spec-auth"}) == (
+            drafts, [], "sole-draft",
+        )
+
+    def test_multiple_unlinked_drafts_are_left_unscoped(self, tmp_path):
+        drafts = [_draft(tmp_path, "12"), _draft(tmp_path, "90")]
+        selected, unscoped, scope = fs.select_design_drafts(
+            drafts, "", {"spec-auth"}
+        )
+        assert selected == []
+        assert unscoped == drafts
+        assert scope == "unscoped"
+
+
+class TestSpecIdentifiers:
+    def test_declared_and_derived_ids(self, tmp_path):
+        (tmp_path / "auth").mkdir()
+        flat = tmp_path / "billing_spec.md"
+        flat.write_text('---\nid: "spec-billing-v2"\n---\n', encoding="utf-8")
+        nested = tmp_path / "auth" / "user-login.md"
+        nested.write_text("# no front matter\n", encoding="utf-8")
+
+        ids = fs.spec_identifiers([str(flat), str(nested)], tmp_path)
+        assert "spec-billing-v2" in ids     # declared front matter id
+        assert "spec-billing" in ids        # derived from the file name
+        assert "spec-user-login" in ids     # derived, suffix-free
+        assert "spec-auth-user-login" in ids  # derived, hierarchical
+
+
+class TestParseArgs:
+    def test_feature_only(self):
+        assert fs.parse_args(["auth"]) == ("auth", "")
+
+    def test_ticket_space_and_equals_forms(self):
+        assert fs.parse_args(["auth", "--ticket", "90"]) == ("auth", "90")
+        assert fs.parse_args(["--ticket=90", "auth"]) == ("auth", "90")
+
+    def test_other_flags_are_not_mistaken_for_a_feature(self):
+        assert fs.parse_args(["--full"]) == ("", "")
+        assert fs.parse_args(["--full", "auth"]) == ("auth", "")
+
+    def test_ticket_without_value_is_ignored(self):
+        assert fs.parse_args(["auth", "--ticket"]) == ("auth", "")
+
+
 # --- find-spec-docs.py E2E ------------------------------------------------
 
 class TestFindSpecDocs:
@@ -216,6 +305,106 @@ class TestFindSpecDocs:
         mapping = json.loads((cache / "file_mapping.json").read_text(encoding="utf-8"))
         assert len(mapping["design_drafts"]) == 1
         assert mapping["design_drafts"][0].endswith("design-draft.md")
+        assert mapping["design_draft_scope"] == "sole-draft"
+        assert mapping["unscoped_design_drafts"] == []
+
+    def test_ticket_option_scopes_the_design_draft(self, proj_env):
+        # Parallel tickets: only the requested ticket's draft may be attached.
+        proj, env_file = proj_env
+        (proj / ROOT / "specification" / "auth_spec.md").write_text(
+            "# s", encoding="utf-8"
+        )
+        task_dir = proj / ROOT / "task"
+        _draft(task_dir, "12")
+        _draft(task_dir, "90")
+
+        for args in (("--ticket", "90"), ("--ticket=90",)):
+            result = _run(FIND_SPEC, proj, env_file, *args)
+            assert result.returncode == 0, result.stderr
+
+            cache = proj / ROOT / ".cache" / "check-spec"
+            mapping = json.loads(
+                (cache / "file_mapping.json").read_text(encoding="utf-8")
+            )
+            assert mapping["design_draft_scope"] == "ticket"
+            assert [
+                Path(d).parent.name for d in mapping["design_drafts"]
+            ] == ["90"]
+
+            drafts_txt = (cache / "design_draft_files.txt").read_text(
+                encoding="utf-8"
+            ).replace(os.sep, "/")
+            assert "task/90/design-draft.md" in drafts_txt
+            assert "task/12/design-draft.md" not in drafts_txt
+            assert 'CHECK_SPEC_DESIGN_DRAFT_SCOPE="ticket"' in env_file.read_text(
+                encoding="utf-8"
+            )
+
+    def test_depends_on_scopes_the_design_draft(self, proj_env):
+        proj, env_file = proj_env
+        (proj / ROOT / "specification" / "auth_spec.md").write_text(
+            '---\nid: "spec-auth"\n---\n# s', encoding="utf-8"
+        )
+        (proj / ROOT / "specification" / "billing.md").write_text(
+            '---\nid: "spec-billing"\n---\n# s', encoding="utf-8"
+        )
+        task_dir = proj / ROOT / "task"
+        _draft(task_dir, "12", "spec-auth")
+        _draft(task_dir, "90", "spec-billing")
+
+        result = _run(FIND_SPEC, proj, env_file, "auth")
+        assert result.returncode == 0, result.stderr
+
+        cache = proj / ROOT / ".cache" / "check-spec"
+        mapping = json.loads(
+            (cache / "file_mapping.json").read_text(encoding="utf-8")
+        )
+        assert mapping["design_draft_scope"] == "depends-on"
+        assert [
+            Path(d).parent.name for d in mapping["design_drafts"]
+        ] == ["12"]
+
+    def test_unscoped_drafts_are_reported_not_attached(self, proj_env):
+        proj, env_file = proj_env
+        (proj / ROOT / "specification" / "auth_spec.md").write_text(
+            "# s", encoding="utf-8"
+        )
+        task_dir = proj / ROOT / "task"
+        _draft(task_dir, "12")
+        _draft(task_dir, "90")
+
+        result = _run(FIND_SPEC, proj, env_file, "auth")
+        assert result.returncode == 0, result.stderr
+        assert "WARNING" in result.stderr
+        assert "--ticket" in result.stderr
+
+        cache = proj / ROOT / ".cache" / "check-spec"
+        assert (cache / "design_draft_files.txt").read_text(
+            encoding="utf-8"
+        ) == ""
+        mapping = json.loads(
+            (cache / "file_mapping.json").read_text(encoding="utf-8")
+        )
+        assert mapping["design_drafts"] == []
+        assert mapping["design_draft_scope"] == "unscoped"
+        assert len(mapping["unscoped_design_drafts"]) == 2
+
+    def test_flag_only_argument_targets_all_specs(self, proj_env):
+        # `/check-spec --full` must not treat "--full" as a feature name.
+        proj, env_file = proj_env
+        spec_dir = proj / ROOT / "specification"
+        (spec_dir / "auth_spec.md").write_text("# s", encoding="utf-8")
+        (spec_dir / "billing.md").write_text("# s", encoding="utf-8")
+
+        result = _run(FIND_SPEC, proj, env_file, "--full")
+        assert result.returncode == 0, result.stderr
+        assert "WARNING" not in result.stderr
+
+        cache = proj / ROOT / ".cache" / "check-spec"
+        spec_lines = (cache / "spec_files.txt").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        assert len(spec_lines) == 2
 
     def test_feature_flat_structure(self, proj_env):
         proj, env_file = proj_env
@@ -287,6 +476,7 @@ class TestValidateFiles:
         )
         spec_dir = proj / ROOT / "specification"
         (spec_dir / "user-login_spec.md").write_text("# s", encoding="utf-8")
+        (spec_dir / "user-logout.md").write_text("# s", encoding="utf-8")
         (spec_dir / "user-login_design.md").write_text("# d", encoding="utf-8")
         env_file = tmp_path / "env"
         env_file.write_text("", encoding="utf-8")
@@ -305,10 +495,17 @@ class TestValidateFiles:
             (cache / "scan_summary.json").read_text(encoding="utf-8")
         )
         assert summary["requirement_files"] == 1
-        assert summary["spec_files"] == 1
+        # The `_spec` suffix is optional, so both forms count as specs and the
+        # v4.x design doc is not double-counted among them.
+        assert summary["spec_files"] == 2
         assert summary["design_files"] == 1
-        assert summary["total_files"] == 3
+        assert summary["total_files"] == 4
         assert summary["scanned_at"].endswith("Z")
+
+        spec_txt = (cache / "spec_files.txt").read_text(encoding="utf-8")
+        assert "user-login_spec.md" in spec_txt
+        assert "user-logout.md" in spec_txt
+        assert "user-login_design.md" not in spec_txt
 
         env = env_file.read_text(encoding="utf-8")
         assert "CONSTITUTION_CACHE_DIR" in env

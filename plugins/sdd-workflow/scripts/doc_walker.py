@@ -11,14 +11,14 @@ sdd_index.iter_target_files and scan-documents.collect_documents:
   ``-decisions`` suffix is optional)
 - task/: every ``.md`` file
 
-Also hosts find_spec_doc (used by the post-tool-use hook). All traversal is
-pathlib-based for cross-platform behavior.
+Also hosts find_spec_doc / find_legacy_design_doc (used by the post-tool-use
+hook). All traversal is pathlib-based for cross-platform behavior.
 """
 
 from pathlib import Path
 from typing import List, Union
 
-from naming import SPEC_SUFFIX
+from naming import DESIGN_SUFFIX, SPEC_SUFFIX
 
 PathLike = Union[str, Path]
 
@@ -33,6 +33,16 @@ def iter_specification_docs(spec_path: PathLike) -> List[Path]:
     """Every ``.md`` file under a specification directory, sorted (suffix optional)."""
     p = Path(spec_path)
     return sorted(p.rglob("*.md")) if p.is_dir() else []
+
+
+def iter_legacy_design_docs(spec_path: PathLike) -> List[Path]:
+    """Every v4.x persisted ``*_design.md`` under a specification dir, sorted.
+
+    These files stay valid and are read as supplementary input; the list is used
+    to point at the adr/ migration, never to report a naming violation.
+    """
+    p = Path(spec_path)
+    return sorted(p.rglob(f"*{DESIGN_SUFFIX}.md")) if p.is_dir() else []
 
 
 def iter_all_markdown(path: PathLike) -> List[Path]:
@@ -69,9 +79,10 @@ def collect_documents(sdd_dir: PathLike, requirement_dir: str, specification_dir
 def find_spec_doc(spec_dir: PathLike, stem: str) -> str:
     """Return the path of the spec document matching ``stem`` under spec_dir, or ''.
 
-    ``{stem}_design.md`` never matches: design docs are no longer persisted under
-    specification/, so they are not a valid sync target. When several files share
-    a stem the lowest path string wins, so the result is deterministic.
+    ``{stem}_design.md`` never matches: a v4.x persisted design doc is not a
+    spec, so it is not a spec sync target. Use find_legacy_design_doc to locate
+    those separately. When several files share a stem the lowest path string
+    wins, so the result is deterministic.
     """
     base = Path(spec_dir)
     # Suffix-first so an explicit {stem}_spec.md wins over a bare {stem}.md.
@@ -80,3 +91,19 @@ def find_spec_doc(spec_dir: PathLike, stem: str) -> str:
         if found:
             return found
     return ""
+
+
+def find_legacy_design_doc(spec_dir: PathLike, stem: str) -> str:
+    """Return the path of a v4.x persisted design doc for ``stem``, or ''.
+
+    ``specification/{stem}_design.md`` is a v4.x artifact. It remains valid and
+    is read as supplementary input, but it is not a spec, so find_spec_doc never
+    returns it. Kept as a separate lookup so a caller can tell the two apart and
+    point at the adr/ migration instead of the spec sync reminder. When several
+    files share a stem the lowest path string wins, so the result is
+    deterministic.
+    """
+    base = Path(spec_dir)
+    return min(
+        (str(p) for p in base.rglob(f"{stem}{DESIGN_SUFFIX}.md")), default="",
+    )

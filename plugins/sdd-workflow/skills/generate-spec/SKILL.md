@@ -1,7 +1,7 @@
 ---
 name: generate-spec
 description: "Generate Abstract Specification and Technical Design Document from input content"
-argument-hint: "<requirements-description>"
+argument-hint: "<requirements-description> [--ticket <number>] [--ci] [--amend]"
 license: MIT
 user-invocable: true
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/generate-spec/scripts/prepare-spec.py" *)
@@ -56,9 +56,24 @@ $ARGUMENTS
 | Argument                   | Required | Description                                                                                                                  |
 |:---------------------------|:---------|:-----------------------------------------------------------------------------------------------------------------------------|
 | `requirements-description` | Yes      | Feature description text. Feature name is extracted from description                                                         |
-| `--ticket <number>`        | -        | Ticket number (GitHub issue number, JIRA key, etc.) that identifies the Design Doc draft location `task/{ticket-number}/design-draft.md`. If omitted in interactive mode, resolved during Missing Information Confirmation (step 3, before the existing-document check). Required in `--ci` mode (fails if missing) |
+| `--ticket <number>`        | -        | Ticket number (GitHub issue number, JIRA key, etc.) that identifies the Design Doc draft location `task/{ticket-number}/design-draft.md`. If omitted in interactive mode, resolved during Missing Information Confirmation (step 3, before the existing-document check). Required in `--ci` mode (see "Ticket Number Resolution" below) |
 | `--ci`                     | -        | CI/non-interactive mode. Skips Vibe Coding check, auto-approves overwrites, skips spec-reviewer, always generates Design Doc |
 | `--amend`                  | -        | Amend mode: append only the new content to the existing spec instead of regenerating it (requires an existing spec; error if none exists). Applies to the Abstract Specification only — the Design Doc draft is always regenerated fresh per ticket |
+
+### Ticket Number Resolution
+
+Both flag spellings — `--ticket <number>` and `--ticket=<number>` — are accepted and mean the same thing.
+
+The Design Doc draft path is ticket-scoped, so the ticket number must be resolved before the draft is written:
+
+- Take it from `--ticket` when given
+- Interactive mode, flag omitted: ask for it during Missing Information Confirmation (step 3), before the
+  existing-document check
+- `--ci` mode, flag omitted: **abort with an error instead of asking.** Report
+  `--ci requires --ticket <number>` together with the invocation to retry (e.g.
+  `/generate-spec "<requirements-description>" --ci --ticket 123`), and write no files. Never invent a
+  placeholder ticket number or a fallback directory such as `task/unknown/` — that silently separates the
+  draft from the ticket it belongs to
 
 ## Input Examples
 
@@ -123,7 +138,15 @@ If important items cannot be determined from input, **confirm with user before g
 
 Check the following before generation. Both flat and hierarchical structures are supported for the spec (see structure note above).
 
-See `references/existing_document_check.md` for the list of paths to check for flat and hierarchical structures.
+See `references/existing_document_check.md` for the list of paths to check for flat and hierarchical structures,
+including the v4.x legacy design doc paths.
+
+**Legacy persistent design docs are supplementary input**: a project that started on AI-SDD v4.x may still carry
+`${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` (or `{parent-feature}/index_design.md`). When one exists,
+**read it as supplementary input** — technology stack, module structure, and design decisions already in force —
+so the generated draft does not contradict it. **Treat its absence as normal.** It is never a write target (new
+technical design always goes to `task/{ticket-number}/design-draft.md`), and is never reported as a naming
+violation or proposed for deletion.
 
 **Note the difference in naming conventions**:
 

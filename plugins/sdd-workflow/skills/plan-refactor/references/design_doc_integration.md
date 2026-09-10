@@ -175,9 +175,16 @@ Use a status header to track where the plan stands:
 
 - ✅ `.sdd/task/68/design-draft.md`
 - ✅ `.sdd/specification/auth_spec.md`
-- ❌ `.sdd/specification/auth_design.md` (design docs are no longer persisted here)
+- 🕘 `.sdd/specification/auth_design.md` — legacy naming (v4.x): still valid for an existing file, do not
+  create a new one
 - ❌ `.sdd/task/68/auth_design.md` (the draft filename is fixed)
 - ❌ `.sdd/specification/auth_refactor.md` (separate plan file not supported)
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+have been migrated to `adr/{feature}.md`.
 
 ## Hierarchical Structure Support
 

@@ -4,10 +4,13 @@
 
 - Spec: `${SDD_SPECIFICATION_PATH}/[{parent}/]{feature}[_spec].md`
 - Design draft (auxiliary, only if present): `${SDD_TASK_PATH}/{ticket-number}/design-draft.md`
+  (selection basis: `{design_draft_scope}`)
 - Implementation: `{implementation_files}`
 
 > Omit the design draft line when no draft exists — that is the normal state after implementation
 > completes, not a finding.
+> When `design_draft_scope` is `unscoped`, state instead that {n} design drafts were found but none could be
+> tied to this run, list them, and recommend re-running with `--ticket <number>` (or `--ticket=<number>`).
 
 ### Consistency Check Results
 
@@ -20,8 +23,23 @@
 | Behavior              | 🟢 OK   | Matches the spec         |
 | Literal Values        | 🟡 Warn | {count} value drifts     |
 | Implementation Status | 🔴/🟡/🔵 | {critical_count} regression / {warning_count} undecidable / {info_count} expected-not-yet-implemented |
+| adr ↔ Implementation  | ⚪ Not checked | Out of this check's scope — adr drift is not detected automatically |
 
 > Add a **Module Structure** row only when a design draft was loaded.
+> The adr row is always present: it keeps the unchecked scope visible instead of implying adr was verified.
+
+#### Downgrade Summary (always shown)
+
+`impl-status` moves "specified but not implemented" findings out of Critical. In v4.x these were unconditional
+Criticals, and v4-era specs carry no `impl-status`, so report the counts explicitly:
+
+| Downgrade                                          | Count | Specs                       |
+|:---------------------------------------------------|:------|:----------------------------|
+| Critical → 🟡 Warning (`impl-status` absent)        | {n}   | `{spec_paths}`              |
+| Critical → 🔵 Info (`not-implemented`/`in-progress`) | {n}   | `{spec_paths}`              |
+
+> These {total} findings are **not** resolved defects — they are undecidable or deferred, and the Critical
+> count above excludes them. Print the table with zeros when nothing was downgraded.
 
 #### 🔴 Mismatches
 
@@ -85,8 +103,10 @@ A spec-documented function with no matching implementation is classified by the 
 (removed, or the field was set before the implementation actually landed).
 
 **Recommendation**: Restore the implementation, or correct the spec's `impl-status` if it was never actually
-implemented (and document why in the spec/adr). A 🟡 Undecidable row instead recommends adding `impl-status`
-to the spec's front matter (`/recommend-front-matter` can suggest it); a 🔵 Expected row needs no action.
+implemented (and document why in the spec/adr). For a 🟡 Undecidable row, recommend this sequence instead:
+run `/recommend-front-matter` to list the specs missing `impl-status` (it reports them but never writes a
+value), confirm from the code whether each spec's behavior is implemented, then set `impl-status` by hand to
+the value that matches reality. A 🔵 Expected row needs no action.
 
 ---
 
@@ -96,14 +116,20 @@ to the spec's front matter (`/recommend-front-matter` can suggest it); a 🔵 Ex
     - Update `src/models/user.ts:10` type definition
 2. Address regressions (🔴 Unimplemented):
     - Restore Password Reset API, or correct its spec `impl-status`
-3. Add `impl-status` to specs flagged as undecidable (🟡)
+3. Set `impl-status` by hand on the specs flagged as undecidable (🟡), after checking each one's real
+   implementation state — `/recommend-front-matter` lists them but does not fill in the value
+4. Review `${SDD_ADR_PATH}/{feature}.md` manually for decisions the implementation no longer follows
+   (not covered by this check) — record any reversal as a **new** adr entry with a `Supersedes` item
 
 ### Verification Commands
 
 ```bash
 # Re-check after fixes
-/check_spec {feature}
+/check-spec {feature}
+
+# Re-check with a specific ticket's design draft as auxiliary input
+/check-spec {feature} --ticket {ticket-number}
 
 # Full review (document consistency + quality)
-/check_spec {feature} --full
+/check-spec {feature} --full
 ```

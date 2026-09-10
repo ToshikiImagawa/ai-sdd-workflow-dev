@@ -205,9 +205,9 @@ run_hook "post: source edit with suffix-free spec reminds sync" "post-tool-use.p
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/user-logout.py\"}}" \
     0 "user-logout.md"
 
-run_hook "post: source edit with only a legacy design doc is silent" "post-tool-use.py" \
+run_hook "post: source edit with only a legacy design doc points at adr migration" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/legacy-only.py\"}}" \
-    0 ""
+    0 "v4.x design document"
 
 run_hook "post: source edit without spec is silent" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/main.py\"}}" \

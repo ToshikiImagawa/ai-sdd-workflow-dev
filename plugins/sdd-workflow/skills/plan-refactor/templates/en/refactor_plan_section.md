@@ -35,6 +35,16 @@
 
 {DEEPER_ANALYSIS_OF_WHY_PROBLEMS_EXIST}
 
+**Problems Left Out of This Refactoring's Scope:**
+
+Move anything this plan will not fix into the "Technical Debt Observations" list and give it a persistent
+destination (tracker item / proposed spec correction). This draft is deleted at `/task-cleanup`, so an entry
+with no destination is lost.
+
+| Problem   | Destination                                           |
+|:----------|:------------------------------------------------------|
+| {problem} | {tracker item {id / to be created} / proposed spec correction} |
+
 ### Refactoring Strategy
 
 **Goals:**

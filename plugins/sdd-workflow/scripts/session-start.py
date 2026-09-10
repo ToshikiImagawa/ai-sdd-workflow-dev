@@ -13,9 +13,10 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from doc_walker import iter_legacy_design_docs  # noqa: E402
 from env_export import rewrite_exports  # noqa: E402
 from hook_common import resolve_project_root  # noqa: E402
 
@@ -234,9 +235,73 @@ def compare_major_minor(plugin_version: str, project_version: str) -> bool:
     return project_tuple >= plugin_tuple
 
 
-def check_claude_md(project_root: str, sdd_dir: str, plugin_version: str) -> None:
+# Number of legacy design docs listed individually in UPDATE_REQUIRED.md; the
+# rest are summarized as a count so the warning file stays readable.
+LEGACY_DESIGN_LIST_LIMIT = 10
+
+
+def build_migration_section(project_root: str, sdd_dir: str, cfg: SddConfig) -> str:
+    """Section pointing at the v4.x -> v5.x document model migration, or ''.
+
+    Only emitted when the project still holds persisted
+    ``{specification}/*_design.md`` files. Those files remain valid, so the text
+    asks for their decisions to be migrated into ``{adr}/`` and never calls them
+    a violation or tells the reader to delete them first.
+
+    English-only, like the rest of UPDATE_REQUIRED.md: the file is guidance for
+    the AI agent (skills read it via prerequisites_plugin_update.md) rather than
+    a human-facing document, so it is not rendered per SDD_LANG.
+    """
+    legacy_docs = iter_legacy_design_docs(Path(sdd_dir) / cfg.specification_dir)
+    if not legacy_docs:
+        return ""
+
+    def rel(path: Path) -> str:
+        try:
+            return path.relative_to(Path(project_root)).as_posix()
+        except ValueError:
+            return path.as_posix()
+
+    sdd_rel = rel(Path(sdd_dir))
+    listed = legacy_docs[:LEGACY_DESIGN_LIST_LIMIT]
+    lines = [f"- `{rel(p)}`" for p in listed]
+    remaining = len(legacy_docs) - len(listed)
+    if remaining > 0:
+        lines.append(f"- ... and {remaining} more")
+    file_list = "\n".join(lines)
+
+    return f"""
+## Document Model Migration (v4.x -> v5.x)
+
+This project still holds {len(legacy_docs)} persisted design document(s) under \
+`{sdd_rel}/{cfg.specification_dir}/`:
+
+{file_list}
+
+These files remain valid: read them as supplementary input, and do not treat
+them as naming violations. Since v5.0.0 a technical design starts as a temporary
+draft at `{sdd_rel}/{cfg.task_dir}/{{ticket-number}}/design-draft.md` and is deleted
+after implementation; only the decisions worth keeping are appended to
+`{sdd_rel}/{cfg.adr_dir}/{{feature-name}}.md`. Moving each file's decision history
+there is human-paced and can be done feature by feature - nothing breaks until it
+is; keep the original until that is done.
+
+For the step-by-step procedure, see "Migration from v4.x" in the plugin README
+(section "Extracting Existing `*_design.md` Files into `adr/`").
+"""
+
+
+def check_claude_md(project_root: str, sdd_dir: str, plugin_version: str,
+                    cfg: Optional[SddConfig] = None) -> None:
+    """Write (or clear) UPDATE_REQUIRED.md for the CLAUDE.md AI-SDD section.
+
+    ``cfg`` supplies the configured directory names for the migration section;
+    it falls back to the defaults when a caller has none at hand.
+    """
     if not Path(sdd_dir).is_dir():
         return
+    if cfg is None:
+        cfg = SddConfig()
 
     claude_md = Path(project_root) / "CLAUDE.md"
     show_warning = False
@@ -271,6 +336,7 @@ def check_claude_md(project_root: str, sdd_dir: str, plugin_version: str) -> Non
             "outdated": f"CLAUDE.md AI-SDD section is outdated. Plugin: v{plugin_version}, CLAUDE.md: v{claude_version}",
         }
         warning_message = messages.get(warning_reason, "")
+        migration_section = build_migration_section(project_root, sdd_dir, cfg)
 
         warning_content = f"""\
 # AI-SDD Update Required
@@ -288,13 +354,19 @@ Run the following command:
 ```
 
 This will update the AI-SDD section in CLAUDE.md.
-
+{migration_section}
 ---
 This file will be automatically deleted after running /sdd-init.
 """
         warning_file.write_text(warning_content, encoding="utf-8")
 
         print("[AI-SDD] CLAUDE.md update required. Please run /sdd-init.", file=sys.stderr)
+        if migration_section:
+            print(
+                "[AI-SDD] Persisted v4.x design documents found. "
+                f"See {Path(sdd_dir).name}/UPDATE_REQUIRED.md for the adr/ migration steps.",
+                file=sys.stderr,
+            )
     else:
         if warning_file.is_file():
             warning_file.unlink()
@@ -333,7 +405,7 @@ def main() -> None:
     if cfg.index:
         rebuild_index(project_root)
 
-    check_claude_md(project_root, sdd_dir, plugin_version)
+    check_claude_md(project_root, sdd_dir, plugin_version, cfg)
 
 
 if __name__ == "__main__":

@@ -16,8 +16,8 @@
     {
       "id": 0,
       "eval_name": "sdd-env-prefix-breaking-change",
-      "prompt": "環境変数の接頭辞を `SDD_` から `AISDD_` へ変更するリファクタリングを計画してください（`SDD_ROOT` → `AISDD_ROOT` など）。既存のスキル・エージェント・フック・スクリプトは `SDD_` を参照しています。",
-      "prompt_note": "A real breaking change with real call sites in this repository: the prefix appears in session-start.py, env_export.py, the skill prompts' path-resolution references and the shell test harness. The prompt states the compatibility problem but does not decide it, so whether the plan escalates the decision or quietly picks one is observable.",
+      "prompt": "環境変数の接頭辞を `SDD_` から `AISDD_` へ変更するリファクタリングを計画してください（`SDD_ROOT` → `AISDD_ROOT` など）。既存のスキル・エージェント・フック・スクリプトは `SDD_` を参照しています。ticket 番号は 9105 です。",
+      "prompt_note": "A real breaking change with real call sites in this repository: the prefix appears in session-start.py, env_export.py, the skill prompts' path-resolution references and the shell test harness. The prompt states the compatibility problem but does not decide it, so whether the plan escalates the decision or quietly picks one is observable. The ticket number is stated in prose (as in the generate-spec / implement / checklist evals) rather than as a flag, so neither generation is handed its own argument spelling: an era that has no ticket concept simply ignores it, and an era that resolves a ticket-scoped plan location can use it without being told where that location is. Supplying it is not optional -- an era whose skill asks for the ticket interactively before doing any work would otherwise stall on an unanswerable question, which measures input shape rather than plan quality.",
       "sdd_inputs": [
         ".sdd/specification/workflow-foundation/session-config_spec.md",
         ".sdd/specification/workflow-foundation/session-config_design.md"

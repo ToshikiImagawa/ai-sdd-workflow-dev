@@ -94,8 +94,16 @@ def main() -> None:
         spec_count = 0
         design_count = 0
         if specification_path.is_dir():
-            spec_matches = sorted_matches(specification_path, "*_spec.md")
+            # The `_spec` suffix is optional under specification/, so every
+            # .md there is an abstract spec except a v4.x persistent design
+            # doc (`*_design.md`), which is listed separately below.
             design_matches = sorted_matches(specification_path, "*_design.md")
+            design_set = set(design_matches)
+            spec_matches = [
+                m
+                for m in sorted_matches(specification_path, "*.md")
+                if m not in design_set
+            ]
             write_lines(spec_files, spec_matches)
             write_lines(design_files, design_matches)
             spec_count = len(spec_matches)

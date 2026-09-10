@@ -1,7 +1,7 @@
 ---
 name: check-spec
 description: "Check consistency between implementation code and abstract specifications (spec), detecting discrepancies"
-argument-hint: "[feature-name] [--full]"
+argument-hint: "[feature-name] [--ticket <number>] [--full]"
 arguments: [feature-name]
 license: MIT
 user-invocable: true
@@ -23,8 +23,13 @@ agent when called with the `--full` option.
 `${SDD_TASK_PATH}/{ticket-number}/design-draft.md` and is deleted once implementation completes.
 When a draft exists it is used as an **auxiliary input** for details the spec cannot express
 (module structure, technology stack). Its absence is the normal state and is never reported as a
-problem. Projects still carrying v4.x persisted `{feature}_design.md` files under
-`${SDD_SPECIFICATION_PATH}/` get the same auxiliary treatment for those files.
+problem.
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+have been migrated to `adr/{feature}.md`.
 
 ## Prerequisites
 
@@ -59,6 +64,9 @@ Full argument string: $ARGUMENTS
 
 ### Options
 
+- `--ticket <number>`: Ticket whose design draft (`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) is used as
+  the auxiliary design input. Both `--ticket <number>` and `--ticket=<number>` are accepted. Omit it when no
+  ticket is in flight — see "Auxiliary design input" below for how a draft is otherwise selected
 - `--full`: In addition to consistency checking, also runs quality review by the `spec-reviewer` agent
     - CONSTITUTION.md compliance check
     - Completeness, clarity, and SysML compliance check
@@ -67,6 +75,7 @@ Full argument string: $ARGUMENTS
 ### Input Examples
 
 - `/check-spec user-auth` — Consistency check only (default)
+- `/check-spec user-auth --ticket 123` — Consistency check with ticket 123's design draft as auxiliary input
 - `/check-spec task-management --full` — Consistency check + quality review
 - `/check-spec --full` — Comprehensive check for all specifications
 - `/check-spec` — Without arguments, targets all specifications (consistency check only)
@@ -88,17 +97,21 @@ Replace placeholders with actual file names and counts.
 
 **Optimized Execution Flow**:
 
-**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-spec-docs.py" [feature-name]` to scan specification documents.
+**Phase 1: Shell Script** - Execute `python3 "${CLAUDE_PLUGIN_ROOT}/skills/check-spec/scripts/find-spec-docs.py" [feature-name] [--ticket <number>]` to scan specification documents.
 
 This script:
 1. Finds all spec documents under `${SDD_SPECIFICATION_PATH}/` in flat or hierarchical structure,
    with or without the `_spec` suffix (`{feature}.md` / `{feature}_spec.md`)
-2. Collects design drafts (`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) as an optional
-   auxiliary input; an empty list is normal, not an error
-3. Generates file mapping JSON (spec → feature name → auxiliary design doc, plus the draft list)
+2. Selects the design drafts (`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) that belong to this run
+   as an optional auxiliary input; an empty list is normal, not an error. Drafts of other tickets are
+   **not** attached (see "Auxiliary design input" below)
+3. Generates file mapping JSON (spec → feature name → auxiliary design doc, plus the selected draft list,
+   the selection basis `design_draft_scope`, and any `unscoped_design_drafts`)
 4. Exports environment variables to `$CLAUDE_ENV_FILE`:
    - `CHECK_SPEC_SPEC_FILES` - List of spec files (the comparison baseline)
-   - `CHECK_SPEC_DESIGN_DRAFT_FILES` - List of design drafts (empty when none exist)
+   - `CHECK_SPEC_DESIGN_DRAFT_FILES` - List of selected design drafts (empty when none apply)
+   - `CHECK_SPEC_DESIGN_DRAFT_SCOPE` - How the drafts were selected: `none` / `ticket` / `depends-on` /
+     `sole-draft` / `unscoped`
    - `CHECK_SPEC_MAPPING` - JSON mapping file
 
 **Phase 2: Claude** - Read specs from pre-scanned lists and perform consistency check
@@ -128,15 +141,31 @@ structures are supported, and the `_spec` suffix is optional in every case.
 
 - **Under specification**: `_spec` suffix optional (`index.md`, `index_spec.md`,
   `{feature-name}.md`, or `{feature-name}_spec.md`)
-- **Not a spec**: `{feature-name}_design.md` under specification is a v4.x persisted design doc.
-  It is excluded from the spec list and only used as an auxiliary input (see the mapping JSON)
+- **Not a spec**: `{feature-name}_design.md` under specification is a v4.x persistent design doc.
+  It is excluded from the spec list and read as supplementary input (see the mapping JSON). It is
+  never a naming violation and is never proposed for deletion
 
 **Auxiliary design input** (use only if present):
 
 - `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket-number}/design-draft.md` — the in-progress
   technical design draft. The filename is fixed and ticket-scoped, so it cannot be matched to a
-  spec by name; treat every listed draft as context for the feature under implementation
-- The `design` field of each mapping entry — a v4.x persisted `{feature}_design.md`, when present
+  spec by name. Use **only the drafts listed in `CHECK_SPEC_DESIGN_DRAFT_FILES`**; never glob
+  `${SDD_TASK_PATH}/` yourself, because another ticket's design would be mixed into the check
+- The `design` field of each mapping entry — a v4.x persistent `{feature}_design.md`, when present
+
+**How a draft is selected** (`design_draft_scope` in the mapping JSON):
+
+| Scope         | Meaning                                                                                   | Action |
+|:--------------|:------------------------------------------------------------------------------------------|:-------|
+| `none`        | No draft exists — the normal state after implementation completes                          | Skip every design ↔ implementation check; report nothing |
+| `ticket`      | `--ticket <number>` was given; only that ticket's draft is used                             | Use it as auxiliary input |
+| `depends-on`  | The draft's front matter `depends-on` references a target spec's ID (`spec-*`)              | Use it as auxiliary input |
+| `sole-draft`  | Exactly one draft exists project-wide, so there is no other ticket to confuse it with       | Use it as auxiliary input |
+| `unscoped`    | Several drafts exist and none could be tied to this run; **none** were selected             | Treat the run as having no draft, and report the notice below |
+
+For the `unscoped` case, report an Info-level notice listing `unscoped_design_drafts` and stating that the
+design ↔ implementation checks were skipped; recommend re-running with `--ticket <number>` (or
+`--ticket=<number>`) for the ticket under work. Do not read those drafts.
 
 **Hierarchical structure input examples**:
 
@@ -215,7 +244,30 @@ expected or a regression depends on the spec's `impl-status` front matter field.
 |:------------------------------------|:----------------------------------------------|:-----------------|
 | `implemented`                      | Spec declares the implementation is done      | **Critical** — regression: the implementation was removed, or never matched the declared status |
 | `not-implemented` / `in-progress`  | Spec intentionally precedes the implementation | **Info** — expected: implementation has not caught up with the spec yet |
-| Missing / absent                   | No implementation-state signal available       | **Warning** — undecidable; recommend adding `impl-status` to the spec (`/recommend-front-matter`) |
+| Missing / absent                   | No implementation-state signal available       | **Warning** — undecidable; downgraded from Critical, so it must be counted in the downgrade summary below |
+
+**Filling in a missing `impl-status`**: `/recommend-front-matter` only **lists** the specs that lack the field —
+it never writes a value, because it cannot know the real implementation state. So recommend this sequence
+instead of an automatic fix: run `/recommend-front-matter` to get the list of specs missing `impl-status`, check
+for each listed spec whether its behavior is actually implemented (the findings of this run already tell you for
+the specs checked here), then set `impl-status` yourself to the value that matches reality
+(`implemented` / `in-progress` / `not-implemented`). Never describe the field as something a command fills in
+automatically.
+
+#### Downgrade Summary (required)
+
+Every "specified in the spec but missing from the implementation" finding that landed in Warning or Info because
+of `impl-status` was a Critical in AI-SDD v4.x, where the classification was unconditional. A v4-era document set
+carries **no** `impl-status` at all, so **every** such finding is downgraded and a silent downgrade reads as
+"Critical count dropped to 0 — things improved."
+
+Always emit the counts, even when they are zero:
+
+- `Downgraded to Warning (impl-status absent): N` — and list the specs whose front matter lacks the field
+- `Downgraded to Info (impl-status not-implemented / in-progress): N`
+
+State explicitly that these N findings are **not** resolved defects: they are undecidable or deferred, and the
+Critical count in the summary excludes them.
 
 This branching applies **only** to "function specified in the spec but missing from the implementation."
 Public API mismatches, data model mismatches, and behavior contradicting the spec remain unconditionally
@@ -285,7 +337,8 @@ Classify detected discrepancies as follows:
 
 **Warning (Action Recommended)**:
 
-- Functions specified in the spec not implemented, `impl-status` case: undecidable (see classification above)
+- Functions specified in the spec not implemented, `impl-status` case: undecidable (see classification above —
+  count these in the Downgrade Summary)
 - Literal value drift (thresholds, enum values, CHECK constraint values differing between spec and implementation)
 - Requirement ID referenced by a spec registry entry missing from the traceability table
 - Implementation exceeding a constraint stated in the spec
@@ -295,7 +348,11 @@ Classify detected discrepancies as follows:
 
 **Info (Reference)**:
 
-- Functions specified in the spec not implemented, `impl-status` case: expected (see classification above)
+- Functions specified in the spec not implemented, `impl-status` case: expected (see classification above —
+  count these in the Downgrade Summary)
+- Design drafts left out of the check because they could not be scoped to this run
+  (scope `unscoped`), together with the `--ticket` recommendation
+- adr ↔ implementation drift is outside this check's scope (see Known Limitations)
 - Minor technology stack differences
 - Missing comments/documentation
 
@@ -308,7 +365,7 @@ When the `--full` option is specified, the `spec-reviewer` agent is invoked to p
 | Check Item                      | Description                                                              |
 |:--------------------------------|:-------------------------------------------------------------------------|
 | **PRD <-> spec Traceability**   | Verify PRD requirements are covered in spec (80% coverage threshold)     |
-| **spec <-> adr Consistency**    | Verify recorded decisions are consistent with the spec                   |
+| **spec <-> adr Consistency**    | Verify recorded decisions are consistent with the spec (document level only — adr <-> implementation drift stays out of scope, see Known Limitations) |
 | **CONSTITUTION.md Compliance**  | Verify compliance with project principles                                |
 | **Completeness**                | Verify required sections (purpose, API, constraints, etc.) are present   |
 | **Clarity**                     | Detect vague descriptions ("nice to have", "appropriately", etc.)        |
@@ -370,11 +427,29 @@ If Serena MCP is enabled, high-precision consistency checking through semantic c
 Even without Serena, consistency checking is performed using traditional text-based search (Grep/Glob).
 Features are limited but work language-agnostically.
 
+## Known Limitations
+
+- **adr ↔ implementation drift is not detected automatically**. From v5.0.0 design decisions persist in
+  `${SDD_ADR_PATH}/{feature}.md`, but this skill compares the **spec** with the implementation. An adr entry
+  the implementation no longer follows (a library replaced, a rejected alternative later adopted, a decision
+  quietly reverted) is not reported — neither by default nor with `--full`, which reviews spec ↔ adr
+  **document** consistency only, not adr ↔ code. The one partial exception is a literal value that an adr
+  entry states **and** the spec repeats: that value is covered by the literal value consistency check.
+- Always state this gap in the report (the output template carries a row for it) so the check's scope is
+  never mistaken for "adr verified".
+- To cover it manually, read the latest entries of `adr/{feature}.md` for the feature under change and
+  confirm the implementation still follows them. When a decision no longer holds, **append** a new entry
+  whose body carries a `Supersedes` item pointing at the old entry — `adr/` is append-only, so never edit
+  or delete the superseded entry.
+
 ## Notes
 
 - If specifications don't exist, recommend creating them with `/generate-spec` first
 - A missing design draft is **not** a problem: it is the normal state after implementation completes.
   Never ask the user to create one, and never report its absence as a discrepancy
+- Never widen the design input beyond `CHECK_SPEC_DESIGN_DRAFT_FILES`. When several tickets are in flight,
+  reading every draft under `${SDD_TASK_PATH}/` makes another ticket's module structure look like a
+  discrepancy in this one; ask for `--ticket <number>` instead
 - If many discrepancies exist, major specification updates may be needed
 - If implementation is correct and specs are outdated, update specifications
 - If specifications are correct and implementation is wrong, fix implementation

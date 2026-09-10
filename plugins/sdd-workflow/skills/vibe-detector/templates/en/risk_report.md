@@ -23,11 +23,12 @@ This template is the output format for Vibe Coding risk detection.
 
 ### Specification Status
 
-| Document    | Status           |
-|:------------|:-----------------|
-| PRD         | Exists / Missing |
-| *_spec.md   | Exists / Missing |
-| *_design.md | Exists / Missing |
+| Document                               | Status                                |
+|:---------------------------------------|:--------------------------------------|
+| PRD (`requirement/`)                   | Exists / Missing                      |
+| Spec (`specification/`, suffix optional) | Exists / Missing                    |
+| Design draft (`task/{ticket}/design-draft.md`) | Exists / Missing (normal after implementation) |
+| Decision log (`adr/`)                  | Exists / Missing                      |
 
 ### Task Type & Recommended Starting Phase
 
@@ -40,7 +41,7 @@ This template is the output format for Vibe Coding risk detection.
 **For High Risk**:
 
 1. Confirm clarification items above with user
-2. Create specifications with `/generate_spec`
+2. Create specifications with `/generate-spec`
 3. Start implementation after spec review
 
 **For Medium Risk**:

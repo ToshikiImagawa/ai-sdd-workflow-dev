@@ -113,6 +113,17 @@ class TestDetermineType:
             == "implementation-log"
         )
 
+    def test_task_design_draft_is_design(self):
+        # v5 のドラフト設計書は task/{ticket-number}/design-draft.md に置かれ、
+        # type は "design"（id は design-{ticket-number} になる）。
+        assert (
+            sd.determine_type(
+                "/p/.sdd/task/123/design-draft.md", "design-draft",
+                "requirement", "specification", "task", "adr",
+            )
+            == "design"
+        )
+
     def test_task_plain(self):
         assert (
             sd.determine_type(
@@ -412,6 +423,26 @@ class TestMissingImplStatus:
         self._run(monkeypatch, proj, env_file)
 
         data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_design_draft_with_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        # missing_impl_status は spec 専用のフラグ。design（task/{ticket}/design-draft.md）
+        # には立たない。スキルは impl-status を書き込まず列挙するだけなので、
+        # 対象は spec のみに保つ。
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "task" / "123").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "task" / "123" / "design-draft.md").write_text(
+            "---\nid: design-123\ntype: design\nsdd-phase: plan\n---\n# Draft\n",
+            encoding="utf-8",
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["documents"][0]["type"] == "design"
         assert data["specs_missing_impl_status"] == 0
         assert data["documents"][0]["missing_impl_status"] is False
 

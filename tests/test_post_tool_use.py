@@ -42,6 +42,7 @@ class TestFindSpecDoc:
         # Behavior is covered by tests/test_doc_walker.py; assert only the wiring
         # so a future local reimplementation is caught here.
         assert ptu.find_spec_doc.__module__ == "doc_walker"
+        assert ptu.find_legacy_design_doc.__module__ == "doc_walker"
 
 
 # --- _extract_file_paths ---------------------------------------------------
@@ -131,14 +132,35 @@ class TestProcessSingleFile:
         _process(os.path.join("src", "app.py"), tmp_path)
         assert "matching specification" in capsys.readouterr().out
 
-    def test_source_with_only_design_doc_no_output(self, tmp_path, capsys):
-        # A leftover v4.x design doc is not a spec, so it must not trigger the
-        # reminder (the design doc is no longer a persistent sync target).
+    def test_source_with_only_design_doc_emits_adr_migration_reminder(
+        self, tmp_path, capsys
+    ):
+        # A v4.x design doc is not a spec, so the spec sync wording must not be
+        # used; the reminder points at the adr/ migration instead.
         spec_abs = tmp_path / SPEC
         spec_abs.mkdir(parents=True)
         (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
         _process(os.path.join("src", "app.py"), tmp_path)
-        assert capsys.readouterr().out == ""
+        out = capsys.readouterr().out
+        assert "v4.x design document" in out
+        assert "app_design.md" in out
+        assert PATHS.adr_prefix in out
+        assert "Migration from v4.x" in out
+        # v4 assets are supplementary input, never a violation or deletion target.
+        assert "supplementary input" in out
+        assert "Keep the design doc until that is done" in out
+        assert "matching specification" not in out
+
+    def test_spec_wins_over_legacy_design_doc(self, tmp_path, capsys):
+        # When both exist the spec sync reminder is the only one emitted.
+        spec_abs = tmp_path / SPEC
+        spec_abs.mkdir(parents=True)
+        (spec_abs / "app_spec.md").write_text("# s", encoding="utf-8")
+        (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
+        _process(os.path.join("src", "app.py"), tmp_path)
+        out = capsys.readouterr().out
+        assert "matching specification" in out
+        assert "v4.x design document" not in out
 
     def test_source_without_spec_no_output(self, tmp_path, capsys):
         (tmp_path / SPEC).mkdir(parents=True)

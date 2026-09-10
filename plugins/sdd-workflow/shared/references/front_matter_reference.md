@@ -74,16 +74,26 @@ spec hasn't been formally reviewed yet). Neither field can be derived from the o
 |:-----------------|:-------------------------------------|:------------------------------------------------------------------------|
 | `id`             | `"adr-{name}"`                       | Hierarchical: `"adr-{parent}-{name}"`                                   |
 | `type`           | `"adr"`                              |                                                                          |
-| `status`         | `"approved"`                          | ADR entries are recorded only after a decision is made, so this is always `"approved"` at write time — it never transitions through `draft`/`review`, and a reversed decision is marked via `superseded-by` (see "Status Transition Rules" below), not by rewriting `status` to `deprecated` |
+| `status`         | `"approved"`                          | ADR entries are recorded only after a decision is made, so this is always `"approved"` at write time — it never transitions through `draft`/`review`. A reversed decision is marked on the **new entry** in the file body (see "Entry-Level vs File-Level Superseding" below), not by rewriting `status` to `deprecated` |
 | `sdd-phase`      | `"implement"`                        | Always `"implement"`                                                    |
 | `depends-on`     | `["spec-*"]`                         | References the spec whose decisions this entry records                  |
 | `ticket`         | string                               | External ticket reference (e.g., `"TICKET-123"`) of the implementation that produced this entry. Optional, but set it when the source `task/{ticket-number}/` had no reachable issue tracker to record completion in — it is the only durable link from a ticket back to this feature once `task/` is deleted |
-| `supersedes`     | list of `"adr-*"`                    | IDs of prior entries this decision replaces. Omit if this is not a reversal |
-| `superseded-by`  | `"adr-*"`                            | ID of the entry that later replaced this decision. Absent while still current |
+| `supersedes`     | list of `"adr-*"`                    | IDs of prior decision-log **files** this file replaces as a whole (e.g. a renamed or merged feature). Omit unless a whole file was retired |
+| `superseded-by`  | `"adr-*"`                            | ID of the decision-log **file** that replaced this whole file. Absent while the file is still the live log for its feature |
 
-`adr/` is append-only: past entries are never rewritten. When a decision is reversed, append a new entry with
-`supersedes` pointing at the old one, and set `superseded-by` on the old entry to point at the new one — the
-old entry's text stays intact as a historical record.
+##### Entry-Level vs File-Level Superseding
+
+One `adr/{feature}.md` file holds **many entries** but only **one** front matter block, so the front matter
+cannot express "entry X reverses entry Y". The two levels are therefore separate:
+
+| Level          | Where it is recorded                                                    | Use it for                                                              |
+|:---------------|:------------------------------------------------------------------------|:------------------------------------------------------------------------|
+| **Entry**      | A `Supersedes` item inside the new entry's body (see `AI-SDD-PRINCIPLES.md` § Architecture Decision Record → Entry Format) | One decision reversing an earlier decision in the same file — the normal case |
+| **File**       | The `supersedes` / `superseded-by` front matter fields                  | Retiring an entire decision log: the feature was renamed, split, or merged and its whole log now lives in another file |
+
+`adr/` is append-only at both levels: past entries are never rewritten, and a superseded entry gets **no**
+back-pointer added to it. The current decision is the **latest** entry; earlier entries are read as history.
+A retired file likewise keeps its content and only gains `superseded-by` in its front matter.
 
 #### Task (`type: "task"`)
 
@@ -124,7 +134,7 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 - **Spec**: Depends on PRD (`"prd-*"`)
 - **Design**: Depends on spec (`"spec-*"`)
 - **ADR**: Depends on spec (`"spec-*"`). `supersedes` / `superseded-by` are lateral references between ADR
-  entries, not upstream dependencies
+  **files**, not upstream dependencies
 - **Task**: Depends on design (`"design-*"`)
 - **Implementation Log**: Depends on design (`"design-*"`)
 
@@ -156,7 +166,7 @@ prd ← spec (depends-on: ["prd-*"]) ← design (depends-on: ["spec-*"]) ← tas
 | Task          | **`sdd-phase` correctness** | Must be `"tasks"`                           | Low        |
 | Impl Log      | **`sdd-phase` correctness** | Must be `"implement"`                       | Low        |
 | ADR           | **`sdd-phase` correctness** | Must be `"implement"`                       | Low        |
-| ADR           | **`supersedes`/`superseded-by` consistency** | Referenced IDs exist and the reverse pointer is set on both entries | High |
+| ADR           | **`supersedes`/`superseded-by` consistency** | File-level only: referenced `adr-*` file ids exist and the reverse pointer is set on the other file. An entry-level reversal must **not** be recorded here — it belongs in the new entry's `Supersedes` item | High |
 
 ### Cross-Reference Checks
 
@@ -190,8 +200,10 @@ in-progress → completed
 ### ADR
 
 ADR entries are append-only and do not follow the draft/review/approved lifecycle: an entry is written once a
-decision is made. Validity is tracked by `superseded-by` rather than by rewriting `status` — an entry with
-`superseded-by` set has been replaced by a later decision but its text is never edited.
+decision is made. Validity is tracked in the file body rather than by rewriting `status`: a later entry carrying
+a `Supersedes` item replaces an earlier decision, and the replaced entry's text is never edited. `superseded-by`
+in the front matter says something different — that the whole file has been retired in favor of another
+decision log.
 
 ### Design `impl-status` Transitions
 

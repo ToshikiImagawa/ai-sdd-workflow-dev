@@ -92,7 +92,7 @@ its path is the same in both structures
 
 ```bash
 # Verify consistency with related design docs
-/check_spec {feature}
+/check-spec {feature}
 
 # Check for unclear specification points
 /clarify {feature}

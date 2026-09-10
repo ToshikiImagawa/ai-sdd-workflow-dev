@@ -465,6 +465,81 @@ class TestCheckClaudeMd:
         ss.check_claude_md(project_root, sdd_dir, "3.3.0")
         assert not warning_file.exists()
 
+    def test_warning_has_no_migration_section_without_legacy_design_docs(
+        self, tmp_path
+    ):
+        project_root, sdd_dir, warning_file = self._setup(tmp_path)
+        (Path(sdd_dir) / "specification").mkdir()
+        (Path(sdd_dir) / "specification" / "auth_spec.md").write_text(
+            "# s", encoding="utf-8"
+        )
+        ss.check_claude_md(project_root, sdd_dir, "5.0.0")
+        assert "Document Model Migration" not in warning_file.read_text(
+            encoding="utf-8"
+        )
+
+    def test_warning_includes_migration_section_for_legacy_design_docs(
+        self, tmp_path, capsys
+    ):
+        project_root, sdd_dir, warning_file = self._setup(tmp_path)
+        spec = Path(sdd_dir) / "specification" / "auth"
+        spec.mkdir(parents=True)
+        (spec / "user-login_design.md").write_text("# d", encoding="utf-8")
+        ss.check_claude_md(project_root, sdd_dir, "5.0.0")
+
+        content = warning_file.read_text(encoding="utf-8")
+        assert "## Document Model Migration (v4.x -> v5.x)" in content
+        # The concrete file is named so the reader knows what to migrate.
+        assert ".sdd/specification/auth/user-login_design.md" in content
+        # Migration target and procedure pointer.
+        assert ".sdd/adr/{feature-name}.md" in content
+        assert "Migration from v4.x" in content
+        # v4 assets are never reported as violations or deletion targets.
+        assert "These files remain valid" in content
+        assert "keep the original" in content
+        assert "v4.x design documents found" in capsys.readouterr().err
+
+    def test_migration_section_respects_custom_directory_names(self, tmp_path):
+        project_root = str(tmp_path)
+        sdd_dir = tmp_path / "docs"
+        (sdd_dir / "spec").mkdir(parents=True)
+        (sdd_dir / "spec" / "auth_design.md").write_text("# d", encoding="utf-8")
+        cfg = ss.SddConfig(
+            root="docs", specification_dir="spec", adr_dir="decisions",
+            task_dir="tickets",
+        )
+        section = ss.build_migration_section(project_root, str(sdd_dir), cfg)
+        assert "docs/spec/" in section
+        assert "docs/decisions/{feature-name}.md" in section
+        assert "docs/tickets/{ticket-number}/design-draft.md" in section
+
+    def test_migration_section_truncates_long_lists(self, tmp_path):
+        project_root = str(tmp_path)
+        sdd_dir = tmp_path / ".sdd"
+        spec = sdd_dir / "specification"
+        spec.mkdir(parents=True)
+        total = ss.LEGACY_DESIGN_LIST_LIMIT + 3
+        for i in range(total):
+            (spec / f"f{i:02d}_design.md").write_text("# d", encoding="utf-8")
+        section = ss.build_migration_section(project_root, str(sdd_dir), ss.SddConfig())
+        assert f"holds {total} persisted design document(s)" in section
+        assert "... and 3 more" in section
+
+    def test_migration_section_empty_without_specification_dir(self, tmp_path):
+        assert ss.build_migration_section(
+            str(tmp_path), str(tmp_path / ".sdd"), ss.SddConfig(),
+        ) == ""
+
+    def test_check_claude_md_uses_config_directories(self, tmp_path):
+        project_root = str(tmp_path)
+        sdd_dir = tmp_path / "docs"
+        (sdd_dir / "spec").mkdir(parents=True)
+        (sdd_dir / "spec" / "auth_design.md").write_text("# d", encoding="utf-8")
+        cfg = ss.SddConfig(root="docs", specification_dir="spec")
+        ss.check_claude_md(project_root, str(sdd_dir), "5.0.0", cfg)
+        content = (sdd_dir / "UPDATE_REQUIRED.md").read_text(encoding="utf-8")
+        assert "docs/spec/auth_design.md" in content
+
 
 class TestGetRoots:
     def test_get_plugin_root_exits_when_unset(self, monkeypatch, capsys):

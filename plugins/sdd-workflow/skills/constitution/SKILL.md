@@ -175,8 +175,9 @@ scan file structure.
 This script:
 
 1. Scans all requirement files (`${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/**/*.md`)
-2. Scans all specification files (`*_spec.md`)
-3. Scans all design files (`*_design.md`)
+2. Scans all specification files (every `.md` under `${SDD_SPECIFICATION_PATH}` except `*_design.md` — the
+   `_spec` suffix is optional there)
+3. Scans v4.x persistent design docs (`*_design.md`) separately, where a project still has them
 4. Generates file lists and summary JSON
 5. Exports environment variables to `$CLAUDE_ENV_FILE`:
     - `CONSTITUTION_REQUIREMENT_FILES` - List of requirement files
@@ -188,12 +189,17 @@ This script:
 
 **Validation Targets**:
 
-- `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/**/*.md`
-- `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/**/*_spec.md`
-- `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/**/*_design.md`
+- `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/**/*.md` (PRDs)
+- `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/**/*.md` (abstract specs, suffix optional)
+- `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/**/*_design.md` (v4.x persistent design docs, when present)
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/PRD_TEMPLATE.md`
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/SPECIFICATION_TEMPLATE.md`
 - `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/DESIGN_DOC_TEMPLATE.md`
+- `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md`
+
+Not scanned by this skill: `${SDD_TASK_PATH}/{ticket-number}/design-draft.md` (temporary, deleted after
+implementation) and `${SDD_ADR_PATH}/**/*.md`. Principle compliance for those is reviewed while the ticket is
+open, not by this validation pass.
 
 **Validation Items**:
 
@@ -280,8 +286,10 @@ Depending on sub command, use the `templates/${SDD_LANG:-en}/constitution_output
 |:--------------------------------------------------------------|:--------------------------------------|
 | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/SPECIFICATION_TEMPLATE.md` | Add principle reference sections      |
 | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/DESIGN_DOC_TEMPLATE.md`    | Add principle compliance checklist    |
-| `*_spec.md`                                                   | Design based on principles            |
-| `*_design.md`                                                 | Explicitly state principle compliance |
+| `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md`           | Add principle reference to the entry format |
+| Abstract specs under `specification/` (suffix optional)       | Design based on principles            |
+| `task/{ticket-number}/design-draft.md`                        | Explicitly state principle compliance |
+| `adr/{feature-name}.md`                                       | State the principle a decision rests on in its `Rationale` |
 
 ### Sync Verification
 

@@ -96,8 +96,12 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 このコマンドは自動的に:
 
 - プロジェクトの `CLAUDE.md` に AI-SDD Instructions セクションを追加
-- `.sdd/` ディレクトリ構造を作成（requirement/, specification/, adr/, task/）
-- PRD、仕様書、設計書のテンプレートファイルを生成
+- `.sdd/` ルートディレクトリを作成。`requirement/`・`specification/`・`adr/`・`task/` の各サブディレクトリは
+  事前には作成**されず**、最初のファイルが書き込まれた時点で自動的に作成されます
+- PRD、仕様書、設計書、決定ログ（ADR）のテンプレートファイルを生成
+
+`CONSTITUTION.md` は `/sdd-init` では生成**されません**。汎用テンプレートのコピーではなくプロジェクトに
+合わせて作成するため、`/constitution init` を実行してください。
 
 ## 含まれるコンポーネント
 
@@ -149,11 +153,49 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `session-start` | SessionStart | `.sdd-config.json` から設定を読み込み、環境変数を自動設定 |
 | `user-prompt-submit` | UserPromptSubmit | ユーザープロンプト内の Vibe Coding 兆候（曖昧な指示）を検知し、明確化リマインダーを注入 |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | ファイル命名規則に違反する `.sdd/` ドキュメントへの書き込みを拒否し、実装ソースコード編集時に `CONSTITUTION.md` の原則を注入（セッションごとに1回） |
-| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する設計書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す |
+| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する） |
 
 **注**: フックはプラグインインストール時に自動的に有効化されます。追加の設定は不要です。
 
 ## 使用方法
+
+### チケット番号について
+
+v5.0.0 以降、技術設計ドラフトとタスクログは `task/{ticket-number}/` 配下に置かれるため、いくつかのスキルは
+チケット番号を必要とします。渡し方はスキルごとに異なります:
+
+| スキル                                       | チケット番号の渡し方      | 必須か                                          |
+|:------------------------------------------|:----------------|:---------------------------------------------|
+| `/generate-spec`                          | オプションのみ         | 必須 — 省略時は対話的に解決。`--ci` モードでは指定必須              |
+| `/plan-refactor`                          | オプションのみ         | 必須 — 省略時は対話的に解決。`--ci` モードでは指定必須              |
+| `/task-breakdown`                         | 第2位置引数、またはオプション | 必須 — フォールバックなし                               |
+| `/implement`・`/checklist`・`/run-checklist` | 第2位置引数、またはオプション | 任意 — 省略時は feature 名がタスクディレクトリ名として使われる         |
+| `/clarify`                                | 第2位置引数、またはオプション | 任意 — 省略時は PRD と spec だけで分析する                 |
+| `/task-cleanup`                           | 第1位置引数、またはオプション | 任意 — 省略時は `task/` 全体が対象                       |
+| `/check-spec`                             | オプションのみ         | 任意 — 補助入力にする設計ドラフトを絞り込む（「既知の制約」も参照）           |
+
+チケット番号をオプションで渡す箇所では、`--ticket <番号>`（スペース）と `--ticket=<番号>`（イコール）の
+**どちらの書式も受理**されます。位置引数でも渡せるスキルでは、フラグ形式は位置引数のスロットを消費しないため、
+`/task-breakdown user-auth --ticket=123` でも feature 名は `user-auth` に解決されます。
+
+#### チケットトラッカーを使っていない場合
+
+チケット番号は `task/` 配下の**ディレクトリ名**と front matter の `ticket` フィールドの値としてのみ使われます。
+GitHub や JIRA などのトラッカーに対して検証されることはないため、安定した識別子であれば何でも使えます:
+
+```
+/generate-spec ユーザー認証機能 --ticket user-auth
+/task-breakdown user-auth user-auth
+/implement user-auth
+```
+
+最も簡単な運用は**feature 名をチケット番号として渡す**ことです。`/implement`・`/checklist`・`/run-checklist`
+は省略時に feature 名を使うため、その機能の `task/` 配下のファイルが1つのディレクトリにまとまります。
+ブランチ名や日付付きのスラッグ（`2026-09-10-user-auth`）でも同様に機能します。
+
+実際のトラッカーを必要とするのは `/task-cleanup` の完了コメント投稿だけです。トラッカーを特定できない場合、
+この手順は失敗せずスキップされたことが報告され、チケットと機能の対応は `adr/{feature-name}.md` の `ticket`
+フィールドに残ります。
 
 ### コマンド使用例
 
@@ -174,7 +216,14 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 
 ```
 /check-spec user-auth
+/check-spec user-auth --ticket TICKET-123   # 補助入力にする設計ドラフトを1チケットに絞る
+/check-spec user-auth --ticket=TICKET-123   # 同じ意味
+/check-spec user-auth --full                # PRD <-> spec <-> adr と品質レビューも実施
 ```
+
+`--ticket` は**どの** `task/{ticket-number}/design-draft.md` を補助入力として読むかを決めます。複数チケットが
+並行しているときに `--ticket` を省略すると、他チケットの設計を混ぜるのではなく、どのドラフトも読まずに
+スキップしたドラフトを報告します。
 
 #### タスク分解
 
@@ -251,7 +300,8 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 /sdd-init
 ```
 
-プロジェクト憲章（CONSTITUTION.md）とテンプレートを生成します。
+`.sdd/` ルートとドキュメントテンプレートを作成します。プロジェクト憲章（`CONSTITUTION.md`）は `/sdd-init` では
+作成されないため、続けて `/constitution init` を実行してください。
 
 #### Step 2: 要求仕様書（PRD）の作成
 
@@ -369,34 +419,89 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 2. **新しい `adr/` ディレクトリを追加。** 決定・その理由・却下した代替案のみが `adr/{feature-name}.md`
    （追記専用）に永続化されます
 3. **`/generate-spec` にチケット番号が必要になりました。** 設計ドラフトのパスが `specification/` ではなく
-   `task/{ticket-number}/` 配下になったため、`--ticket <番号>` を指定するか、対話的に解決してください
+   `task/{ticket-number}/` 配下になったため、`--ticket <番号>`（または `--ticket=<番号>`）を指定するか、
+   対話的に解決してください
+4. **`/check-spec` の比較基準が設計書から仕様書に変わりました。** `specification/` 配下の仕様書が第一級の
+   比較基準となり、設計ドラフトは仕様書で表現できない情報（モジュール構成・技術スタック）を補う**任意の
+   補助入力**としてのみ使われます。実装完了後にドラフトが存在しないのは正常な状態であり、不整合として
+   報告されることはありません
+5. **`/plan-refactor` の Case A / Case B 判定が仕様書基準になり、計画は設計ドラフトに書かれます。**
+   以前は `specification/{feature-name}_design.md` の有無で判定していましたが、**仕様書**の有無
+   （`_spec` サフィックスの有無どちらでも照合）で判定するようになりました。リファクタリング計画は
+   `task/{ticket-number}/design-draft.md` に書かれ、リバースエンジニアリングした仕様書は従来どおり
+   `specification/` 配下に永続化されます
+6. **`/plan-refactor` にチケット番号を渡すようになりました**（`--ticket <番号>` または `--ticket=<番号>`。
+   省略時は対話的に解決、`--ci` モードでは指定必須）。設計ドラフトのパスがチケット単位になったためです
+7. **`/task-breakdown` にチケット番号が必須になりました。** 読み込む設計ドラフトと書き出す `tasks.md` の
+   どちらも `task/{ticket-number}/` 配下にあるためです。`tasks.md` は常に
+   `task/{ticket-number}/tasks.md` に書かれ、従来の `task/{feature}/tasks.md` へのフォールバックは
+   廃止されました
+8. **`doc-consistency-checker` の対象が PRD ↔ spec ↔ design から PRD ↔ spec ↔ adr に変わりました**
 
 ### 既存の `*_design.md` を `adr/` へ抜粋する手順
 
 この変更より前に永続化された `specification/{feature-name}_design.md` がある場合、決定履歴を
-`adr/{feature-name}.md` へ抜粋してください。抜粋が完了するまで旧ファイルを削除しないこと:
+`adr/{feature-name}.md` へ抜粋してください。
+
+**この移行は急ぐ必要はありません。** 既存の `specification/*_design.md` は**引き続き有効**です。命名規則
+フックはこれらを受理し、`/check-spec`・`/plan-refactor`・`/task-breakdown` は**補助入力**として読み取ります
+（不在であることも同様に正常です）。違反として報告されることも、削除を促されることもありません。
+新規に作成しないことだけを守ってください — 新しい技術設計は `task/{ticket-number}/design-draft.md` に置きます。
+
+該当ファイルが存在する場合、`session-start` フックがそれらを `.sdd/UPDATE_REQUIRED.md` に一覧化し、この節を
+参照するよう案内します。自分のペースで移行を進めてください。
 
 1. `.sdd-config.json` で `directories.adr` にカスタム名を使用する場合は移行前に設定する
-   （デフォルトは `adr`）。その後 `/sdd-init` を再実行して `adr/` ディレクトリとテンプレートを作成する
-   （既存ファイルは上書きされません）
+   （デフォルトは `adr`）。その後 `/sdd-init` を再実行して、追記専用のエントリ形式を説明する
+   `ADR_TEMPLATE.md` を取得する（既存ファイルは上書きされないため、再実行はいつでも安全）。
+   ただし `/sdd-init` は `adr/` ディレクトリ自体を作成**しません** — `requirement/`・`specification/`・
+   `task/` と同様に、最初のファイルが書き込まれた時点で作成されます
 2. **各 `*_design.md` から設計判断を特定する** — 技術・アーキテクチャ・アプローチをなぜ選んだかを説明している節
 3. **`adr/{feature-name}.md` を作成する**（`specification/` 配下のパスに対応させる。例:
    `specification/auth/user-login_design.md` → `adr/auth/user-login.md`）。
    `shared/references/front_matter_reference.md` に定義された `type: "adr"` の front matter
-   フィールド（`id`、`title`、`status`、`created`、`updated`、`depends-on`、この決定が過去の決定を
-   覆す場合は `supersedes`/`superseded-by`）を設定する
-4. **決定ごとに1エントリを追記する**。含めるのは次のみ:
-   - 下した決定
-   - その理由
-   - 検討した代替案と却下理由
-   - 決定の日付・背景（分かる場合）
+   フィールド（`id`、`type`、`title`、`status`、`created`、`updated`、`sdd-phase`、`depends-on`、
+   分かる場合は `ticket`）を設定する。決定は事後に記録するものなので `status` は `"approved"` とする。
+   front matter の `supersedes`/`superseded-by` は書かない — これらは決定ログ**ファイル全体**の引退
+   （機能のリネーム・分割・統合）を表すもので、エントリ間の覆しを表すものではない
+4. **決定ごとに1エントリを**ファイル末尾に `##` ブロックとして追記する。エントリの形式は固定:
+   - 見出し `## YYYY-MM-DD {決定のタイトル}` — 決定が確定した日付
+   - `- **Decision**:` 決めたこと
+   - `- **Rationale**:` なぜそれを選んだか。選択を強制した制約を含める
+   - `- **Rejected alternatives**:` 検討して却下した代替案とその理由。無い場合は `None considered`
+     と書く（捏造しない）
+   - `- **Supersedes**:` **同一ファイル内**の過去エントリを覆すときのみ記載。対象エントリ見出しへの
+     リンクと、何が変わったかを1行。覆された旧エントリは編集しない（`adr/` は追記専用）
 5. **持ち込まないもの**: 実装手順、理由付けのない技術スタックの列挙、現在のコードに既に反映されている内容 —
    *why* のみを残し、*how* / *what* は持ち込まない
-6. **決定を `adr/` に取り込んだら旧 `*_design.md` を削除**し、`/check-spec`（または
-   `doc-consistency-checker`）を実行して削除したファイルへの参照が残っていないか確認する
+6. **決定を `adr/` に取り込んだ後に旧 `*_design.md` を削除する場合**は、先に残存参照を自分で洗い出す。
+   `/check-spec` も `doc-consistency-checker` も Markdown リンクの健全性は検査しないため、
+   リンク切れは**報告されません**:
+
+   ```bash
+   grep -rn "_design\.md" .sdd/   # root をカスタマイズしている場合は .sdd を置き換える
+   ```
+
+   ヒットした箇所（front matter の `depends-on` と本文中のリンクの両方）を `adr/{feature-name}.md` へ
+   向け直すか、意味を失った参照は削除する。旧ファイルをそのまま残すことも妥当な選択です
+   （上記の注記を参照）
+
+完成した決定ログは `/render-adr-review adr/{feature-name}.md` で決定 / 理由 / 却下した代替案の軸に構造化して
+読み返せます。
 
 `adr/` のフィールド・フォーマットの全体は `AI-SDD-PRINCIPLES.md` の「Architecture Decision Record」節を
 参照してください。
+
+## 既知の制約
+
+- **`adr/` と実装の乖離は自動検出されません。** `/check-spec` は実装を抽象仕様と突き合わせ、`--full` は
+  さらに文書レベルの `PRD ↔ spec ↔ adr` レビューを行いますが、`adr/` のエントリを読んでコードが依然その決定に
+  従っているかを検査するチェックはありません。記録済みの決定を実装が変えたときは決定ログを人手でレビューし
+  （`/render-adr-review adr/{feature-name}.md` が役立ちます）、覆しは旧エントリを編集せず `Supersedes` 付きの
+  **新規エントリ**として記録してください。
+- **Markdown リンクの健全性は検証されません。** `/check-spec` も `doc-consistency-checker` もリンク切れを
+  報告しないため、ドキュメントを削除・改名した後は自分で残存参照を探してください
+  （「既存の `*_design.md` を `adr/` へ抜粋する手順」の `grep` を参照）。
 
 ## フックについて
 
@@ -410,7 +515,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `session-start` | SessionStart | `.sdd-config.json` から設定を読み込み、環境変数を設定 |
 | `user-prompt-submit` | UserPromptSubmit | ユーザープロンプト内の Vibe Coding 兆候（曖昧な指示）を検知し、明確化リマインダーを注入 |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | ファイル命名規則に違反する `.sdd/` ドキュメントへの書き込みを拒否し、実装ソースコード編集時に `CONSTITUTION.md` の原則を注入（セッションごとに1回） |
-| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する設計書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す |
+| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する） |
 
 ### 設定される環境変数
 
@@ -428,6 +533,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | 仕様書フルパス       |
 | `SDD_ADR_PATH`           | `.sdd/adr`           | 決定ログ（ADR）フルパス |
 | `SDD_TASK_PATH`          | `.sdd/task`          | タスクログフルパス     |
+| `SDD_INDEX`              | `on`                 | ドキュメントインデックスが有効（`index: true`、デフォルト）な間は `on` に設定される。`index` が `false` の場合は設定されず、スキルはこれによりインデックス高速パスが使えないことを判定する |
 
 ### フックのデバッグ
 
@@ -559,6 +665,7 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 ├── PRD_TEMPLATE.md               # PRD テンプレート（オプション）
 ├── SPECIFICATION_TEMPLATE.md     # 抽象仕様書テンプレート（オプション）
 ├── DESIGN_DOC_TEMPLATE.md        # 技術設計書テンプレート（オプション）
+├── ADR_TEMPLATE.md               # 決定ログ（ADR）テンプレート（オプション）
 ├── requirement/                  # PRD（要求仕様書）
 │   └── {feature-name}.md
 ├── specification/                # 永続的な知識資産
@@ -578,6 +685,7 @@ Serena は LSP（Language Server Protocol）ベースのセマンティックコ
 ├── PRD_TEMPLATE.md               # PRD テンプレート（オプション）
 ├── SPECIFICATION_TEMPLATE.md     # 抽象仕様書テンプレート（オプション）
 ├── DESIGN_DOC_TEMPLATE.md        # 技術設計書テンプレート（オプション）
+├── ADR_TEMPLATE.md               # 決定ログ（ADR）テンプレート（オプション）
 ├── requirement/                  # PRD（要求仕様書）
 │   ├── {feature-name}.md         # トップレベル機能（フラット構造と下位互換）
 │   └── {parent-feature}/         # 親機能ディレクトリ

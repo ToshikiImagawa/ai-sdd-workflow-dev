@@ -152,5 +152,5 @@ Answers will be integrated into `${SDD_SPECIFICATION_PATH}/[{parent}/]{feature}_
 /clarify {feature}
 
 # Verify consistency (updated specification)
-/check_spec {feature}
+/check-spec {feature}
 ```

@@ -47,17 +47,31 @@ Full argument string: $ARGUMENTS
 | Argument | Required | Description |
 |:--|:--|:--|
 | `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`). PRD and spec paths are resolved from this value |
-| `ticket-number` | Yes | Ticket number (e.g., `TICKET-123`). Locates both the design draft to read and the `tasks.md` to write |
-| `--ci` | - | CI/non-interactive mode. Exits with error if the design draft is missing instead of prompting |
+| `ticket-number` | Yes | Ticket number (e.g., `TICKET-123`). Locates both the design draft to read and the `tasks.md` to write. Accepted positionally, or as a flag in either form: `--ticket <number>` and `--ticket=<number>` |
+| `--ci` | - | CI/non-interactive mode. Exits with an error instead of prompting when the ticket number or the design draft is missing |
 
 `ticket-number` is required because the design draft and `tasks.md` both live under
 `${SDD_TASK_PATH}/{ticket-number}/`. This matches `/generate-spec`, which requires `--ticket` to decide
 where to write the draft.
 
+**Ticket argument forms**: **both `--ticket <number>` (space) and `--ticket=<number>` (equals sign) are
+accepted**, and so is the bare positional form. A flag form does not consume the positional slot —
+`/task-breakdown user-auth --ticket=123` still resolves `feature-name` to `user-auth`. Strip the
+`--ticket`/`--ticket=` prefix before using the value.
+
+**When the ticket number is missing**:
+
+- **Interactive**: ask for it with `AskUserQuestion` before loading any document (offer the branch name or the
+  current issue as a hint). Nothing is read or written until it is resolved
+- **`--ci` mode**: do not ask. Stop with an error naming the missing argument and the fix
+  (`/task-breakdown {feature-name} --ticket=<number>`), and write no files
+
 ### Input Examples
 
 - `/task-breakdown user-auth TICKET-123`
 - `/task-breakdown auth/user-login TICKET-123`
+- `/task-breakdown user-auth --ticket TICKET-123`
+- `/task-breakdown user-auth --ticket=TICKET-123`
 
 ## Front Matter Generation Rules
 
@@ -92,6 +106,12 @@ See `references/front_matter_task.md` for full schema definition, dependency dir
   `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md`
   (hierarchical, when `feature-name` contains `/`).
 - If neither exists, this is a missing design draft — see the fallback flow below.
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+have been migrated to `adr/{feature}.md`.
 
 Only the PRD and spec below follow the spec's flat/hierarchical structure regardless of which design
 source above was used.

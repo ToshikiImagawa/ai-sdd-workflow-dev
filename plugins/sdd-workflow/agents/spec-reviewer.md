@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: "Use this agent when specification review is requested, after running /check-spec or /generate-spec commands when quality checks are needed, or when users say 'review spec', 'check specification', 'review design', or 'check design doc'. Reviews .sdd/specification/*_spec.md or *_design.md files for CONSTITUTION.md compliance, checking for ambiguous descriptions, missing sections, SysML validity, and PRD/spec/design traceability. Generates fix proposals for detected violations. Requires the specification file path to review."
+description: "Use this agent when specification review is requested, after running /check-spec or /generate-spec commands when quality checks are needed, or when users say 'review spec', 'check specification', 'review design', or 'check design doc'. Reviews abstract specs under .sdd/specification/ and the technical design draft at .sdd/task/{ticket-number}/design-draft.md (a v4.x persistent .sdd/specification/*_design.md is also accepted) for CONSTITUTION.md compliance, checking for ambiguous descriptions, missing sections, SysML validity, and PRD/spec/design traceability. Generates fix proposals for detected violations. Requires the specification file path to review."
 model: sonnet
 color: blue
 tools: Read, Glob, Grep, AskUserQuestion
@@ -16,10 +16,10 @@ $ARGUMENTS
 
 ### Input Format
 
-| Parameter        | Required | Description                                                     |
-|:-----------------|:---------|:----------------------------------------------------------------|
-| Target file path | Yes      | `.sdd/specification/{feature}_spec.md` or `{feature}_design.md` |
-| `--summary`      | No       | Simplified output mode when called from check-spec              |
+| Parameter        | Required | Description                                                                                              |
+|:-----------------|:---------|:---------------------------------------------------------------------------------------------------------|
+| Target file path | Yes      | An abstract spec (`.sdd/specification/{feature}_spec.md`, or suffixless `{feature}.md`) or the technical design draft (`.sdd/task/{ticket-number}/design-draft.md`). A v4.x persistent `.sdd/specification/{feature}_design.md` is also accepted (see "Technical Design Document" below) |
+| `--summary`      | No       | Simplified output mode when called from check-spec                                                       |
 
 ### Input Examples
 
@@ -81,7 +81,8 @@ existing Glob/Grep/Read flow.
 
 ## Role
 
-Review the quality of specifications (`*_spec.md`, `*_design.md`) and provide improvement suggestions from the
+Review the quality of specifications (abstract specs under `${SDD_SPECIFICATION_PATH}` and the technical design
+draft `${SDD_TASK_PATH}/{ticket-number}/design-draft.md`) and provide improvement suggestions from the
 following perspectives:
 
 1. **Principle Compliance**: Does it comply with CONSTITUTION.md principles? (Most Important)
@@ -124,7 +125,7 @@ Before starting review, **you must read `${SDD_ROOT}/CONSTITUTION.md` using the 
 3. **Recommend to user**: "Run `/sdd-init` or `/constitution init` to create project principles"
 4. **Continue with other checks** (completeness, clarity, consistency, SysML compliance)
 
-### Principle Category Checks for Spec (*_spec.md)
+### Principle Category Checks for Spec (`*_spec.md`)
 
 Abstract specifications are most affected by architecture and development method principles.
 
@@ -152,7 +153,7 @@ Abstract specifications are most affected by architecture and development method
 | **Business Logic Reflection** | Are business rules appropriately reflected? |
 | **Domain Model**              | Does data model reflect business domain?    |
 
-### Principle Category Checks for Design Doc (*_design.md)
+### Principle Category Checks for Design Doc (`design-draft.md`)
 
 Technical design documents are most affected by technical constraints and architecture principles.
 
@@ -226,10 +227,17 @@ Specification).
 **Purpose**: Verify that spec (Abstract Specification) content is properly detailed in design (Technical Design
 Document).
 
+**Applies when the review target is a design document** — that is
+`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`, or a v4.x persistent
+`${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` when the project still has one. The design draft is
+temporary and deleted after implementation, so **its absence is normal**: when the target is a spec and no
+design document exists, skip this check and note it as not applicable rather than as a finding.
+
 #### Check Procedure
 
-1. **Load spec**: Identify and load the spec corresponding to the target design file
-    - Flat structure: `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`
+1. **Load spec**: Identify and load the spec corresponding to the target design document
+    - From a design draft: resolve the feature from the draft's `depends-on` (`spec-*`) or its ticket's task log
+    - Flat structure: `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md` (or suffixless `{feature-name}.md`)
     - Hierarchical structure: `${SDD_SPECIFICATION_PATH}/{parent-feature}/index_spec.md`,
       `${SDD_SPECIFICATION_PATH}/{parent-feature}/{child-feature}_spec.md`
 
@@ -260,7 +268,7 @@ note in a report: "Front matter not found. Consider adding YAML front matter for
 ## Review Perspectives
 
 **Note**: PRD (Requirements Specification) review is handled by the `prd-reviewer` agent. This agent specializes in
-reviewing `*_spec.md` and `*_design.md`.
+reviewing abstract specs and the technical design draft `task/{ticket-number}/design-draft.md`.
 
 ### 1. Abstract Specification (`*_spec.md`)
 
@@ -278,21 +286,31 @@ Specifications support both flat structure (`{feature-name}_spec.md`) and hierar
 | **Hierarchical Structure** | For hierarchical structure, does `index_spec.md` have parent feature overview? |
 | **No Marker Residue**      | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
 
-### 2. Technical Design Document (`*_design.md`)
+### 2. Technical Design Document (`task/{ticket-number}/design-draft.md`)
 
-Design documents support both flat structure (`{feature-name}_design.md`) and hierarchical structure (
-`{parent-feature}/index_design.md`, `{parent-feature}/{child-feature}_design.md`).
+The technical design document is a **temporary, ticket-scoped draft** at
+`${SDD_TASK_PATH}/{ticket-number}/design-draft.md` (fixed filename). It is deleted once implementation
+completes, after the rationale behind its key decisions is appended to `adr/{feature}.md` — so a feature with no
+design draft is the normal steady state, not a gap.
 
-| Check Item                 | Criteria                                                                                |
-|:---------------------------|:----------------------------------------------------------------------------------------|
-| **Implementation Status**  | Is current status documented?                                                           |
-| **Design Goals**           | Are technical goals to achieve clear?                                                   |
-| **Technology Stack**       | Are technologies and selection rationale documented?                                    |
-| **Architecture**           | Is system structure diagrammed?                                                         |
-| **Design Decisions**       | Are important decisions and rationale documented?                                       |
-| **Spec Consistency**       | Is it consistent with abstract specification?                                           |
-| **Hierarchical Structure** | For hierarchical structure, does `index_design.md` have parent feature design overview? |
-| **No Marker Residue**      | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
+| Check Item                | Criteria                                                                                       |
+|:--------------------------|:-----------------------------------------------------------------------------------------------|
+| **Implementation Status** | Is current status documented?                                                                  |
+| **Design Goals**          | Are technical goals to achieve clear?                                                          |
+| **Technology Stack**      | Are technologies and selection rationale documented?                                           |
+| **Architecture**          | Is system structure diagrammed?                                                                |
+| **Design Decisions**      | Are important decisions and rationale documented — with the rejected alternatives a later `adr/{feature}.md` entry will need? |
+| **Spec Consistency**      | Is it consistent with abstract specification?                                                  |
+| **Ticket Scope**          | Does the draft stay within the ticket it belongs to, referencing its spec via `depends-on`?     |
+| **No Marker Residue**     | Are section requirement markers (`<MUST>`/`<RECOMMENDED>`/`<OPTIONAL>`) removed from headings? |
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may still
+contain these. They **remain valid** — read them as **supplementary input, and treat their absence as normal**.
+Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and never report
+an existing one as a naming violation or propose deleting it; it may stay until its decisions have been migrated
+to `adr/{feature}.md`. Review such a file with the same check items above, minus **Ticket Scope**; for its
+hierarchical form (`{parent-feature}/index_design.md`, `{parent-feature}/{child-feature}_design.md`), also check
+that `index_design.md` carries the parent feature design overview.
 
 ## Ambiguity Detection Patterns
 

@@ -93,6 +93,7 @@ class TestCopyTemplates:
             ("generate-prd", "prd_template.md"),
             ("generate-spec", "spec_template.md"),
             ("generate-spec", "design_template.md"),
+            ("sdd-init", "adr_template.md"),
         ):
             src = plugin_root / "skills" / skill / "templates" / lang / name
             src.parent.mkdir(parents=True, exist_ok=True)
@@ -109,7 +110,8 @@ class TestCopyTemplates:
         assert (sdd_dir / "PRD_TEMPLATE.md").read_text(encoding="utf-8") == "source:prd_template.md"
         assert (sdd_dir / "SPECIFICATION_TEMPLATE.md").is_file()
         assert (sdd_dir / "DESIGN_DOC_TEMPLATE.md").is_file()
-        assert "Templates copied: 3, skipped: 0" in capsys.readouterr().err
+        assert (sdd_dir / "ADR_TEMPLATE.md").read_text(encoding="utf-8") == "source:adr_template.md"
+        assert "Templates copied: 4, skipped: 0" in capsys.readouterr().err
 
     def test_existing_templates_are_not_overwritten(self, tmp_path, capsys):
         plugin_root = tmp_path / "plugin"
@@ -121,7 +123,7 @@ class TestCopyTemplates:
         init_structure.copy_templates(sdd_dir, plugin_root, "en")
 
         assert (sdd_dir / "PRD_TEMPLATE.md").read_text(encoding="utf-8") == "customized"
-        assert "Templates copied: 2, skipped: 1" in capsys.readouterr().err
+        assert "Templates copied: 3, skipped: 1" in capsys.readouterr().err
 
     def test_missing_source_warns(self, tmp_path, capsys):
         plugin_root = tmp_path / "plugin"  # no templates created
@@ -135,7 +137,36 @@ class TestCopyTemplates:
         assert "WARNING: Source template not found" in err
 
 
-class TestExportEnvVars:
+class TestShippedAdrTemplates:
+    """実際に配布される adr_template.md が ADR エントリ形式の契約を満たすこと。"""
+
+    TEMPLATES_DIR = SCRIPTS_DIR.parent / "templates"
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_template_exists(self, lang):
+        assert (self.TEMPLATES_DIR / lang / "adr_template.md").is_file()
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_front_matter_is_file_level_adr(self, lang):
+        content = (self.TEMPLATES_DIR / lang / "adr_template.md").read_text(encoding="utf-8")
+        assert content.startswith("---\n")
+        front_matter = content.split("---\n", 2)[1]
+        assert 'type: "adr"' in front_matter
+        assert 'status: "approved"' in front_matter
+        assert 'sdd-phase: "implement"' in front_matter
+        # エントリ間の覆しは本文の Supersedes 項目で表す。front matter には書かせない
+        assert "supersedes:" not in front_matter
+        assert "superseded-by:" not in front_matter
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_entry_items_and_multi_entry_shape(self, lang):
+        content = (self.TEMPLATES_DIR / lang / "adr_template.md").read_text(encoding="utf-8")
+        for item in ("- **Decision**:", "- **Rationale**:", "- **Rejected alternatives**:"):
+            assert item in content
+        assert "- **Supersedes**:" in content
+        # 1ファイルに複数エントリを追記する形が分かること
+        assert content.count("## YYYY-MM-DD ") >= 2
+        assert "None considered" in content
     def test_writes_all_sdd_vars(self, tmp_path, monkeypatch):
         env_file = tmp_path / "env"
         env_file.write_text("", encoding="utf-8")
