@@ -24,6 +24,7 @@ Supports both flat and hierarchical structures.
 |- PRD_TEMPLATE.md               # PRD template for this project
 |- SPECIFICATION_TEMPLATE.md     # Abstract specification template
 |- DESIGN_DOC_TEMPLATE.md        # Technical design template
+|- ADR_TEMPLATE.md               # Decision log (ADR) template
 |- requirement/                  # PRD (Product Requirements Documents)
 |   |- {feature-name}.md
 |- specification/
@@ -43,6 +44,7 @@ Supports both flat and hierarchical structures.
 |- PRD_TEMPLATE.md               # PRD template for this project
 |- SPECIFICATION_TEMPLATE.md     # Abstract specification template
 |- DESIGN_DOC_TEMPLATE.md        # Technical design template
+|- ADR_TEMPLATE.md               # Decision log (ADR) template
 |- requirement/                  # PRD (Product Requirements Documents)
 |   |- {feature-name}.md         # Top-level feature
 |   |- {parent-feature}/         # Parent feature directory

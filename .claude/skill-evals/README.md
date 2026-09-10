@@ -57,6 +57,13 @@ python3 .claude/skill-evals/build_sdd_fixture.py develop /path/to/sandbox \
    コミットしている。そのまま渡すと `develop` のスキルは**自分が実装していない規則**で採点される。
    再レンダリングは「このブランチがリリースされ、インストールされた状態」を再現する操作である
 
+**同じフックが書く通知ファイル（CLAUDE.md の陳腐化通知・v4.x 永続設計文書の移行対象一覧）は
+合成しない。** 規則書を再レンダリングする理由は「指示として毎セッション読み込まれるのに、コミット済みの
+写しが別世代のものだから」であり、通知ファイルはプロジェクト状態についての**出力**であって指示ではない。
+とくに移行対象一覧は永続設計文書の扱い方を本文に含むため、置くと `checklist` / `clarify` の assertion が
+測ろうとしている振る舞いを `without` ベースラインに教えてしまう。両ブランチともどちらもコミットしていない
+ので、両方省くのが世代対称である（[MEASUREMENT_LOG.md](MEASUREMENT_LOG.md) v3.4 節）。
+
 各 eval の `fixture` ブロック（`remove` / `remove_section` / `strip_front_matter` / `copy_scenario` /
 `corpus: empty-project`）はシナリオを作るための変形宣言。**4バリアント全てに同一の変形が適用される**ので、
 シナリオは再現可能。
@@ -142,6 +149,15 @@ python3 .claude/skill-evals/build_sdd_fixture.py main <outdir> \
 
 差分は **develop を取り込むたびに引き直す**（欠陥修正が入るたびに対象集合が変わるため）。以下は
 `develop` @ `8f258da` 時点の実測値。
+
+> **陳腐化の告知（2026-09-10）**: v5.0.0 のリリースレビューで、この表の19スキルのうち**11件**
+> （`check-spec` / `checklist` / `clarify` / `constitution` / `doc-consistency-checker` /
+> `generate-prd` / `generate-requirements-diagram` / `plan-refactor` / `render-adr-review` /
+> `sdd-init` / `task-cleanup`）と、共有エージェント `spec-reviewer`・セッション開始／ツール実行後
+> フックに修正が入った。**下の数値と各
+> `evals.json` の `skill_delta_main_to_develop` は、それが develop へマージされるまで古い。**
+> マージ後に必ず引き直す（意図的に据え置いている: 数値は名前付きの develop コミットに紐づく注記であり、
+> まだ develop に無い変更を先取りして書くと、どのコミットの実測値なのかが分からなくなる）。
 
 | スキル | 差分 (+/−) | 備考 |
 |:---|:---|:---|

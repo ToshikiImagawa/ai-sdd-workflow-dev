@@ -51,10 +51,13 @@ spellings — `--ticket {number}` and `--ticket={number}` — are accepted and m
 task breakdown are looked up under `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/`, and the
 checklist is written to `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/checklist.md` — **not**
 `task/{ticket-number}/checklist.md`. State the resolved ticket directory in the output. If that directory
-holds neither `design-draft.md` nor `tasks.md`, say so instead of generating quietly from the spec alone:
-name the omitted `ticket-number` as the likely cause (the rest of the workflow writes under a ticket
+holds neither `design-draft.md` nor `tasks.md`, say so instead of generating quietly from the remaining
+inputs: name the omitted `ticket-number` as the likely cause (the rest of the workflow writes under a ticket
 directory, so the checklist would land away from it) and offer re-running as
-`/checklist {feature-name} {ticket-number}`.
+`/checklist {feature-name} {ticket-number}`. A v4.x persistent design doc (see "Load Source Documents" below)
+still supplies the design items when the project has one, but it lives under `specification/` and is resolved
+from `feature-name`, so it neither confirms nor corrects the resolved ticket directory — report the
+resolution either way.
 
 ### Input Examples
 
@@ -77,6 +80,7 @@ Both flat and hierarchical structures are supported.
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md` (PRD)  | if exists  |
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}.md` **or** `{feature-name}_spec.md` | required (either form) |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md`        | if exists  |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` (v4.x persistent design doc) | if exists  |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`               | if exists  |
 
 **For hierarchical structure** (when argument contains `/`):
@@ -88,6 +92,8 @@ Both flat and hierarchical structures are supported.
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index.md` **or** `index_spec.md` (parent feature spec) | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}.md` **or** `{feature-name}_spec.md` (child feature spec) | required (either form) |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` (design draft)                | if exists |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_design.md` (parent feature v4.x persistent design doc) | if exists |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_design.md` (child feature v4.x persistent design doc) | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`                                      | if exists |
 
 **Note the difference in naming conventions**:
@@ -101,6 +107,15 @@ Both flat and hierarchical structures are supported.
 **When the design draft is absent**: `design-draft.md` is a temporary document deleted once implementation
 completes, so treat it as an optional input. Continue with the abstract spec (and PRD/tasks.md when present),
 and limit design-review items to what the spec supports — do not stop, and do not prompt for regeneration.
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+have been migrated to `adr/{feature}.md`. When `design-draft.md` is absent but such a file exists, derive the
+Design Review items from it instead of narrowing them to what the spec supports. Their path follows the
+spec's flat/hierarchical structure (parent features use `index_design.md`) and is resolved from
+`feature-name`, not from `ticket-number`.
 
 ### 2. Extract Verification Points
 
@@ -123,7 +138,8 @@ From each document, extract checkable items:
 | Behavior Contracts | Verify sequence flows           |
 | Constraints        | Verify edge case handling       |
 
-**From Technical Design**:
+**From Technical Design** (the design draft, or a v4.x persistent design doc when the project has one;
+skip these items when neither exists):
 
 | Extract Item       | Purpose                       |
 |:-------------------|:------------------------------|

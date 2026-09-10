@@ -108,6 +108,17 @@ def render_rulebook(out_dir: Path, sdd_root: str, version: str) -> List[str]:
     plugins/sdd-workflow/scripts/session-start.py. Kept as a deliberate duplication rather
     than an import: the fixture must reflect the *branch's* source, and importing the
     working tree's copy of the hook would silently mix generations.
+
+    Only these two. The same hook also writes advisory notice files under the SDD root
+    (a stale-CLAUDE.md warning, and a list of v4.x design documents whose decisions have
+    not been moved into the decision log yet), and those are deliberately NOT synthesized.
+    The rulebook has to be rendered because it is *loaded as instructions* on every session
+    and the committed copies belong to a different generation; the notices are outputs about
+    project state, and one of them spells out how the legacy design documents should be
+    treated -- which is exactly the behaviour the `checklist` / `clarify` assertions measure.
+    Writing it into the sandbox would hand the `without` baseline the answer, i.e. the leak
+    ASSERTION_DESIGN.md's defect 2 warns about. Neither branch commits either file, so
+    omitting both keeps the two eras symmetric.
     """
     plugin_root = out_dir / "plugins" / "sdd-workflow"
     applied: List[str] = []

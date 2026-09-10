@@ -38,6 +38,12 @@ This skill operates in two modes:
 
 - `references/mermaid_notation_rules.md` - Mermaid notation rules for requirements diagrams
 - `references/requirements_diagram_components.md` - SysML requirements diagram component definitions
+- `${CLAUDE_PLUGIN_ROOT}/shared/references/id_conventions_config.md` - PRD-level ID format resolution
+  algorithm and defaults, used in Generation Rules Step 0
+
+**Read project configuration if available:**
+
+- `${CLAUDE_PROJECT_DIR}/.sdd-config.json` - provides `id_conventions`, used in Generation Rules Step 0
 
 ## Input
 
@@ -59,6 +65,18 @@ When a feature name is provided, look for:
 - `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md` - Existing PRD with requirements
 
 ## Generation Rules
+
+### 0. Resolve ID Conventions
+
+Determine the ID format for UR/FR/NFR before reading the input, per
+`${CLAUDE_PLUGIN_ROOT}/shared/references/id_conventions_config.md` § PRD-Level ID Format Resolution
+(default `UR_xxx`, `FR_xxx`, `NFR_xxx`). Match requirement entries in the input against the resolved
+format instead of assuming one notation, and carry each requirement's own ID through to the diagram
+unchanged — never renumber or reformat an ID that the PRD already assigned.
+
+PRD-level IDs use underscores, which is also what Mermaid's `requirementDiagram` accepts (see Step 3
+rule 1). If a project has configured a format whose IDs cannot be used as Mermaid node IDs, report that
+instead of silently rewriting the IDs.
 
 ### 1. Input Parsing
 
@@ -97,7 +115,8 @@ Follow these rules when generating the requirements diagram:
 
 **CRITICAL: Follow these Mermaid requirementDiagram syntax rules:**
 
-1. **ID naming**: Use underscores, NOT hyphens
+1. **ID naming**: Mermaid node IDs use underscores, NOT hyphens (the PRD-level format resolved in Step 0
+   already satisfies this — this rule is about Mermaid syntax, not about renaming a PRD's IDs)
     - ❌ `id: FR-001`
     - ✅ `id: FR_001`
 

@@ -41,6 +41,23 @@ Criticals, and v4-era specs carry no `impl-status`, so report the counts explici
 > These {total} findings are **not** resolved defects — they are undecidable or deferred, and the Critical
 > count above excludes them. Print the table with zeros when nothing was downgraded.
 
+#### Document Consistency & Quality Review (only with `--full`)
+
+The `spec-reviewer` agent's comprehensive review is reported here.
+
+| Perspective                | Result                                            | Count |
+|:---------------------------|:--------------------------------------------------|:------|
+| PRD ↔ spec traceability    | 🟢 Consistent / 🔴 Inconsistent                    | {n}   |
+| spec ↔ adr consistency     | 🟢 Consistent / 🔴 Inconsistent / ⚪ Not applicable | {n}   |
+| CONSTITUTION.md compliance | 🟢 Compliant / 🔴 Violation                        | {n}   |
+| Completeness               | ✅ Good / ⚠️ Needs improvement                     | {n}   |
+| Clarity                    | ✅ Good / ⚠️ Needs improvement                     | {n}   |
+
+> Print ⚪ Not applicable for spec ↔ adr when the resolved decision-log list (`CHECK_SPEC_ADR_FILES`) is
+> empty — the feature's decisions are not recorded yet. Never print 🟢 Consistent for an area that was not
+> checked. A fix for an inconsistency goes into the spec, or into a **new appended** adr entry carrying a
+> `Supersedes` item; never edit or delete an existing entry.
+
 #### 🔴 Mismatches
 
 ##### Data Model: User Type Definition

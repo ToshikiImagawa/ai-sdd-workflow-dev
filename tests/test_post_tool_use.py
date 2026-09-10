@@ -133,10 +133,11 @@ class TestProcessSingleFile:
         assert "matching specification" in capsys.readouterr().out
 
     def test_source_with_only_design_doc_emits_adr_migration_reminder(
-        self, tmp_path, capsys
+        self, tmp_path, capsys, monkeypatch
     ):
         # A v4.x design doc is not a spec, so the spec sync wording must not be
         # used; the reminder points at the adr/ migration instead.
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", "/plugins/sdd-workflow")
         spec_abs = tmp_path / SPEC
         spec_abs.mkdir(parents=True)
         (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
@@ -146,10 +147,26 @@ class TestProcessSingleFile:
         assert "app_design.md" in out
         assert PATHS.adr_prefix in out
         assert "Migration from v4.x" in out
+        # The procedure pointer must be a path the agent can actually open,
+        # plus the section name inside it.
+        assert "/plugins/sdd-workflow/README.md" in out
+        assert "Extracting Existing" in out
         # v4 assets are supplementary input, never a violation or deletion target.
         assert "supplementary input" in out
         assert "Keep the design doc until that is done" in out
         assert "matching specification" not in out
+
+    def test_design_doc_reminder_falls_back_to_plugin_root_token(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        # Without CLAUDE_PLUGIN_ROOT in the process environment the reminder
+        # still emits a token the session can resolve, never a bare "README".
+        monkeypatch.delenv("CLAUDE_PLUGIN_ROOT", raising=False)
+        spec_abs = tmp_path / SPEC
+        spec_abs.mkdir(parents=True)
+        (spec_abs / "app_design.md").write_text("# d", encoding="utf-8")
+        _process(os.path.join("src", "app.py"), tmp_path)
+        assert "${CLAUDE_PLUGIN_ROOT}/README.md" in capsys.readouterr().out
 
     def test_spec_wins_over_legacy_design_doc(self, tmp_path, capsys):
         # When both exist the spec sync reminder is the only one emitted.

@@ -114,10 +114,16 @@ Execute `${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py` to per
     - ADR_TEMPLATE.md (from this skill's `templates/${SDD_LANG:-en}/adr_template.md`)
     - Note: CONSTITUTION.md is NOT copied - use `/constitution init` to generate a customized version
 
-4. **Cleanup**:
+4. **Ignore the Generated Cache** (idempotent):
+    - Add `${SDD_ROOT}/.cache/` to `${CLAUDE_PROJECT_DIR}/.gitignore` — the cache is a generated artifact and is not meant to be committed
+    - If `.gitignore` already ignores that path: leave the file untouched
+    - If `.gitignore` exists without the entry: append it (existing lines are preserved, never rewritten)
+    - If `.gitignore` does not exist: create it containing only that entry
+
+5. **Cleanup**:
     - Delete `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/UPDATE_REQUIRED.md` if exists
 
-5. **Export Environment Variables** to `$CLAUDE_ENV_FILE`:
+6. **Export Environment Variables** to `$CLAUDE_ENV_FILE`:
     - `SDD_ROOT`, `SDD_LANG`, `SDD_*_DIR`, `SDD_*_PATH`
 
 **Script execution:** `python3 "${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py"`
@@ -166,7 +172,8 @@ Re-running `/sdd-init` on an existing project automatically handles version upgr
 
 1. **Update CLAUDE.md**: If section title version is older than current plugin version, replace entire section with latest version
 2. **Add Missing Templates**: Copy the latest templates (PRD, Spec, Design, ADR) for the ones not present yet (existing templates are never overwritten, so a customized template survives re-initialization)
-3. **Cleanup**: Delete `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/UPDATE_REQUIRED.md`, which the SessionStart hook leaves behind when it detects a version mismatch
+3. **Add the Cache Ignore Rule**: Append `${SDD_ROOT}/.cache/` to `.gitignore` if it is not ignored yet (a project initialized before this rule existed gets it on the next run; a project that already has it is left untouched)
+4. **Cleanup**: Delete `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/UPDATE_REQUIRED.md`, which the SessionStart hook leaves behind when it detects a version mismatch
 
 `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md` and `.claude/rules/ai-sdd-instructions.md` are **not** written by this command: the SessionStart hook re-syncs both from the installed plugin at every session start (see the Note under "Read AI-SDD Principles Document").
 
@@ -256,6 +263,22 @@ The shell script:
 **Note**: Templates are copied as-is. For project-specific customization,
 users can manually edit templates after initialization.
 
+### Project Templates Take Precedence
+
+Once copied into `${SDD_ROOT}/`, these files are the **project's** templates, and the skill that produces the
+corresponding document reads the project copy first, falling back to its own bundled template only when the
+project copy is absent:
+
+| Project template under `${SDD_ROOT}/` | Read first by                                              |
+|:--------------------------------------|:-----------------------------------------------------------|
+| `PRD_TEMPLATE.md`                     | `/generate-prd` (via `prepare-prd.py`)                     |
+| `SPECIFICATION_TEMPLATE.md`           | `/generate-spec` Phase 1 (via `prepare-spec.py`)           |
+| `DESIGN_DOC_TEMPLATE.md`              | `/generate-spec` Phase 2 (via `prepare-spec.py`)           |
+| `ADR_TEMPLATE.md`                     | `/task-cleanup`, when appending decision-log entries       |
+
+This is why re-running `/sdd-init` never overwrites an existing template: editing the copy under
+`${SDD_ROOT}/` is the supported way to adapt a document's shape to the project's conventions.
+
 ## Post-Initialization Verification
 
 After Phase 1 and Phase 2 complete:
@@ -263,7 +286,8 @@ After Phase 1 and Phase 2 complete:
 1. **CLAUDE.md**: Verify update script output (created/appended/updated/skipped)
 2. **Templates**: Verify init-structure.py output (created templates)
 3. **Configuration**: Verify `.sdd-config.json` exists
-4. **Front Matter Recommendation**: If existing documents without YAML front matter are found under `${SDD_ROOT}/`, recommend running `/recommend-front-matter` to add structured metadata
+4. **Cache Ignore Rule**: Verify init-structure.py output (`.gitignore` created / appended / already present)
+5. **Front Matter Recommendation**: If existing documents without YAML front matter are found under `${SDD_ROOT}/`, recommend running `/recommend-front-matter` to add structured metadata
 
 **Note**: Both scripts output their results to stdout. Simply report what the scripts indicate.
 

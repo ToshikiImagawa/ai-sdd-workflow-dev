@@ -17,6 +17,15 @@ draft's front matter ``depends-on`` is matched against the target specs' IDs.
 When neither basis resolves and more than one draft exists, no draft is attached
 and the drafts are reported as unscoped so the caller can re-run with
 ``--ticket``.
+
+Decision logs under ``adr/`` are feature-scoped rather than ticket-scoped, so
+they are attributed by name first (``adr/[{parent}/]{feature}.md`` and the legacy
+``adr/[{parent}/]{feature}-decisions.md``, both still valid) and, when no such
+file exists, by an adr's front matter ``depends-on`` referencing the spec's IDs —
+the same ``depends-on`` basis used for drafts. They are collected so
+``--full``'s spec <-> adr document review has its input; having no adr file is
+the normal state for a feature whose decisions are not recorded yet, so an empty
+result is never an error.
 """
 
 import json
@@ -36,6 +45,9 @@ from naming import DESIGN_SUFFIX, SPEC_SUFFIX, feature_name, is_design_stem  # n
 DESIGN_DRAFT_NAME = "design-draft.md"
 TICKET_FLAG = "--ticket"
 SPEC_ID_PREFIX = "spec-"
+# adr/ is a single-type directory, so the suffix is optional: new decision logs
+# are `{feature}.md` and existing `{feature}-decisions.md` files stay valid.
+ADR_LEGACY_SUFFIX = "-decisions"
 
 
 def log(message: str) -> None:
@@ -219,15 +231,101 @@ def select_design_drafts(
     return [], drafts, "unscoped"
 
 
+def adr_candidates(
+    adr_path: Path, spec_path: Path, specification_path: Path
+) -> list:
+    """Name-mirrored adr paths for a spec, in both naming forms.
+
+    A spec's decision log sits at the same relative location under ``adr/`` as
+    the spec does under ``specification/``, so a hierarchical
+    ``specification/auth/user-login.md`` maps to ``adr/auth/user-login.md``.
+    Both the suffix-free name and the legacy ``-decisions`` name are returned;
+    either (or both) may exist.
+    """
+    basename = feature_name(spec_path.stem)
+    try:
+        parent = spec_path.parent.relative_to(specification_path)
+    except ValueError:
+        parent = Path(".")
+    base_dir = adr_path / parent
+    return [
+        base_dir / f"{basename}.md",
+        base_dir / f"{basename}{ADR_LEGACY_SUFFIX}.md",
+    ]
+
+
+def index_adr_docs(adr_path: Path) -> dict:
+    """Map every adr document to the spec IDs its front matter depends on.
+
+    Built once so the ``depends-on`` fallback below does not re-read the
+    directory per spec. A missing ``adr/`` directory yields an empty index:
+    unrecorded decisions are the normal state, not an error.
+    """
+    if not adr_path.is_dir():
+        log("No adr directory; skipping decision log scan")
+        return {}
+
+    index = {
+        str(p): set(read_front_matter(p).get("depends-on", []) or [])
+        for p in iter_all_markdown(adr_path)
+    }
+    log(f"Found {len(index)} adr document(s) (optional input for --full)")
+    return index
+
+
+def select_adr_docs(
+    spec_file: str,
+    specification_path: Path,
+    adr_path: Path,
+    adr_index: dict,
+) -> tuple:
+    """Resolve the adr documents that record this spec's decisions.
+
+    Returns ``(paths, basis)`` where ``basis`` is ``name`` (a name-mirrored adr
+    file exists), ``depends-on`` (no name match, but an adr's front matter
+    ``depends-on`` references one of the spec's IDs — this is how a renamed
+    feature keeps its decision log attached), or ``none``.
+
+    ``none`` is a normal outcome: a feature whose design decisions were never
+    recorded has no adr file, so it is reported without a warning.
+    """
+    spec_path = Path(spec_file)
+    named = sorted(
+        str(c)
+        for c in adr_candidates(adr_path, spec_path, specification_path)
+        if c.is_file()
+    )
+    if named:
+        return named, "name"
+
+    if adr_index:
+        spec_ids = spec_identifiers([spec_file], specification_path)
+        linked = sorted(
+            path for path, depends in adr_index.items() if depends & spec_ids
+        )
+        if linked:
+            return linked, "depends-on"
+
+    return [], "none"
+
+
 def generate_mapping(
     specs: list,
     drafts: list,
     unscoped_drafts: list,
     scope: str,
+    specification_path: Path,
+    adr_path: Path,
+    adr_index: dict,
     mapping_file: Path,
-) -> None:
-    """Build spec -> feature -> auxiliary design mapping JSON"""
+) -> list:
+    """Build spec -> feature -> auxiliary design / adr mapping JSON.
+
+    Returns the flat, de-duplicated list of adr documents attributed to the
+    target specs, so the caller can write it out as one file list.
+    """
     documents = []
+    adr_files = set()
 
     for spec_file in specs:
         spec_path = Path(spec_file)
@@ -237,11 +335,18 @@ def generate_mapping(
         design_candidate = spec_path.parent / f"{basename}{DESIGN_SUFFIX}.md"
         design_file = str(design_candidate) if design_candidate.is_file() else ""
 
+        adr_docs, adr_basis = select_adr_docs(
+            spec_file, specification_path, adr_path, adr_index
+        )
+        adr_files.update(adr_docs)
+
         documents.append(
             {
                 "spec": spec_file,
                 "feature_name": basename,
                 "design": design_file,
+                "adr": adr_docs,
+                "adr_basis": adr_basis,
             }
         )
 
@@ -250,18 +355,21 @@ def generate_mapping(
         "design_drafts": drafts,
         "design_draft_scope": scope,
         "unscoped_design_drafts": unscoped_drafts,
+        "adr_documents": sorted(adr_files),
     }
     mapping_file.write_text(
         json.dumps(mapping, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     log("File mapping generated")
+    return sorted(adr_files)
 
 
 def export_env_vars(
     output_dir: Path,
     spec_files: Path,
     design_draft_files: Path,
+    adr_files: Path,
     mapping_file: Path,
     scope: str,
 ) -> None:
@@ -271,6 +379,7 @@ def export_env_vars(
         f'export CHECK_SPEC_SPEC_FILES="{spec_files}"',
         f'export CHECK_SPEC_DESIGN_DRAFT_FILES="{design_draft_files}"',
         f'export CHECK_SPEC_DESIGN_DRAFT_SCOPE="{scope}"',
+        f'export CHECK_SPEC_ADR_FILES="{adr_files}"',
         f'export CHECK_SPEC_MAPPING="{mapping_file}"',
     ])
     if wrote:
@@ -322,6 +431,7 @@ def main() -> None:
 
         spec_files = output_dir / "spec_files.txt"
         design_draft_files = output_dir / "design_draft_files.txt"
+        adr_files = output_dir / "adr_files.txt"
         mapping_file = output_dir / "file_mapping.json"
 
         specification_path = sdd_dir / paths.specification_dir
@@ -338,13 +448,33 @@ def main() -> None:
             all_drafts, ticket, spec_ids
         )
 
+        adr_path = sdd_dir / paths.adr_dir
+        adr_index = index_adr_docs(adr_path)
+
         write_lines(spec_files, specs)
         write_lines(design_draft_files, drafts)
-        generate_mapping(
-            specs, drafts, unscoped_drafts, scope, mapping_file
+        attached_adrs = generate_mapping(
+            specs,
+            drafts,
+            unscoped_drafts,
+            scope,
+            specification_path,
+            adr_path,
+            adr_index,
+            mapping_file,
+        )
+        write_lines(adr_files, attached_adrs)
+        log(
+            f"Attached {len(attached_adrs)} adr document(s) to the target "
+            "spec(s)"
         )
         export_env_vars(
-            output_dir, spec_files, design_draft_files, mapping_file, scope
+            output_dir,
+            spec_files,
+            design_draft_files,
+            adr_files,
+            mapping_file,
+            scope,
         )
 
         log("Scan complete")

@@ -230,12 +230,21 @@ open, not by this validation pass.
     - Update decision framework
     - Sync architectural constraints
 
-3. **Update Task Templates**:
+3. **Update ADR Template** (`${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md`):
+    - Add a principle reference to the entry format, so an entry's `Rationale` states the principle the
+      decision rests on
+    - Sync terminology
+    - Keep the required entry items (`Decision` / `Rationale` / `Rejected alternatives`) intact — skills read
+      them mechanically
+    - Sync touches the **template only**. Recorded entries in `${SDD_ADR_PATH}/{feature-name}.md` are
+      append-only and are never rewritten by a sync
+
+4. **Update Task Templates**:
     - Add compliance verification tasks
     - Update completion criteria
     - Reference relevant principles
 
-4. **Update Checklist Template**:
+5. **Update Checklist Template**:
     - Add principle verification items
     - Update priorities
     - Sync quality gates

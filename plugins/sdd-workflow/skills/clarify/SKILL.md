@@ -55,14 +55,15 @@ Full argument string: $ARGUMENTS
 | Argument        | Required | Description                                                        |
 |:----------------|:---------|:-------------------------------------------------------------------|
 | `feature-name`  | Yes      | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
-| `ticket-number` | -        | Locates the design draft `task/{ticket-number}/design-draft.md`. Omit to analyze the PRD and spec only |
+| `ticket-number` | -        | Locates the design draft `task/{ticket-number}/design-draft.md`. Omit to analyze the PRD, the spec, and any v4.x persistent design doc only |
 | `--interactive` | -        | Interactive mode: Answer questions one at a time                   |
 
 `ticket-number` may be passed positionally (`/clarify {feature-name} {ticket-number}`) or as a flag; both
 spellings — `--ticket {number}` and `--ticket={number}` — are accepted and mean the same thing.
 
-**When `ticket-number` is omitted**, no design draft is looked up at all: the analysis runs on the PRD and
-abstract spec alone, and design-level categories are limited to what the spec expresses. This is a supported
+**When `ticket-number` is omitted**, no design draft is looked up at all: the analysis runs on the PRD, the
+abstract spec, and any v4.x persistent design doc (resolved from `feature-name`, so it is still consulted),
+and design-level categories are otherwise limited to what those documents express. This is a supported
 mode, not an error — but state it in the output ("no `ticket-number` given, so
 `task/{ticket-number}/design-draft.md` was not consulted") so the reduced coverage is visible. When a
 `ticket-number` *is* given and the draft is missing there, that is also normal (the draft is deleted once
@@ -81,10 +82,24 @@ Both flat and hierarchical structures are supported.
 See `references/target_specification_loading.md` for the list of paths to load, including how the design draft
 is resolved and what to do when it is absent.
 
+In addition to the paths listed there, load the v4.x persistent design doc when the project has one:
+`${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/[{parent-feature}/]{feature-name}_design.md` (parent
+features use `index_design.md`). Its path follows the spec's flat/hierarchical structure and is resolved from
+`feature-name`, not from `ticket-number`.
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may
+still contain these. They **remain valid** — read them as **supplementary input, and treat their absence as
+normal**. Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and
+never report an existing one as a naming violation or propose deleting it; it may stay until its decisions
+have been migrated to `adr/{feature}.md`. When `task/{ticket-number}/design-draft.md` is absent (or
+`ticket-number` was omitted) but such a file exists, analyze the design-level categories against it instead
+of limiting them to what the spec expresses.
+
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix).
+  A `_design.md` sibling here is a v4.x persistent design doc — still valid, see above
 - **Under task**: Design draft uses the fixed filename `design-draft.md`
 
 ### 2. Nine Category Analysis
@@ -109,7 +124,9 @@ After receiving user answers, the **main agent (this skill)** applies the integr
 2. **Update Specifications**: Apply approved changes to the appropriate `*_spec.md` or
    `task/{ticket-number}/design-draft.md` using Edit/Write tools (never `requirement/**` — see Prerequisites).
    When the design draft is absent, integrate design-related answers into the `*_spec.md` only where they
-   belong at the abstract level; otherwise report them as findings rather than recreating the draft
+   belong at the abstract level; otherwise report them as findings rather than recreating the draft. A v4.x
+   persistent design doc is a **read-only** supplementary input here — it may inform the analysis, but never
+   receives integration edits; report answers that belong to it as findings instead
 3. **Mark Resolved**: Track which questions have been addressed
 4. **Generate Diff**: Show what was added to specifications
 

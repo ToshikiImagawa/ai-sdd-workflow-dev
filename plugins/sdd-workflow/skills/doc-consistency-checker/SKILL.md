@@ -168,6 +168,10 @@ results, determine the feature's coverage:
 | No adr file (or it holds no entries) **and** a `{feature}_design.md` exists | Run the same four check items against the legacy design doc, reporting them as **spec ↔ design (v4.x legacy)** |
 | Neither exists                                                            | Report the area as **not checked** (see below) — never as consistent                                          |
 
+`/check-spec --full` reports the same no-decision-log situation as **not applicable** (its check has no
+legacy-design-doc branch, so "no `adr/` resolved" is all it can say). Both labels mean the area was not
+verified; neither may be rendered as consistent.
+
 Use Glob against `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}` (flat: `{feature}_design.md`; hierarchical:
 `{parent-feature}/{child-feature}_design.md`) to find the legacy design doc. For the legacy branch, read
 `Decision Traceability` as "are the spec-driving decisions captured anywhere — an adr entry or this design

@@ -60,7 +60,8 @@ Re-read from disk after appending — deletion proceeds only when every row is `
 
 2. **Verify the appends on disk** — see "Integration Verification" above
 
-3. **Delete processed files** (only if verification passed; `git rm` asks for confirmation):
+3. **Delete processed files** (only if verification passed; `git rm` when git tracks them, `rm` when it does
+   not — each asks for confirmation):
     - Delete `${SDD_TASK_PATH}/{target}/` directory
 
 4. **Post summary to ticket `{ticket-number}`**
