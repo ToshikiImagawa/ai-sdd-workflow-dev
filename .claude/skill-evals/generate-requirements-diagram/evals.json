@@ -12,7 +12,7 @@
   "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-requirements-diagram/evals.json [--eval-id N]",
   "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
   "skill_delta_main_to_develop": "+3/-3 lines (PR #116 が要求抽出元の表記を `UR-xxx entries from tables` から `UR entries from tables` へ変更した。それ以前は差分ゼロで、ASSERTION_DESIGN.md の `## 未対象` 節がそれを理由に本スキルを v3 対象外としていた)",
-  "coverage_note": "ASSERTION_DESIGN.md `### generate-requirements-diagram / generate-usecase-diagram` が v2 時点で設計した4件をそのまま使う。#116 の変更で assertion 1（脱落なし）が識別力を持つようになったのが対象へ格上げした理由であり、新しい assertion は起こしていない。他スキルが5件なのに合わせて5件目を作ることはしない（件数を揃えるための水増しは採点を薄めるだけ）。 `generate-usecase-diagram` は依然 +0/-0 なので対象外のまま。",
+  "coverage_note": "ASSERTION_DESIGN.md `### generate-requirements-diagram / generate-usecase-diagram` が v2 時点で設計した4件が土台。#116 の変更で assertion 1（脱落なし）が識別力を持つようになったのが対象へ格上げした理由である。件数を揃えるための5件目は作らない方針は維持しており、A5 は水増しではなく実測された穴を埋めるために足した（`assertion_revision` 参照）。 `generate-usecase-diagram` は依然 +0/-0 なので対象外のまま。",
   "evals": [
     {
       "id": 0,
@@ -47,8 +47,13 @@
         {
           "text": "出力がファイル書き込みではなくテキストとして返され、呼び出し元（`generate-prd` 等）に判断を委ねている",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "入力側の要求が既に持っている ID が、図の中でも文字単位で同じ表記のまま使われている（改番・連番の振り直し・区切り文字の置き換えをしていない）。入力の ID が図の記法上そのまま使えない場合は、黙って書き換えるのではなくその旨を報告している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A5（入力の ID を文字単位で保つ）を追加。既存4件はこれを見ていなかった——A1（脱落なし）は表記が変わった ID も『反映されている』と読めてしまい、A3（創作なし）は改番を新規要求の創作とは見ない。しかし要求表と要求図を ID で突き合わせられなくなる時点でトレーサビリティは失われており、MEASUREMENT_LOG の『実在欠陥3件目: PRD レベル ID 形式』で最も重い実害として記録したのがまさにこの症状である（同一 PRD 内で表と図の ID が食い違う）。ID 形式を設定から解決する層が入ったことで、解決結果を図へどう持ち込むかが観測可能になったため、その成果だけを assertion にした。文面に具体的な区切り文字・フィールド名・解決元のパスを書いていないので、どの世代・どの ID 規約のプロジェクトでも同じ基準で採点できる（『入力にあった表記と一致するか』しか問うていない）。逆に『アンダースコアであること』は書いていない——それは特定プロジェクトの規約であり、規約自体を assertion に埋めると設定を尊重しない実行を PASS にしてしまう。"
 }

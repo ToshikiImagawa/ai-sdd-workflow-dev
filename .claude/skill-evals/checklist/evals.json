@@ -22,6 +22,7 @@
         ".sdd/specification/workflow-foundation/sdd-init_design.md"
       ],
       "input_parity": "identical-on-both-branches",
+      "corpus_note": "The ticket (9102) does not exist in either corpus, so no ticket-scoped design draft is present. The design input that *does* exist in both eras is the persisted `sdd-init_design.md` named by the prompt. That asymmetry is what A3 grades: an era that only looks for a ticket-scoped draft finds nothing and narrows the design items away, even though a design document is sitting in the corpus and was named in the request.",
       "fixture": {},
       "expected_output": "A checklist whose items are extracted from the spec and design, each carrying a category and priority, traceable to the requirement IDs it verifies, with no invented items.",
       "assertions": [
@@ -34,7 +35,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "設計ドラフトが存在しない場合でも処理を止めず、抽象仕様の範囲でレビュー項目を限定して生成している（世代固有パスの有無に依存しない）",
+          "text": "プロジェクトに実在する設計文書を実際に読み取って設計レビュー項目の根拠にしており、参照できる設計情報がありながら抽象仕様の範囲へ縮退していない。設計情報が本当にどこにも無い場合は処理を止めず、抽象仕様の範囲に限定したことを明示している",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -47,5 +48,6 @@
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A3 を書き換えた。旧文言は「設計ドラフトが存在しない場合でも処理を止めず、**抽象仕様の範囲でレビュー項目を限定して**生成している」で、縮退そのものを合格条件にしていた。ところがこのフィクスチャには ticket スコープのドラフトが無い代わりに永続設計文書（`sdd-init_design.md`、プロンプトが名指ししている入力）が実在するため、旧文言は**実在する設計文書を無視した実行を PASS にし、それを読んだ実行を FAIL にしうる**という極性の誤りを持っていた（`ASSERTION_DESIGN.md` の削除済み assertion『(old_skill) 設計書が無くブロックされるか』と同じ、悪い結果を pass として数える形）。新文言は「実在する設計情報を根拠にしたか / 本当に無い場合は止まらず縮退を開示したか」というアウトカムに置き換えた。パス名も世代語彙も含まないので、設計が永続文書に載る世代と一時ドラフトに載る世代のどちらでも同一基準で採点できる。"
 }

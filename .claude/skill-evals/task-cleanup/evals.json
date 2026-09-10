@@ -23,6 +23,7 @@
         ".sdd/task/9004/notes.md (scenario file, era-neutral)"
       ],
       "input_parity": "identical-on-both-branches (the scenario files are copied identically into both eras)",
+      "harness_confound": "A2 is no longer era-symmetric, and the reason is the harness rather than the skill. `build_sdd_fixture.py` extracts the tree with `git archive`, so the sandbox has no `.git`. The generations now differ in how they delete the temporary log: one prescribes `git rm` only -- which cannot run here at all -- while the other decides the deletion route from `git ls-files` output and falls back to `rm` when nothing is tracked, which does run here. A2 is a mechanical check that the ticket directory is gone, so the era with the fallback passes and the era without it fails **because the fixture is not a repository**, not because its cleanup is better. Do not read that cell as skill quality until the fixture provides a git repository with the scenario files committed (MEASUREMENT_LOG, 残課題). The `git log` gap recorded earlier in MEASUREMENT_LOG's 'フィクスチャが git リポジトリでない' section is the same root cause, but its claim that the impact is symmetric across eras no longer holds.",
       "fixture": {
         "copy_scenario": [
           ".sdd/task/9004/tasks.md",

@@ -33,7 +33,7 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "明確な項目まで曖昧と誤検知していない（偽陽性がない）",
+          "text": "明確な項目まで曖昧と誤検知していない（偽陽性がない）。プロジェクトに実在する他のドキュメントが既に決着させている点を、それを読まずに曖昧として挙げていない",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -41,10 +41,11 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "PRD（`requirement/**`）を編集対象にせず、抽象仕様または設計ドラフトのみを対象にしている",
+          "text": "上流の要求文書（`requirement/**` の PRD）を書き換えていない。読んで分析の材料にするのは可で、書き込みが発生する場合はその世代の仕様・設計成果物に限られている",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A3 と A5 を書き換えた。新規追加はなし。 A5 の旧文言「PRD（`requirement/**`）を編集対象にせず、**抽象仕様または設計ドラフトのみを対象にしている**」は2つの理由で誤りだった。(a) 「対象」が編集対象と分析対象のどちらとも読めるが、ticket を省略したこの eval では PRD も**分析対象**であり（このスキルは ticket 省略時に PRD・仕様・永続設計文書を分析する）、旧文言は正しい実行を落としうる。(b) 「設計ドラフト」は一時ドラフトを持つ世代の語彙で、永続設計文書へ書き込む世代を構造的に落とす。守るべき不変条件は「上流の要求文書を下流から書き換えない」だけなので、それだけを残して読み取りは明示的に許可した。 A3 には「実在する他ドキュメントが既に決着させている点を、それを読まずに曖昧として挙げていない」を足した。補助入力を読まない実行は、その入力が答えている境界値を『未定義』として質問に挙げるため、偽陽性という形で必ず表に出る——これは補助入力を読み落とす欠陥を検知する既存の経路であり、専用 assertion を新設する必要はない。読むべき文書のパスは書いていないので世代非依存。"
 }
