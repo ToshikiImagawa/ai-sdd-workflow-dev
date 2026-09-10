@@ -44,8 +44,17 @@ Full argument string: $ARGUMENTS
 
 ### Input Format
 
-Usage: `/checklist {feature-name} {ticket-number}`. If `{ticket-number}` is omitted, `{feature-name}` is used as the
-ticket directory.
+Usage: `/checklist {feature-name} {ticket-number}`. `ticket-number` may also be passed as a flag; both
+spellings — `--ticket {number}` and `--ticket={number}` — are accepted and mean the same thing.
+
+**When `ticket-number` is omitted**, `feature-name` becomes the ticket directory name: the design draft and
+task breakdown are looked up under `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/`, and the
+checklist is written to `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/checklist.md` — **not**
+`task/{ticket-number}/checklist.md`. State the resolved ticket directory in the output. If that directory
+holds neither `design-draft.md` nor `tasks.md`, say so instead of generating quietly from the spec alone:
+name the omitted `ticket-number` as the likely cause (the rest of the workflow writes under a ticket
+directory, so the checklist would land away from it) and offer re-running as
+`/checklist {feature-name} {ticket-number}`.
 
 ### Input Examples
 
@@ -66,7 +75,7 @@ Both flat and hierarchical structures are supported.
 | File                                                                     | Required   |
 |:--------------------------------------------------------------------------|:-----------|
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md` (PRD)  | if exists  |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md` | required   |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{feature-name}.md` **or** `{feature-name}_spec.md` | required (either form) |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md`        | if exists  |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`               | if exists  |
 
@@ -76,15 +85,16 @@ Both flat and hierarchical structures are supported.
 |:------------------------------------------------------------------------------------------------|:----------|
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{parent-feature}/index.md` (parent feature PRD) | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{parent-feature}/{feature-name}.md` (child feature PRD) | if exists |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index_spec.md` (parent feature spec) | if exists |
-| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}_spec.md` (child feature spec) | required |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/index.md` **or** `index_spec.md` (parent feature spec) | if exists |
+| `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}/{parent-feature}/{feature-name}.md` **or** `{feature-name}_spec.md` (child feature spec) | required (either form) |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/design-draft.md` (design draft)                | if exists |
 | `${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/tasks.md`                                      | if exists |
 
 **Note the difference in naming conventions**:
 
 - **Under requirement**: No suffix (`index.md`, `{feature-name}.md`)
-- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix)
+- **Under specification**: `_spec` suffix optional (`index_spec.md`, `{feature-name}_spec.md`, or no suffix) —
+  either form satisfies the rows marked "required (either form)" above
 - **Under task**: Design draft uses the fixed filename `design-draft.md`. It is ticket-scoped, so its path is
   the same in both flat and hierarchical structures
 

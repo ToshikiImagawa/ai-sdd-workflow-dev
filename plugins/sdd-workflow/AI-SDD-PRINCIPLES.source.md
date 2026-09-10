@@ -269,13 +269,21 @@ requirement/auth/user-login.md         # Child feature requirements (no suffix)
 specification/auth/index_spec.md       # Parent feature abstract spec (_spec optional, still valid)
 specification/auth/user-login.md       # Child feature abstract spec (no suffix, also valid)
 task/68/design-draft.md                # Design doc draft for ticket #68 (fixed filename, temporary)
-adr/auth/index-decisions.md            # Parent feature decision log (-decisions optional, still valid)
-adr/auth/user-login.md                 # Child feature decision log (no suffix, also valid)
+adr/auth/index.md                      # Parent feature decision log (no suffix, default for new files)
+adr/auth/user-login-decisions.md       # Child feature decision log (-decisions optional, still valid for existing files)
+
+# 🕘 Legacy naming (v4.x — still valid for existing files, do not create new ones)
+specification/auth/index_design.md     # v4.x persistent design doc: keep and read as supplementary input
 
 # ❌ Incorrect naming (never use these)
 requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix
-specification/auth/index_design.md     # design docs no longer live under specification/ (use task/{ticket}/design-draft.md)
 ```
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may still
+contain these. They **remain valid** — read them as **supplementary input, and treat their absence as normal**.
+Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and never report
+an existing one as a naming violation or propose deleting it; it may stay until its decisions have been migrated
+to `adr/{feature}.md`.
 
 ### Document Link Convention
 
@@ -403,6 +411,51 @@ graph RL
 | **Lifecycle**         | One file per feature (`{feature-name}.md`), append-only. Append a new entry whenever a decision is finalized; existing entries are never rewritten |
 | **Role**              | Ensures **design decision transparency** survives after the temporary design draft is deleted                    |
 
+#### Entry Format
+
+One file holds **many entries**. Each decision is a single `##` block appended at the end of the file,
+below the file's `#` title. The date lives in the heading so the log stays chronologically readable, and
+every entry carries the same items so a reader — or a skill such as `render-adr-review` /
+`doc-consistency-checker` — can extract them mechanically:
+
+| Item                                       | Required | Content                                                                                                                                  |
+|:-------------------------------------------|:---------|:-----------------------------------------------------------------------------------------------------------------------------------------|
+| Heading: `## YYYY-MM-DD {decision title}`  | Yes      | Date the decision was finalized, then a short title naming what was decided                                                              |
+| `- **Decision**:`                          | Yes      | What was decided, in one or two sentences                                                                                                |
+| `- **Rationale**:`                         | Yes      | Why it was chosen, including the constraint that forced it                                                                               |
+| `- **Rejected alternatives**:`             | Yes      | Each alternative considered and the reason it lost. Write `None considered` when there were none — never invent one                      |
+| `- **Supersedes**:`                        | No       | Only when this decision reverses an earlier entry **in the same file**: a link to that entry's heading, plus one line on what changed. Omit the item entirely otherwise |
+
+Example of a log with two entries, where the second reverses the first:
+
+```
+# user-login Decision Log
+
+## 2025-11-02 Keep sessions in process memory
+
+- **Decision**: Store session state in the application process's memory.
+- **Rationale**: Single-instance deployment; an external store was not justified at launch scope.
+- **Rejected alternatives**: Redis — an extra operational component with no benefit at one instance.
+
+## 2026-02-14 Move the session store to Redis
+
+- **Decision**: Store session state in Redis, keyed by session id.
+- **Rationale**: The service now runs three instances behind a load balancer, so in-process sessions cannot survive request routing.
+- **Rejected alternatives**: Sticky sessions at the load balancer — keeps the store simple but loses sessions on instance restart. Database-backed sessions — adds write load to the primary for no durability requirement.
+- **Supersedes**: [2025-11-02 Keep sessions in process memory](#2025-11-02-keep-sessions-in-process-memory) — the instance count invalidated the constraint that decision rested on.
+```
+
+The example omits the file's front matter for brevity: a real decision log opens with the `adr` front matter
+block (see `front_matter_reference.md`) above the `#` title, and that block covers the whole file — not any
+single entry.
+
+**Superseding is recorded at entry level, in one direction only.** The reversal is written on the **new**
+entry's `Supersedes` item; the superseded entry is **never edited**, not even to add a back-pointer, because
+`adr/` is append-only. A reader therefore takes the **latest** entry as the current decision and follows
+`Supersedes` links backward to see what it replaced. The front matter fields `supersedes` / `superseded-by`
+are **not** used for entry-to-entry reversals — they deprecate a whole decision-log file (see
+`front_matter_reference.md`).
+
 ## Related Agents
 
 The AI-SDD workflow provides specialized review agents for each document type.
@@ -454,8 +507,8 @@ spec-reviewer review (Required)
 
 | Command | Review Agent Called |
 |:--|:--|
-| `/generate_prd` | `prd-reviewer` (auto-executed after PRD generation) |
-| `/generate_spec` | `spec-reviewer` (auto-executed after spec generation and after design generation) |
+| `/generate-prd` | `prd-reviewer` (auto-executed after PRD generation) |
+| `/generate-spec` | `spec-reviewer` (auto-executed after spec generation and after design generation) |
 
 **Note**: Review agents are automatically called within generation commands. For manual review, call the respective review agent directly.
 
@@ -552,10 +605,10 @@ Choose one of the following and record the choice and its rationale (see step 3)
 
 **3. Migration Record**
 
-Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}.md`
-(see `front_matter_reference.md` for the `adr` schema). If the change reverses a prior decision, set
-`supersedes` on the new entry and `superseded-by` on the entry it replaces, per the ADR supersede convention
-in "Architecture Decision Record" above; never rewrite the superseded entry's text.
+Record the decision, its rationale, and the migration steps as a new entry in `adr/{feature}.md`, using the
+entry format defined in "Architecture Decision Record" above (see `front_matter_reference.md` for the file's
+`adr` front matter schema). If the change reverses a prior decision, add a `Supersedes` item to the new entry
+pointing at the earlier entry's heading; never rewrite the superseded entry's text.
 
 ### Knowledge Asset Persistence Management
 
@@ -577,13 +630,21 @@ Manage lifecycle of files under `task/` (temporary), including the Design Doc dr
 
 - Design decisions and their rationale
 - Alternative evaluation results
-- Insights to convey to future developers
+- The constraints and caveats a future reader needs in order to understand **why a recorded decision holds**
+  (e.g. the measurement or limitation that forced the choice)
 
 **Content Safe to Delete**:
 
 - Temporary investigation logs
 - Work progress notes
 - Specific implementation steps (already reflected in code)
+- Technical tips, troubleshooting notes, and reusable patterns
+
+`adr/` records **decisions**, not know-how: implementation tips, performance findings, debugging notes and
+reusable patterns are **not** integrated into `adr/` just because they are useful. Such knowledge belongs where
+it stays verifiable — in code comments, in the test that pins the behavior, or in `*_spec.md` when it changes
+the specified behavior. It enters an ADR entry only as the **Rationale** of a decision that is being recorded
+anyway.
 
 ### Consistency Checking
 

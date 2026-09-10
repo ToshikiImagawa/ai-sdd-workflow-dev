@@ -1,7 +1,7 @@
 ---
 name: plan-refactor
 description: "Plan refactoring for existing features. Analyzes current implementation and records the refactoring plan in the ticket-scoped design draft."
-argument-hint: "<feature-name> [context] [--scope=<dir>] [--ticket=<number>] [--ci]"
+argument-hint: "<feature-name> [context] [--scope=<dir>] [--ticket <number>] [--ci]"
 arguments: [feature-name]
 license: MIT
 user-invocable: true
@@ -65,8 +65,18 @@ Full argument string: $ARGUMENTS
 | `feature-name`      | Yes      | Target feature name or path (supports flat/hierarchical structure)                                                                                                                      |
 | `context`           | No       | Refactoring goal or improvement intent (e.g., "無限スクロール化", "依存性注入導入")                                                                                                                    |
 | `--scope=<dir>`     | No       | Limit implementation file search scope (e.g., `src/`, `lib/`)                                                                                                                           |
-| `--ticket=<number>` | No       | Ticket number (GitHub issue number, JIRA key, etc.) that locates the Design Doc draft `task/{ticket-number}/design-draft.md`. Resolved interactively when omitted; required in `--ci` mode |
+| `--ticket <number>` | No       | Ticket number (GitHub issue number, JIRA key, etc.) that locates the Design Doc draft `task/{ticket-number}/design-draft.md`. **Both `--ticket <number>` and `--ticket=<number>` are accepted.** Resolved interactively when omitted; required in `--ci` mode |
 | `--ci`              | No       | CI/non-interactive mode (auto-confirm, no user prompts)                                                                                                                                 |
+
+**Ticket argument forms**: write it with a space or an equals sign — `--ticket 123` and `--ticket=123` are
+equivalent; strip the `--ticket`/`--ticket=` prefix before using the value.
+
+**When the ticket number is missing**:
+
+- **Interactive**: Step 1.0 asks for it with `AskUserQuestion` before any script runs or any file is written
+- **`--ci` mode**: abort immediately with an error naming the missing flag and the fix
+  (`/plan-refactor {feature-name} --ticket=<number>`). Nothing is created under `task/`, no reverse-engineered
+  spec is written, and no cache file is produced
 
 ## Input Examples
 
@@ -121,9 +131,10 @@ When adding a refactoring plan to a design draft that already exists:
 
 The Design Doc draft path is ticket-scoped, so a ticket number is required before anything can be written.
 
-- Take it from `--ticket=<number>` when given
+- Take it from the `--ticket` flag when given — accept **both** `--ticket <number>` and `--ticket=<number>`
 - Otherwise ask the user with `AskUserQuestion` (offer the branch name / current issue as a hint)
-- In `--ci` mode, `--ticket` is required: abort with an error instead of asking
+- In `--ci` mode, `--ticket` is required: abort here with an error naming the flag and the fix
+  (`--ticket=<number>`), before Step 1.1 runs — never fall back to a guessed ticket number
 
 Set `TICKET_NUMBER` from the resolved value.
 
@@ -154,9 +165,10 @@ See `examples/cache_json_outputs.md` for an example of this file's content.
 `design_draft_exists` and `legacy_design_exists` never affect this decision — they only add reading context in
 Step 3A.1.
 
-**If `legacy_design_exists` is `true`**, tell the user that the file is read as context but not updated, and that
-persisted `*_design.md` files need a manual migration (see "Migration from v4.x" in the plugin README). Do not
-migrate it yourself — the decisions in it belong in `adr/`, and that is a human judgment call.
+**If `legacy_design_exists` is `true`**, tell the user that the file is read as supplementary input but not
+updated, and that it **remains valid** where it is. Its decisions may eventually move to `adr/{feature}.md`
+(see "Migration from v4.x" in the plugin README), but that is a human judgment call: do not migrate it
+yourself, and never report it as a naming violation or a deletion candidate.
 
 ---
 
@@ -257,6 +269,9 @@ Based on analysis, identify:
 - **Gaps**: Missing functionality, incomplete implementation
 - **Technical Debt**: Hard-coded values, lack of error handling, etc.
 
+Assign each debt item a persistent destination as you record it — see "Technical Debt Observations — Where They
+Persist" below. The design draft is deleted at cleanup, so an item with no destination does not survive.
+
 **If `context` was provided (from Phase 1.5):**
 
 - Prioritize issues related to the user's goal
@@ -345,7 +360,8 @@ Analyze implementation files and extract:
 - API design
 - Database schema
 - Testing strategy
-- Technical debt observations
+- Technical debt observations (each with a persistent destination — see "Technical Debt Observations — Where
+  They Persist")
 
 Use template: read `${CLAUDE_PLUGIN_ROOT}/skills/plan-refactor/templates/${SDD_LANG}/reverse_design_template.md`.
 
@@ -387,6 +403,8 @@ Verify the refactoring plan includes all required sections:
 - [ ] Risks and Mitigations
 - [ ] Timeline and Milestones (optional but recommended)
 - [ ] References (to PRD, spec, patterns)
+- [ ] Every Technical Debt Observation names a persistent destination (`adr/` entry at cleanup / tracker item /
+      spec update proposal) — see "Technical Debt Observations — Where They Persist"
 
 If any required section is missing, add it before proceeding.
 
@@ -410,6 +428,28 @@ plan settles on must be persisted elsewhere:
    settled decisions belong in the append-only log
 
 Tell the user this explicitly in the completion output, so the plan is not left as the only record.
+
+### Technical Debt Observations — Where They Persist
+
+The "Technical Debt Observations" list (Step 3B.3 / the "Problems Identified" and "Technical Debt" analysis in
+Step 3A.3) lives in the design draft, which is deleted at `/task-cleanup`. **Every observation must therefore
+name a persistent destination in the plan**, chosen from the three below. An observation whose only record is
+the draft is lost at cleanup — that is a plan defect, not an acceptable outcome.
+
+| Observation                                                                 | Persistent destination                                                                                                                                     | Who records it                                     |
+|:----------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------|
+| Debt this refactoring resolves                                              | The `adr/{feature-name}.md` entry for the refactoring decision — the debt is the constraint written under **Rationale**                                     | `/task-cleanup`, after implementation              |
+| Debt consciously deferred or accepted (out of scope for this ticket)         | A tracker item (GitHub Issue / JIRA). Recommend creating it and record the resulting ticket id next to the observation. When the deferral was itself a decision ("accept this debt for now, because ..."), it also earns its own `adr/` entry at cleanup | Human creates the ticket; `/task-cleanup` the entry |
+| Debt that means the implementation contradicts the behavior the spec describes | The spec (`*_spec.md`) — propose the correction for human approval, per "Post-Refactoring Cleanup" below                                                    | Human-approved spec update                          |
+
+Rules:
+
+- Do **not** invent a new document for debt: v5 has no standing debt list, and `adr/` records decisions, not
+  know-how (`AI-SDD-PRINCIPLES.md` § Knowledge Asset Persistence Management). A debt observation reaches `adr/`
+  only as the rationale of a decision that is being recorded anyway
+- This skill never creates the tracker item or edits the spec itself — it names the destination in the plan and
+  recommends the action in the completion output (Phase 5)
+- Repeat the destination assignment in the Phase 5 summary, listing any observation still without one
 
 ## Output
 
@@ -501,8 +541,9 @@ Document the prioritization in "Purpose and Background".
 | `task/`          | Design draft | `{ticket-number}/design-draft.md` (fixed filename, temporary) |
 | `adr/`           | Decision log | `{feature-name}.md` (`-decisions` suffix optional)            |
 
-`specification/` no longer holds design documents. A `{feature-name}_design.md` left there by v4.x is read-only
-context.
+New design documents are no longer written under `specification/`. A `{feature-name}_design.md` left there by
+v4.x remains valid: read it as supplementary input (its absence is normal), never write to it, and never treat
+it as a naming violation.
 
 ### Hierarchical Structure Support
 

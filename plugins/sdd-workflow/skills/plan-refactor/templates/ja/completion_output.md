@@ -12,11 +12,20 @@
 **リファクタリング計画の場所:**
 {design_draft_path} - "Refactoring Plan" セクション
 
+**技術的負債の観測事項 — 永続的な退避先:**
+| 観測事項 | 退避先 |
+|:--|:--|
+| {負債項目} | {クリーンアップ時の `adr/` エントリ | チケット {id / 要作成} | Spec 修正の提案} |
+
+退避先が未定の観測事項: {なし | 一覧} — 実装開始前に割り当てる。未定のままではドラフト削除時に失われる。
+
 **次のステップ:**
 1. リファクタリング計画をレビュー: {design_draft_path}
-2. `/task-breakdown {feature-name} {ticket-number}` を実行してリファクタリングを実行可能なタスクに分解
-3. TDDアプローチで `/implement {feature-name}` を実行
-4. 実装完了後に `/task-cleanup {feature-name}` を実行し、確定した決定を
+2. 上記で見送りとした技術的負債のチケットを作成する
+3. `/task-breakdown {feature-name} {ticket-number}` を実行してリファクタリングを実行可能なタスクに分解
+4. TDDアプローチで `/implement {feature-name} {ticket-number}` を実行（`tasks.md` と設計ドラフトは
+   どちらも `task/{ticket-number}/` 配下にあるため、同じチケット番号を渡す）
+5. 実装完了後に `/task-cleanup {ticket-number}` を実行し、確定した決定を
    ${SDD_ADR_PATH}/{feature-name}.md へ追記する。この時点でドラフト（本計画を含む）は削除されるため、
    決定ログが唯一の恒久的な記録になる
 ```

@@ -16,7 +16,7 @@ Initialize AI-SDD (AI-driven Specification-Driven Development) workflow in the c
 ## What This Command Does
 
 1. **CLAUDE.md Configuration**: Add the minimal AI-SDD Instructions section (declaration + trigger conditions + a pointer to the detailed rule) to the project's `CLAUDE.md`
-2. **Project Constitution Generation**: Create `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` (if not exist)
+2. **Project Constitution Pointer**: This command does **not** create `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/CONSTITUTION.md` - report that it is missing and point the user at `/constitution init`, which generates a customized one
 3. **Template Generation**: Create document templates in `${SDD_ROOT}/` directory (if not exist)
 
 > **Note**: The detailed AI-SDD guide (directory structure, file naming, doc-link convention) lives in `.claude/rules/ai-sdd-instructions.md`, a path-scoped rule that loads only when working under `.sdd/`. That file is created and version-synced automatically by the SessionStart hook (`session-start.py`), not by this command, so the always-loaded `CLAUDE.md` stays minimal. It is a single English file (agent-facing guidance, not a human-facing document) regardless of `SDD_LANG`.
@@ -82,6 +82,7 @@ the hook writes.
 | PRD           | `/generate-prd` skill's `templates/${SDD_LANG:-en}/prd_template.md`          |
 | Specification | `/generate-spec` skill's `templates/${SDD_LANG:-en}/spec_template.md`        |
 | Design Doc    | `/generate-spec` skill's `templates/${SDD_LANG:-en}/design_template.md`      |
+| ADR           | this skill's `templates/${SDD_LANG:-en}/adr_template.md`                     |
 
 ### Language Configuration
 
@@ -110,6 +111,7 @@ Execute `${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/scripts/init-structure.py` to per
     - PRD_TEMPLATE.md (from `/generate-prd` skill)
     - SPECIFICATION_TEMPLATE.md (from `/generate-spec` skill)
     - DESIGN_DOC_TEMPLATE.md (from `/generate-spec` skill)
+    - ADR_TEMPLATE.md (from this skill's `templates/${SDD_LANG:-en}/adr_template.md`)
     - Note: CONSTITUTION.md is NOT copied - use `/constitution init` to generate a customized version
 
 4. **Cleanup**:
@@ -153,9 +155,7 @@ Read `templates/${SDD_LANG:-en}/claude_md_template.md` and add its content to `C
 
 1. **If CLAUDE.md already has "AI-SDD Instructions" section**:
     - Check the version in section title (e.g., `## AI-SDD Instructions (v2.2.0)`)
-    - If version is older than current plugin version:
-        - Replace entire section with latest version
-        - Generate `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md` if not exists
+    - If version is older than current plugin version: Replace entire section with latest version
     - If version is same: Skip (already initialized)
 2. **If CLAUDE.md exists but no AI-SDD section**: Append section to end
 3. **If CLAUDE.md doesn't exist**: Create new file with section
@@ -165,15 +165,33 @@ Read `templates/${SDD_LANG:-en}/claude_md_template.md` and add its content to `C
 Re-running `/sdd-init` on an existing project automatically handles version upgrades:
 
 1. **Update CLAUDE.md**: If section title version is older than current plugin version, replace entire section with latest version
-2. **Generate AI-SDD-PRINCIPLES.md**: Copy plugin's `AI-SDD-PRINCIPLES.md` if not exists
-3. **Update Templates**: Copy latest templates (PRD, Spec, Design) if not exists (existing templates are never overwritten)
+2. **Add Missing Templates**: Copy the latest templates (PRD, Spec, Design, ADR) for the ones not present yet (existing templates are never overwritten, so a customized template survives re-initialization)
+3. **Cleanup**: Delete `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/UPDATE_REQUIRED.md`, which the SessionStart hook leaves behind when it detects a version mismatch
+
+`${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md` and `.claude/rules/ai-sdd-instructions.md` are **not** written by this command: the SessionStart hook re-syncs both from the installed plugin at every session start (see the Note under "Read AI-SDD Principles Document").
 
 **Detection Method**:
 
 - CLAUDE.md has `## AI-SDD Instructions` section with older version
-- OR `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md` doesn't exist
+- OR `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md` doesn't exist (a project initialized before the `adr/` document model)
 
-**Note**: After re-initialization, recommend `/recommend-front-matter` to add YAML front matter to existing documents that were created before v3.2.0.
+#### Migrating a v4.x Project to the v5 Document Model
+
+v5 split what v4.x kept in a single persistent design document into a temporary draft plus a persistent decision log:
+
+| v4.x                                                                    | v5                                                                                              |
+|:------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------|
+| `${SDD_SPECIFICATION_PATH}/{feature-name}_design.md` (persistent)       | `${SDD_TASK_PATH}/{ticket-number}/design-draft.md` (temporary, deleted after implementation)     |
+| Decision rationale living inside that design doc                        | `${SDD_ADR_PATH}/{feature-name}.md` (persistent, append-only decision log)                       |
+
+Guidance to give the user when the project still has v4.x layout:
+
+- Existing `${SDD_SPECIFICATION_PATH}/*_design.md` files **remain valid**. Read them as **supplementary input, and treat their absence as normal**. Never report one as a naming violation or propose deleting it; it may stay until its decisions have been migrated to `adr/{feature-name}.md`
+- **Do not create new ones.** New technical design goes to `${SDD_TASK_PATH}/{ticket-number}/design-draft.md`
+- Migration is incremental, not a bulk conversion: `/task-cleanup` appends a finished ticket's decisions and rationale to `${SDD_ADR_PATH}/{feature-name}.md` before deleting the ticket's task directory. No migration step is required before doing further work
+- `ADR_TEMPLATE.md` (copied into `${SDD_ROOT}/` by Phase 1) documents the append-only entry format for the decision log. The `adr/` directory itself is created when its first file is written, exactly like `requirement/`, `specification/`, and `task/`
+
+**Note**: After re-initialization, recommend `/recommend-front-matter` for documents under `${SDD_ROOT}/` that have no YAML front matter, or whose front matter is missing fields the current schema defines (front matter was introduced in v3.2.0).
 
 ## Project Constitution Generation
 
@@ -225,6 +243,7 @@ All templates are copied from skill directories if they don't already exist.
 | **PRD Template**         | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/PRD_TEMPLATE.md`           | SysML-format requirements doc |
 | **Spec Template**        | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/SPECIFICATION_TEMPLATE.md` | Abstract system specification |
 | **Design Template**      | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/DESIGN_DOC_TEMPLATE.md`    | Technical design document     |
+| **ADR Template**         | `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/ADR_TEMPLATE.md`           | Append-only decision log      |
 
 ### Generation Process (Automated by Shell Script)
 

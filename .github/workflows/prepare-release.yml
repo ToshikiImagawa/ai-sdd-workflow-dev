@@ -29,6 +29,57 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Check version consistency on develop
+        run: |
+          VERSION="${{ steps.validate.outputs.version }}"
+
+          # release ブランチは develop から切るため、照合対象も develop の内容に揃える
+          git checkout develop
+          git pull origin develop
+
+          ERRORS=()
+
+          # 1. marketplace.json metadata.version
+          MARKET_VER=$(jq -r '.metadata.version' .claude-plugin/marketplace.json)
+          if [ "$MARKET_VER" != "$VERSION" ]; then
+            ERRORS+=("marketplace.json metadata.version: expected $VERSION, got $MARKET_VER")
+          fi
+
+          # 2. marketplace.json plugins[].version (all entries)
+          PLUGIN_VERS=$(jq -r '.plugins[].version' .claude-plugin/marketplace.json)
+          INDEX=0
+          while IFS= read -r ver; do
+            if [ "$ver" != "$VERSION" ]; then
+              ERRORS+=("marketplace.json plugins[$INDEX].version: expected $VERSION, got $ver")
+            fi
+            INDEX=$((INDEX + 1))
+          done <<< "$PLUGIN_VERS"
+
+          # 3. sdd-workflow plugin.json
+          SDD_VER=$(jq -r '.version' plugins/sdd-workflow/.claude-plugin/plugin.json)
+          if [ "$SDD_VER" != "$VERSION" ]; then
+            ERRORS+=("sdd-workflow plugin.json version: expected $VERSION, got $SDD_VER")
+          fi
+
+          # 4. CHANGELOG 見出し（release.yml のリリースノート抽出がこの見出しに依存する）
+          VERSION_RE="${VERSION//./\\.}"
+          for CHANGELOG in plugins/sdd-workflow/CHANGELOG.md plugins/sdd-workflow/CHANGELOG.ja.md; do
+            if ! grep -qE "^## \[$VERSION_RE\]" "$CHANGELOG"; then
+              ERRORS+=("$CHANGELOG: heading '## [$VERSION]' not found")
+            fi
+          done
+
+          if [ ${#ERRORS[@]} -gt 0 ]; then
+            echo "::error::Version mismatch detected between input v$VERSION and develop contents:"
+            for err in "${ERRORS[@]}"; do
+              echo "  - $err"
+            done
+            echo "::error::同じ照合を release.yml も行うため、このまま進めても merge 後のタグ push で失敗します。develop 側を prepare-release スキルで更新してから再実行してください。"
+            exit 1
+          fi
+
+          echo "All version checks passed: $VERSION"
+
       - name: Create PR from dev to main
         id: create-pr
         run: |

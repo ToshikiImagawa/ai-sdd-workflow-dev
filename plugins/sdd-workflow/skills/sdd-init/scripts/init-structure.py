@@ -69,6 +69,7 @@ def copy_templates(sdd_dir: Path, plugin_root: Path, sdd_lang: str) -> None:
 
     generate_prd_skill = plugin_root / "skills" / "generate-prd"
     generate_spec_skill = plugin_root / "skills" / "generate-spec"
+    sdd_init_skill = plugin_root / "skills" / "sdd-init"
 
     # Template mappings (target -> source)
     # Note: CONSTITUTION.md is NOT copied here - it should be generated via
@@ -85,6 +86,10 @@ def copy_templates(sdd_dir: Path, plugin_root: Path, sdd_lang: str) -> None:
         (
             sdd_dir / "DESIGN_DOC_TEMPLATE.md",
             generate_spec_skill / "templates" / sdd_lang / "design_template.md",
+        ),
+        (
+            sdd_dir / "ADR_TEMPLATE.md",
+            sdd_init_skill / "templates" / sdd_lang / "adr_template.md",
         ),
     ]
 

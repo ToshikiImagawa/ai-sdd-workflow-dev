@@ -80,10 +80,35 @@ was recorded. For each entry, extract:
 | Rationale | Why it was chosen | Keep the source's own wording; do not paraphrase away specifics |
 | Rejected alternatives | Options considered and not chosen, with the reason each was rejected | Omit the comparison table entirely if the entry recorded none - do not invent alternatives |
 | Date/context | Whatever date or situational note the entry carries | Leave blank if the entry has none |
+| Supersedes | The earlier entry in the same file that this entry reverses, if the entry records one | Present only on the reversing entry - `adr/` is append-only, so the entry it reverses is never edited |
 
 If a `*_spec.md` / `*_design.md` is given instead of an ADR log, apply the same extraction to its
 design-decision / rationale sections; skip sections that are plain behavior description with no
 decision-vs-alternative content.
+
+### 2b. Derive Which Entries Are Superseded
+
+A decision log records a reversal in one direction only: the later entry names what it supersedes, and
+the entry it reverses is left untouched. So a superseded decision carries **no marker of its own** in
+the source. Reading the raw Markdown, an obsolete decision looks exactly like a live one.
+
+Deriving that back-pointer is the main thing this rendered view adds over the source file. After
+extracting every entry, resolve each `Supersedes` reference to the entry it points at, and mark that
+target as superseded. Then render each entry in one of three states:
+
+| State | Condition | Rendering |
+|:--|:--|:--|
+| Current | Nothing supersedes it | `{decision_status_class}` empty, `{decision_badge_label}` = `Decision` (ja: `決定`) |
+| Superseded | A later entry supersedes it | `{decision_status_class}` = `superseded`, `{decision_badge_label}` = `Superseded` (ja: `失効`), and `{decision_supersession}` states which later entry replaced it, as an anchor link |
+| Reversing | It supersedes an earlier entry | Current state, plus `{decision_supersession}` stating which earlier entry it replaced, as an anchor link |
+
+An entry can be both superseded and reversing (a decision reversed twice); render both notes.
+Fill `{decision_supersession}` with an empty string when the entry is neither.
+
+Resolve references by the target's heading text or its anchor. If a `Supersedes` reference cannot be
+matched to an entry in the same file, render the entry as Current and state the unresolved reference in
+`{decision_supersession}` verbatim - **never guess which entry was meant**, and never treat an
+unresolved reference as "nothing was superseded".
 
 ### 3. Render Bottom-Up
 

@@ -195,9 +195,13 @@ git diff <previous-tag>..HEAD --stat
 
 1. 変更内容をレビューする
 2. コミットする: `git add -A && git commit -m "[add] v{VERSION} リリース準備"`
-3. タグを作成する: `git tag v{VERSION}`
-4. プッシュする: `git push origin main --tags`
-5. GitHub Actions の Release ワークフローが自動実行される
+3. `develop` 向けに PR を出して merge する（`main` へ直接 push しない）
+4. Actions の Prepare Release ワークフロー（`prepare-release.yml`）を version 入力で実行し、
+   `develop` → `main` の PR 作成・CI 待ち・merge を行わせる
+5. merge 済みの `main` にタグを打って push する（GITHUB_TOKEN で push したタグは
+   Release ワークフローをトリガーしないため、この作業は人間が行う）:
+   `git checkout main && git pull origin main && git tag v{VERSION} && git push origin v{VERSION}`
+6. GitHub Actions の Release ワークフローが自動実行される
 ```
 
 ## Notes

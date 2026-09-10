@@ -57,6 +57,18 @@ Full argument string: $ARGUMENTS
 - `/run-checklist {feature-name} {ticket-number} --category testing`
 - `/run-checklist {feature-name} {ticket-number} --priority P1`
 
+`ticket-number` may also be passed as a flag; both spellings — `--ticket {number}` and `--ticket={number}` —
+are accepted and mean the same thing.
+
+**When `ticket-number` is omitted**, `feature-name` becomes the ticket directory name: this skill reads
+`${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{feature-name}/checklist.md` and writes the report next to it —
+**not** under `task/{ticket-number}/`. State the resolved ticket directory in the output before loading from
+it. If `checklist.md` is not found there, report the resolved path, name the omitted `ticket-number` as the
+likely cause, and give both remedies — re-run as `/run-checklist {feature-name} {ticket-number}` if the
+checklist lives under a ticket directory, or run `/checklist {feature-name} {ticket-number}` if it was never
+generated. Never silently search other task directories, and never report verification results for a
+checklist that was not loaded.
+
 ## Processing Flow
 
 ### 1. Load Checklist
@@ -159,6 +171,14 @@ Use TaskList to track verification progress:
 Read `templates/${SDD_LANG:-en}/tasklist_patterns.md` for TaskList usage patterns.
 
 ## Error Handling
+
+### Checklist Not Found
+
+Stop before step 2 and report: the resolved path
+(`${CLAUDE_PROJECT_DIR}/${SDD_TASK_PATH}/{ticket}/checklist.md`), how `{ticket}` was resolved (from
+`ticket-number`, or from `feature-name` because `ticket-number` was omitted), and the two remedies from the
+Input Format section — re-run with the ticket number, or generate the checklist with
+`/checklist {feature} {ticket}`. Do not run verifications with nothing to record them against.
 
 ### Test Failure
 

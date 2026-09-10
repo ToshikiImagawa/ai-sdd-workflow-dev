@@ -1,6 +1,6 @@
 ---
 name: doc-consistency-checker
-description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, documents with a stale sdd-version generation, and ensures traceability between documents."
+description: "Automatically executed during document updates or before implementation to check consistency between PRD ↔ *_spec.md ↔ adr/*.md. Detects missing requirement ID (UR/FR/NFR) references, data model mismatches, API definition discrepancies, terminology inconsistencies, PRD-contradicting spec changes, documents with a stale or absent sdd-version generation, and ensures traceability between documents."
 argument-hint: "[feature-name]"
 license: MIT
 user-invocable: false
@@ -38,7 +38,8 @@ Read it **once** and use all its tables (`Metadata`, `Requirement IDs`, `SysML R
 the need for multiple Glob/Grep/Read calls across `.sdd/`. Fall back to raw Read of a specific file
 only when cross-reference verification requires full section text. When `SDD_INDEX` is unset or `off`,
 use the existing Glob/Grep/Read flow. The `Metadata` table's `sdd-version` column also drives Check
-Item 3 (Generation Staleness Detection) below.
+Item 3 (Generation Detection) below, where an **empty** cell in that column means the document's generation
+is unknown rather than current.
 
 ## Input
 
@@ -66,11 +67,18 @@ flat and hierarchical directory layouts.
 
 | Directory         | Naming Pattern                      | Examples                                        |
 |:------------------|:-------------------------------------|:-------------------------------------------------|
-| **requirement**   | No suffix                            | `index.md`, `user-login.md`                     |
-| **specification** | `_spec` required                     | `index_spec.md`, `user-login_spec.md`           |
+| **requirement**   | No suffix (a `_spec`/`_design` suffix is forbidden here) | `index.md`, `user-login.md`        |
+| **specification** | `_spec` optional, legacy-valid       | `index_spec.md`, `user-login.md`                |
 | **adr**           | `-decisions` optional, legacy-valid (append-only)  | `index.md`, `user-login.md` |
 
 Consistency checks also consider parent-child relationships for hierarchical structures.
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may still
+contain these. They **remain valid** — read them as **supplementary input, and treat their absence as normal**.
+Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and never report
+an existing one as a naming violation or propose deleting it; it may stay until its decisions have been migrated
+to `adr/{feature}.md`. See "v4.x Legacy Fallback" under "spec ↔ adr Consistency" below for how such a file is
+covered by the checks.
 
 ## Check Items
 
@@ -128,38 +136,92 @@ generation. Do not call it before the human approves the edit.
 | **Obsolescence Detection**       | Does an adr entry describe a decision about spec elements that were since changed or removed, with no follow-up entry?   |
 
 **Obsolescence Detection follow-up**: `adr/` is append-only, so an obsolete entry is never rewritten or deleted.
-When this check finds one, propose appending a new adr entry recording the reversal (with `depends-on` pointing
-at the current spec) and setting `superseded-by` on the obsolete entry to the new entry's `id` (see
-`${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` § ADR). The new entry's `supersedes` field
-points back at the obsolete one.
+When this check finds one, propose **appending a new entry at the end of the same `adr/{feature}.md`** in the
+entry format defined in `AI-SDD-PRINCIPLES.md` § Architecture Decision Record → Entry Format: a
+`## YYYY-MM-DD {decision title}` heading followed by `- **Decision**:`, `- **Rationale**:` and
+`- **Rejected alternatives**:`, plus a `- **Supersedes**:` item linking to the obsolete entry's heading anchor
+and stating in one line what changed.
+
+Superseding is recorded **only on the new entry, in one direction**:
+
+- Do **not** propose editing the obsolete entry — not even to add a back-pointer. The current decision is the
+  latest entry; earlier entries are read as history.
+- Do **not** propose writing the reversal into the file's front matter. The front matter `supersedes` /
+  `superseded-by` fields are **file-level only** (an entire decision log retired because its feature was
+  renamed, split, or merged) and cannot express "entry X reverses entry Y" — one file has many entries but a
+  single front matter block. See
+  `${CLAUDE_PLUGIN_ROOT}/shared/references/front_matter_reference.md` § ADR → "Entry-Level vs File-Level
+  Superseding".
+- Do **not** propose flipping the file's `status` to `deprecated`; an ADR's `status` stays `"approved"`.
+
+The file's front matter `depends-on` already points at the spec, so appending an entry does not change it.
+
+#### v4.x Legacy Fallback (`specification/*_design.md` with no adr coverage)
+
+A project migrated from v4.x may still hold its design rationale in a persistent
+`${SDD_SPECIFICATION_PATH}/{feature}_design.md` instead of `adr/{feature}.md`. Before reporting spec ↔ adr
+results, determine the feature's coverage:
+
+| Situation                                                                 | Action                                                                                                        |
+|:--------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------|
+| `adr/{feature}*.md` exists with entries                                   | Run the spec ↔ adr checks above as normal                                                                     |
+| No adr file (or it holds no entries) **and** a `{feature}_design.md` exists | Run the same four check items against the legacy design doc, reporting them as **spec ↔ design (v4.x legacy)** |
+| Neither exists                                                            | Report the area as **not checked** (see below) — never as consistent                                          |
+
+Use Glob against `${CLAUDE_PROJECT_DIR}/${SDD_SPECIFICATION_PATH}` (flat: `{feature}_design.md`; hierarchical:
+`{parent-feature}/{child-feature}_design.md`) to find the legacy design doc. For the legacy branch, read
+`Decision Traceability` as "are the spec-driving decisions captured anywhere — an adr entry or this design
+doc's decision-rationale section?", and treat the design doc as **supplementary input**: its absence is normal
+and is never itself a finding.
+
+**Never report an unchecked area as consistent.** State the coverage explicitly at the top of the report:
+
+- Which decision-record source was used for this feature (`adr/`, legacy `*_design.md`, or none)
+- Every check area that could not be run, and why (no adr entries and no legacy design doc; index disabled;
+  PRD missing). A check that did not run must appear as `not checked`, not as `Consistent`.
 
 **Note — out of scope for this skill**:
 
 - `task/{ticket-number}/design-draft.md` consistency with `*_spec.md`, and its integration into
   `adr/*.md` before deletion, are checked by the `task-cleanup` skill at cleanup time (see
   `AI-SDD-PRINCIPLES.md`)
-- `spec <-> Implementation` and any remaining `*_design.md` artifact checks (module structure, interface
-  definitions, technology stack) are checked by `/check-spec` (the `impl-spec-check` feature)
+- `spec <-> Implementation` checks — including a legacy `*_design.md`'s module structure, interface definitions
+  and technology stack against the code — are checked by `/check-spec` (the `impl-spec-check` feature). The
+  v4.x legacy fallback above stays at the document level (decisions, terminology, referenced spec elements)
 
-This skill checks the **persisted** artifacts only: `*_spec.md` and `adr/*.md`.
+This skill checks the **persisted** artifacts only: `*_spec.md`, `adr/*.md`, and — in the v4.x legacy fallback
+above — an existing `specification/*_design.md`.
 
-### 3. Generation Staleness Detection (`sdd-version`)
+### 3. Generation Detection (`sdd-version`)
 
-**Requires `SDD_INDEX=on`** (see Index Fast Path above). Read the `Metadata` table's `sdd-version` column from
-`${SDD_ROOT}/.cache/index.md` — no additional Glob/Grep is needed.
+`sdd-version` was introduced in v5, so documents written by earlier generations **do not have the field at
+all**. Absence is therefore the *normal* state of an unmigrated v4.x document, and it is the single most common
+migration signal. Report the two populations **separately** — never merge them, and never let an all-absent
+project read as "nothing stale":
 
-| Check Item                    | Description                                                                                                     |
-|:-------------------------------|:-------------------------------------------------------------------------------------------------------------------|
-| **Stale generation listing**  | Enumerate documents whose `sdd-version` major is lower than the current plugin's major (`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`'s `version`) |
+| Check Item                        | Description                                                                                                                                             |
+|:-----------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Stale generation listing**      | Documents whose `sdd-version` is **present** but whose major is lower than the current plugin's major (`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`'s `version`) |
+| **Generation-unknown listing**    | Documents where `sdd-version` is **absent**. Report the count, plus the paths (or, above ~20, the count and the directories they fall under)              |
 
-Documents with an absent `sdd-version` are **not** included in this listing (they predate the field's
-introduction and cannot be judged as stale by this signal alone — see `front_matter_reference.md`'s Missing
-Front Matter Policy). This check is advisory: report the listing so a human can decide whether each document
-needs a manual migration review; do not edit the listed documents.
+Both listings are advisory: report them so a human can decide whether each document needs a manual migration
+review; do not edit the listed documents. Absence is **not** a front matter violation (see
+`front_matter_reference.md`'s Missing Front Matter Policy) — it means the generation cannot be determined from
+metadata, which is exactly what the reader needs to know.
 
-If `SDD_INDEX` is unset or `off`, skip this check (it depends on the pre-built index and does not have a
-Glob/Grep fallback, since scanning every document's front matter for this alone would defeat the purpose of a
-lightweight advisory check).
+**Report both counts even when one is zero**, and phrase the summary so the distinction is unmissable, e.g.
+`stale: 0 / generation unknown: 85 of 85 checked`. Reporting only "0 stale" for a project whose documents all
+predate the field would tell the reader their migration is complete when none of it has happened.
+
+**Source of the two listings**:
+
+- `SDD_INDEX=on`: read the `Metadata` table's `sdd-version` column from `${SDD_ROOT}/.cache/index.md` (see
+  Index Fast Path above). An **empty cell** in that column is a generation-unknown document; no additional
+  Glob/Grep is needed.
+- `SDD_INDEX` unset or `off`: the generation-unknown count is still cheap, so do **not** skip it. One Grep for
+  `^sdd-version:` across `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}` (counting only matches inside a document's leading
+  front matter block) plus one Glob of the documents in scope gives both listings — the Grep output also
+  carries the values needed for the stale listing. Two calls total; there is no need to Read every document.
 
 ## Automatic Detection Patterns
 
@@ -176,6 +238,14 @@ See `references/detection_method.md` for the step-by-step detection procedure.
 ## Output Format
 
 Read `templates/${SDD_LANG:-en}/consistency_report.md` and use it for consistency check output.
+
+The template shows the common sections; the report must additionally carry the two items above even where the
+template has no pre-printed row for them:
+
+- **Coverage notice at the top**: the decision-record source used (`adr/`, legacy `*_design.md`, or none) and
+  every check area reported as `not checked`, with the reason (see "v4.x Legacy Fallback")
+- **Generation-unknown listing** alongside the stale listing, as `stale: {n} / generation unknown: {n} of {n}
+  checked` (see "Generation Detection")
 
 ## Check Execution Timing
 

@@ -58,6 +58,16 @@ Full argument string: $ARGUMENTS
 | `ticket-number` | -        | Locates the design draft `task/{ticket-number}/design-draft.md`. Omit to analyze the PRD and spec only |
 | `--interactive` | -        | Interactive mode: Answer questions one at a time                   |
 
+`ticket-number` may be passed positionally (`/clarify {feature-name} {ticket-number}`) or as a flag; both
+spellings — `--ticket {number}` and `--ticket={number}` — are accepted and mean the same thing.
+
+**When `ticket-number` is omitted**, no design draft is looked up at all: the analysis runs on the PRD and
+abstract spec alone, and design-level categories are limited to what the spec expresses. This is a supported
+mode, not an error — but state it in the output ("no `ticket-number` given, so
+`task/{ticket-number}/design-draft.md` was not consulted") so the reduced coverage is visible. When a
+`ticket-number` *is* given and the draft is missing there, that is also normal (the draft is deleted once
+implementation completes) — report the resolved path and continue rather than prompting for regeneration.
+
 ### Input Examples
 
 **Reference**: `references/command_examples.md`

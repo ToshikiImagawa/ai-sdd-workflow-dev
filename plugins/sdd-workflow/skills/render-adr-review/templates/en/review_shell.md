@@ -14,6 +14,12 @@
   .decision-title { margin: 0; font-size: 1.15rem; }
   .decision-meta { color: #57606a; font-size: 0.85rem; margin: 0 0 0.75rem; }
   .decision-rationale { margin: 0.25rem 0 1rem; }
+  .decision-supersession { font-size: 0.85rem; margin: 0 0 0.75rem; padding: 0.4rem 0.65rem; border-left: 3px solid #9a6700; background: #fff8c5; }
+  .decision-supersession a { color: #7d4e00; }
+  section.decision-card.superseded { border-style: dashed; background: #f6f8fa; }
+  section.decision-card.superseded .decision-title { color: #57606a; }
+  section.decision-card.superseded .decision-badge { background: #6e7781; }
+  section.decision-card.superseded .decision-supersession { border-left-color: #6e7781; background: #eaeef2; }
   table.alternatives-comparison { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   table.alternatives-comparison th, table.alternatives-comparison td { border: 1px solid #d0d7de; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
   table.alternatives-comparison th { background: #f6f8fa; }

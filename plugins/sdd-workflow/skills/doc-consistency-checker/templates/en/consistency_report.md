@@ -14,13 +14,23 @@ This template is the output format for document consistency check results.
 | spec     | `${SDD_SPECIFICATION_PATH}/{feature-name}_spec.md`   | YYYY-MM-DD   |
 | adr      | `${SDD_ADR_PATH}/{feature-name}.md`                  | YYYY-MM-DD   |
 
+### Coverage / Not Checked
+
+| Item                       | Value                                                                       |
+|:---------------------------|:----------------------------------------------------------------------------|
+| Decision-record source     | `adr/` / legacy `*_design.md` (v4.x) / none                                 |
+| Check areas not run        | {area} - {reason}, or "none"                                                |
+
+> A check area that could not be run is listed here as `not checked`. Never omit it and never report it as
+> `Consistent`.
+
 ### Check Results Summary
 
 | Check Target            | Result                    | Count     |
 |:------------------------|:--------------------------|:----------|
 | PRD ↔ spec              | Consistent / Inconsistent | {n} items |
 | spec ↔ adr              | Consistent / Inconsistent | {n} items |
-| Generation staleness (`sdd-version`) | {n} stale / {n} checked | {n} items |
+| Generation (`sdd-version`) | stale: {n} / generation unknown: {n} | {n} of {n} checked |
 
 ---
 
@@ -82,20 +92,37 @@ This template is the output format for document consistency check results.
 
 ---
 
-> **Note**: `spec ↔ Implementation` and any remaining `*_design.md` artifact checks are out of scope for this
-> skill. Use `/check-spec` (the `impl-spec-check` feature) for those checks.
+> **Note**: When the feature has no adr entries and its decisions still live in a v4.x persistent
+> `specification/*_design.md`, keep the same four check items but title this section
+> **`spec ↔ design (v4.x legacy)`** and name the design doc under "Target Documents". The design doc is
+> supplementary input: its absence is normal and is never itself a finding.
 
-#### Generation Staleness (`sdd-version`)
+> **Note**: `spec ↔ Implementation` checks — including a legacy `*_design.md`'s module structure, interface
+> definitions and technology stack against the code — are out of scope for this skill. Use `/check-spec` (the
+> `impl-spec-check` feature) for those checks.
 
-Documents whose `sdd-version` major is lower than the current plugin major (requires `SDD_INDEX=on`):
+#### Generation Detection (`sdd-version`)
+
+**Stale generation** — `sdd-version` is present but its major is lower than the current plugin major:
 
 | Document | `sdd-version` | Current Major |
 |:---------|:--------------|:--------------|
 | {doc_id or path} | {sdd-version value} | {current major} |
 
-> **Note**: This is advisory only — it flags candidates for manual migration review. Documents with an absent
-> `sdd-version` are not listed here (they predate the field's introduction). Skipped entirely when `SDD_INDEX`
-> is unset or `off`.
+**Generation unknown** — `sdd-version` is absent (the document predates the field, the most common migration
+signal):
+
+| Document | Note |
+|:---------|:-----|
+| {path} | generation unknown |
+
+Summary line (always print both, even when one is zero): `stale: {n} / generation unknown: {n} of {n} checked`
+
+> **Note**: Both listings are advisory — they flag candidates for manual migration review. An absent
+> `sdd-version` is **not** a front matter violation, and it is never folded into the stale count. The stale
+> listing can be read straight from the index (`SDD_INDEX=on`); the generation-unknown count is computed with
+> one Grep for `^sdd-version:` plus one Glob even when `SDD_INDEX` is unset or `off`, so neither listing is
+> ever skipped.
 
 ### Verified Consistent Items
 

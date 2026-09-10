@@ -26,7 +26,7 @@
       "expected_output": "A severity-classified report of real gaps between the spec's FR/NFR table and the scripts, with no invented findings, and with the design doc's impl-status claim verified against the code rather than trusted.",
       "assertions": [
         {
-          "text": "設計書が `impl-status: implemented` と主張していても実コードを確認し、未実装・部分実装があれば実在の欠落として検出する",
+          "text": "ドキュメント（spec または補助的な設計資料）の `impl-status` の主張を鵜呑みにせず実コードを確認し、未実装・部分実装があれば実在の欠落として検出する",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
@@ -42,10 +42,11 @@
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         },
         {
-          "text": "重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（検出された全ての指摘が無差別に同一重大度になる、またはテンプレートの雛形をそのまま機械的にコピーしただけの割付けになっていない）",
+          "text": "重大度がラベルの存在だけでなく相対的な影響度に応じて割り付けられている（検出された全ての指摘が無差別に同一重大度になる、またはテンプレートの雛形をそのまま機械的にコピーしただけの割付けになっていない）。ただし、明示した分類規則によって複数の指摘が同一重大度に落ちる場合は、その規則と、重大度を下げた指摘が未解決のまま残っている事実が報告に示されていれば合格とする（規則も未解決である旨も示さず重大度だけ下がっている場合は不合格）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.3 (2026-09-10): A1 と A5 を修正、新規追加はなし。A1 は `impl-status` の主張元を「設計書」と名指ししていたが、比較の基準が設計から spec へ移った世代ではその主張は spec 側に載る。主張元を問わない形（spec または補助的な設計資料）に一般化して、どちらの世代でも同じ性質を採点できるようにした。A5 は逆に、**正しい振る舞いを落としかねない**ため条件節を足した: このフィクスチャの `session-config_spec.md` は `impl-status` を持たないため、「spec にあるが実装に無い」系の指摘は判定不能として一律 Warning に落ちる世代がある。旧文言はそれを「無差別に同一重大度」と読んで不合格にでき、`ASSERTION_DESIGN.md` の generate-prd A6 で踏んだ罠（安全側の正しい振る舞いを結果だけで落とす）の再演になっていた。同時に、緩和した件が未解決である旨の開示を合格条件へ入れたので、Critical 0 件を「改善」と読ませる報告は A5 で落ちる。降格件数の開示を独立した6件目にはしなかった: 降格という概念を持たない世代では空振りになり、A5 の条件節に畳んだ方が同じことを世代非依存に測れる。"
 }

@@ -12,11 +12,21 @@
 **Refactoring Plan Location:**
 {design_draft_path} - "Refactoring Plan" section
 
+**Technical Debt Observations — persistent destinations:**
+| Observation | Destination |
+|:--|:--|
+| {debt item} | {`adr/` entry at cleanup | tracker item {id / to be created} | proposed spec correction} |
+
+Observations still without a destination: {none | list} — assign one before implementation starts, or they are
+lost when the draft is deleted.
+
 **Next Steps:**
 1. Review the refactoring plan at: {design_draft_path}
-2. Run `/task-breakdown {feature-name} {ticket-number}` to break down the refactoring into actionable tasks
-3. Execute tasks with `/implement {feature-name}` using TDD approach
-4. When implementation completes, run `/task-cleanup {feature-name}` to append the settled decisions to
+2. Create the tracker items for the deferred debt observations listed above
+3. Run `/task-breakdown {feature-name} {ticket-number}` to break down the refactoring into actionable tasks
+4. Execute tasks with `/implement {feature-name} {ticket-number}` using TDD approach — pass the same
+   ticket number, since `tasks.md` and the design draft both live under `task/{ticket-number}/`
+5. When implementation completes, run `/task-cleanup {ticket-number}` to append the settled decisions to
    ${SDD_ADR_PATH}/{feature-name}.md — the draft (and this plan) is deleted at that point, so the decision
    log is the only lasting record
 ```

@@ -92,10 +92,18 @@ task/68/design-draft.md                # Design doc draft for ticket #68 (fixed 
 adr/auth/index.md                      # Parent feature decision log (no suffix, default for new files)
 adr/auth/user-login-decisions.md       # Child feature decision log (-decisions optional, still valid for existing files)
 
+# Legacy Naming (v4.x — still valid for existing files, do not create new ones)
+specification/auth/index_design.md     # v4.x persistent design doc: keep and read as supplementary input
+
 # Incorrect Naming (never use these)
 requirement/auth/index_spec.md         # requirement must not have a _spec/_design suffix
-specification/auth/index_design.md     # design docs no longer live under specification/
 ```
+
+**v4.x persistent design docs (`specification/*_design.md`)**: a project that started on AI-SDD v4.x may still
+contain these. They **remain valid** — read them as **supplementary input, and treat their absence as normal**.
+Do not create new ones (new technical design goes to `task/{ticket-number}/design-draft.md`), and never report
+an existing one as a naming violation or propose deleting it; it may stay until its decisions have been migrated
+to `adr/{feature}.md`.
 
 ## Document Link Convention
 

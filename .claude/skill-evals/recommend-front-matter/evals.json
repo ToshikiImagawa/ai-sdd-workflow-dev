@@ -31,7 +31,7 @@
         ],
         "note": "Ground truth for every recommendation is the stripped front matter itself, recoverable with `git show <branch>:<path>`."
       },
-      "expected_output": "The three documents detected as missing front matter, each given a recommendation matching its own generation's schema for its type, inferred from the document's own content, with no invented IDs and no overwriting of existing values elsewhere.",
+      "expected_output": "The three documents detected as missing front matter, each given a recommendation matching its own generation's schema for its type, inferred from the document's own content, with no invented IDs, no overwriting of existing values elsewhere, and no asserted value for a fact the document does not carry (the stripped design doc's ground-truth `impl-status` is `implemented`, and the spec-reviewer agent it documents does exist in `plugins/`, so a recommendation that states the feature is unimplemented is a fabricated claim rather than a schema default).",
       "assertions": [
         {
           "text": "front matter が無い文書を検出し、**その世代のスキーマ**に沿った推奨を提示している",
@@ -51,6 +51,10 @@
         },
         {
           "text": "文書種別の判定が配置と内容に一致している（`type` の誤分類がない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "文書の記述からは確認できない事実（実装が済んでいるか等）を、確認せずに断定した値として推奨・書き込みしていない。そうしたフィールドは不足している旨を報告して人間に委ねている",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
@@ -90,5 +94,6 @@
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.3 (2026-09-10): eval 0 に A6（確認していない事実を断定した値として書かない）を追加した。既存の A2 は「架空の ID を作らない」を、A3/A4 は「既存の値を書き換えない」を見ており、**新規に書き込む値が事実として正しいか**はどの assertion も見ていなかった。この穴は実在の欠陥を通していた: 旧世代のテンプレートは design 型の推奨ブロックに `impl-status: \"not-implemented\"` を無条件で含めており、このフィクスチャの `spec-review_design.md` は剥がす前の実値が `implemented` で、記述している spec-reviewer エージェントも実在する。つまり推奨に従うと実装済みの文書が未実装と刻まれ、`check-spec` の重大度分岐がその文書の退行を Critical から Info に落とす。A6 はパス名・フィールド名を含まないアウトカム記述なので、どの世代のスキーマでも同じ基準で採点できる（フィールドを補完しないこと自体は要求していない — 不足として報告するのは合格）。"
 }
