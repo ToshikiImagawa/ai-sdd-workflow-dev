@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**Note**: This release contains breaking changes and will ship as a major version bump (v5.0.0), not a
-minor/patch release.
+## [5.0.0] - 2026-09-10
+
+**Note**: This is a major release with breaking changes to the document model. Read
+"Migration from v4.x" in README.md / README.ja.md before upgrading an existing project. Migrating is
+**not urgent**: existing `specification/*_design.md` files remain valid, the naming hook accepts them,
+and the skills read them as supplementary input — nothing breaks until you move their decisions into
+`adr/`, at your own pace.
 
 ### Breaking Changes
 
@@ -19,9 +24,11 @@ minor/patch release.
 - **`specification/{feature-name}_design.md` is no longer a persistent document** - Technical Design
   Documents are now a temporary draft at `task/{ticket-number}/design-draft.md`, deleted after
   implementation like the rest of `task/`. Only the decisions, their rationale, and rejected
-  alternatives are persisted, in the new `adr/{feature-name}-decisions.md` (append-only). Projects with
-  existing persisted `*_design.md` files must migrate them manually — see "Migration from v4.x" in
-  README.md / README.ja.md
+  alternatives are persisted, in the new `adr/{feature-name}.md` (append-only). Existing
+  `specification/*_design.md` files from v4.x **remain valid**: every skill reads them as supplementary
+  input and none reports them as a naming violation or proposes deleting them. Moving their decisions
+  into `adr/{feature-name}.md` is a human-paced step you can take feature by feature — see "Migration
+  from v4.x" in README.md / README.ja.md
 - **`/generate-spec` now requires a ticket number** - The design draft path is ticket-scoped
   (`task/{ticket-number}/design-draft.md`), so `/generate-spec` takes `--ticket <number>` (required in
   `--ci` mode, resolved interactively otherwise)
@@ -61,18 +68,43 @@ minor/patch release.
   PRD text and merges the new content when called with `--amend`
 - **`/generate-spec --amend`** - New mode that appends new functional/non-functional requirements to an
   existing spec instead of regenerating it, preserving existing requirement IDs and sections
-- **`render-adr-review`** - New skill that renders an `adr/{feature-name}-decisions.md` decision log (or
+- **`render-adr-review`** - New skill that renders an `adr/{feature-name}.md` decision log (or
   the decision rationale section of a `*_spec.md`/`*_design.md`) into a temporary review HTML, structured
   by decision / rationale / rejected alternative rather than a plain Markdown-to-HTML conversion. Output
-  is written under `.sdd/.cache/render-adr-review/` and is not meant to be committed
+  is written under `.sdd/.cache/render-adr-review/` and is not meant to be committed.
+  Because the log records a reversal one-way — on the newer entry, leaving the entry it reverses
+  untouched — a superseded decision carries no marker of its own in the source and reads as current.
+  The render resolves each entry's `Supersedes` reference and marks the entry it points at as
+  superseded, so an obsolete decision is visibly distinct from the live one and links to the entry that
+  replaced it. A decision that was later reversed still shows as adopted within its own comparison
+  table: that is what was chosen at the time, and the reversal belongs to the entry's state, not to its
+  history
 - **`task-cleanup`** - Posts a summary comment to the ticket when implementation completes, and checks
   whether the decisions being integrated into `adr/` also trigger a `*_spec.md` update per the "When to
   Update `*_spec.md`" criteria; if so, proposes the spec update via `AskUserQuestion`
+- **`/sdd-init` now generates `${SDD_ROOT}/ADR_TEMPLATE.md`** - The decision log template ships with the
+  plugin in both languages and is copied like the PRD / spec / design templates (existing files are never
+  overwritten). It carries the settled ADR entry format, a worked two-entry example including one entry
+  superseding another, and a note to append below the last entry without touching the ones above. Note
+  that `/sdd-init` still creates only the `${SDD_ROOT}/` root itself — `adr/`, like `requirement/`,
+  `specification/` and `task/`, is created when its first file is written
+- **`/check-spec --ticket <number>`** - Scopes the auxiliary design draft to one ticket (see Fixed below)
 
 #### Configuration
 
 - **`SDD_ADR_DIR` / `SDD_ADR_PATH`** - New environment variables for the `adr/` directory, set at session
   start alongside the existing `SDD_*_DIR` / `SDD_*_PATH` variables
+
+#### Hooks
+
+- **`UPDATE_REQUIRED.md` now covers the v4.x -> v5.x document model migration** - When the SessionStart
+  hook finds that `CLAUDE.md` needs updating it writes `${SDD_ROOT}/UPDATE_REQUIRED.md`, which used to
+  mention only `/sdd-init`. If the project still holds `specification/**/*_design.md` files, that file
+  now also lists them (up to ten, then a count) and states that they remain valid and are read as
+  supplementary input, where their decisions move (`adr/{feature-name}.md`), where new technical design
+  goes (`task/{ticket-number}/design-draft.md`), where the steps are (README's "Migration from v4.x"),
+  and that the originals should be kept until the migration is done. A project with no such files gets
+  exactly the same file as before
 
 #### Front Matter
 
@@ -84,11 +116,15 @@ minor/patch release.
 - **`sdd-version` is now read, not just written** - The document index (`.cache/index.md`) now includes
   `sdd-version` in its Metadata table. `front-matter-reviewer` validates its semver format and warns when a
   document's major version is older than the current plugin's major (a possible sign of a missed migration).
-  `doc-consistency-checker` can enumerate documents with a stale generation using the index, as an advisory
-  candidate list for manual migration review
+  `doc-consistency-checker` enumerates both documents with a stale generation and documents whose
+  generation is unknown (no `sdd-version` at all — the normal state for anything written before v5), as
+  two separate advisory lists for manual migration review
 - **`type: "adr"` schema** - `shared/references/front_matter_reference.md` now defines the front matter
-  fields for decision log entries, including `supersedes` / `superseded-by` for recording when a later
-  decision reverses an earlier one without rewriting the append-only log
+  fields for a decision log, including `status` (always `"approved"` at write time) and `supersedes` /
+  `superseded-by`. Those two fields are **file-level only**: a log holds many entries but a single front
+  matter block, so they record that a whole log file was retired and replaced (a feature renamed, split
+  or merged). One entry reversing another is recorded in the body of the newer entry instead — see the
+  ADR entry format below
 - **`impl-status` is now a valid Spec field, not just Design** - A spec can now record whether its described
   behavior is reflected in the implementation, independent of `status` (the document's approval lifecycle).
   `generate-spec` sets it to `"not-implemented"` on new specs; `implement` advances it to `"in-progress"` /
@@ -96,9 +132,8 @@ minor/patch release.
   now classifies a spec-documented function with no matching implementation by this field instead of always
   flagging it Critical: `implemented` is a regression (Critical), `not-implemented`/`in-progress` is expected
   (Info), and a missing field is undecidable (Warning, with a recommendation to add it). `front-matter-reviewer`
-  validates the field's enum value on specs, and `recommend-front-matter` now also flags specs that already
-  have front matter but are missing just this field, recommending the single field addition without touching
-  anything else
+  validates the field's enum value on specs, and `recommend-front-matter` lists the specs that are missing it
+  — it never writes the value, because it does not inspect the implementation (see Changed below)
 
 #### Workflow Guidance
 
@@ -114,6 +149,15 @@ minor/patch release.
 - **`vibe-detector` now recommends a starting phase** - Its risk report classifies the request against the
   Task Type Determination table and reports the corresponding starting phase (Specify/Plan/Tasks/Implement),
   in addition to the existing ambiguity risk assessment
+- **The ADR entry format is now specified instead of left to each skill** - `AI-SDD-PRINCIPLES.md` gained
+  an "Entry Format" section under Architecture Decision Record: a file is one front matter block, one `#`
+  title, and many `##` entries appended at the end. Each entry is headed `## YYYY-MM-DD {decision title}`
+  and carries **Decision**, **Rationale** and **Rejected alternatives** (`None considered` when there were
+  none — never invented), plus an optional **Supersedes** linking to the earlier entry in the same file
+  that it reverses. Superseding is recorded one-way on the newer entry; the entry it reverses is never
+  edited, not even to add a back-pointer, so the log stays append-only and the last entry is always the
+  current decision. Those items match one-for-one what `render-adr-review` and `doc-consistency-checker`
+  extract, so a log written this way is readable by the skills without further conventions
 
 ### Fixed
 
@@ -123,11 +167,15 @@ minor/patch release.
 - **Editing a decision log now refreshes the document index** - The `PostToolUse` reminder fired, but the
   index update it triggers for other document types did not run for `adr/`
 - **`AI-SDD-PRINCIPLES.md`'s Configuration Items table and `.sdd-config.json` example now document
-  `directories.adr`** - The directory itself was already created by `sdd-init` and resolved by
-  `session-start`; only the documentation was missing
-- **`doc-consistency-checker`'s Obsolescence Detection now specifies how to record a reversal** - Propose
-  appending a new decision log entry with `supersedes` set, and `superseded-by` on the obsolete entry,
-  instead of leaving the follow-up action undefined
+  `directories.adr`** - `session-start` already resolved the setting into `SDD_ADR_DIR` / `SDD_ADR_PATH`,
+  and `adr/` is created the first time a file is written into it (`/sdd-init` creates only the
+  `${SDD_ROOT}/` root, never the subdirectories); only the documentation of the setting was missing
+- **`doc-consistency-checker`'s Obsolescence Detection now specifies how to record a reversal** - The
+  follow-up action used to be undefined. It now proposes appending a new entry to the end of the same
+  `adr/{feature-name}.md`, with the required items plus a `Supersedes` link to the entry it reverses. The
+  obsolete entry is left exactly as it is — no back-pointer, no `status: "deprecated"`, and nothing
+  written into the file-level `supersedes` / `superseded-by` front matter fields, which cannot express a
+  relationship between two entries of the same file
 - **`adr/{feature}.md` front matter now has a `ticket` field, and `task-cleanup` sets it** - Previously,
   when a ticket's tracker (GitHub Issue / JIRA) was unreachable, `task-cleanup` skipped step 9 (posting a
   completion summary) with no fallback, and deleting `task/{ticket-number}/` erased the only link between
@@ -187,6 +235,163 @@ minor/patch release.
   `<<include>>`/`<<extend>>` relationship should attach to when the caller doesn't specify, and a rule to
   surface (rather than silently drop) input attributes that have no corresponding slot in the existing PRD
   structure (e.g. `Priority`)
+- **The "Migration from v4.x" steps in README.md / README.ja.md now work** - Step 1 told you to re-run
+  `/sdd-init` to create the `adr/` directory and its template, but the script creates only the
+  `${SDD_ROOT}/` root and no ADR template existed at all. Step 6 told you to verify with `/check-spec` or
+  `doc-consistency-checker` after deleting a `*_design.md`, and neither skill checks link health, so
+  following it would have left broken `depends-on` values and body links behind silently. Step 1 now
+  states what re-running actually gives you (`ADR_TEMPLATE.md`, with `adr/` created on the first write
+  into it), and step 6 is a concrete `grep -rn "_design\.md" .sdd/` with the note that no skill reports
+  broken links and that keeping the old file is a valid choice. The remaining steps now use the settled
+  ADR entry format and the real front matter field list
+- **README.md / README.ja.md now list every breaking change, and explain ticket numbers** - "Breaking
+  Changes in v5.0.0" covered three of this release's breaking changes, so the `/check-spec` baseline
+  inversion, `/plan-refactor`'s new case decision and ticket argument, `/task-breakdown`'s required
+  ticket number and dropped fallback, and `doc-consistency-checker`'s new target were discoverable only
+  from this changelog; the section now matches it one-for-one. A new "Ticket Numbers" section lists, per
+  skill, how the number is passed and whether it is required, and explains that a project without an
+  issue tracker can use any stable identifier (the feature name being the easy choice) — only
+  `/task-cleanup`'s completion comment needs a tracker, and when none is reachable it is skipped while
+  the association survives in the `ticket` front matter field of `adr/{feature-name}.md`. The `/sdd-init`
+  description was corrected (it creates the root only, and `CONSTITUTION.md` comes from
+  `/constitution init`), and `SDD_INDEX` was added to the environment variable table
+- **v4.x persistent design documents are now handled identically by every skill** - `check-spec`,
+  `plan-refactor` and `task-breakdown` already read a leftover `specification/*_design.md` as an
+  auxiliary input, but the rest of the plugin disagreed with them and with each other: `/implement` did
+  not accept one as satisfying its Technical Design prerequisite, so resuming a feature started on v4.x
+  asked you to regenerate a design draft that had never existed; `/generate-spec`'s existing-document
+  check never looked for one, so a new draft could contradict the recorded technology stack and module
+  layout; `spec-reviewer` could not review one; `task-cleanup` declared it a temporary file deleted by
+  another flow; `plan-refactor` called it "needs manual migration"; and the naming quick reference listed
+  it under "Incorrect Naming (never use these)" even though the naming hook has always allowed it. All of
+  them now say the same thing: such files **remain valid**, are read as **supplementary input**, their
+  **absence is normal**, new technical design always goes to `task/{ticket-number}/design-draft.md`, and
+  none of them is ever reported as a naming violation or proposed for deletion
+- **`/generate-spec`'s completion report no longer claims files it never wrote** - It reported
+  `specification/{feature}_design.md` (or `index_design.md` for a hierarchical feature) as generated — the
+  very document this release retired — and pointed at `/task_breakdown` and `/check_spec`, neither of
+  which is a real command name. It now reports the persistent spec plus the temporary
+  `task/{ticket-number}/design-draft.md`, with instructions to drop that line and say why when the draft
+  was skipped, and the next steps are the real `/task-breakdown {feature} {ticket-number}`, `/check-spec`,
+  and `/task-cleanup {ticket-number}` to move the decisions into `adr/` before the draft is deleted
+- **The spec template copied into your project now describes the v5 document model** -
+  `.sdd/SPECIFICATION_TEMPLATE.md` still sent technology-choice rationale, architecture and the record of
+  design decisions to a persistent `xxx_design.md` and never mentioned `adr/`, so specs written from it
+  kept pointing at the retired document. Its comparison table now covers all three documents (spec:
+  persistent / design draft: temporary / decision log: persistent and append-only), the header links to a
+  Related Design Draft and a Related Decision Log, the excluded content is split by destination
+  (decisions, their rationale and rejected alternatives to `adr/{feature-name}.md`; everything else
+  technical to the draft), and it warns that a decision left only in the draft is lost when the draft is
+  deleted
+- **`task-cleanup` verifies the `adr/` append before deleting `task/{ticket-number}/`** - The deletion
+  step ran `git rm` without checking that the integration had landed, so an incomplete extraction or a
+  failed edit destroyed the design decisions permanently. A verification gate now runs first: the decision
+  log is re-read from disk, the appended entry's `## YYYY-MM-DD {title}` heading and its Decision /
+  Rationale / Rejected alternatives are confirmed present and non-empty, the entries that existed
+  beforehand are confirmed unchanged, and the front matter and other document edits from the preceding
+  step are confirmed on disk. If any check fails nothing is deleted: `task/{ticket-number}/` is left in
+  place and the gap is reported
+- **`doc-consistency-checker` no longer reports "0 stale" for a project it never assessed** - Documents
+  with no `sdd-version` were explicitly excluded from the stale list, and that field does not exist in
+  anything written before v5, so a project made entirely of pre-v5 documents always got "stale: 0" —
+  indistinguishable from a completed migration. Stale (`sdd-version` present, older major) and
+  generation-unknown (`sdd-version` absent) are now counted and reported as two separate lists, both
+  always shown even when one is zero (e.g. `stale: 0 / generation unknown: 85 of 85 checked`), and both
+  are computed with Grep + Glob, so the check is no longer skipped when the document index is disabled
+- **`doc-consistency-checker` no longer reports an area it never checked as consistent** - With `adr/`
+  empty and only v4.x `specification/*_design.md` files present, the spec ↔ decision-record checks simply
+  did not run and the report came back clean. It now branches: entries in `adr/` are checked as before;
+  with no entries but a v4.x design document present, the same four checks run against that document and
+  are reported as `spec ↔ design (v4.x legacy)`; with neither, the area is reported as `not checked`,
+  never as consistent. Every report now opens with which decision record it used, and which checks it
+  could not run and why
+- **`front-matter-reviewer` can now validate `adr/` documents** - `adr/` was missing from its type
+  determination, its id patterns and its cross-reference Glob, so every `adr-*` reference looked
+  unresolved, duplicate ids inside `adr/` went undetected, and ADR's own fields were never checked. It now
+  determines `type: "adr"` for `adr/*.md` (and `type: "design"` for
+  `task/{ticket-number}/design-draft.md`), accepts `adr-*` ids, checks the ADR-specific fields, verifies
+  the file-level `supersedes` / `superseded-by` pointers on both sides, and raises an error when an entry
+  heading or anchor has been written into those file-level fields instead of the entry body. A missing
+  `sdd-version` is reported as info ("generation unknown") rather than silently dropped
+- **`spec-reviewer` reviews the design draft** - Its input format and its technical-design section still
+  required `specification/{feature}_design.md`, so it could not review what `/generate-spec` now produces.
+  It takes `task/{ticket-number}/design-draft.md` — whose absence is normal, in which case the spec ↔
+  design traceability check is reported as not applicable — checks ticket scope in place of the retired
+  hierarchical structure, asks for the rejected alternatives a later `adr/` entry will need, and reviews a
+  v4.x design document as supplementary input
+- **`/check-spec` no longer mixes another ticket's design draft into the comparison** - Its helper script
+  collected every `design-draft.md` under `task/`, so with several tickets in flight another ticket's
+  design was fed in as auxiliary input and produced module-structure warnings against the wrong feature.
+  A draft is now selected by `--ticket <number>` when given, otherwise by its `depends-on` matching the
+  target spec's id, otherwise by being the only draft in the project; when several candidates remain and
+  there is no evidence, none is used, the candidates are listed, and re-running with `--ticket` is
+  recommended. The same script also no longer mistakes a leading flag for a feature name, which made
+  `/check-spec --full` search for a spec named `--full`
+- **`/check-spec` now reports the discrepancies it downgraded** - The `impl-status`-based downgrade of
+  Critical findings happens silently, and since v4.x documents have no `impl-status` at all, an entire
+  report could be downgraded and then read as "0 Critical". The report now always states how many
+  findings were downgraded to Warning (field absent) and to Info (`not-implemented` / `in-progress`),
+  even when that is zero, and that downgraded findings are unresolved rather than fixed. The undecidable
+  case no longer points at an automatic `impl-status` fix that does not exist — it explains listing the
+  specs, checking the implementation, and filling in the value yourself. And because neither the default
+  run nor `--full` detects drift between `adr/` and the implementation (`--full` compares spec ↔ adr as
+  documents), the report now shows `adr ↔ Implementation: Not checked` with the manual step, and the
+  limitation is stated in the skill
+- **`recommend-front-matter` recommends the right id for a design draft** - Id generation had no design
+  exception, so `task/{ticket-number}/design-draft.md` was given a feature-scoped id that no
+  cross-reference could resolve; it is now `design-{ticket-number}` (no feature name, and the ticket
+  directory is not treated as a hierarchy parent), while a v4.x `specification/*_design.md` keeps its
+  feature-scoped form. `depends-on` inference for a task or implementation log now looks for the draft in
+  the same `task/{ticket-number}/` first and falls back to a v4.x design document, with neither being
+  present a normal result, and the missing `adr` -> `spec` inference step was added
+- **`sdd-init`'s Migration Support no longer describes work it does not do** - It claimed that re-running
+  the command generates `${SDD_ROOT}/AI-SDD-PRINCIPLES.md` when missing; that file (and
+  `.claude/rules/ai-sdd-instructions.md`) is owned by the SessionStart hook, which re-syncs it every
+  session, and the script never touches it. It also detected "this project needs migration" from that
+  file's absence — a state the hook makes impossible. Detection is now the absence of `ADR_TEMPLATE.md`
+  (an initialization from before the `adr/` document model), the template list covers all four templates,
+  and a new subsection walks through migrating a v4.x project to the v5 document model
+- **`checklist`'s spec table no longer contradicts its own naming note** - The table marked
+  `{feature-name}_spec.md` (and `index_spec.md` for a hierarchical parent) as required, while the note
+  below it said the suffix is optional under `specification/`. Either form now satisfies those rows
+- **`/constitution validate` no longer skips suffix-free specs** - Its pre-scan globbed
+  `specification/**/*_spec.md`, but this release makes the `_spec` suffix optional there, so a spec named
+  `{feature-name}.md` was never scanned and its principle compliance silently went unchecked. The scan now
+  takes every `.md` under `specification/` except a v4.x `*_design.md`, which keeps its own separate list
+- **The constitution template no longer requires a persistent design document** - The shipped
+  `CONSTITUTION.md` template (and the `/constitution` examples and report template) told a project to
+  require `specification/*_design.md` for every implementation - the document this release retired. Those
+  rows now name the v5 documents: the abstract spec (suffix optional), the ticket's temporary
+  `task/{ticket-number}/design-draft.md`, and `adr/{feature-name}.md` for the settled decisions
+- **v4-era document tables in the PRD template, the implementation log and the vibe-detector report** - The
+  PRD template's document comparison, the implementation log's "content to integrate" section and
+  `vibe-detector`'s specification-status table all still described `xxx_design.md` as the persistent
+  technical document, so a project reading them would keep writing decisions into a file the workflow no
+  longer keeps. They now show the spec / design-draft / decision-log split, and the implementation log's
+  integration checklist points each item at the matching `adr/` entry item (Decision / Rationale /
+  Rejected alternatives)
+- **Output templates no longer print command names that do not exist** - Templates and examples across
+  `task-breakdown`, `clarify`, `check-spec`, `implement`, `constitution` and `vibe-detector` still told the
+  reader to run `/check_spec`, `/generate_spec` or `/task_cleanup` - the pre-v4 underscore spellings, which
+  have not been valid command names since the rename to hyphens. They now name the real commands
+  (`/check-spec`, `/generate-spec`, `/task-cleanup`)
+- **`sdd-init`'s "What This Command Does" list no longer claims it creates `CONSTITUTION.md`** - Item 2 said
+  the command generates `${SDD_ROOT}/CONSTITUTION.md` when missing, contradicting three later sections of the
+  same file and `init-structure.py`, which deliberately excludes it. It now says the command reports the
+  missing file and points at `/constitution init`
+- **`run-checklist` reports a missing checklist instead of verifying nothing** - Its error handling covered
+  test failures and unavailable tools, but not the checklist itself being absent. It now reports the path
+  it resolved, how the ticket was resolved (argument or feature name), and the two ways forward (re-run
+  with the ticket number, or generate the checklist with `/checklist`), and it never reports verification
+  results for a checklist it could not read
+- **PRD-level requirement ID format is resolved from `id_conventions` instead of being hardcoded** -
+  `analyze-requirements`, `prd-reviewer`, and `generate-requirements-diagram` hardcoded hyphen notation
+  (`UR-xxx` / `FR-xxx` / `NFR-xxx`) while the bundled PRD template and the rest of the pipeline already
+  produced `UR_001` / `FR_001`. A project that configured `id_conventions` in `.sdd-config.json` had it
+  ignored by those three, and even a default project got requirement-analysis IDs that did not match the
+  IDs its own PRD template wrote. All three now resolve the format per
+  `shared/references/id_conventions_config.md` § PRD-Level ID Format Resolution, falling back to
+  `UR_xxx` / `FR_xxx` / `NFR_xxx`, so a configured convention is honored end to end
 
 ### Changed
 
@@ -209,9 +414,17 @@ minor/patch release.
   `specification/` and asks for the spec to be kept in sync. Previously it looked for
   `{stem}_design.md`, which no longer exists as a persistent document, so the reminder never fired.
   The `.sdd/` document reminders now refer to PRD ↔ spec ↔ adr
+- **A feature that has only a v4.x design document still gets a reminder** - With the lookup moved to the
+  spec, editing source for a feature whose only document is `specification/{stem}_design.md` produced no
+  output at all, silently dropping the reminder such projects used to get. That case now has its own
+  message: the design document is valid supplementary reading, its decisions belong in
+  `adr/{feature-name}.md`, the steps are in the README's "Migration from v4.x", and it should not be
+  deleted before that is done. When a spec exists the unchanged spec-sync reminder is used instead, and
+  only ever one message is emitted
 - **`adr/` edits now get a reminder** - Editing a decision log used to produce no output at all. It now
   reminds that decision logs are append-only and that a decision changing the specification must be
   reflected in the spec
+
 #### Skills
 
 - **Downstream skills now read the Design Doc from `task/{ticket-number}/design-draft.md`** -
@@ -232,9 +445,6 @@ minor/patch release.
 - **`implement` accepts an abstract spec with or without the `_spec` suffix** - The suffix became optional
   under `specification/`, but the prerequisite check still demanded `{feature}_spec.md`; either
   `{feature}.md` or `{feature}_spec.md` now satisfies it
-
-#### Skills
-
 - **`/plan-refactor` hands its decisions off to `adr/`** - The completion output now points at
   `/task-cleanup`, which appends the settled decisions to `adr/{feature-name}.md` before the design draft
   (and with it the refactoring plan) is deleted. The skill deliberately does not write to `adr/` itself:
@@ -242,6 +452,50 @@ minor/patch release.
 - **`doc-consistency-checker` points PRD-update recommendations at `/generate-prd --amend`** - When a spec
   change contradicts a PRD requirement and a human chooses to update the PRD, the recommended path is now
   `/generate-prd --amend` instead of an unspecified manual edit
+- **Every ticket number can be passed as `--ticket <number>` or `--ticket=<number>`** - The skills each
+  documented one form or the other, so a habit learned from one did not carry over. `/generate-spec`,
+  `/plan-refactor`, `/task-breakdown`, `/implement`, `/checklist`, `/run-checklist`, `/clarify`,
+  `/task-cleanup` and `/check-spec` now state that both forms are accepted and equivalent, and that where the number is a positional argument
+  the flag form does not consume the positional slot. `/generate-spec`'s `argument-hint` also lists
+  `--ticket`, `--ci` and `--amend`, which never appeared in completion before. In `--ci` mode a missing
+  ticket number stops the skill before anything is read or written, naming the missing argument and
+  showing a corrected invocation, instead of inventing a placeholder number or a `task/unknown/` directory
+- **The skills that allow omitting the ticket number now state what they resolved** - `/implement`,
+  `/checklist`, `/run-checklist`, `/clarify` and `/task-cleanup` fall back to the feature name (or to the
+  whole `task/` directory), which quietly changes which paths are read and written. Each now states the
+  resolved path in its output, and when nothing is found there it reports that path, that the omitted
+  ticket number is the likely cause, and the two ways forward — instead of searching other task
+  directories or starting work without the document it needed. `/clarify` also states when it analyzed the
+  PRD and spec alone, so the reduced coverage of design-related questions is visible
+- **`recommend-front-matter` reports specs missing `impl-status`, and never writes the field** - `--apply`
+  used to add `impl-status: "not-implemented"` to specs that already had front matter, and include it in
+  the block it wrote for documents that had none. That value is a claim about the implementation, which
+  this skill does not inspect, and writing `not-implemented` onto an already-implemented spec turns
+  `/check-spec`'s regression detection (Critical) into an expected-gap note (Info) — the exact failure the
+  field exists to catch. It now leaves every document that already has front matter untouched, omits
+  `impl-status` from the blocks it writes, and simply lists the specs missing the field so you can check
+  the implementation and fill in `implemented` / `in-progress` / `not-implemented` yourself. The approval
+  prompt's count is now just the documents that have no front matter
+- **`task-cleanup`'s decision-log append follows the settled entry format** - The instruction was to
+  "append to the end" and "match the structure of existing entries", which left the heading shape and the
+  item names to chance. One decision is now one `## YYYY-MM-DD {decision title}` entry carrying Decision /
+  Rationale / Rejected alternatives (`None considered` when there were none, never invented) and an
+  optional `Supersedes` link to an earlier entry in the same file. Rewriting, reordering or deleting
+  existing entries is prohibited, a superseded entry is not edited at all, and a reversal must not be
+  written into the file-level `supersedes` / `superseded-by` front matter fields
+- **`task-cleanup` names a destination for the know-how it deletes** - Implementation tips,
+  troubleshooting notes and performance findings were classified as safe to delete with nowhere to put
+  them, so they were simply lost. Know-how is not a decision and does not become an `adr/` entry (it can
+  appear as part of a decision's rationale); the skill now requires a destination for each item it drops —
+  a code comment, a test that pins the behavior, or the `*_spec.md` — and reports where each one went
+- **`/plan-refactor`'s technical debt observations now get a persistent destination** - They were written
+  into the design draft and vanished with it. Each observation is now assigned one of three destinations:
+  debt this refactoring resolves goes into the rationale of the `adr/` entry `/task-cleanup` appends; debt
+  deliberately deferred becomes a tracker item whose id is recorded in the plan (and, when deferring is
+  itself a decision, its own entry at cleanup); debt where the implementation contradicts the spec becomes
+  a proposed `*_spec.md` correction for a human to approve. No new debt document is created — v5 has no
+  standing debt ledger and `adr/` records decisions — and the completion output lists any observation left
+  without a destination
 
 #### Documentation
 
