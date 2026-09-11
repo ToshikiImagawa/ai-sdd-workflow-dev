@@ -34,6 +34,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   readability guideline conflict** - Completeness wins; split into a per-subsystem diagram first, and
   only compress sub-requirements into a single annotated node when splitting does not apply, stating
   explicitly which sub-requirements were compressed and why
+- **`clarify` now checks the implementation before flagging an NFR/constraint as ambiguous** - When the
+  target feature's `impl-status` is `implemented`, an apparently undefined threshold or timeout may
+  already be a concrete decision recorded only in code (a `TIMEOUT_SECONDS` constant, for example)
+  rather than in the spec's prose; the analysis now searches the implementation for that value before
+  raising a question the codebase has already settled
+- **`generate-requirements-diagram` no longer edits the target document to fill a missing diagram
+  section** - The "returns text only" contract now says explicitly that a missing section must not be
+  "helpfully" filled in with `Write`/`Edit`; the diagram is still returned as text, leaving the write
+  decision to the caller
+- **`checklist` requires a priority on every item, in every category** - Including any category added
+  beyond the standard nine (e.g. a principle-compliance category), and the priority-scheme origin note
+  now requires an actual comparison between the SKILL.md body and the template rather than a copy of the
+  reminder text
+- **`check-spec` matches NFRs individually against the implementation, the same way FRs are** - A closing
+  summary sentence for NFRs no longer satisfies the per-requirement matching check; severity
+  classification also now states explicitly that severity tracks impact (public interface / observable
+  behavior / data model vs. internal-only), not detection confidence
 
 ## [5.0.0] - 2026-09-10
 

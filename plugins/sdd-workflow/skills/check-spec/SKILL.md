@@ -299,7 +299,8 @@ it claims to implement, only one that simply hasn't started yet.
 | **Public API**              | Do public names, arguments, return values, CLI options, and environment variables match? | High |
 | **Data Model**              | Do entities, fields, types, and output structures match?        | High       |
 | **Behavior**                | Does observable behavior match the spec per requirement ID?     | High       |
-| **Functional Requirements** | Are functions specified in the spec implemented?                | High       |
+| **Functional Requirements** | Is each FR-xxx individually matched against the implementation? A closing sentence like "all FRs are implemented" does not satisfy this — show the matching implementation (or its absence) per FR-xxx | High       |
+| **Non-Functional Requirements** | Is each NFR-xxx individually matched against the implementation, the same way each FR-xxx is? A closing sentence like "all NFRs are correctly reflected" does not satisfy this — show the matching implementation (or its absence) per NFR-xxx | High       |
 | **Literal Values**          | Do thresholds, enum values, and constraint values match between spec and implementation? | High |
 | **Constraints**             | Does the implementation stay within the spec's stated constraints? | Medium  |
 
@@ -342,6 +343,15 @@ If a value exists in only one layer (e.g., a threshold hard-coded in the impleme
 report it under "Implementation not documented in specs" instead of as drift.
 
 ### 5. Discrepancy Classification
+
+**Severity is about impact, not detection confidence.** How certain you are that a finding is real (e.g.
+confirmed directly by reading the code vs. inferred from indirect evidence) is a different axis from how
+much it matters (whether it touches a public interface, externally observable behavior, or the data
+model, versus staying inside internal implementation detail). Do not substitute a confidence label for
+the classification below, and do not let findings default to the same severity just because your
+confidence in them happens to be equal — grade each by its own impact. A finding you are highly
+confident about can still be low severity (an internal-only detail), and a finding you are less certain
+about can still be Critical if, once confirmed, it would touch a public interface or the data model.
 
 Classify detected discrepancies as follows:
 

@@ -26,7 +26,9 @@
 | Performance Review    | -           | -  | -  | -  |
 | Deployment Review     | -           | -  | -  | -  |
 
-**Priority Levels** (must match the definition in the SKILL.md body):
+**Priority Levels** — record here whether you actually compared this definition against the SKILL.md
+body and found them consistent, or found and resolved a discrepancy (do not copy this line verbatim as
+if that comparison had been performed):
 
 - **P1 - High**: Must pass before merge (checked before PR creation)
 - **P2 - Medium**: Should pass before merge (checked during PR review)
