@@ -123,8 +123,11 @@ jobs:
           # gh pr create は origin 上のブランチを参照するため、先に push する
           git push -u origin "$BRANCH"
 
-          # PR 作成（draft ではなく通常の PR）
-          PR_OUTPUT=$(gh pr create \
+          # PR 作成（draft ではなく通常の PR）。gh pr create の標準出力は
+          # "https://.../pull/123" という素のURLで "#" を含まないため、そこから
+          # 番号を抽出しようとすると常に空文字列になる。作成後に head branch で
+          # 引き直す方が、出力フォーマット変化にも強い
+          gh pr create \
             --base main \
             --head "$BRANCH" \
             --title "Release: v$VERSION" \
@@ -135,10 +138,9 @@ jobs:
 
           Automated merge from develop to main by \`prepare-release\` workflow.
 
-          Triggered by @${{ github.actor }}")
+          Triggered by @${{ github.actor }}"
 
-          # PR 番号を抽出（最後の行から）
-          PR_NUMBER=$(echo "$PR_OUTPUT" | grep -oP '#\K\d+' | tail -1)
+          PR_NUMBER=$(gh pr view --repo "${{ github.repository }}" "$BRANCH" --json number --jq '.number')
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "PR created: #$PR_NUMBER"
         env:
