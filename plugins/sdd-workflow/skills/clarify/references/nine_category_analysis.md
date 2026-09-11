@@ -26,6 +26,16 @@ For each category, classify clarity as:
 | **Partial** | Concept exists but details missing     | "Handle errors appropriately"       |
 | **Missing** | Not mentioned in specifications        | No mention of authentication flow   |
 
+**Check the implementation before classifying Non-Functional Requirements / Constraints as Partial or
+Missing**: when the target feature's `impl-status` is `implemented` (or it otherwise has real code
+behind it), an apparently undefined threshold, limit, or timeout may already be a concrete decision
+recorded only in the implementation (e.g. a `TIMEOUT_SECONDS` constant, a hard-coded retry count) rather
+than in the spec's prose. Search the relevant implementation (scripts, config defaults, constants) for
+the value before raising a clarification question about it. If the implementation already answers the
+question, classify the category as **Clear** and cite the implementation as the basis instead of
+re-asking something the codebase has already settled. Only when neither the spec nor the implementation
+fixes the value does it remain genuinely ambiguous.
+
 ## Category Analysis Summary (Required Output)
 
 Record the Clear / Partial / Missing classification for **all 9 categories**, not only the ones that

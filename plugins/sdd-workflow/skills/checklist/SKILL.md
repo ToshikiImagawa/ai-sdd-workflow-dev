@@ -206,6 +206,16 @@ Assign priority levels:
 | **P2 - Medium** | P2   | Should pass before merge | During PR review   |
 | **P3 - Low**    | P3   | Nice to have             | Opportunistic      |
 
+**Assign a priority to every item, in every category** — including any category you add beyond the
+standard nine (e.g. a principle-compliance category). An item without a priority leaves the reader
+unable to judge sequencing, regardless of which category it sits in.
+
+**Priority-scheme origin (required)**: when you state that the priority scheme "matches the SKILL.md
+definition" or similar, that statement must follow an actual comparison, not a copy of this reminder.
+Name the documents you compared (this SKILL.md body vs. the template) and say explicitly whether they
+agreed or you found and resolved a discrepancy — a bare restatement of "matches the definition" without
+that comparison record does not satisfy this.
+
 ## Output Format
 
 ### Checklist Document

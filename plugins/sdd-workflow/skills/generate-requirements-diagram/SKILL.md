@@ -146,6 +146,11 @@ Check Quality Checks items before returning output.
 
 **IMPORTANT**: This skill returns text only. It does NOT write files.
 
+This holds even when the target document is missing the diagram section entirely (removed, or it never
+had one): do not "helpfully" fill the gap by editing the document yourself with `Write` or `Edit` — those
+tools are in `disallowed-tools` for exactly this reason. Return the diagram as text regardless, and leave
+the decision of whether and where to write it to the caller.
+
 Return a markdown structure with a `## Requirements Diagram (SysML)` section (containing the Mermaid
 `requirementDiagram`), a `## Diagram Structure` section, and a `## Relationship Summary` table. See
 `references/output_example.md` for a complete worked example.
