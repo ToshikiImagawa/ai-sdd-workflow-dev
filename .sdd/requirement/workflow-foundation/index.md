@@ -79,6 +79,7 @@ flowchart LR
 | セッション設定初期化 | [session-config.md](session-config.md) | FR_003 |
 | front matter 推奨 | [front-matter-recommend.md](front-matter-recommend.md) | FR_004 |
 | ドキュメントインデックス | [documentation-index.md](documentation-index.md) | FR_005 |
+| タスク種別判定と破壊的変更・PRD起草ポリシー | [task-type-determination.md](task-type-determination.md) | FR_006 |
 | クロスプラットフォーム移植性 | [cross-platform-portability.md](cross-platform-portability.md) | NFR_002 |
 
 > **採番の規約:** 「元要求 ID」列は本ファイル（親 PRD）の全体要求図での ID を示す。各子 PRD は自ファイル内スコープで
@@ -170,6 +171,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement TaskTypeGuidance {
+        id: FR_006
+        text: "タスク種別判定表に破壊的変更を追加し破壊的変更の扱いとPRD起草ポリシーを定義・伝播する"
+        risk: medium
+        verifymethod: inspection
+    }
+
     requirement BackwardCompatibility {
         id: NFR_001
         text: "front matterのない既存ドキュメントも引き続き有効である"
@@ -218,6 +226,7 @@ requirementDiagram
     FrontMatterRecommend - derives -> MetadataReadiness
     BackwardCompatibility - traces -> MetadataReadiness
     DocumentationIndex - derives -> TokenEfficientReference
+    TaskTypeGuidance - derives -> PrincipleGovernance
     WorkflowFoundation - contains -> PrincipleGovernance
     WorkflowFoundation - contains -> ConsistentSession
     WorkflowFoundation - contains -> MetadataReadiness
@@ -225,6 +234,7 @@ requirementDiagram
     SessionInit - traces -> ConfigSchema
     ProjectInit - traces -> ConfigSchema
     DocumentationIndex - traces -> ConfigSchema
+    LanguageSupport - traces -> TaskTypeGuidance
     StructureSupport - traces -> ProjectInit
     DefaultFallback - traces -> SessionInit
     DefaultFallback - traces -> DocumentationIndex

@@ -113,6 +113,7 @@ graph TD
   "directories": {
     "requirement": "requirement",
     "specification": "specification",
+    "adr": "adr",
     "task": "task"
   },
   "index": true
@@ -127,6 +128,7 @@ class SddConfig:
     lang: str = "en"
     requirement_dir: str = "requirement"
     specification_dir: str = "specification"
+    adr_dir: str = "adr"
     task_dir: str = "task"
     index: bool = True
 ```
@@ -136,9 +138,11 @@ class SddConfig:
 export SDD_ROOT=".sdd"
 export SDD_REQUIREMENT_DIR="requirement"
 export SDD_SPECIFICATION_DIR="specification"
+export SDD_ADR_DIR="adr"
 export SDD_TASK_DIR="task"
 export SDD_REQUIREMENT_PATH=".sdd/requirement"
 export SDD_SPECIFICATION_PATH=".sdd/specification"
+export SDD_ADR_PATH=".sdd/adr"
 export SDD_TASK_PATH=".sdd/task"
 export SDD_LANG="en"
 export SDD_INDEX="on"
@@ -200,6 +204,7 @@ plugins/sdd-workflow/
 | index の制御値           | (a) 文字列 on/off / (b) 真偽値のみ                  | **(b) 真偽値のみ**              | 型を真偽値に統一し曖昧さを排除。非真偽値は警告 + 既定にフォールバックして後方の誤設定に耐える           |
 | インデックス構築言語      | (a) 外部 CLI（jq/sqlite3 コマンド）/ (b) Python 標準ライブラリ | **(b) Python 標準ライブラリ**  | `sqlite3` モジュールは標準同梱。OS 固有 CLI 非依存で移植性を確保（NFR-002）                          |
 | ルート解決              | (a) CWD 固定 / (b) CLAUDE_PROJECT_DIR → git → CWD    | **(b) フォールバック連鎖**       | フック実行時の CWD は不定。環境変数 → git ルート → CWD の順で頑健に解決する                          |
+| `.sdd-config.json` の `adr` 明示 | (a) 既定値 `"adr"` に委ねて明示しない / (b) `directories.adr` を明示する | **(b) 明示する** | `adr_dir` は既定値にフォールバックするため明示しなくても動作するが、`requirement` / `specification` / `task` は既定値と同値でも `directories` に明示されている。`adr` のみ省略すると設定ファイルの表記方針が一貫しなくなるため、既存パターンに合わせて明示する |
 
 ## 9.2. 未解決の課題
 

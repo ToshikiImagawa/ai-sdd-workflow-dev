@@ -1,0 +1,58 @@
+{
+  "skill_name": "doc-consistency-checker",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/doc-consistency-checker/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+193/-78 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "sdd-init-doc-consistency",
+      "prompt": "プロジェクト初期化機能（sdd-init）に関する `.sdd/` 配下のドキュメント一式の整合性をチェックしてください。",
+      "prompt_note": "The document set is named by feature, not by path, so locating the PRD / spec / design (and, in the generation that has them, the decision log) is part of the task.",
+      "sdd_inputs": [
+        ".sdd/requirement/workflow-foundation/sdd-init.md",
+        ".sdd/specification/workflow-foundation/sdd-init_spec.md",
+        ".sdd/specification/workflow-foundation/sdd-init_design.md"
+      ],
+      "input_parity": "identical-on-both-branches (the whole PRD -> spec -> design triple is byte-identical)",
+      "fixture": {},
+      "expected_output": "A severity-classified report of real PRD<->spec<->design gaps, with no invented findings and no proposal to rewrite the PRD from downstream documents.",
+      "assertions": [
+        {
+          "text": "指摘が依頼されたドキュメント集合（sdd-init の PRD / spec / design と親 PRD）の範囲に収まっている。コーパス全体に及ぶ別問題を含める場合は「範囲外」と明示して区別している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "引用した行番号と引用文が実ファイルと一致している（1件でもずれていれば不合格）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "PRD がカバーしていない spec の振る舞い、または PRD と矛盾する spec 変更を、最重要度（[must] 相当）で報告している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "PRD の更新が必要と判断した場合、直接編集ではなく既存の要求 ID とセクションを保持する追記フロー経由で行うよう引き渡し、人間の承認を前提にしている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "同一の根本原因に由来する複数の症状を1件に束ね、重複計上していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "判定材料が揃わず確認できなかった検査領域を「問題なし」として報告していない（未検査であることと理由を示している）。判定材料が全件で欠けている検査についても、0 件という結果だけを出して整合が取れているように読ませていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.3 (2026-09-10): A6（未検査領域を「問題なし」と報告しない）を追加。MEASUREMENT_LOG の残課題3で「`sdd-version` 陳腐化検出はコーパスに `sdd-version` が1件も無いので測れない」と記録していたが、これは検査対象の見方を誤っていた。**コーパスの全文書に当該フィールドが無いという事実そのものが検証可能な入力**であり、正しい出力は「陳腐化0件」ではなく「世代不明が全件」である。0 件だけを報告して移行が済んでいるように読ませる振る舞いは、この eval の実コーパスで実際に起きる欠陥であり、A1〜A5 のどれもそれを見ていなかった。A6 はフィールド名も検査名も含まないアウトカム記述なので、当該検査を持たない世代でも「決定記録が見つからない機能を consistent と報告しない」等の同じ性質を採点できる。なお陳腐化**した値**の検出（古い major を持つ文書の列挙）は依然このコーパスでは測れないので、残課題3は値注入フィクスチャの追加として残る。 v3.1: 全5件を差し替え。iteration 1 では4セル全てが 5/5。A1（依頼範囲の遵守）と A5（根本原因での束ね）は、iteration 1 で main/without が20件（うち複数がコーパス全域の別問題）を報告した実測に基づく。A2 は同ランの引用行番号が最大34行ずれていた実測に基づく。A4 は develop が追加した PRD 更新の引き渡し規約に対応する。"
+}

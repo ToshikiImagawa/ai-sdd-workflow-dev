@@ -4,7 +4,7 @@ title: "TDD 実装"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-task-implementation"]
 tags: ["tdd", "implementation", "checklist"]
 category: "task-implementation"
@@ -157,9 +157,10 @@ tasks.md のタスクを、5 段階の TDD プロセスで実装し、各段階�
 
 # 4. 前提条件
 
-- タスク分解の成果物（tasks.md）が `task/{ticket-number}/` 配下に存在すること
+- タスク分解の成果物（tasks.md）と技術設計ドラフト（design-draft.md）が `task/{ticket-number}/` 配下に
+  存在すること
 - 対象プロジェクトで sdd-workflow プラグインが有効化され、`.sdd/` ディレクトリが初期化済みであること
-- TDD 実装の品質は基盤モデルの能力および仕様書・設計書の明確度に依存する（[index.md](index.md) の技術的制約）
+- TDD 実装の品質は基盤モデルの能力および仕様書・設計ドラフトの明確度に依存する（[index.md](index.md) の技術的制約）
 
 ---
 
@@ -171,5 +172,5 @@ tasks.md のタスクを、5 段階の TDD プロセスで実装し、各段階�
 - 品質チェックリストの生成・自動検証（[checklist-generation.md](checklist-generation.md) /
   [run-checklist.md](run-checklist.md) で扱う）
 - 実装完了後のタスクログ整理（[task-cleanup.md](task-cleanup.md) で扱う）
-- 実装と設計書の乖離検出（quality-guardrails カテゴリの check-spec が扱う）
+- 実装と設計の乖離検出（quality-guardrails カテゴリの check-spec が扱う）
 - バージョン管理操作（コミット・PR 作成等はプロジェクト運用・他ツールに委ねる）

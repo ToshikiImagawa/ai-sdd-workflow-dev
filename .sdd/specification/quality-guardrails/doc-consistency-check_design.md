@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -79,6 +79,7 @@ graph TD
     Skill -->|Read/Glob/Grep| Spec[.sdd/specification/*_spec.md]
     Skill -->|Read/Glob/Grep| Design[.sdd/specification/*_design.md]
     Refs[references/*.md] -.参照.-> Skill
+    Index[.cache/index.md Metadataのsdd-version列] -.SDD_INDEX=on時のみ.-> Skill
     Skill --> Report[整合性レポート consistency_report.md 形式]
     Skill -.委譲.-> FMReviewer[front-matter-reviewer]
 ```
@@ -122,9 +123,20 @@ graph TD
       "recommended_actions": ["..."]
     }
   ],
-  "confirmed_consistent": ["整合確認済み項目..."]
+  "confirmed_consistent": ["整合確認済み項目..."],
+  "stale_generation": [
+    {
+      "doc_id_or_path": "spec-quality-guardrails-doc-consistency-check",
+      "sdd_version": "4.0.0",
+      "current_major": 4
+    }
+  ]
 }
 ```
+
+`stale_generation`（FR-007。Issue #95）は `inconsistencies` とは別区分。`${SDD_ROOT}/.cache/index.md` の
+Metadata テーブル（`sdd-version` 列）から取得し、値が存在しその major が現行 major 未満の行のみを対象とする。
+`SDD_INDEX` が `off`・未構築の場合は空配列のまま（この検出自体をスキップ）。
 
 ---
 
@@ -189,6 +201,7 @@ plugins/sdd-workflow/
 | 不整合検出時の優先方針      | 一律 spec を正 / 上流優先                       | 上流優先（PRD > spec > design）     | 実装が正で spec が古い場合もあるため、一律 spec を正としない（SKILL.md Notes に明記） |
 | 共通参照資料の配置          | skill ごとに複製 / 共有 + symlink               | `shared/references/` を symlink で参照 | 依存関係・パス解決手順は複数スキルで共通のため、`shared/references/` に一元化し symlink で参照して重複と更新漏れを防ぐ |
 | design ↔ 実装チェックの扱い    | 本スキルでも検出 / `impl-spec-check` に一本化    | `impl-spec-check`（`/check-spec`）に一本化し、本スキルのスコープからは除外 | 親 PRD が design↔実装チェックを明示的にスコープ外（`impl-spec-check.md` の責務）と定義しており、旧 FR-004 はこれと矛盾していた。同じ検出を advisory hook（本スキル）と明示実行（`/check-spec`）の二経路で行う多重防御は責務分離（A-002）に反するため、`impl-spec-check` 側の確実な明示実行に一本化する |
+| FR-007（世代列挙）の入力経路（Issue #95） | 独自に Glob/Grep で全文書の front matter を走査 / `documentation-index` の index を利用 | index を利用し `SDD_INDEX=off` 時はスキップ | 独自走査は本スキルが避けてきた「決定的な全文書走査コスト」を再導入し A-002（機械的処理はスクリプト・インデックス側に委譲）に反する。index 依存にすることで軽量な advisory チェックの性質を保つ。トレードオフとして index 無効時は世代列挙のみ機能しない（他のチェック項目には影響しない） |
 
 ## 9.2. 自動起動トリガーの実現方式
 

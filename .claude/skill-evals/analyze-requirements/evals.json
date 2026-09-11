@@ -1,0 +1,52 @@
+{
+  "skill_name": "analyze-requirements",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/analyze-requirements/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+24/-12 lines (issue #111 / PR #114 で修正が入り、iteration-1 時点の +0/-0 ではなくなった)",
+  "control_note": "iteration-1 ではこのスキルが差分 +0/-0 だったため対照群に使っていたが、計測が見つけた欠陥（ID 形式のハードコード）が issue #111 / PR #114 で develop 側だけ修正され、対照群としては使えなくなった。計測が自分の対照群を壊したことになる。以降の対照群は `build_sdd_fixture.py --skill-from <ref>` による**合成対照群**（両世代に同一の SKILL.md を与える）を使う。偶然変更されなかったスキルに依存しないため、将来また欠陥を直しても壊れない。",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "checklist-generation-prd-extract",
+      "prompt": "`.sdd/requirement/task-implementation/checklist-generation.md` の記述を入力として、UR / FR / NFR を抽出し構造化してください。ID はこのプロジェクトの既存の体系（`UR_001` / `FR_001` / `NFR_001` 形式）に従ってください。",
+      "sdd_inputs": [
+        ".sdd/requirement/task-implementation/checklist-generation.md"
+      ],
+      "input_parity": "identical-on-both-branches",
+      "fixture": {},
+      "expected_output": "A structured UR/FR/NFR set covering the behaviours the source PRD describes, every FR traceable to a UR, IDs unique and consecutive, and nothing invented beyond the source.",
+      "assertions": [
+        {
+          "text": "入力文書の各セクションを要求または非要求コンテキストへ写像したカバレッジ表を提示し、未写像の記述が無いことを示している（「網羅した」という主張だけでは不十分）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全ての FR が UR に遡れ、かつその UR が入力文書または明示された親文書に実在する（UR 自体を創作していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全 ID が `.sdd-config.json` の `id_conventions` の正規表現に適合し、同一表内で一意かつ連番である",
+          "checked_by": "script (grade.py check_id_conventions)"
+        },
+        {
+          "text": "Priority / Risk / Verification が全ての要求に付与されている（1件でも欠けていれば不合格）",
+          "checked_by": "script (grade.py check_attributes_present)"
+        },
+        {
+          "text": "入力文書の範囲外の要求を創作していない。親文書等から補完した要求がある場合は、出典を明示し「補完・導出」であることを区別している（無出典の追加が1件でもあれば不合格）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.1: A1/A2/A3 を天井から下げ、A5 を「創作ゼロ」から「無出典の追加ゼロ」へ再定義した。iteration 1 では A5 が4セル全て fail で識別力を失っていたが、実際にはランごとに出典明示の有無が分かれていたため、そこを見る形に変えた。 v3.2: A3 を「適合を確認した証跡があること」から事実ベース（適合しているか）へ直した。証跡の有無はスクリプトで判定できず、また文書品質として問われるべきは適合そのものである。A3 / A4 は grade.py の機械判定へ移した。"
+}

@@ -45,6 +45,7 @@ class TestReadConfig:
             "root": ".sdd",
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
             "lang": "en",
         }
@@ -59,6 +60,7 @@ class TestReadConfig:
                     "directories": {
                         "requirement": "reqs",
                         "specification": "specs",
+                        "adr": "decisions",
                         "task": "tasks",
                     },
                 }
@@ -71,6 +73,7 @@ class TestReadConfig:
             "root": ".ai-docs",
             "requirement": "reqs",
             "specification": "specs",
+            "adr": "decisions",
             "task": "tasks",
             "lang": "ja",
         }
@@ -90,6 +93,7 @@ class TestCopyTemplates:
             ("generate-prd", "prd_template.md"),
             ("generate-spec", "spec_template.md"),
             ("generate-spec", "design_template.md"),
+            ("sdd-init", "adr_template.md"),
         ):
             src = plugin_root / "skills" / skill / "templates" / lang / name
             src.parent.mkdir(parents=True, exist_ok=True)
@@ -106,7 +110,8 @@ class TestCopyTemplates:
         assert (sdd_dir / "PRD_TEMPLATE.md").read_text(encoding="utf-8") == "source:prd_template.md"
         assert (sdd_dir / "SPECIFICATION_TEMPLATE.md").is_file()
         assert (sdd_dir / "DESIGN_DOC_TEMPLATE.md").is_file()
-        assert "Templates copied: 3, skipped: 0" in capsys.readouterr().err
+        assert (sdd_dir / "ADR_TEMPLATE.md").read_text(encoding="utf-8") == "source:adr_template.md"
+        assert "Templates copied: 4, skipped: 0" in capsys.readouterr().err
 
     def test_existing_templates_are_not_overwritten(self, tmp_path, capsys):
         plugin_root = tmp_path / "plugin"
@@ -118,7 +123,7 @@ class TestCopyTemplates:
         init_structure.copy_templates(sdd_dir, plugin_root, "en")
 
         assert (sdd_dir / "PRD_TEMPLATE.md").read_text(encoding="utf-8") == "customized"
-        assert "Templates copied: 2, skipped: 1" in capsys.readouterr().err
+        assert "Templates copied: 3, skipped: 1" in capsys.readouterr().err
 
     def test_missing_source_warns(self, tmp_path, capsys):
         plugin_root = tmp_path / "plugin"  # no templates created
@@ -132,6 +137,118 @@ class TestCopyTemplates:
         assert "WARNING: Source template not found" in err
 
 
+class TestShippedAdrTemplates:
+    """実際に配布される adr_template.md が ADR エントリ形式の契約を満たすこと。"""
+
+    TEMPLATES_DIR = SCRIPTS_DIR.parent / "templates"
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_template_exists(self, lang):
+        assert (self.TEMPLATES_DIR / lang / "adr_template.md").is_file()
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_front_matter_is_file_level_adr(self, lang):
+        content = (self.TEMPLATES_DIR / lang / "adr_template.md").read_text(encoding="utf-8")
+        assert content.startswith("---\n")
+        front_matter = content.split("---\n", 2)[1]
+        assert 'type: "adr"' in front_matter
+        assert 'status: "approved"' in front_matter
+        assert 'sdd-phase: "implement"' in front_matter
+        # エントリ間の覆しは本文の Supersedes 項目で表す。front matter には書かせない
+        assert "supersedes:" not in front_matter
+        assert "superseded-by:" not in front_matter
+
+    @pytest.mark.parametrize("lang", ["en", "ja"])
+    def test_entry_items_and_multi_entry_shape(self, lang):
+        content = (self.TEMPLATES_DIR / lang / "adr_template.md").read_text(encoding="utf-8")
+        for item in ("- **Decision**:", "- **Rationale**:", "- **Rejected alternatives**:"):
+            assert item in content
+        assert "- **Supersedes**:" in content
+        # 1ファイルに複数エントリを追記する形が分かること
+        assert content.count("## YYYY-MM-DD ") >= 2
+        assert "None considered" in content
+
+
+class TestUpdateGitignore:
+    """`${SDD_ROOT}/.cache/` を .gitignore へ冪等に追記すること。"""
+
+    def test_creates_gitignore_when_absent(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+        assert content.endswith(".sdd/.cache/\n")
+        assert init_structure.GITIGNORE_COMMENT in content
+
+    def test_appends_and_preserves_existing_content(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/\n*.log\n", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.startswith("node_modules/\n*.log\n")
+        assert ".sdd/.cache/\n" in content
+
+    def test_adds_newline_before_appending_when_missing(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/", encoding="utf-8")  # 末尾改行なし
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.startswith("node_modules/\n")
+        assert "node_modules/#" not in content
+        assert content.endswith(".sdd/.cache/\n")
+
+    def test_empty_gitignore_gets_no_leading_blank_line(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        assert gitignore.read_text(encoding="utf-8") == (
+            f"{init_structure.GITIGNORE_COMMENT}\n.sdd/.cache/\n"
+        )
+
+    def test_is_idempotent_across_runs(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".sdd")
+        first = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+        second = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+
+        assert first == second
+        assert second.count(".sdd/.cache/") == 1
+
+    @pytest.mark.parametrize(
+        "existing_line", [".sdd/.cache/", "/.sdd/.cache/", ".sdd/.cache", "/.sdd/.cache"]
+    )
+    def test_equivalent_existing_entry_is_left_untouched(self, tmp_path, existing_line):
+        gitignore = tmp_path / ".gitignore"
+        original = f"node_modules/\n{existing_line}\n"
+        gitignore.write_text(original, encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        assert gitignore.read_text(encoding="utf-8") == original
+
+    def test_commented_or_negated_line_does_not_count_as_ignored(self, tmp_path):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("# .sdd/.cache/\n!.sdd/.cache/\n", encoding="utf-8")
+
+        init_structure.update_gitignore(tmp_path, ".sdd")
+
+        content = gitignore.read_text(encoding="utf-8")
+        assert content.endswith(f"{init_structure.GITIGNORE_COMMENT}\n.sdd/.cache/\n")
+
+    def test_custom_root_is_honored(self, tmp_path):
+        init_structure.update_gitignore(tmp_path, ".ai-docs")
+
+        content = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+        assert ".ai-docs/.cache/\n" in content
+        assert ".sdd" not in content
+
+
 class TestExportEnvVars:
     def test_writes_all_sdd_vars(self, tmp_path, monkeypatch):
         env_file = tmp_path / "env"
@@ -142,6 +259,7 @@ class TestExportEnvVars:
             "root": ".ai-docs",
             "requirement": "reqs",
             "specification": "specs",
+            "adr": "decisions",
             "task": "tasks",
             "lang": "ja",
         }
@@ -152,6 +270,8 @@ class TestExportEnvVars:
         assert 'export SDD_REQUIREMENT_DIR="reqs"' in content
         assert 'export SDD_REQUIREMENT_PATH=".ai-docs/reqs"' in content
         assert 'export SDD_SPECIFICATION_PATH=".ai-docs/specs"' in content
+        assert 'export SDD_ADR_DIR="decisions"' in content
+        assert 'export SDD_ADR_PATH=".ai-docs/decisions"' in content
         assert 'export SDD_TASK_PATH=".ai-docs/tasks"' in content
         assert 'export SDD_LANG="ja"' in content
 
@@ -166,6 +286,7 @@ class TestExportEnvVars:
             "root": ".sdd",
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
             "lang": "en",
         }
@@ -184,6 +305,7 @@ class TestExportEnvVars:
                 "root": ".sdd",
                 "requirement": "requirement",
                 "specification": "specification",
+                "adr": "adr",
                 "task": "task",
                 "lang": "en",
             }

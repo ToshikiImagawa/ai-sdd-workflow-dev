@@ -1,5 +1,5 @@
 ---
-id: "design-{feature-name}"
+id: "design-{ticket-number}"
 title: "{機能名}"
 type: "design"
 status: "draft"
@@ -14,8 +14,11 @@ category: ""
 
 # 技術設計書テンプレート (Design Doc)
 
-このドキュメントは `.sdd/specification/` 配下の技術設計書（Design Doc）を作成する際のテンプレートです。
-ファイル名は `{機能名}_design.md` となります。
+このドキュメントは `.sdd/task/{ticket-number}/design-draft.md` に作成する、**一時ドラフト**としての
+技術設計書（Design Doc）のテンプレートです。ファイル名は固定で `design-draft.md` となり、
+チケット番号ごとの `task/{ticket-number}/` ディレクトリ配下に配置します（`specification/` 配下ではありません）。
+実装完了後、重要な設計判断とその根拠を ADR（`adr/{feature}.md`）へ統合したうえで削除されます
+（`task-cleanup` スキルが実行）。
 
 > **本プロジェクト向けの補足**: 本リポジトリは Claude Code プラグインのマーケットプレイスです。
 > 設計対象は主にスキル・エージェント・フック・スクリプト（Bash/Python）の構成であり、
@@ -126,6 +129,9 @@ plugins/sdd-workflow/
 ---
 
 # 9. 設計判断 `<MUST>`
+
+実装完了後、本ドラフトが削除される前に `task-cleanup` スキルがこの節の内容を
+ADR（`adr/{feature}.md`）へ append-only で統合する。
 
 ## 9.1. 決定事項
 

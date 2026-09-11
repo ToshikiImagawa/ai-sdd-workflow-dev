@@ -70,7 +70,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/requirement/login.md", "login",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "prd"
         )
@@ -79,7 +79,7 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/login_spec.md", "login_spec",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "spec"
         )
@@ -88,34 +88,47 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/login_design.md", "login_design",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "design"
         )
 
-    def test_specification_unknown(self):
+    def test_specification_no_suffix_is_spec(self):
+        # specification/ is a single-type directory; suffix is optional
+        # (issue #84), so an unsuffixed name is still "spec".
         assert (
             sd.determine_type(
                 "/p/.sdd/specification/notes.md", "notes",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
-            == "unknown"
+            == "spec"
         )
 
     def test_task_implementation_log(self):
         assert (
             sd.determine_type(
                 "/p/.sdd/task/impl_log.md", "impl_log",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "implementation-log"
+        )
+
+    def test_task_design_draft_is_design(self):
+        # v5 のドラフト設計書は task/{ticket-number}/design-draft.md に置かれ、
+        # type は "design"（id は design-{ticket-number} になる）。
+        assert (
+            sd.determine_type(
+                "/p/.sdd/task/123/design-draft.md", "design-draft",
+                "requirement", "specification", "task", "adr",
+            )
+            == "design"
         )
 
     def test_task_plain(self):
         assert (
             sd.determine_type(
                 "/p/.sdd/task/notes.md", "notes",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "task"
         )
@@ -124,9 +137,18 @@ class TestDetermineType:
         assert (
             sd.determine_type(
                 "/p/.sdd/other/x.md", "x",
-                "requirement", "specification", "task",
+                "requirement", "specification", "task", "adr",
             )
             == "unknown"
+        )
+
+    def test_adr(self):
+        assert (
+            sd.determine_type(
+                "/p/.sdd/adr/login-decisions.md", "login-decisions",
+                "requirement", "specification", "task", "adr",
+            )
+            == "adr"
         )
 
 
@@ -167,6 +189,7 @@ class TestReadConfig:
             "requirement": "requirement",
             "specification": "specification",
             "task": "task",
+            "adr": "adr",
             "lang": "en",
         }
 
@@ -180,6 +203,7 @@ class TestReadConfig:
                         "requirement": "req",
                         "specification": "spec",
                         "task": "tasks",
+                        "adr": "decisions",
                     },
                 }
             ),
@@ -191,6 +215,7 @@ class TestReadConfig:
         assert config["requirement"] == "req"
         assert config["specification"] == "spec"
         assert config["task"] == "tasks"
+        assert config["adr"] == "decisions"
 
     def test_missing_config_exits(self, tmp_path):
         with pytest.raises(SystemExit):
@@ -207,10 +232,12 @@ class TestCollectDocuments:
             "requirement": "requirement",
             "specification": "specification",
             "task": "task",
+            "adr": "adr",
             "lang": "en",
         }
 
-    def test_specification_filters_by_suffix(self, tmp_path):
+    def test_specification_includes_plain_md(self, tmp_path):
+        # Suffix is optional under specification/ (issue #84).
         sdd_dir = tmp_path / ".sdd"
         (sdd_dir / "specification").mkdir(parents=True)
         (sdd_dir / "specification" / "a_spec.md").write_text("# a", encoding="utf-8")
@@ -218,10 +245,10 @@ class TestCollectDocuments:
         (sdd_dir / "specification" / "notes.md").write_text("# n", encoding="utf-8")
 
         docs = sd.collect_documents(
-            sdd_dir, "requirement", "specification", "task",
+            sdd_dir, "requirement", "specification", "task", "adr",
         )
         names = sorted(p.name for p in docs)
-        assert names == ["a_design.md", "a_spec.md"]
+        assert names == ["a_design.md", "a_spec.md", "notes.md"]
 
     def test_requirement_and_task_include_all_md(self, tmp_path):
         sdd_dir = tmp_path / ".sdd"
@@ -234,10 +261,22 @@ class TestCollectDocuments:
         (sdd_dir / "task" / "log.md").write_text("# l", encoding="utf-8")
 
         docs = sd.collect_documents(
-            sdd_dir, "requirement", "specification", "task",
+            sdd_dir, "requirement", "specification", "task", "adr",
         )
         names = sorted(p.name for p in docs)
         assert names == ["child.md", "index.md", "log.md"]
+
+    def test_adr_included_suffix_optional(self, tmp_path):
+        sdd_dir = tmp_path / ".sdd"
+        (sdd_dir / "adr").mkdir(parents=True)
+        (sdd_dir / "adr" / "user-login-decisions.md").write_text("# a", encoding="utf-8")
+        (sdd_dir / "adr" / "notes.md").write_text("# n", encoding="utf-8")
+
+        docs = sd.collect_documents(
+            sdd_dir, "requirement", "specification", "task", "adr",
+        )
+        names = sorted(p.name for p in docs)
+        assert names == ["notes.md", "user-login-decisions.md"]
 
 
 # --- end to end ------------------------------------------------------------
@@ -275,7 +314,7 @@ class TestEndToEnd:
             "# Login Spec\n", encoding="utf-8"
         )
         (proj / root / "specification" / "notes.md").write_text(
-            "# ignored\n", encoding="utf-8"
+            "# no-suffix-but-still-scanned\n", encoding="utf-8"
         )
 
         env_file = tmp_path / "env_output"
@@ -289,17 +328,18 @@ class TestEndToEnd:
         assert not (proj / ".sdd").exists()
 
         data = json.loads(scan_result.read_text(encoding="utf-8"))
-        assert data["total_documents"] == 2
+        assert data["total_documents"] == 3
         assert data["documents_with_front_matter"] == 1
-        assert data["documents_without_front_matter"] == 1
+        assert data["documents_without_front_matter"] == 2
 
         by_name = {d["basename"]: d for d in data["documents"]}
         assert by_name["login"]["type"] == "prd"
+        assert by_name["notes"]["type"] == "spec"
         assert by_name["login"]["has_front_matter"] is True
         assert by_name["login"]["title_line"] == "Login PRD"
         assert by_name["login_spec"]["type"] == "spec"
         assert by_name["login_spec"]["has_front_matter"] is False
-        assert "notes" not in by_name
+        assert by_name["notes"]["has_front_matter"] is False
 
         env_contents = env_file.read_text(encoding="utf-8")
         assert "RECOMMEND_FM_CACHE_DIR" in env_contents
@@ -325,3 +365,98 @@ class TestEndToEnd:
         assert "/stale" not in env_contents
         assert 'export OTHER_VAR="keep"' in env_contents
         assert env_contents.count("RECOMMEND_FM_CACHE_DIR") == 1
+
+
+# --- missing_impl_status ----------------------------------------------------
+
+
+class TestMissingImplStatus:
+    def _run(self, monkeypatch, project_root, env_file):
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+        sd.main()
+
+    def _scan(self, proj):
+        scan_result = proj / ".sdd" / ".cache" / "recommend-front-matter" / "scan_result.json"
+        return json.loads(scan_result.read_text(encoding="utf-8"))
+
+    def test_spec_with_front_matter_missing_impl_status(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "---\nid: spec-a\ntype: spec\nstatus: draft\n---\n# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 1
+        assert data["documents"][0]["missing_impl_status"] is True
+
+    def test_spec_with_impl_status_present(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "---\nid: spec-a\ntype: spec\nimpl-status: not-implemented\n---\n# A\n",
+            encoding="utf-8",
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_spec_without_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "specification").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "specification" / "a_spec.md").write_text(
+            "# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_design_draft_with_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        # missing_impl_status は spec 専用のフラグ。design（task/{ticket}/design-draft.md）
+        # には立たない。スキルは impl-status を書き込まず列挙するだけなので、
+        # 対象は spec のみに保つ。
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "task" / "123").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "task" / "123" / "design-draft.md").write_text(
+            "---\nid: design-123\ntype: design\nsdd-phase: plan\n---\n# Draft\n",
+            encoding="utf-8",
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["documents"][0]["type"] == "design"
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False
+
+    def test_prd_with_front_matter_not_flagged(self, tmp_path, monkeypatch):
+        proj = tmp_path / "project"
+        (proj / ".sdd" / "requirement").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text("{}", encoding="utf-8")
+        (proj / ".sdd" / "requirement" / "a.md").write_text(
+            "---\nid: prd-a\ntype: prd\n---\n# A\n", encoding="utf-8"
+        )
+        env_file = tmp_path / "env_output"
+        env_file.write_text("", encoding="utf-8")
+        self._run(monkeypatch, proj, env_file)
+
+        data = self._scan(proj)
+        assert data["specs_missing_impl_status"] == 0
+        assert data["documents"][0]["missing_impl_status"] is False

@@ -1,0 +1,59 @@
+{
+  "skill_name": "generate-requirements-diagram",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-requirements-diagram/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+3/-3 lines (PR #116 が要求抽出元の表記を `UR-xxx entries from tables` から `UR entries from tables` へ変更した。それ以前は差分ゼロで、ASSERTION_DESIGN.md の `## 未対象` 節がそれを理由に本スキルを v3 対象外としていた)",
+  "coverage_note": "ASSERTION_DESIGN.md `### generate-requirements-diagram / generate-usecase-diagram` が v2 時点で設計した4件が土台。#116 の変更で assertion 1（脱落なし）が識別力を持つようになったのが対象へ格上げした理由である。件数を揃えるための5件目は作らない方針は維持しており、A5 は水増しではなく実測された穴を埋めるために足した（`assertion_revision` 参照）。 `generate-usecase-diagram` は依然 +0/-0 なので対象外のまま。",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "distribution-prd-requirement-diagram",
+      "prompt": "`.sdd/requirement/distribution.md` の要求記述をもとに、SysML の要求図（Mermaid `requirementDiagram`）を生成してください。",
+      "sdd_inputs": [
+        ".sdd/requirement/distribution.md"
+      ],
+      "input_parity": "identical-on-both-branches (the PRD is byte-identical on both branches, and its requirement diagram section is removed in both eras). Chosen because every ID that appeared inside this PRD's diagram also appears outside it (16/16), so removing the diagram leaves the requirement set fully recoverable from the remaining sections. The other era-identical PRDs fail that test -- session-config.md, for one, defines DC_003 / FR_003 / IR_001 only inside the diagram, so grading 'nothing dropped' there would penalise a correct run.",
+      "fixture": {
+        "remove_section": [
+          {
+            "path": ".sdd/requirement/distribution.md",
+            "heading": "# 3. 要求図（SysML Requirements Diagram）"
+          }
+        ]
+      },
+      "expected_output": "A Mermaid requirementDiagram, returned as text rather than written to a file, covering every UR/FR/NFR/IR/DC defined in the PRD's remaining sections (2.3 and 4.x), with relationships (derives / contains / satisfies) that match what those sections state. IDs use underscores because Mermaid rejects hyphens -- both eras' skills say so, so this is not the distinction under measurement; extracting the requirements at all is.",
+      "assertions": [
+        {
+          "text": "入力に含まれる要求が図に漏れなく反映されている（脱落なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "図の要素間の関係（`derives`/`contains`/`satisfies`）が入力の記述と矛盾しない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "入力に無い要求を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "outputs_dir 以外の .sdd/ 配下ファイルを書き換えていない（対象文書へ直接ダイアグラムを追記していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "入力側の要求が既に持っている ID が、図の中でも文字単位で同じ表記のまま使われている（改番・連番の振り直し・区切り文字の置き換えをしていない）。入力の ID が図の記法上そのまま使えない場合は、黙って書き換えるのではなくその旨を報告している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A5（入力の ID を文字単位で保つ）を追加。既存4件はこれを見ていなかった——A1（脱落なし）は表記が変わった ID も『反映されている』と読めてしまい、A3（創作なし）は改番を新規要求の創作とは見ない。しかし要求表と要求図を ID で突き合わせられなくなる時点でトレーサビリティは失われており、MEASUREMENT_LOG の『実在欠陥3件目: PRD レベル ID 形式』で最も重い実害として記録したのがまさにこの症状である（同一 PRD 内で表と図の ID が食い違う）。ID 形式を設定から解決する層が入ったことで、解決結果を図へどう持ち込むかが観測可能になったため、その成果だけを assertion にした。文面に具体的な区切り文字・フィールド名・解決元のパスを書いていないので、どの世代・どの ID 規約のプロジェクトでも同じ基準で採点できる（『入力にあった表記と一致するか』しか問うていない）。逆に『アンダースコアであること』は書いていない——それは特定プロジェクトの規約であり、規約自体を assertion に埋めると設定を尊重しない実行を PASS にしてしまう。 | v3.5 (2026-09-10): A1/A3 からアクター・ユースケースの言及を除去した。requirementDiagram にはそれらを表すノード型が無く、共有節（generate-usecase-diagram との）由来のこの部分が毎回無条件で「該当なし」を通す判別力ゼロの一節だった（main_skill/develop_without/develop_skill の3 grader が独立に指摘）。A4 を「テキストで返す」から「outputs_dir 以外の .sdd/ 配下を書き換えていない」に書き換えた。旧文言は評価ハーネスが with/without 問わず全 run に outputs_dir 保存を義務づけるため『ファイルに書いたか』という観測事実が4条件で常に同一になり、実質『SKILL.md の disallowed-tools を読んで設計意図を言語化したか』を測っていた（ASSERTION_DESIGN.md 判定基準が避けるべきとする「スキル本文固有の語」型）。新文言は原文書への直接書き込みという実害を伴う成果を問うため、ハーネスの保存義務と衝突せず世代非依存に判定できる。"
+}

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-spec-design-clarify"]
 tags: ["clarification", "ambiguity-analysis", "clarity-score"]
 category: "spec-design"
@@ -18,7 +18,7 @@ risk: "high"
 
 **関連 Spec:** [clarify_spec.md](clarify_spec.md)
 **関連 PRD:** [clarify.md](../../requirement/spec-design/clarify.md)（親: [spec-design](../../requirement/spec-design/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001, B-002, D-001, T-002（plugin.json 登録）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001, B-002, D-001, T-002（plugin.json 登録）, T-003（文字化け防止）
 
 ---
 
@@ -69,7 +69,7 @@ risk: "high"
 ```mermaid
 graph TD
     U[開発者: /clarify feature-name] --> SK[clarify SKILL.md]
-    SK -->|対象読み込み| LOAD[PRD / *_spec.md / *_design.md]
+    SK -->|対象読み込み| LOAD[PRD / *_spec.md / task/{ticket}/design-draft.md 任意]
     SK -->|分析委譲| AG[clarification-assistant]
     AG -->|Read/Glob/Grep<br/>SDD_ROOT 配下限定| LOAD
     AG -->|9 カテゴリ分類| SCORE[明確度スコア算出]
@@ -222,6 +222,7 @@ clarify スキルは実装済みで標準パス `skills/` の自動検出によ�
 | 実装可否の閾値        | 固定 80% / 可変                        | 80% を implementation-ready の閾値      | 親 PRD NFR_001・B-001。基準未満は追加明確化を推奨し Vibe Coding を防ぐ         |
 | 質問数の上限          | 無制限 / 最大 5 問                      | 1 回の提示を最大 5 問に制限                | ユーザーの回答負担を抑え、高影響度の質問に集中させる（NFR-003）                     |
 | 探索スコープ          | プロジェクト全体 / SDD_ROOT 配下限定         | `SDD_ROOT`（既定 `.sdd/`）配下に限定       | 対象外ファイルの走査によるノイズ・コンテキスト浪費を防ぐ                            |
+| 設計ドラフトの参照パス   | 機能単位（`specification/*_design.md`）/ チケット単位（`task/{ticket}/design-draft.md`） | チケット単位の固定パス（任意入力）        | generate-spec の出力先と一致させる。一時文書のため必須にはせず、`ticket-number` 指定時のみ読み込む |
 
 ## 9.2. 未解決の課題
 

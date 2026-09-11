@@ -1,0 +1,51 @@
+{
+  "skill_name": "vibe-detector",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/vibe-detector/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+50/-3 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "vague-index-speedup-request",
+      "prompt": "`.sdd/` のドキュメントインデックス、もっと速くしておいて。あと使いやすくして。",
+      "prompt_note": "The instruction is the input under test, not a task to satisfy. It carries three distinct ambiguities on purpose: a subjective adjective with no target ('もっと速く'), an unbounded second scope ('使いやすく'), and an implicit assumption that the current behaviour is a problem. The .sdd/ corpus is present, so the run can check whether a specification for the index feature exists -- which is exactly what the risk level should be grounded in.",
+      "sdd_inputs": [
+        ".sdd/ (whole corpus, so the presence or absence of a relevant spec is checkable)"
+      ],
+      "input_parity": "the corpus differs between branches (documentation-index_spec.md changed), so ground the grading on the instruction's ambiguity rather than on which documents exist",
+      "fixture": {},
+      "expected_output": "The ambiguities identified individually, a risk level justified by whether a specification exists and how specific the instruction is, no false positives, an alternative path offered if the user declines to clarify, and the final call left to the user.",
+      "assertions": [
+        {
+          "text": "提示されたユーザー指示中の曖昧表現（主観的形容・不明瞭な範囲・暗黙の前提等）を実在するものとして検出している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "リスクレベル（High/Medium/Low）の判定根拠が、仕様の有無とユーザー指示の具体性という提示された条件と整合している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "明確な指示を曖昧と誤検知していない（偽陽性がない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "ユーザーが明確化を拒否した場合の代替手段（推定仕様の記録・検証ポイントの明示）を提案している——警告するだけで終わっていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "実装を強制的にブロックせず、最終判断をユーザーに委ねている（検出は警告であり強制ではない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

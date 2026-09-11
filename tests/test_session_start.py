@@ -39,6 +39,7 @@ class TestLoadOrCreateConfig:
         assert result["directories"] == {
             "requirement": "requirement",
             "specification": "specification",
+            "adr": "adr",
             "task": "task",
         }
         # index はデフォルト on として明示的に書き込まれる
@@ -84,6 +85,7 @@ class TestBuildSddConfig:
         assert cfg.lang == "en"
         assert cfg.requirement_dir == "requirement"
         assert cfg.specification_dir == "specification"
+        assert cfg.adr_dir == "adr"
         assert cfg.task_dir == "task"
 
     def test_empty_raw_uses_default_lang(self):
@@ -96,6 +98,7 @@ class TestBuildSddConfig:
             "directories": {
                 "requirement": "req",
                 "specification": "spec",
+                "adr": "decisions",
                 "task": "tasks",
             },
         }
@@ -104,6 +107,7 @@ class TestBuildSddConfig:
         assert cfg.lang == "ja"
         assert cfg.requirement_dir == "req"
         assert cfg.specification_dir == "spec"
+        assert cfg.adr_dir == "decisions"
         assert cfg.task_dir == "tasks"
 
     def test_unknown_lang_value_is_passed_through(self):
@@ -116,13 +120,14 @@ class TestBuildSddConfig:
         raw = {
             "root": "",
             "lang": "",
-            "directories": {"requirement": "", "specification": "", "task": ""},
+            "directories": {"requirement": "", "specification": "", "adr": "", "task": ""},
         }
         cfg = ss.build_sdd_config(raw, "en")
         assert cfg.root == ".sdd"
         assert cfg.lang == "en"
         assert cfg.requirement_dir == "requirement"
         assert cfg.specification_dir == "specification"
+        assert cfg.adr_dir == "adr"
         assert cfg.task_dir == "task"
 
     def test_index_defaults_on_when_absent(self):
@@ -365,6 +370,8 @@ class TestWriteEnvVars:
         assert 'export SDD_TASK_PATH="docs/sdd/tasks"' in content
         assert 'export SDD_REQUIREMENT_PATH="docs/sdd/requirement"' in content
         assert 'export SDD_SPECIFICATION_PATH="docs/sdd/specification"' in content
+        assert 'export SDD_ADR_DIR="adr"' in content
+        assert 'export SDD_ADR_PATH="docs/sdd/adr"' in content
 
     def test_existing_sdd_lines_are_replaced(self, tmp_path, monkeypatch):
         env_file = tmp_path / "env"
@@ -458,6 +465,129 @@ class TestCheckClaudeMd:
         ss.check_claude_md(project_root, sdd_dir, "3.3.0")
         assert not warning_file.exists()
 
+    def test_warning_never_carries_the_migration_list(self, tmp_path):
+        # The v4.x migration list moved to MIGRATION_PENDING.md so /sdd-init
+        # (which deletes UPDATE_REQUIRED.md) cannot take it down with it.
+        project_root, sdd_dir, warning_file = self._setup(tmp_path)
+        spec = Path(sdd_dir) / "specification" / "auth"
+        spec.mkdir(parents=True)
+        (spec / "user-login_design.md").write_text("# d", encoding="utf-8")
+        ss.check_claude_md(project_root, sdd_dir, "5.0.0")
+        content = warning_file.read_text(encoding="utf-8")
+        assert "Document Model Migration" not in content
+        assert "user-login_design.md" not in content
+
+
+class TestCheckMigrationPending:
+    def _setup(self, tmp_path):
+        sdd_dir = tmp_path / ".sdd"
+        sdd_dir.mkdir()
+        return (
+            str(tmp_path), str(sdd_dir),
+            sdd_dir / ss.MIGRATION_PENDING_FILENAME,
+        )
+
+    def test_no_sdd_dir_does_nothing(self, tmp_path):
+        ss.check_migration_pending(
+            str(tmp_path), str(tmp_path / ".sdd"), ss.SddConfig(),
+        )
+        assert not (tmp_path / ".sdd").exists()
+
+    def test_no_file_without_legacy_design_docs(self, tmp_path):
+        project_root, sdd_dir, pending_file = self._setup(tmp_path)
+        (Path(sdd_dir) / "specification").mkdir()
+        (Path(sdd_dir) / "specification" / "auth_spec.md").write_text(
+            "# s", encoding="utf-8"
+        )
+        ss.check_migration_pending(project_root, sdd_dir, ss.SddConfig())
+        assert not pending_file.exists()
+
+    def test_stale_file_removed_once_no_legacy_design_docs_remain(self, tmp_path):
+        project_root, sdd_dir, pending_file = self._setup(tmp_path)
+        pending_file.write_text("old list", encoding="utf-8")
+        ss.check_migration_pending(project_root, sdd_dir, ss.SddConfig())
+        assert not pending_file.exists()
+
+    def test_file_written_for_legacy_design_docs(self, tmp_path, capsys):
+        project_root, sdd_dir, pending_file = self._setup(tmp_path)
+        spec = Path(sdd_dir) / "specification" / "auth"
+        spec.mkdir(parents=True)
+        (spec / "user-login_design.md").write_text("# d", encoding="utf-8")
+        ss.check_migration_pending(
+            project_root, sdd_dir, ss.SddConfig(), "/plugins/sdd-workflow",
+        )
+
+        content = pending_file.read_text(encoding="utf-8")
+        # The concrete file is named so the reader knows what to migrate.
+        assert ".sdd/specification/auth/user-login_design.md" in content
+        # Migration target and a procedure pointer the agent can open.
+        assert ".sdd/adr/{feature-name}.md" in content
+        assert "/plugins/sdd-workflow/README.md" in content
+        assert "Migration from v4.x" in content
+        assert "Extracting Existing" in content
+        # v4 assets are never reported as violations or deletion targets.
+        assert "These files remain valid" in content
+        assert "keep the original" in content
+        # Regeneration/auto-deletion note, matching UPDATE_REQUIRED.md's style.
+        assert "regenerated at every session start" in content
+        assert "v4.x design documents found" in capsys.readouterr().err
+
+    def test_survives_an_up_to_date_claude_md(self, tmp_path):
+        # The regression: /sdd-init brings CLAUDE.md up to date, which removes
+        # UPDATE_REQUIRED.md. The migration list must still be regenerated.
+        project_root, sdd_dir, pending_file = self._setup(tmp_path)
+        spec = Path(sdd_dir) / "specification"
+        spec.mkdir()
+        (spec / "auth_design.md").write_text("# d", encoding="utf-8")
+        (tmp_path / "CLAUDE.md").write_text(
+            "## AI-SDD Instructions (v5.0.0)\n", encoding="utf-8"
+        )
+
+        ss.check_claude_md(project_root, sdd_dir, "5.0.0")
+        ss.check_migration_pending(project_root, sdd_dir, ss.SddConfig())
+
+        assert not (Path(sdd_dir) / "UPDATE_REQUIRED.md").exists()
+        assert pending_file.is_file()
+
+    def test_content_respects_custom_directory_names(self, tmp_path):
+        project_root = str(tmp_path)
+        sdd_dir = tmp_path / "docs"
+        (sdd_dir / "spec").mkdir(parents=True)
+        (sdd_dir / "spec" / "auth_design.md").write_text("# d", encoding="utf-8")
+        cfg = ss.SddConfig(
+            root="docs", specification_dir="spec", adr_dir="decisions",
+            task_dir="tickets",
+        )
+        content = ss.build_migration_pending_content(
+            project_root, str(sdd_dir), cfg,
+        )
+        assert "docs/spec/" in content
+        assert "docs/decisions/{feature-name}.md" in content
+        assert "docs/tickets/{ticket-number}/design-draft.md" in content
+
+    def test_content_truncates_long_lists(self, tmp_path):
+        project_root = str(tmp_path)
+        sdd_dir = tmp_path / ".sdd"
+        spec = sdd_dir / "specification"
+        spec.mkdir(parents=True)
+        total = ss.LEGACY_DESIGN_LIST_LIMIT + 3
+        for i in range(total):
+            (spec / f"f{i:02d}_design.md").write_text("# d", encoding="utf-8")
+        content = ss.build_migration_pending_content(
+            project_root, str(sdd_dir), ss.SddConfig(),
+        )
+        assert f"holds {total} persisted design document(s)" in content
+        assert "... and 3 more" in content
+
+    def test_content_empty_without_specification_dir(self, tmp_path):
+        assert ss.build_migration_pending_content(
+            str(tmp_path), str(tmp_path / ".sdd"), ss.SddConfig(),
+        ) == ""
+
+    def test_readme_pointer_falls_back_to_plugin_root_token(self):
+        assert ss.resolve_readme_pointer("") == "${CLAUDE_PLUGIN_ROOT}/README.md"
+        assert ss.resolve_readme_pointer("/p") == "/p/README.md"
+
 
 class TestGetRoots:
     def test_get_plugin_root_exits_when_unset(self, monkeypatch, capsys):
@@ -529,6 +659,30 @@ class TestMainIntegration:
         content = env_file.read_text(encoding="utf-8")
         assert 'export SDD_LANG="ja"' in content
         assert 'export SDD_ROOT=".sdd"' in content
+
+    def test_main_regenerates_migration_pending_every_session(
+        self, tmp_path, monkeypatch
+    ):
+        project_root, _ = self._setup_env(tmp_path, monkeypatch)
+        spec = project_root / ".sdd" / "specification"
+        spec.mkdir(parents=True)
+        (spec / "auth_design.md").write_text("# d", encoding="utf-8")
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()
+
+        pending = project_root / ".sdd" / ss.MIGRATION_PENDING_FILENAME
+        # CLAUDE.md is already current, so UPDATE_REQUIRED.md is absent while
+        # the migration list still gets written.
+        assert not (project_root / ".sdd" / "UPDATE_REQUIRED.md").exists()
+        content = pending.read_text(encoding="utf-8")
+        assert ".sdd/specification/auth_design.md" in content
+        assert f"{tmp_path / 'plugin'}/README.md" in content
+
+        # Deleting it (or /sdd-init doing so) is undone by the next session.
+        pending.unlink()
+        ss.main()
+        assert pending.is_file()
 
     def test_main_with_unknown_lang_passes_through(self, tmp_path, monkeypatch):
         project_root, env_file = self._setup_env(tmp_path, monkeypatch)

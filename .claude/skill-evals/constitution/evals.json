@@ -1,0 +1,51 @@
+{
+  "skill_name": "constitution",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/constitution/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+29/-13 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "add-fixture-parity-principle",
+      "prompt": "`.sdd/CONSTITUTION.md` に、「評価用フィクスチャは評価対象の世代と一致させる」という開発手法原則を1件追加してください。",
+      "prompt_note": "Adding a principle is the case where main's SKILL.md contradicted itself (ASSERTION_DESIGN.md defect 6: the `add` section and the closing semver table said Minor, the Version Bump Rules table said MAJOR). develop rewrote both tables around one stated rule, so the version bump chosen and whether the run has to reconcile a contradiction are both observable here.",
+      "sdd_inputs": [
+        ".sdd/CONSTITUTION.md"
+      ],
+      "input_parity": "differs by design: CONSTITUTION.md is the era's own rulebook (main's is v4, develop's is v5 and mandates adr/ + design-draft). Matching it to the branch is the point of the branch-native fixture, not a confound to remove.",
+      "fixture": {},
+      "expected_output": "The new principle appended in the document's own structure, the version bumped consistently with the nature of the change, the change history appended, and nothing pre-existing overwritten.",
+      "assertions": [
+        {
+          "text": "既存の CONSTITUTION.md を無条件に上書きしていない（追記であり全体再生成ではない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "追加した原則が、その世代の原則ドキュメントの構造（章立て・表形式）を保っている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "バージョン変更（major/minor/patch）が、原則の追加という変更の性質と整合しており、実行内で一貫している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "バージョンバンプ規則について矛盾した指示があった場合、どちらを採用したかとその理由を示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "原則の変更履歴が追記され、過去の記述が失われていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

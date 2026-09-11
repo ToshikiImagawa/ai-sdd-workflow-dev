@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-09-02"
 depends-on: ["spec-workflow-foundation-documentation-index"]
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
@@ -78,7 +78,7 @@ risk: "medium"
 graph TD
     SS[SessionStart] -->|index 有効時| RA[sdd_index.rebuild_all]
     PTU[PostToolUse Write/Edit/MultiEdit] -->|DB 既存時| UO[sdd_index.update_one]
-    RA --> SCAN[iter_target_files: requirement/**.md + specification/**_spec/_design.md]
+    RA --> SCAN[iter_target_files: requirement/**.md + specification/**.md + adr/**.md]
     SCAN --> HASH{SHA-256 変更検知}
     HASH -->|変更あり| PARSE[scan_document: front matter / IDs / SysML / data / API 抽出]
     HASH -->|未変更| SKIP[スキップ]
@@ -105,12 +105,12 @@ graph TD
 
 # 5. データ構造
 
-## 5.1. SQLite スキーマ（`index.sqlite`, `SCHEMA_VERSION = "1"`）
+## 5.1. SQLite スキーマ（`index.sqlite`, `SCHEMA_VERSION = "2"`）
 
 | テーブル               | 役割                                                              |
 |----------------------|-------------------------------------------------------------------|
 | `meta`               | スキーマバージョン管理                                                |
-| `documents`          | パス・コンテンツハッシュ・front matter（doc_id / type / status / impl-status 等） |
+| `documents`          | パス・コンテンツハッシュ・front matter（doc_id / type / status / impl-status / sdd-version 等） |
 | `dependencies`       | ドキュメント間の依存関係（`depends-on`）                                 |
 | `tags`               | ドキュメントタグ                                                     |
 | `ids`                | 要求 ID（UR/FR/NFR）の抽出結果                                        |
@@ -123,19 +123,25 @@ graph TD
 `derive_index` が SQLite から以下のセクションを持つテーブル形式 Markdown を生成する。消費側はこれを 1 回 Read する。
 
 ```
-## Metadata            # doc_id / type / path / status / impl-status / depends-on / category
+## Metadata            # doc_id / type / path / status / impl-status / sdd-version / depends-on / category
 ## Requirement IDs     # req_id / kind(UR/FR/NFR) / doc_id / section
 ## SysML Relationships # source_id / rel_type / target_id
 ## API Signatures      # REST エンドポイント等
 ## Data Models         # 言語別のデータ定義
 ```
 
-`index.json`（`{"schema": "sdd-index/1", "document_count": N, "documents": [...]}`）も併せて派生する。
+`index.json`（`{"schema": "sdd-index/2", "document_count": N, "documents": [...]}`）も併せて派生する。
+`sdd_version` 追加（Issue #95）により `SCHEMA_VERSION` を `1` → `2` へ bump し、既存キャッシュを
+強制再構築させる（列追加は破壊的スキーマ変更のため）。
 
 ## 5.3. 走査対象（`iter_target_files`）
 
 - `${SDD_ROOT}/${requirement_dir}/` 配下の全 `.md`
-- `${SDD_ROOT}/${specification_dir}/` 配下の `*_spec.md` / `*_design.md` のみ
+- `${SDD_ROOT}/${specification_dir}/` 配下の全 `.md`（`_spec`/`_design` サフィックスは任意。Issue #84
+  以前は `*_spec.md` / `*_design.md` のみが対象だったが、`specification/` が単一種別ディレクトリになった
+  ため全 `.md` を対象とするよう変更した）
+- `${SDD_ROOT}/${adr_dir}/` 配下の全 `.md`（`-decisions` サフィックスは任意。`adr/` は `specification/`
+  と同じ単一種別ディレクトリのため全 `.md` が対象）
 - `${SDD_ROOT}/.cache/` は対象外（派生成果物のため）
 
 ---
@@ -201,6 +207,7 @@ tests/
 | 有効判定の既定         | off / on                               | on（session-config FR_001_04）    | トークン削減効果を標準で享受。無効化は `index: false` で明示（子 PRD DC_001）             |
 | 失敗時の挙動          | 例外送出 / 警告して継続                     | try/except で警告し継続            | 派生生成の失敗がワークフローを止めない（FR-006 / 親 PRD DC_002）                        |
 | 出力エンコーディング     | `ensure_ascii=True` / `False`           | UTF-8（`ensure_ascii=False`）      | 日本語ドキュメントのタイトル・パスを派生物に文字化けなく含める（T-003）                     |
+| `sdd_version` 列追加時のスキーマ移行 | `ALTER TABLE` で列追加 / `SCHEMA_VERSION` bump で全再構築 | `SCHEMA_VERSION` を `1`→`2` に bump | 既存の `init_schema` が version 不一致時に `DROP TABLE` → 再作成する既存パターンを踏襲。列追加のたびに個別マイグレーションを書く複雑さを避ける（FR-007 / Issue #95） |
 
 ## 9.2. 未解決の課題
 

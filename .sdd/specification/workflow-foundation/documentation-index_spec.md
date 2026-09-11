@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-09-02"
 depends-on: ["prd-workflow-foundation-documentation-index"]
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
@@ -56,14 +56,15 @@ API シグネチャという構造化された情報を持つ。これらをセ�
 
 | ID     | 要件                                                                           | 優先度 | 根拠（上流要求）                          |
 |--------|--------------------------------------------------------------------------------|-----|----------------------------------------|
-| FR-001 | セッション開始時に要求仕様書・仕様書を走査し、構造化情報を抽出してインデックスへ格納する    | 必須  | 子 PRD FR_001_01 / 親 PRD FR_005・UR_005 |
+| FR-001 | セッション開始時に要求仕様書・仕様書・決定ログ（`adr/`）を走査し、構造化情報を抽出してインデックスへ格納する | 必須  | 子 PRD FR_001_01 / 親 PRD FR_005・UR_005 |
 | FR-002 | ドキュメント編集後、当該ドキュメントの構造化情報を増分更新する（インデックス既存時のみ）     | 必須  | 子 PRD FR_001_02                        |
 | FR-003 | 消費側が 1 回で読める圧縮インデックス（テーブル形式）を派生生成する                     | 必須  | 子 PRD FR_001_03                        |
 | FR-004 | ドキュメント内容の変更を検知し、未変更ドキュメントの再処理をスキップする                  | 必須  | 子 PRD FR_001_04                        |
 | FR-005 | インデックスの有効・無効を設定で切り替える（既定有効）。無効・未構築時は何も構築しない       | 必須  | 子 PRD DC_001 / 親 PRD DC_002           |
 | FR-006 | 構築・更新の失敗時は警告に留め、ワークフローを停止しない                               | 必須  | 子 PRD 制約 / 親 PRD DC_002             |
+| FR-007 | front matter の `sdd-version` を抽出し、インデックスの構造化データおよび消費側向けの Metadata 出力に含める | 必須  | 子 PRD FR_001_05                        |
 
-抽出する構造化情報は、front matter（id / type / status / impl-status / depends-on / category 等）、
+抽出する構造化情報は、front matter（id / type / status / impl-status / sdd-version / depends-on / category 等）、
 要求 ID（UR/FR/NFR）、SysML 要求関係、データモデル、API シグネチャを含む。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
@@ -92,7 +93,7 @@ Markdown）と、その基盤となる構造化データを生成する。圧縮
 
 ```
 # 圧縮インデックス（テーブル形式）の論理区分
-- Metadata           : doc_id / type / path / status / impl-status / depends-on / category
+- Metadata           : doc_id / type / path / status / impl-status / sdd-version / depends-on / category
 - Requirement IDs    : req_id / kind(UR/FR/NFR) / doc_id / section
 - SysML Relationships: source_id / rel_type / target_id
 - API Signatures     : REST エンドポイント等のシグネチャ
@@ -166,8 +167,8 @@ sequenceDiagram
 
 | 確認項目        | 結果                                                                                     |
 |---------------|------------------------------------------------------------------------------------------|
-| 要求カバレッジ   | 子 PRD FR_001_01〜04 を FR-001〜004 で、DC_001 を FR-005 で、非停止制約を FR-006 でカバー          |
-| 要求 ID 参照    | 各 FR に対応する子 PRD / 親 PRD（FR_005・UR_005・IR_001・DC_002）の要求 ID を「根拠」列に明記         |
+| 要求カバレッジ   | 子 PRD FR_001_01〜04 を FR-001〜004 で、DC_001 を FR-005 で、非停止制約を FR-006 で、FR_001_05 を FR-007 でカバー |
+| 要求 ID 参照    | 各 FR に対応する子 PRD / 親 PRD（FR_005・UR_005・IR_001・DC_002・FR_001_05）の要求 ID を「根拠」列に明記    |
 | 非機能要求の反映 | 子 PRD UR_001（効率・精度）と親 PRD IR_001 を NFR-001〜003 に反映                                |
 | 用語整合性      | 親 PRD・session-config の「SDD_INDEX」「インデックス」定義に整合。固有語（圧縮インデックス・増分更新）を追加定義 |
 | スコープ整合性   | 設定・環境変数の設定（session-config）と消費側の活用（各カテゴリ）をスコープ外として明記               |

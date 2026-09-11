@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-02"
 depends-on: ["prd-quality-guardrails-stale-doc-detection"]
 tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -15,7 +15,8 @@ risk: "medium"
 
 # ドキュメント更新漏れ検知
 
-**関連 Design Doc:** [stale-doc-detection_design.md](stale-doc-detection_design.md)
+**関連 Design Doc:** [stale-doc-detection_design.md](stale-doc-detection_design.md)（v4.x 由来の永続 design。
+現行の Design Doc は `task/{ticket-number}/design-draft.md` の一時ドラフト）
 **関連 PRD:** [stale-doc-detection.md](../../requirement/quality-guardrails/stale-doc-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）
 
@@ -23,7 +24,7 @@ risk: "medium"
 
 # 1. 背景
 
-`.sdd/` ドキュメントやソースコードの編集後に、関連ドキュメント（PRD ↔ spec ↔ design、対応する技術設計書）の
+`.sdd/` ドキュメントやソースコードの編集後に、関連ドキュメント（PRD ↔ spec ↔ adr、対応する抽象仕様書）の
 更新が漏れると、仕様と実装の乖離が静かに進行する。乖離は次に誰かがそのドキュメントを真実の源として参照した
 ときに初めて顕在化し、手戻り・技術的負債・設計判断の不透明化を招く。これは [CONSTITUTION.md](../../CONSTITUTION.md) の
 最上位原則 B-001（Vibe Coding 防止）・D-001（Specification-Driven）に反する。
@@ -43,6 +44,9 @@ risk: "medium"
 - **リマインドまでを責務とする**: 実際の整合性検証や自動修正は行わず、確認を促し検証スキルへ誘導するに留める
 - **無関係な編集には介入しない**: 更新漏れの可能性がないファイル編集には何も出力せず、開発フローを妨げない
 
+追随先は**永続ドキュメント**とする。技術設計書は `task/{ticket-number}/design-draft.md` の一時ドラフトで
+実装完了後に削除されるため、ソースコード編集時に同期を促す対象は抽象仕様書（spec）である。
+
 「何を検知し、どう促すか」を定義し、パス判定ロジックの具体や検知メッセージの詳細は
 [stale-doc-detection_design.md](stale-doc-detection_design.md) に委ねる。
 
@@ -52,13 +56,15 @@ risk: "medium"
 
 | ID     | 要件                                                                                         | 優先度 | 根拠（上流要求）                             |
 |--------|--------------------------------------------------------------------------------------------|-----|-------------------------------------------|
-| FR-001 | `.sdd/` 仕様書ディレクトリ（spec / design）の編集後に PRD ↔ spec ↔ design の整合性確認を促す      | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
-| FR-002 | `.sdd/` 要求仕様ディレクトリ（PRD）の編集後に下流 spec / design への変更伝播確認を促す              | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
-| FR-003 | ソースコード編集後に対応する `{stem}_design.md` が存在する場合、設計書の同期を促す                  | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
+| FR-001 | `.sdd/` 仕様書ディレクトリ（spec）の編集後に PRD ↔ spec ↔ adr の整合性確認を促す                 | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
+| FR-002 | `.sdd/` 要求仕様ディレクトリ（PRD）の編集後に下流 spec への変更伝播確認を促す                      | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
+| FR-003 | ソースコード編集後に対応する spec（`{stem}.md` / `{stem}_spec.md`）が存在する場合、仕様書の同期を促す  | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
 | FR-004 | 更新漏れの検知はブロックせず、非ブロッキングで確認・同期を促すコンテキストを注入する                    | 必須  | 子 PRD（スコープ外＝自動修正しない）/ 親 PRD DC_001 |
-| FR-005 | 更新漏れの可能性がない編集（対応 design のないソース編集・仕様書以外の `.sdd/` 編集）には何も出力しない | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生   |
+| FR-005 | 更新漏れの可能性がない編集（対応 spec のないソース編集・対象外の `.sdd/` 編集）には何も出力しない       | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生   |
+| FR-006 | `.sdd/` 決定ログディレクトリ（`adr/`）の編集後に、追記専用の原則と決定の spec への反映確認を促す        | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
 
-FR-001〜FR-003 は編集されたファイルの種別（仕様書 / 要求仕様 / ソースコード）に応じて促す内容を切り替える。
+FR-001〜FR-003・FR-006 は編集されたファイルの種別（仕様書 / 要求仕様 / 決定ログ / ソースコード）に応じて
+促す内容を切り替える。
 本機能はリマインドまでを責務とし、整合性の実際の検証は doc-consistency-checker スキル等の検証機能に委ねる
 （子 PRD スコープ外の記載に準拠）。
 
@@ -77,7 +83,7 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 
 | 種別   | 配置場所                                        | 名前                | 概要                                                                                     |
 |------|---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|
-| hook | `scripts/post-tool-use.py` + `hooks/hooks.json` | PostToolUse フック | ファイル編集（Write / Edit）後にファイル種別を判定し、更新漏れの可能性に応じて確認・同期を促す `additionalContext` を注入する（FR-001〜005） |
+| hook | `scripts/post-tool-use.py` + `hooks/hooks.json` | PostToolUse フック | ファイル編集（Write / Edit）後にファイル種別を判定し、更新漏れの可能性に応じて確認・同期を促す `additionalContext` を注入する（FR-001〜006） |
 
 ## 4.1. 入出力定義
 
@@ -107,30 +113,35 @@ doc-consistency-checker スキル等の検証手段への誘導文を含む。
 | PostToolUse フック  | Claude Code がツール（Write / Edit）実行後に発火するフックイベント                          |
 | additionalContext | フックが AI のコンテキストに追加情報を注入する Claude Code の仕組み                          |
 | 非ブロッキング        | 編集やツール実行を拒否せず、警告・促しに留める動作                                            |
-| design 同期        | ソースコードの実装挙動が変わった際に、対応する技術設計書（`{stem}_design.md`）を真実の源として更新すること |
+| spec 同期          | ソースコードの公開 API・データモデル・振る舞いが変わった際に、対応する抽象仕様書（`{stem}.md` / `{stem}_spec.md`）を真実の源として更新すること |
+| 決定ログ（adr）      | `adr/` 配下の追記専用の決定記録。過去のエントリを書き換えず追記のみを行う                              |
 
 # 6. 使用例
 
 本機能はフックとして自動発火するため直接呼び出せない。以下はファイル編集後に想定される動作。
 
 ```
-# spec を編集 → PRD <-> spec <-> design の整合性確認を促す
+# spec を編集 → PRD <-> spec <-> adr の整合性確認を促す
 Edit: .sdd/specification/auth/user-login_spec.md
   → [AI-SDD] '...user-login_spec.md' was updated. Verify consistency across
-    PRD <-> *_spec.md <-> *_design.md ... Consider running the doc-consistency-checker skill.
+    PRD <-> spec <-> adr ... Consider running the doc-consistency-checker skill.
 
-# PRD を編集 → 下流 spec / design への変更伝播を促す
+# PRD を編集 → 下流 spec への変更伝播を促す
 Edit: .sdd/requirement/auth/user-login.md
   → [AI-SDD] '...user-login.md' (PRD) was updated. Verify that downstream
-    *_spec.md / *_design.md documents reflect the change ...
+    spec documents reflect the change ...
 
-# 対応 design を持つソースを編集 → 設計書の同期を促す
-Edit: src/auth/user_login.py（.sdd/specification/**/user_login_design.md が存在）
-  → [AI-SDD] '...user_login.py' was updated and a matching design document
-    '...user_login_design.md' exists. ... update the design document ...
+# adr を編集 → 追記専用の原則と spec への反映確認を促す
+Edit: .sdd/adr/user-login.md
+  → [AI-SDD] '...user-login.md' (ADR) was updated. Decision logs are append-only ...
 
-# 対応 design のないソースを編集 → 何も出力しない
-Edit: src/util/logger.py（対応 design なし）
+# 対応 spec を持つソースを編集 → 仕様書の同期を促す
+Edit: src/auth/user_login.py（.sdd/specification/**/user_login_spec.md が存在）
+  → [AI-SDD] '...user_login.py' was updated and a matching specification
+    '...user_login_spec.md' exists. ... update the specification ...
+
+# 対応 spec のないソースを編集 → 何も出力しない
+Edit: src/util/logger.py（対応 spec なし）
   → （出力なし）
 ```
 
@@ -146,11 +157,13 @@ sequenceDiagram
     User ->> Runtime: ファイル編集（Write / Edit）
     Runtime ->> Hook: file_path を JSON で渡す
     alt .sdd/specification 配下
-        Hook -->> Runtime: PRD <-> spec <-> design 整合性確認を注入
+        Hook -->> Runtime: PRD <-> spec <-> adr 整合性確認を注入
     else .sdd/requirement 配下（PRD）
-        Hook -->> Runtime: 下流 spec / design 伝播確認を注入
-    else ソースコード + 対応 design あり
-        Hook -->> Runtime: design 同期を注入
+        Hook -->> Runtime: 下流 spec 伝播確認を注入
+    else .sdd/adr 配下（決定ログ）
+        Hook -->> Runtime: 追記専用の原則と spec 反映確認を注入
+    else ソースコード + 対応 spec あり
+        Hook -->> Runtime: spec 同期を注入
     else 更新漏れの可能性なし
         Hook -->> Runtime: 出力なし（介入しない）
     end
@@ -172,7 +185,7 @@ sequenceDiagram
 |-------|---------------------|--------------------------------------------------------------------------------|
 | A-002 | フックとスクリプトの責務分離 | 機械的なパス判定（フック）と整合性検証（検証スキル）の責務を分離し、フックは更新漏れの検知・可視化に専念する |
 | B-001 | Vibe Coding 防止     | 更新漏れによる仕様・実装の乖離を編集直後に検知・可視化し、暗黙的な乖離の進行を抑止する         |
-| D-001 | Specification-Driven | 編集後に関連ドキュメント（PRD / spec / design）の同期を促し、仕様書を真実の源とするフローを維持する |
+| D-001 | Specification-Driven | 編集後に関連する永続ドキュメント（PRD / spec / adr）の同期を促し、仕様書を真実の源とするフローを維持する |
 
 ---
 
@@ -180,7 +193,7 @@ sequenceDiagram
 
 | 確認項目          | 結果                                                                                       |
 |-----------------|--------------------------------------------------------------------------------------------|
-| 要求カバレッジ     | 子 PRD FR_001 の 2 つのトリガー方式（.sdd 編集 / ソース編集）を FR-001〜FR-003 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
+| 要求カバレッジ     | 子 PRD FR_001 の 3 つのトリガー（.sdd 仕様書・要求仕様編集 / adr 編集 / ソース編集）を FR-001〜FR-003・FR-006 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
 | 要求 ID 参照      | 各 FR に対応する子 PRD / 親 PRD（UR_003・FR_004・DC_001・NFR_001・IR_001）の要求 ID を「根拠」列に明記 |
 | 非機能要求の反映   | 親 PRD NFR_001・IR_001・DC_001・DC_004 を NFR-001〜003 および制約事項に反映                       |
 | 用語整合性        | 親 PRD 用語集の「フック」「additionalContext」定義に整合。本機能固有の「更新漏れ」「design 同期」を追加定義 |

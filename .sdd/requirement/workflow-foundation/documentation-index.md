@@ -4,7 +4,7 @@ title: "ドキュメントインデックス"
 type: "prd"
 status: "draft"
 created: "2026-07-14"
-updated: "2026-07-14"
+updated: "2026-09-02"
 depends-on: ["prd-workflow-foundation"]
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
@@ -19,11 +19,11 @@ risk: "medium"
 本ドキュメントは、ワークフロー基盤機能群（親 PRD: [index.md](index.md)）のうち、
 ドキュメントインデックス機能に対する要求仕様書である。
 
-各エージェント・スキルが `.sdd/` の要求仕様書・仕様書を参照する際、従来は複数回の
-Glob / Grep / Read を要し、トークン消費が大きかった。本機能は、セッション開始時に
-`.sdd/` ドキュメントから構造化情報（front matter・要求 ID・SysML 関係・データモデル・
-API シグネチャ）を抽出して圧縮インデックスを構築し、消費側が **1 回の Read** で
-全体像を把握できるようにすることで、参照精度を保ちつつトークン消費を削減する。
+各エージェント・スキルが `.sdd/` の要求仕様書・仕様書・決定ログ（`adr/` 配下の永続的な意思決定記録）を
+参照する際、従来は複数回の Glob / Grep / Read を要し、トークン消費が大きかった。本機能は、セッション
+開始時に `.sdd/` ドキュメント（要求仕様書・抽象仕様書・決定ログ）から構造化情報（front matter・要求 ID・
+SysML 関係・データモデル・API シグネチャ）を抽出して圧縮インデックスを構築し、消費側が
+**1 回の Read** で全体像を把握できるようにすることで、参照精度を保ちつつトークン消費を削減する。
 
 要求図の記法凡例は [PRD_TEMPLATE.md](../../PRD_TEMPLATE.md) のセクション 1 を参照。
 
@@ -60,6 +60,7 @@ flowchart LR
     - ドキュメント編集後の増分更新（インデックス既存時のみ）
     - 圧縮インデックス（消費側が読むテーブル形式ドキュメント）の派生生成
     - 変更検知によるキャッシュ無効化（未変更ドキュメントの再処理回避）
+    - `sdd-version` の格納（世代判別・移行漏れ検知への活用）
 
 ---
 
@@ -112,6 +113,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement IndexSddVersion {
+        id: FR_001_05
+        text: "front matterのsdd-versionをインデックスに格納し世代判別に活用できるようにする"
+        risk: low
+        verifymethod: test
+    }
+
     designConstraint OptIn {
         id: DC_001
         text: "インデックスの有効・無効を設定で切り替えられる（既定は有効）"
@@ -124,6 +132,7 @@ requirementDiagram
     DocumentationIndex - contains -> IncrementalUpdate
     DocumentationIndex - contains -> DeriveCompactIndex
     DocumentationIndex - contains -> CacheInvalidation
+    DocumentationIndex - contains -> IndexSddVersion
     OptIn - traces -> DocumentationIndex
 ```
 
@@ -134,6 +143,8 @@ requirementDiagram
 - FR_001 は index.md の IR_001（設定スキーマ・環境変数の共通契約）にトレースされる
   （`.sdd-config.json` の `index` 設定・`SDD_INDEX` 環境変数）
 - FR_001 は [session-config.md](session-config.md) の FR_001_04（セッション開始時のインデックス構築）と連携する
+- FR_001_05 は世代判別・移行漏れ検知（[front-matter-validation.md](../quality-guardrails/front-matter-validation.md)・
+  [doc-consistency-check.md](../quality-guardrails/doc-consistency-check.md)）の入力として使われる
 
 ---
 
@@ -160,13 +171,15 @@ requirementDiagram
 
 **含まれる機能:**
 
-- FR_001_01: セッション開始時に要求仕様書・仕様書ディレクトリ配下を走査し、抽出した構造化情報を
-  インデックスへ格納する。`.sdd-config.json` の `index` が有効な場合に実行する
+- FR_001_01: セッション開始時に要求仕様書・仕様書・決定ログの各ディレクトリ配下を走査し、抽出した
+  構造化情報をインデックスへ格納する。`.sdd-config.json` の `index` が有効な場合に実行する
 - FR_001_02: ドキュメント編集後、当該ドキュメントの構造化情報を増分更新する。インデックスが
   既に構築済みの場合にのみ動作し、無効時（未構築時）は何もしない
 - FR_001_03: 消費側（エージェント・スキル）が 1 回の Read で参照できる圧縮インデックス
   （テーブル形式）を派生生成する。`SDD_INDEX` 環境変数が有効なとき消費側はこれを優先して参照する
 - FR_001_04: ドキュメント内容の変更を検知し、未変更のドキュメントはインデックス再処理をスキップする
+- FR_001_05: front matter の `sdd-version`（生成時点のプラグインバージョン）をインデックスへ格納し、
+  消費側が世代判別・移行漏れ検知に活用できるようにする
 
 **検証方法:** テストによる検証（ユニットテストを CI で実行、A/B ハーネスで効果測定）
 

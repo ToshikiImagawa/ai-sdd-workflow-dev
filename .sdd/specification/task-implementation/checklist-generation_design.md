@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-task-implementation-checklist-generation"]
 tags: ["checklist", "quality"]
 category: "task-implementation"
@@ -65,7 +65,7 @@ risk: "medium"
 | 抽出    | 各文書から観点を読み取り、カテゴリへマッピング                              | PRD=要求、spec=API/データモデル/振る舞い、design=構成/技術/判断、tasks=完了基準/依存という文書役割に応じて抽出する |
 | ID 採番 | `CHK-{category}{nn}` 形式（カテゴリ番号 1〜9 + 連番）                  | カテゴリを ID プレフィックスに含めることで安定性と可読性を両立（NFR-001）                       |
 | 多言語   | `SDD_LANG` 環境変数 + `templates/{en,ja}/checklist_template.md` | B-002 の一貫性要件。出力言語をテンプレートで切り替える                                     |
-| パス解決 | `${CLAUDE_PROJECT_DIR}` + `SDD_*` 環境変数                       | 命名規則（requirement 無サフィックス／specification `_spec`/`_design`）を環境変数で解決（D-002） |
+| パス解決 | `${CLAUDE_PROJECT_DIR}` + `SDD_*` 環境変数                       | 命名規則（requirement 無サフィックス／specification `_spec` 任意／task 配下は `design-draft.md` 固定名）を環境変数で解決（D-002） |
 
 ---
 
@@ -78,7 +78,7 @@ graph TD
     U[開発者: /checklist feature ticket] --> SK[checklist SKILL.md]
     SK -->|読み込み| PRD[PRD *.md]
     SK -->|読み込み 必須| SPEC[*_spec.md]
-    SK -->|読み込み 必須| DES[*_design.md]
+    SK -->|読み込み 任意| DES[task/{ticket}/design-draft.md]
     SK -->|読み込み 任意| TASKS[tasks.md]
     SK -->|観点抽出→9 カテゴリ分類| GEN[CHK-ID 採番・優先度付け]
     GEN -->|SDD_LANG| TPL[templates/en or ja]
@@ -153,7 +153,7 @@ checklist スキルは実装済みであり、本設計書は逆算文書であ�
 |-----------------------|------------------------------------------------------------------------------|
 | NFR-001（ID 安定性）      | `CHK-{category}{nn}` 形式でカテゴリを ID に固定。`--update` 時も既存 ID と完了状態を保持 |
 | NFR-002（多言語・一貫性）   | `SDD_LANG` に応じ `templates/{en,ja}/` を切り替え。日英で同等構成を維持（B-002）      |
-| NFR-003（命名規則）       | 入出力パスを `SDD_*` 環境変数で解決し、requirement 無サフィックス／spec・design サフィックスを厳守（D-002） |
+| NFR-003（命名規則）       | 入出力パスを `SDD_*` 環境変数で解決し、requirement 無サフィックス／`_spec` 任意／`design-draft.md` 固定名を厳守（D-002） |
 
 ---
 
@@ -176,7 +176,8 @@ checklist スキルは実装済みであり、本設計書は逆算文書であ�
 | 実装層             | スキル単体 / スキル + エージェント    | スキル単体                        | 観点抽出・分類は単一スキルで完結し、分析専用エージェントを分離する必要がない       |
 | ツール権限          | Bash 含む / 読み書き系のみ         | `Read, Glob, Grep, Edit(.sdd/**)`（Bash 不使用） | チェックリスト生成は決定的コマンド実行を要さない。生成は Edit で行い、事前承認は `.sdd/` 配下に限定する |
 | ID 体系            | 連番のみ / カテゴリ + 連番          | `CHK-{category}{nn}`             | カテゴリをプレフィックスに含め、更新時の安定性と分類の可読性を両立（NFR-001）        |
-| 抽出元の必須性       | 全文書必須 / spec・design 必須       | spec・design を必須、PRD・tasks は任意 | 仕様・設計は検証観点の中核。PRD・tasks は補助情報として存在時に活用            |
+| 抽出元の必須性       | 全文書必須 / spec のみ必須            | `*_spec.md` を必須、PRD・設計ドラフト・tasks は任意 | 仕様は検証観点の中核で永続文書。設計ドラフトは実装完了後に削除される一時文書のため必須にできず、不在時は仕様書のみで続行する |
+| 設計ドラフトの参照パス | 機能単位（`specification/*_design.md`）/ チケット単位（`task/{ticket}/design-draft.md`） | チケット単位の固定パス          | generate-spec / task-breakdown / implement と同一パスを参照し、順方向フローで参照先が食い違わないようにする |
 | 保存先             | 任意パス / task ディレクトリ配下     | `${SDD_TASK_PATH}/{ticket}/checklist.md` | run-checklist の入力位置と一致させ、ワークフロー連携を成立させる（親 PRD IR_001） |
 
 ## 9.2. 未解決の課題
@@ -184,6 +185,7 @@ checklist スキルは実装済みであり、本設計書は逆算文書であ�
 | 課題                                | 影響度 | 対応方針                                                  |
 |-----------------------------------|-----|-----------------------------------------------------------|
 | 抽出品質の基盤モデル依存              | 中   | 抽出観点表・カテゴリ定義を精緻化。意味論的抽出の限界はスコープ外          |
+| 設計ドラフト削除後の設計レビュー観点の薄化 | 中   | 設計判断の理由は実装完了時に永続文書へ統合される前提とし、不在時は仕様書から導出できる範囲に限定する |
 | `--export` 連携先（GitHub/CSV）の仕様固定 | 低   | 現状は出力例に依存。将来のフォーマット明文化を検討                    |
 
 ---
@@ -196,7 +198,7 @@ checklist スキルは実装済みであり、本設計書は逆算文書であ�
 | B-001 | Vibe Coding 防止          | ✅     | 検証観点を仕様・設計から機械的に導出し、発明を排除                    |
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
 | D-001 | Specification-Driven      | ✅     | 仕様書・設計書を真実の源として観点を抽出                            |
-| D-002 | ファイル命名規則の厳守      | ✅     | 入出力パスで requirement 無サフィックス／spec・design サフィックスを厳守  |
+| D-002 | ファイル命名規則の厳守      | ✅     | 入出力パスで requirement 無サフィックス／`_spec` 任意／`design-draft.md` 固定名を厳守 |
 | T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 

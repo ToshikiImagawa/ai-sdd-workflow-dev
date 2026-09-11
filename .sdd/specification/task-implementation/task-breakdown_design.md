@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-task-implementation-task-breakdown"]
 tags: ["task-breakdown", "tasks"]
 category: "task-implementation"
@@ -27,7 +27,7 @@ risk: "high"
 **ステータス:** 🟢 実装済み
 
 本設計書は既存実装（`skills/task-breakdown/`）の挙動を逆算して記述したものである。
-処理フロー（文書読み込み → 設計書分析 → 分解原則 → 分類 → 依存整理 → 出力）・タスクカテゴリ・
+処理フロー（文書読み込み → 設計ドラフト分析 → 分解原則 → 分類 → 依存整理 → 出力）・タスクカテゴリ・
 front matter 生成規則・Serena MCP 連携・入出力パス・テンプレートは実装（Markdown プロンプトおよび
 `references/` / `examples/` / `templates/{en,ja}/`）を真実の源とする。
 
@@ -51,9 +51,9 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 
 # 2. 設計目標
 
-- 技術設計書を分析し、**独立テスト可能**な粒度へタスクを分解する（FR-001 / FR-002 / NFR-001）
+- 技術設計ドラフト（`task/{ticket-number}/design-draft.md`）を分析し、**独立テスト可能**な粒度へタスクを分解する（FR-001 / FR-002 / NFR-001）
 - タスクを **5 カテゴリ**へ分類し依存関係を整理する（FR-003）
-- tasks.md を **task ディレクトリ配下**へ front matter 付きで保存する（FR-004 / NFR-003）
+- tasks.md を **設計ドラフトと同一の `task/{ticket-number}/` 配下**へ front matter 付きで保存する（FR-004 / NFR-003）
 - PRD/spec がある場合は **要求カバレッジ**を検証する（FR-005）
 - 出力言語を `SDD_LANG` に従い切り替える（B-002 / NFR-002）
 
@@ -63,11 +63,11 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 
 | 領域     | 採用方式                                                              | 選定理由                                                                          |
 |--------|-------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| skill  | Markdown プロンプトスキル（`user-invocable: true`、Bash 不使用）           | 設計書分析・タスク分解は Claude の判断を要する。A-001 に従いスキルとして実装。決定的コマンドが不要のため Bash を持たない |
-| ツール   | `allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`  | 文書読み込みと生成・保存に読み書き系、設計書欠如時の確認に AskUserQuestion が必要。`allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` で `.sdd/` 配下に限定する |
+| skill  | Markdown プロンプトスキル（`user-invocable: true`、Bash 不使用）           | 設計ドラフト分析・タスク分解は Claude の判断を要する。A-001 に従いスキルとして実装。決定的コマンドが不要のため Bash を持たない |
+| ツール   | `allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`  | 文書読み込みと生成・保存に読み書き系、設計ドラフト欠如時の確認に AskUserQuestion が必要。`allowed-tools` は事前承認であり制限ではないため、書き込みは `Edit(.sdd/**)` で `.sdd/` 配下に限定する |
 | 分解原則 | 独立性・テスト可能性・適切な粒度を references/templates で定義              | 独立テスト可能性（NFR_001）を分解基準として明示する                                       |
 | 依存整理 | Mermaid 依存関係図（`references/task_dependency_diagram.md`）          | タスク間依存を可視化し、実装順序の錯綜を防ぐ                                             |
-| MCP 連携 | Serena MCP を任意連携（`.mcp.json` 設定時）                             | 影響範囲分析・依存自動検出で精度向上。未設定でも設計書ベースで分解可能に保つ                    |
+| MCP 連携 | Serena MCP を任意連携（`.mcp.json` 設定時）                             | 影響範囲分析・依存自動検出で精度向上。未設定でも設計ドラフトベースで分解可能に保つ                 |
 | 多言語   | `SDD_LANG` 環境変数 + `templates/{en,ja}/breakdown_output.md`         | B-002 の一貫性要件。出力形式をテンプレートで切り替える                                    |
 
 ---
@@ -79,7 +79,7 @@ front matter 生成規則・Serena MCP 連携・入出力パス・テンプレ�
 ```mermaid
 graph TD
     U[開発者: /task-breakdown feature ticket] --> SK[task-breakdown SKILL.md]
-    SK -->|必須| DES[*_design.md]
+    SK -->|必須| DES[task/{ticket}/design-draft.md]
     SK -->|任意| PRD[PRD *.md]
     SK -->|任意| SPEC[*_spec.md]
     SK -->|分析| EX[モジュール/依存/IF/技術スタック抽出]
@@ -96,7 +96,7 @@ graph TD
 
 | モジュール名                | 責務                                                          | 依存関係            | 配置場所                                                  |
 |--------------------------|-------------------------------------------------------------|-------------------|-------------------------------------------------------|
-| task-breakdown SKILL.md  | 文書読み込み・設計書分析・分解・分類・依存整理・カバレッジ検証・保存・報告   | SDD_LANG, SDD_*, (Serena MCP 任意) | `plugins/sdd-workflow/skills/task-breakdown/SKILL.md`   |
+| task-breakdown SKILL.md  | 文書読み込み・設計ドラフト分析・分解・分類・依存整理・カバレッジ検証・保存・報告 | SDD_LANG, SDD_*, (Serena MCP 任意) | `plugins/sdd-workflow/skills/task-breakdown/SKILL.md`   |
 | task_dependency_diagram  | タスク間依存の Mermaid 図の例                                    | -                 | `plugins/sdd-workflow/skills/task-breakdown/references/` |
 | breakdown_output         | タスク一覧出力の基底テンプレート（日英）                             | SDD_LANG          | `plugins/sdd-workflow/skills/task-breakdown/templates/{en,ja}/` |
 | examples/                | タスク一覧形式・要求カバレッジ・Serena 分析の例                      | -                 | `plugins/sdd-workflow/skills/task-breakdown/examples/`  |
@@ -122,11 +122,11 @@ id: "task-{feature-name}"        # 階層時: "task-{parent}-{feature-name}"
 type: "task"
 status: "pending"                # 新規分解時
 sdd-phase: "tasks"
-depends-on: ["design-{feature-name}"]
-ticket: "{ticket-number}"        # 入力引数がある場合
-tags: []                         # 設計書から継承
-category: ""                     # 設計書から継承
-priority: ""                     # 設計書から継承
+depends-on: ["design-{ticket-number}"]  # 設計ドラフトの id はチケット単位
+ticket: "{ticket-number}"        # 必須入力
+tags: []                         # 設計ドラフトから継承
+category: ""                     # 設計ドラフトから継承
+priority: ""                     # 設計ドラフトから継承
 ```
 
 ---
@@ -154,7 +154,7 @@ task-breakdown スキルは実装済みであり、本設計書は逆算文書�
 |------------------------|------------------------------------------------------------------------------|
 | NFR-001（粒度）          | 独立性・テスト可能性・適切な粒度を分解原則として適用し、各タスクに完了基準を対応づける          |
 | NFR-002（多言語・一貫性）  | `SDD_LANG` に応じ `templates/{en,ja}/` を切り替え。日英で同等構成を維持（B-002）        |
-| NFR-003（命名規則）      | 入出力パス・task front matter スキーマを厳守（requirement 無サフィックス／spec・design サフィックス・D-002） |
+| NFR-003（命名規則）      | 入出力パス・task front matter スキーマを厳守（requirement 無サフィックス／`_spec` 任意／`design-draft.md` 固定名・D-002） |
 
 ---
 
@@ -163,7 +163,7 @@ task-breakdown スキルは実装済みであり、本設計書は逆算文書�
 | テストレベル | 対象                              | カバレッジ目標                                        |
 |:----------|:--------------------------------|:----------------------------------------------------|
 | 構文検証    | `skills/task-breakdown/`         | plugin-lint（プロンプト Markdown 構文・命名規則）が通ること        |
-| 手動検証    | デモンストレーション                  | 設計書分析・分解・分類・依存整理・カバレッジ検証が機能すること（FR-001〜005） |
+| 手動検証    | デモンストレーション                  | 設計ドラフト分析・分解・分類・依存整理・カバレッジ検証が機能すること（FR-001〜005） |
 | 整合性確認  | 生成後の `tasks.md`                | front matter スキーマ・要求カバレッジ表が妥当であること              |
 
 ---
@@ -174,9 +174,11 @@ task-breakdown スキルは実装済みであり、本設計書は逆算文書�
 
 | 決定事項            | 選択肢                        | 決定内容                              | 理由                                                          |
 |-------------------|-----------------------------|-------------------------------------|---------------------------------------------------------------|
-| 実装層             | スキル単体 / スキル + エージェント    | スキル単体                            | 設計書分析・分解は単一スキルで完結する                              |
+| 実装層             | スキル単体 / スキル + エージェント    | スキル単体                            | 設計ドラフト分析・分解は単一スキルで完結する                           |
 | Bash 権限          | 含む / 含まない                 | 含まない（`Read, Glob, Grep, AskUserQuestion, Edit(.sdd/**)`） | 分解は決定的コマンド実行を要さない。生成は Edit で行う                  |
-| 設計書欠如時の挙動    | 常にエラー / モード分岐          | `--ci` はエラー終了、対話は generate-spec を促す | CI では確定的に失敗させ、対話では次アクションを案内する（FR-002）           |
+| 設計ドラフト欠如時の挙動 | 常にエラー / モード分岐          | `--ci` はエラー終了、対話は generate-spec を促す | CI では確定的に失敗させ、対話では次アクションを案内する（FR-002）           |
+| 設計ドラフトの参照パス | 機能単位（`specification/*_design.md`）/ チケット単位（`task/{ticket}/design-draft.md`） | チケット単位の固定パス                | generate-spec の出力先と一致させる。設計ドラフトはチケット単位の一時文書であり、抽象仕様書のフラット／階層構造とは独立している |
+| `ticket-number`     | 任意 / 必須                     | 必須                                  | 設計ドラフトの位置と tasks.md の保存先が共にチケット番号で決まるため、省略できない |
 | 依存の表現          | テキストのみ / Mermaid 図        | Mermaid 依存関係図                     | 依存を可視化し実装順序の錯綜を防ぐ                                    |
 | Serena MCP         | 必須 / 任意連携                 | 任意連携（未設定でも動作）              | 精度向上は歓迎するが、外部 MCP 依存を必須にしない                        |
 | カバレッジ検証        | 常時 / PRD-spec 存在時          | PRD/spec 存在時に検証                  | 上流要求がある場合のみ FR/NFR/API のカバレッジを担保（FR-005）            |
@@ -195,9 +197,9 @@ task-breakdown スキルは実装済みであり、本設計書は逆算文書�
 | 原則ID  | 原則名                    | 準拠状況 | 備考                                                       |
 |-------|--------------------------|--------|------------------------------------------------------------|
 | A-001 | Skills-First              | ✅     | `skills/task-breakdown/` として実装（legacy commands 不使用）    |
-| B-001 | Vibe Coding 防止          | ✅     | 設計書を入力の前提とし、要求カバレッジで推測タスクを排除              |
+| B-001 | Vibe Coding 防止          | ✅     | 設計ドラフトを入力の前提とし、要求カバレッジで推測タスクを排除           |
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
-| D-001 | Specification-Driven      | ✅     | 技術設計書を真実の源として分解                                    |
+| D-001 | Specification-Driven      | ✅     | 技術設計ドラフトを真実の源として分解                                 |
 | D-002 | ファイル命名規則の厳守      | ✅     | 入出力パス・task front matter スキーマを厳守                       |
 | T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |

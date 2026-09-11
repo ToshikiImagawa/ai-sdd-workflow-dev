@@ -35,42 +35,43 @@ SPEC = os.path.join(".sdd", "specification")
 class TestValidateNaming:
     def test_requirement_plain_ok(self):
         rel = os.path.join(REQ, "user-login.md")
-        assert ptu.validate_naming(rel, REQ, SPEC) == ""
+        assert ptu.validate_naming(rel, REQ) == ""
 
     def test_requirement_with_spec_suffix_violates(self):
         rel = os.path.join(REQ, "user-login_spec.md")
-        assert "Naming violation" in ptu.validate_naming(rel, REQ, SPEC)
+        assert "Naming violation" in ptu.validate_naming(rel, REQ)
 
     def test_requirement_with_design_suffix_violates(self):
         rel = os.path.join(REQ, "index_design.md")
-        assert "Naming violation" in ptu.validate_naming(rel, REQ, SPEC)
+        assert "Naming violation" in ptu.validate_naming(rel, REQ)
 
     def test_specification_spec_ok(self):
         rel = os.path.join(SPEC, "user-login_spec.md")
-        assert ptu.validate_naming(rel, REQ, SPEC) == ""
+        assert ptu.validate_naming(rel, REQ) == ""
 
     def test_specification_design_ok(self):
         rel = os.path.join(SPEC, "index_design.md")
-        assert ptu.validate_naming(rel, REQ, SPEC) == ""
+        assert ptu.validate_naming(rel, REQ) == ""
 
-    def test_specification_without_suffix_violates(self):
+    def test_specification_without_suffix_ok(self):
+        # Suffix is optional under specification/ (issue #84).
         rel = os.path.join(SPEC, "user-login.md")
-        assert "Naming violation" in ptu.validate_naming(rel, REQ, SPEC)
+        assert ptu.validate_naming(rel, REQ) == ""
 
     def test_non_markdown_ignored(self):
         rel = os.path.join(SPEC, "notes.txt")
-        assert ptu.validate_naming(rel, REQ, SPEC) == ""
+        assert ptu.validate_naming(rel, REQ) == ""
 
     def test_outside_sdd_dirs_ignored(self):
-        assert ptu.validate_naming("src/main.py", REQ, SPEC) == ""
+        assert ptu.validate_naming("src/main.py", REQ) == ""
 
-    def test_specification_ignored_by_pattern(self):
-        rel = os.path.join(SPEC, "xxx_spec_test.md")
-        assert ptu.validate_naming(rel, REQ, SPEC, ("*_test.md",)) == ""
+    def test_requirement_ignored_by_pattern(self):
+        rel = os.path.join(REQ, "user-login_spec_test.md")
+        assert ptu.validate_naming(rel, REQ, ("*_test.md",)) == ""
 
     def test_ignore_pattern_no_match_still_violates(self):
-        rel = os.path.join(SPEC, "user-login.md")
-        assert "Naming violation" in ptu.validate_naming(rel, REQ, SPEC, ("*_test.md",))
+        rel = os.path.join(REQ, "user-login_spec.md")
+        assert "Naming violation" in ptu.validate_naming(rel, REQ, ("*_test.md",))
 
 
 # --- session_marker_path ---------------------------------------------------

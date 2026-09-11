@@ -9,11 +9,13 @@ Coding問題を防ぎ、仕様書を真実の源として高品質な実装を�
 
 詳細な開発ルール（リポジトリ構成、テストと検証、プラグイン開発ガイド、CLAUDE.md執筆方針、scripts/作業ガイド等）は
 `.claude/rules/` 配下のトピック別ファイルを参照してください。`.sdd/` 配下のAI-SDDワークフロー原則そのものは
-`.sdd/AI-SDD-PRINCIPLES.md` が正典です。
+`.sdd/AI-SDD-PRINCIPLES.md` が正典です（**インストール済みプラグインから自動生成**されるため、開発中の
+`plugins/sdd-workflow/AI-SDD-PRINCIPLES.source.md` とはリリースまで一致しません。手で同期しないこと。
+詳細は [plugin-development.md](.claude/rules/plugin-development.md) を参照）。
 
-## AI-SDD Instructions (v4.0.0)
+## AI-SDD Instructions (v4.1.0)
 
-<!-- sdd-workflow version: "4.0.0" -->
+<!-- sdd-workflow version: "4.1.0" -->
 
 このプロジェクトは AI-SDD（AI駆動仕様駆動開発）ワークフローに従います。
 

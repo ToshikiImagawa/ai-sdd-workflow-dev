@@ -4,7 +4,7 @@ title: "PRD 生成パイプライン"
 type: "prd"
 status: "draft"
 created: "2026-07-06"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: []
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
@@ -90,6 +90,7 @@ flowchart LR
         LoadTemplate([テンプレートと参照資料をロードする])
         ClarifyReq([曖昧な要件を質問で明確化する])
         ConfirmOverwrite([既存 PRD の上書きを確認する])
+        AmendExisting([既存 PRD に要求を追記する（--amend）])
         SavePrd([PRD ファイルを保存する])
     end
 
@@ -97,6 +98,7 @@ flowchart LR
     LoadTemplate -.->|"<<包含>>"| InputReq
     ClarifyReq -.->|"<<拡張>>"| InputReq
     ConfirmOverwrite -.->|"<<拡張>>"| SavePrd
+    AmendExisting -.->|"<<拡張>>"| SavePrd
 ```
 
 ## 2.3. 機能一覧（テキスト形式）
@@ -106,6 +108,7 @@ flowchart LR
     - 対話モードでの曖昧要件の明確化質問
     - CI モード（質問・レビューの省略、上書き自動承認）
     - 既存 PRD の上書き確認
+    - 既存 PRD への追記モード（`--amend`。人間が明示的に与えた要求のみを対象とし、全上書きしない）
     - PRD ファイルの保存
 - PRD 構成要素の生成
     - ユースケース図生成（アクター・ユースケース・システム境界）
@@ -152,6 +155,13 @@ requirementDiagram
         text: "非対話環境でも人手の介在なしにPRDを生成できる"
         risk: medium
         verifymethod: test
+    }
+
+    requirement SafeAmendment {
+        id: UR_005
+        text: "開発者は既存PRDへの要求追加を全上書きなしに安全に行える"
+        risk: high
+        verifymethod: demonstration
     }
 
     functionalRequirement Orchestration {
@@ -252,11 +262,20 @@ requirementDiagram
         verifymethod: inspection
     }
 
+    designConstraint IdImmutability {
+        id: DC_004
+        text: "追記モードでは既存の要求IDと診断ノードを変更しない"
+        risk: high
+        verifymethod: inspection
+    }
+
     PrdGenerationPipeline - contains -> StructuredRequirements
     PrdGenerationPipeline - contains -> VisualRepresentation
     PrdGenerationPipeline - contains -> AutomationSupport
+    PrdGenerationPipeline - contains -> SafeAmendment
     Orchestration - derives -> PrdGenerationPipeline
     Orchestration - derives -> AutomationSupport
+    Orchestration - derives -> SafeAmendment
     Orchestration - contains -> UsecaseDiagram
     Orchestration - contains -> RequirementsAnalysis
     Orchestration - contains -> RequirementsDiagram
@@ -267,6 +286,7 @@ requirementDiagram
     UsecaseDiagram - derives -> VisualRepresentation
     RequirementsDiagram - derives -> VisualRepresentation
     FinalizePrd - derives -> PrdGenerationPipeline
+    FinalizePrd - derives -> SafeAmendment
     PrdReview - derives -> PrdGenerationPipeline
     GenerationQuality - derives -> PrdGenerationPipeline
     GenerationQuality - traces -> FinalizePrd
@@ -276,6 +296,8 @@ requirementDiagram
     SubskillIsolation - traces -> Orchestration
     TemplatePrecedence - traces -> Orchestration
     LanguageConsistency - traces -> FinalizePrd
+    IdImmutability - traces -> Orchestration
+    IdImmutability - traces -> SafeAmendment
 ```
 
 ## 3.2. 主要サブシステム詳細図
@@ -320,10 +342,18 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement AmendMode {
+        id: FR_001_05
+        text: "--amendフラグにより既存PRDへの追記モードを提供する"
+        risk: high
+        verifymethod: demonstration
+    }
+
     Orchestration - contains -> TemplatePreload
     Orchestration - contains -> InteractiveClarification
     Orchestration - contains -> CiMode
     Orchestration - contains -> OverwriteGuard
+    Orchestration - contains -> AmendMode
 ```
 
 ---
@@ -359,6 +389,15 @@ CI 等の非対話環境でも、人手の介在（質問応答・上書き確�
 
 **検証方法:** テストによる検証
 
+### UR_005: 既存PRDへの安全な追記
+
+開発者は、既存機能の改修や Spec ↔ PRD 乖離の決着など、既存 PRD に要求を追加したい場面で、PRD 全体を
+再生成して上書きするのではなく、既存の要求 ID・セクション・要求図ノードを保持したまま新規差分のみを
+安全に追記できること。この経路は人間が明示的に与えた要求のみを入力とし、spec/design/実装からの逆算に
+転用してはならない。
+
+**検証方法:** デモンストレーションによる検証
+
 ## 4.2. 機能要求
 
 ### FR_001: PRD 生成オーケストレーション
@@ -378,6 +417,9 @@ CI 等の非対話環境でも、人手の介在（質問応答・上書き確�
     - 検証方法が判断できない場合のデフォルト: inspection
     - 既存 PRD の上書き: 自動承認（確認なし）
 - FR_001_04: 既存 PRD の上書きガード（対話モードでは確認、CI モードでは自動承認）
+- FR_001_05: `--amend` フラグによる既存 PRD への追記モード。既存の要求 ID・セクション・要求図ノードを
+  保持し、新規 ID は既存の最大値（プレフィックス別）の続きから採番する。人間が明示的に与えた要求のみを
+  対象とし、spec/design/実装からの逆算に転用してはならない（UR_005 / DC_004 から派生）
 
 **検証方法:** デモンストレーションによる検証
 
@@ -516,6 +558,16 @@ PRD テンプレートは、対象プロジェクトの `.sdd/PRD_TEMPLATE.md` �
 ### DC_003: 言語の一貫性
 
 生成される PRD の言語は `SDD_LANG` 環境変数（en / ja）に従い、単一ドキュメント内で言語を混在させないこと。
+
+**検証方法:** インスペクションによる検証
+
+### DC_004: 追記モードにおける既存要求IDの不変性
+
+`--amend` による追記時、既存の要求 ID・要求図ノード・関係・セクション本文を変更・削除・再採番しては
+ならない。新規要求の ID は既存の最大値（プレフィックス別）の続きから採番し、既存 ID との衝突を防ぐこと。
+
+**根拠:** PRD は人間のビジネス判断の記録であり、追記操作自体が既存の記録を破壊しないことを構造的に
+保証する必要があるため（UR_005 の実現条件）。
 
 **検証方法:** インスペクションによる検証
 

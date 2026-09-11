@@ -4,7 +4,7 @@ title: "front matter 推奨"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-09-02"
 depends-on: ["prd-workflow-foundation"]
 tags: ["front-matter", "metadata"]
 category: "workflow-foundation"
@@ -93,6 +93,11 @@ requirementDiagram
 
 - front matter の導入が既存ワークフローを破壊しないこと。front matter を持たない
   既存ドキュメントも引き続き有効として扱う（index.md の NFR_001）
+- 既存ドキュメントへの後付け front matter に `sdd-version` を含めない（現行バージョンを設定すると
+  「このドキュメントは現行世代で生成された」という偽の信号になり、世代判別・移行漏れ検知
+  （[front-matter-validation.md](../quality-guardrails/front-matter-validation.md)・
+  [doc-consistency-check.md](../quality-guardrails/doc-consistency-check.md)）を汚染するため。
+  決定の経緯は実装完了後 `adr/` に記録する）
 
 ---
 

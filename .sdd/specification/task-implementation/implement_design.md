@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["spec-task-implementation-implement"]
 tags: ["tdd", "implementation", "checklist"]
 category: "task-implementation"
@@ -18,7 +18,7 @@ risk: "high"
 
 **関連 Spec:** [implement_spec.md](implement_spec.md)
 **関連 PRD:** [implement.md](../../requirement/task-implementation/implement.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, B-001, B-002, D-001, T-002（plugin.json 登録）, T-003（文字化け防止）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-001（Skills-First）, B-001, B-002, D-001, D-002（ファイル命名規則の厳守）, T-002（plugin.json 登録）, T-003（文字化け防止）
 
 ---
 
@@ -77,7 +77,7 @@ risk: "high"
 ```mermaid
 graph TD
     U[開発者: /implement feature ticket] --> SK[implement SKILL.md]
-    SK -->|事前検証| PRE[tasks.md / *_spec.md / *_design.md 読み込み]
+    SK -->|事前検証| PRE[task/{ticket}/tasks.md / task/{ticket}/design-draft.md / 抽象仕様書 読み込み]
     SK -->|初期化| TL[TaskList 5 段階]
     TL --> P1[Phase1 Setup]
     P1 --> P2[Phase2 Tests<br/>Red 先行]
@@ -122,7 +122,7 @@ id: "impl-{feature-name}"       # 階層時: "impl-{parent}-{feature-name}"
 type: "implementation-log"
 status: "in-progress"            # 完了時 "completed"
 sdd-phase: "implement"
-depends-on: ["design-{feature-name}"]
+depends-on: ["design-{ticket-number}"]  # 設計ドラフトの id はチケット単位
 ticket: "{ticket-number}"
 completed: ""                    # 完了時 "YYYY-MM-DD"
 implementer: "{name}"
@@ -181,6 +181,8 @@ implement スキルは実装済みであり、本設計書は逆算文書であ�
 | Bash 権限          | 禁止 / 事前承認 / 事前承認しない       | 事前承認しない（禁止もしない）                 | テスト実行・型チェック等の検証コマンドに Bash は必要だが、実行対象がプロジェクト任意のコマンドであるため事前承認せず都度ユーザー確認を挟む |
 | 乖離検出の位置       | 完了後のみ / 段階境界           | 段階境界で check-spec を推奨            | 早期に乖離を検知し手戻りを抑える（FR-008 / B-001）                       |
 | 実行モード          | 単一モードのみ / 複数モード        | continue / phase-skip / dry-run を提供 | 中断再開・特定段階着手・非破壊シミュレーションの実運用ニーズに対応             |
+| 設計ドラフトの参照パス | 機能単位（`specification/*_design.md`）/ チケット単位（`task/{ticket}/design-draft.md`） | チケット単位の固定パス                | generate-spec / task-breakdown と同一パスを参照し、順方向フローで参照先が食い違わないようにする |
+| 抽象仕様書の前提判定  | `_spec` サフィックス必須 / 有無どちらも許容 | `{feature}.md` / `{feature}_spec.md` のいずれかで充足 | `specification/` は単一種別ディレクトリでサフィックスが任意になったため、片方だけを前提にすると前提条件チェックが通らない |
 
 ## 9.2. 未解決の課題
 
@@ -198,7 +200,8 @@ implement スキルは実装済みであり、本設計書は逆算文書であ�
 | A-001 | Skills-First              | ✅     | `skills/implement/` として実装（legacy commands 不使用）        |
 | B-001 | Vibe Coding 防止          | ✅     | 段階境界で乖離検出、曖昧時は実装停止し明確化を促す                    |
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅     | `templates/{en,ja}/` と `SDD_LANG` による出力言語切り替え          |
-| D-001 | Specification-Driven      | ✅     | tasks.md・設計書・仕様を真実の源として実装を進める                    |
+| D-001 | Specification-Driven      | ✅     | tasks.md・設計ドラフト・仕様を真実の源として実装を進める                 |
+| D-002 | ファイル命名規則の厳守      | ✅     | 前提条件の解決で `_spec` 任意・`design-draft.md` 固定名の命名規則に従う      |
 | T-002 | plugin.json 登録の徹底     | ✅     | スキルは標準パス `skills/` の自動検出で読み込まれ、`plugin.json` に `skills` 宣言を持たない |
 | T-003 | 日本語出力の文字化け防止     | ✅     | 日本語テンプレート・本設計書に U+FFFD / mojibake を含めない            |
 

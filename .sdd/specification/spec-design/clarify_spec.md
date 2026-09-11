@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-02"
 depends-on: ["prd-spec-design-clarify"]
 tags: ["clarification", "ambiguity-analysis", "clarity-score"]
 category: "spec-design"
@@ -89,12 +89,16 @@ FR-001 の 9 カテゴリは、機能範囲・データモデル・フロー／�
 | 引数            | 必須 | 説明                                                          |
 |---------------|----|-------------------------------------------------------------|
 | `feature-name` | 必須 | 対象機能名またはパス（例: `user-auth`, `auth/user-login`）             |
+| `ticket-number` | 任意 | 技術設計ドラフト（`task/{ticket-number}/design-draft.md`）の探索先。省略時は設計ドラフトを読み込まない |
 | `--interactive` | 任意 | 対話モード（質問を 1 問ずつ提示）                                     |
 | `--categories`  | 任意 | 分析対象カテゴリを絞る（カンマ区切り。例: `flow,integrations,edge-cases`） |
 | `--detail`      | 任意 | 出力詳細度（`minimal` = 上位 3 問 / `standard` = 上位 5 問 / `comprehensive` = 全件） |
 | `--integrate`   | 任意 | ユーザー回答を受け取り仕様書へ段階的に統合し差分を提示する                    |
 
-フラット構造・階層構造の双方に対応し、対象機能に対応する PRD・`*_spec.md`・`*_design.md`（存在するもの）を読み込む。
+フラット構造・階層構造の双方に対応し、対象機能に対応する PRD・`*_spec.md`（存在するもの）を読み込む。
+技術設計ドラフト（`${SDD_TASK_PATH}/{ticket-number}/design-draft.md`）は `ticket-number` が指定され、
+かつ存在する場合のみ読み込む。設計ドラフトは実装完了後に削除される一時文書であるため、不在時は
+PRD・`*_spec.md` のみで分析を続行する。
 
 **出力**: 明確度スコア（カテゴリ別 Clear/Partial/Missing 集計と総合スコア）、Missing/Partial 項目の列挙、
 優先質問リスト（最大 5 問）、回答の統合先提案、および実装可否判定を含む明確化レポート。出力言語は `SDD_LANG` に従う。
@@ -162,7 +166,7 @@ sequenceDiagram
 - 分析・質問生成の品質は基盤モデル（Claude）の推論能力に依存する（親 PRD 5.1 の技術的制約）
 - 低リスク・低影響度の項目に残る一部の曖昧さは許容する（すべての曖昧性の解消を強制しない）
 - 明確度が基準未満の仕様で実装へ進むことを推奨してはならない（B-001 / 親 PRD B-001 原則）
-- 仕様書・設計書の生成そのもの（兄弟機能 generate-spec）、品質レビュー（兄弟機能 spec-review）、
+- 仕様書・設計ドラフトの生成そのもの（兄弟機能 generate-spec）、品質レビュー（兄弟機能 spec-review）、
   およびプロンプト曖昧性の自動検知（quality-guardrails カテゴリの vibe-detector）は本機能のスコープ外
 
 # 9. 原則との整合性

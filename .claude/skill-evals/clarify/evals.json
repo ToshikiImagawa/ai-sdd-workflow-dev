@@ -1,0 +1,51 @@
+{
+  "skill_name": "clarify",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/clarify/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+38/-17 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "run-checklist-spec-clarify",
+      "prompt": "`.sdd/specification/task-implementation/run-checklist_spec.md` を読み、実装判断に必要な曖昧点を洗い出して、優先度順に最大5件の質問を出してください。",
+      "sdd_inputs": [
+        ".sdd/specification/task-implementation/run-checklist_spec.md"
+      ],
+      "input_parity": "identical-on-both-branches",
+      "fixture": {},
+      "expected_output": "Up to five prioritized questions, each pointing at a genuine gap in the spec (undefined boundary, missing condition, unspecified failure behaviour) and specific enough that answering it settles an implementation decision.",
+      "assertions": [
+        {
+          "text": "提示された仕様の曖昧点（欠落条件・未定義の境界値等）を実在するものとして検出している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "検出した曖昧点に対する質問が、実装判断に直結する具体性を持っている（一般論ではない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "明確な項目まで曖昧と誤検知していない（偽陽性がない）。プロジェクトに実在する他のドキュメントが既に決着させている点を、それを読まずに曖昧として挙げていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "質問がスペックの記述内容に基づいており、仕様に無い前提を勝手に創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "上流の要求文書（`requirement/**` の PRD）を書き換えていない。読んで分析の材料にするのは可で、書き込みが発生する場合はその世代の仕様・設計成果物に限られている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A3 と A5 を書き換えた。新規追加はなし。 A5 の旧文言「PRD（`requirement/**`）を編集対象にせず、**抽象仕様または設計ドラフトのみを対象にしている**」は2つの理由で誤りだった。(a) 「対象」が編集対象と分析対象のどちらとも読めるが、ticket を省略したこの eval では PRD も**分析対象**であり（このスキルは ticket 省略時に PRD・仕様・永続設計文書を分析する）、旧文言は正しい実行を落としうる。(b) 「設計ドラフト」は一時ドラフトを持つ世代の語彙で、永続設計文書へ書き込む世代を構造的に落とす。守るべき不変条件は「上流の要求文書を下流から書き換えない」だけなので、それだけを残して読み取りは明示的に許可した。 A3 には「実在する他ドキュメントが既に決着させている点を、それを読まずに曖昧として挙げていない」を足した。補助入力を読まない実行は、その入力が答えている境界値を『未定義』として質問に挙げるため、偽陽性という形で必ず表に出る——これは補助入力を読み落とす欠陥を検知する既存の経路であり、専用 assertion を新設する必要はない。読むべき文書のパスは書いていないので世代非依存。"
+}

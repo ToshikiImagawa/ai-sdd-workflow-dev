@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-09-02"
 depends-on: ["prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
@@ -47,6 +47,9 @@ AI-SDD ワークフローの Specify フェーズでは、ビジネス要件を�
 - **言語の一貫性**: 出力言語は `SDD_LANG` に従い、単一ドキュメント内で言語を混在させない（DC_003 / B-002）
 - **生成後の品質保証**: 生成 PRD の CONSTITUTION 準拠・front matter 形式・トレーサビリティ・
   PRD 横断整合をレビューエージェントで検証する（FR_006 / FR_007 / FR_008）
+- **既存PRDへの安全な追記**: `--amend` フラグにより、既存 PRD の要求 ID・セクション・要求図ノードを
+  保持したまま新規差分のみを追記する。人間が明示的に与えた要求のみを対象とし、spec/design/実装からの
+  逆算に転用してはならない（FR_001_05 / UR_005 / DC_004）
 
 具体的な実装方式（サブスキルのコンテキスト分離・モデル選定・準備スクリプトの 2 フェーズ実行）は
 [prd-generation_design.md](prd-generation_design.md) に委ねる。
@@ -66,6 +69,7 @@ AI-SDD ワークフローの Specify フェーズでは、ビジネス要件を�
 | FR-007 | 既存 PRD の要求図を分析し、カバレッジ・依存・トレーサビリティを重要度分類で報告する        | 推奨  | PRD FR_007 / UR_002   |
 | FR-008 | 複数 PRD 間の境界・用語・スタイル・原則参照・front matter の横断整合をレビューする        | 推奨  | PRD FR_008 / UR_002   |
 | FR-009 | CI モード（`--ci`）で質問・生成後レビューを省略し、既存 PRD を自動上書きして生成する      | 必須  | PRD FR_001_03 / FR_001_04 / UR_004 |
+| FR-010 | `--amend` フラグで既存 PRD への追記モードを提供し、既存要求 ID・要求図ノードを保持したまま新規差分のみを追加する | 必須  | PRD FR_001_05 / UR_005 / DC_004 |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -79,11 +83,11 @@ AI-SDD ワークフローの Specify フェーズでは、ビジネス要件を�
 
 | 種別（skill/agent/hook/template） | 配置場所                                                  | 名前                      | 概要                                                                 |
 |------------------------------|-----------------------------------------------------------|-------------------------|----------------------------------------------------------------------|
-| skill                        | `skills/generate-prd/SKILL.md`                          | generate-prd            | PRD 生成のオーケストレーター。唯一のファイル書き込み主体（FR-001 / DC_001） |
+| skill                        | `skills/generate-prd/SKILL.md`                          | generate-prd            | PRD 生成のオーケストレーター。唯一のファイル書き込み主体（FR-001 / DC_001）。`--amend` で既存 PRD への追記も統括する（FR-010） |
 | skill                        | `skills/generate-usecase-diagram/SKILL.md`              | generate-usecase-diagram | ユースケース図（Mermaid flowchart）を生成する（FR-002）                  |
 | skill                        | `skills/analyze-requirements/SKILL.md`                  | analyze-requirements    | UR/FR/NFR を抽出・分類する（FR-003）                                    |
 | skill                        | `skills/generate-requirements-diagram/SKILL.md`         | generate-requirements-diagram | SysML 要求図（requirementDiagram）を生成する（FR-004）             |
-| skill                        | `skills/finalize-prd/SKILL.md`                          | finalize-prd            | 全成果物を統合し front matter 付き PRD テキストを生成する（FR-005）        |
+| skill                        | `skills/finalize-prd/SKILL.md`                          | finalize-prd            | 全成果物を統合し front matter 付き PRD テキストを生成する（FR-005）。`--amend` 時は既存 PRD 本文を受け取り新規差分を統合する（FR-010） |
 | agent                        | `agents/prd-reviewer.md`                                | prd-reviewer            | PRD の CONSTITUTION 準拠・必須セクション・トレーサビリティをレビュー（FR-006） |
 | agent                        | `agents/front-matter-reviewer.md`                       | front-matter-reviewer   | front matter の形式・依存方向・id 一意性を検証する（FR-006）              |
 | agent                        | `agents/requirement-analyzer.md`                        | requirement-analyzer    | 要求図のカバレッジ・依存・トレーサビリティを分析する（FR-007）             |
@@ -96,8 +100,9 @@ AI-SDD ワークフローの Specify フェーズでは、ビジネス要件を�
 
 ```
 # 入力（generate-prd）
-- requirements : ビジネス要件テキスト（必須）
+- requirements : ビジネス要件テキスト（必須。--amend 時は追加する新規要求のみを記述する）
 - --ci         : CI モードフラグ（任意。質問・prd-reviewer/front-matter-reviewer をスキップ）
+- --amend      : 追記モードフラグ（任意。既存 PRD が必須。全上書きせず新規差分のみを追記する）
 
 # 出力
 - 保存先 : ${CLAUDE_PROJECT_DIR}/${SDD_REQUIREMENT_PATH}/{feature-name}.md
@@ -148,12 +153,19 @@ sequenceDiagram
     participant Sub as サブスキル群（fork・text-only）
     participant Rev as レビューエージェント群
 
-    User ->> Orch: /generate-prd <要件> [--ci]
+    User ->> Orch: /generate-prd <要件> [--ci|--amend]
     Orch ->> Prep: テンプレート・参照の事前ロード
     Prep -->> Orch: 環境変数（GENERATE_PRD_*）
-    Orch ->> Sub: ユースケース図 / 要求分析 / 要求図 / 統合
-    Sub -->> Orch: 各成果物テキスト（ファイル書き込みなし）
-    Orch ->> Orch: 統合・front matter 付与・保存
+    alt --amend
+        Orch ->> Orch: 既存 PRD を読込・既存ID最大値を記録（FR-010）
+        Orch ->> Sub: 新規差分のみのユースケース図 / 要求分析 / 要求図
+        Sub -->> Orch: 新規差分の各成果物テキスト
+        Orch ->> Orch: 既存 PRD への追記統合（finalize-prd --amend）
+    else 通常生成
+        Orch ->> Sub: ユースケース図 / 要求分析 / 要求図 / 統合
+        Sub -->> Orch: 各成果物テキスト（ファイル書き込みなし）
+    end
+    Orch ->> Orch: front matter 付与・保存
     alt 対話モード
         Orch ->> Rev: prd-reviewer / front-matter-reviewer
         Rev -->> Orch: 修正提案
@@ -186,7 +198,7 @@ sequenceDiagram
 
 | 確認項目        | 結果                                                                                             |
 |---------------|--------------------------------------------------------------------------------------------------|
-| 要求カバレッジ   | PRD FR_001〜FR_008 を FR-001〜FR-008、FR_001_03/04 を FR-009 でカバー。DC_001/002/003 を NFR-002・概要・NFR-003 に反映 |
+| 要求カバレッジ   | PRD FR_001〜FR_008 を FR-001〜FR-008、FR_001_03/04 を FR-009、FR_001_05/UR_005 を FR-010 でカバー。DC_001/002/003 を NFR-002・概要・NFR-003 に、DC_004 を FR-010 に反映 |
 | 要求 ID 参照    | 各 FR に対応する PRD の要求 ID（FR_00x / UR_00x / DC_00x）を「根拠」列に明記                            |
 | 非機能要求の反映 | PRD NFR_001（情報充足性）を NFR-001、DC_001（書き込み主体限定）を NFR-002、DC_003（言語一貫性）を NFR-003 に反映 |
 | 用語整合性      | PRD 用語集（PRD / UR-FR-NFR / オーケストレーション / CI モード / SysML 要求図 / front matter）と整合。サブスキルを補完 |

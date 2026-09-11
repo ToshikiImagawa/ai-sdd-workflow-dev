@@ -1,0 +1,53 @@
+{
+  "skill_name": "render-adr-review",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/render-adr-review/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+302/-0 lines (new skill; no main counterpart)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "task-type-determination-adr-render",
+      "prompt": "`.sdd/adr/workflow-foundation/task-type-determination.md` の決定ログを、レビュー用の HTML として出力してください。",
+      "prompt_note": "develop-only in two ways: the skill does not exist on main, and neither does adr/. There is no main lift to subtract, so report the develop/skill vs develop/without lift on its own and label it as a new capability rather than an improvement.",
+      "sdd_inputs": [
+        ".sdd/adr/workflow-foundation/task-type-determination.md"
+      ],
+      "input_parity": "develop-only (the skill and adr/ both exist only on develop)",
+      "main_counterpart": "none -- report lift within develop only",
+      "fixture": {},
+      "expected_output": "A scratch HTML review under the cache directory, restructured around decision / rationale / rejected alternatives rather than a flat Markdown-to-HTML conversion, with nothing invented and the source ADR untouched.",
+      "assertions": [
+        {
+          "text": "出力が一時領域（`.sdd/.cache/` 相当）に置かれ、永続ドキュメントを書き換えていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "決定 / 理由 / 却下した代替案がそれぞれ独立した領域へ構造化されており、Markdown をそのまま HTML 化しただけになっていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "元の決定ログに無い決定・理由・代替案を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "append-only の決定ログの各エントリが元のログの追記順を保って提示され、エントリの並べ替え・統合・分割をしていない。あるエントリが別のエントリを覆している場合は、元のログがその関係を記録している形のまま読み取れる（記録されていない覆し関係を作っていない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "元の ADR ファイルを書き換えていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): 変更なし。今回このスキルに入った3つの変更はいずれもこのコーパスでは採点できない。(1) ticket の受理書式が3通りになった: プロンプトは ticket を渡していないので出力名は機能名にフォールバックし、そもそも引数書式はスキル語彙なので MEASUREMENT_LOG が既に同種の追加を却下している。(2) 出力先が VCS 管理外である前提を置かない表現に変わった: A1 が問うのは「一時領域に置き、永続ドキュメントを書き換えていない」ことで、無視設定の有無とは独立。(3) 代替案ゼロのエントリを却下行にしない規則: コーパスの唯一の決定ログは4エントリすべてが実在する却下代替案を持つため、この分岐が起きない（起きれば A3「創作していない」で落ちる）。 v3.3 (2026-09-10): A4 を書き換えた。旧文言は覆し関係を front matter の `supersedes` / `superseded-by` フィールドで示す前提だったが、(a) このスキルの SKILL.md は supersede に一切言及しておらず、(b) コーパスの唯一の ADR（`task-type-determination.md`）は4エントリともエントリ間の覆しを持たず front matter にも当該フィールドが無いため、旧文言は「存在しない関係を保てたか」を問う空振り（採点者によって PASS とも FAIL とも読める）だった。レンダリングスキルに対して実際に検証できる不変条件——追記順の保存とエントリ境界の保存、および記録されている覆し関係の捏造なし——に置き換えた。エントリ本文の記法（`- **Supersedes**:` 等）は assertion に書いていない: 記法は世代依存であり、`ASSERTION_DESIGN.md` の「スキル本文の語彙依存」で削除済みの形状に当たる。"
+}

@@ -10,6 +10,28 @@ paths:
 - プラグイン修正時は `plugins/sdd-workflow/` に限定して作業
 - 「調査して」と依頼された場合は、まずスコープを確認してから探索
 
+### `.sdd/` の生成物は「インストール済みプラグイン」に追従する
+
+次の2ファイルは SessionStart フックが `${CLAUDE_PLUGIN_ROOT}`（= **インストール済み**プラグイン）から
+自動生成する。**開発中の `plugins/sdd-workflow/` から手で同期してはならない。**
+
+| ファイル | 生成元 |
+|:---|:---|
+| `.sdd/AI-SDD-PRINCIPLES.md` | `${CLAUDE_PLUGIN_ROOT}/AI-SDD-PRINCIPLES.source.md` |
+| `.claude/rules/ai-sdd-instructions.md` | `${CLAUDE_PLUGIN_ROOT}/skills/sdd-init/templates/ai_sdd_instructions_rules.md` |
+
+**理由**: このリポジトリはリリース済みのプラグインで自分自身を dogfooding している。セッション中に実際に
+動いているスキル・フックはインストール版であり、開発中の未リリース版ではない。`.sdd/` に未リリース版の
+原則を置くと、AIは**動いているスキルが実装していない規則**に従うことになり、`.sdd/` 配下の実ドキュメント
+（v4系の永続 `*_design.md` など）とも食い違う。
+
+**更新タイミング**: これらが更新されるのは、**リリース後にインストール済みプラグインのバージョンを上げた時**
+だけ。開発中のPRで内容が変わって見えるのは、開発ソースを先取りして同期してしまった兆候なので、
+`git restore` でフックの出力に戻す。
+
+`plugins/sdd-workflow/AI-SDD-PRINCIPLES.source.md` は「**これから作るもの**」の正典、
+`.sdd/AI-SDD-PRINCIPLES.md` は「**いま従うもの**」の正典であり、両者がリリースまで一致しないのは正常。
+
 ## プラグインエージェント設計ガイド
 
 AI-SDDワークフロープラグインのサブエージェント設計・実装に関する原則とベストプラクティスは、

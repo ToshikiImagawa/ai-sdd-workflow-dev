@@ -1,0 +1,56 @@
+{
+  "skill_name": "task-breakdown",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/task-breakdown/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+49/-37 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "sdd-init-task-breakdown",
+      "prompt": "ticket 9103（プロジェクト初期化機能）の実装タスクを分解してください。",
+      "prompt_note": "Do not name the design document's path in the prompt -- that gives away the exact thing being tested (can the skill locate the design doc on its own, in whichever location its own generation uses?). Let each variant discover it by exploring the SDD document tree. The feature is named only in prose so the search is a real search.",
+      "sdd_inputs": [
+        ".sdd/specification/workflow-foundation/sdd-init_spec.md",
+        ".sdd/specification/workflow-foundation/sdd-init_design.md"
+      ],
+      "input_parity": "identical-on-both-branches",
+      "fixture": {},
+      "expected_output": "An ordered task list where each task traces to a requirement ID, carries an independently verifiable completion condition, respects dependency order, and includes tests as explicit tasks.",
+      "assertions": [
+        {
+          "text": "各タスクが仕様・設計の要求 ID に遡れる",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "各タスクに独立して検証可能な完了条件がある",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "タスクの順序が依存関係を尊重している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "テストが暗黙ではなく明示的なタスクとして含まれている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様の範囲外のタスクを創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "各タスクの front matter（id 命名規則・type・depends-on の向き・status 等）が、その世代でプロジェクト内の既存タスク文書が実際に使っている規約に沿っている（一般的な熟練エンジニアが規約を読まずに書く場合と区別できる、その世代固有のパターンへの準拠）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ]
+}

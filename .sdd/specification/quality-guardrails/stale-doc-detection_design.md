@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-07-08"
+updated: "2026-09-02"
 depends-on: ["spec-quality-guardrails-stale-doc-detection"]
 tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -56,7 +56,7 @@ risk: "medium"
 |------|-------------------------------------|-------------------------------------------------------------------------------|
 | hook | Python 3 スクリプト（パス判定 + ファイル探索） | 決定的・軽量な判定であり Claude の推論を要さない。A-002 に従い機械的処理をスクリプトへ委譲し 500ms 要件を満たす |
 | hook | `additionalContext` による非ブロッキング注入 | 編集を拒否せず AI へ促しを渡すのに適合（DC_001）。`deny` は使わない                          |
-| 実装同期 | `os.walk` による `{stem}_design.md` 探索  | ソースの basename から対応設計書を階層構造を問わず発見する。設計書がある場合のみ同期を促す         |
+| 実装同期 | `pathlib.Path.rglob` による spec 探索（`{stem}_spec.md` → `{stem}.md`） | ソースの basename から対応する抽象仕様書を階層構造を問わず発見する。spec がある場合のみ同期を促す。技術設計書は `task/{ticket-number}/design-draft.md` の一時ドラフトのため追随先にしない |
 
 本機能は検証・修正を Claude や検証スキル（doc-consistency-checker / `/check-spec`）に委ね、フックは
 「更新漏れの可能性の可視化」までを担う。
@@ -76,19 +76,21 @@ graph TD
     PTU --> D{ファイル種別判定}
     D -->|.sdd/specification/*.md| C1[整合性確認を注入]
     D -->|.sdd/requirement/*.md| C2[下流伝播確認を注入]
+    D -->|.sdd/adr/*.md| C4[追記専用+spec反映確認を注入]
     D -->|.sdd 配下その他| S1[return 無出力]
-    D -->|ソース拡張子| W[find_design_doc: os.walk]
-    W -->|design あり| C3[design 同期を注入]
-    W -->|design なし| S2[無出力]
-    C1 & C2 & C3 -->|additionalContext| CL[Claude]
+    D -->|ソース拡張子| W[find_spec_doc: rglob]
+    W -->|spec あり| C3[spec 同期を注入]
+    W -->|spec なし| S2[無出力]
+    C1 & C2 & C3 & C4 -->|additionalContext| CL[Claude]
 ```
 
 ## 4.2. モジュール分割
 
 | モジュール名           | 責務                                                                            | 依存関係            | 配置場所                                          |
 |---------------------|-------------------------------------------------------------------------------|-------------------|-------------------------------------------------|
-| post-tool-use.py    | 編集ファイルパスから種別を判定し、更新漏れの可能性に応じ additionalContext を emit（検知のみ・非ブロッキング） | hook_common.py, os, sys | `plugins/sdd-workflow/scripts/post-tool-use.py`   |
-| find_design_doc     | 仕様書ディレクトリ配下を `os.walk` し、`{stem}_design.md` の相対パスを返す（なければ空文字） | os                | `post-tool-use.py` 内の関数                        |
+| post-tool-use.py    | 編集ファイルパスから種別を判定し、更新漏れの可能性に応じ additionalContext を emit（検知のみ・非ブロッキング） | hook_common.py, doc_walker.py, pathlib, sys | `plugins/sdd-workflow/scripts/post-tool-use.py`   |
+| DOC_REMINDERS       | `.sdd/` 配下の種別ごとの `(プレフィックス属性名, 索引更新の有無, メッセージ)` を並べたテーブル。分岐を宣言的に保持する | -                 | `post-tool-use.py` 内のモジュール定数                |
+| find_spec_doc       | 仕様書ディレクトリ配下を `rglob` し、`{stem}_spec.md` → `{stem}.md` の順に最初に一致した spec のパスを返す（なければ空文字） | pathlib           | `doc_walker.py`（`post-tool-use.py` から利用）       |
 | hook_common.py      | stdin JSON 解析・プロジェクトルート解決・`.sdd` パス解決・additionalContext emit の共通ヘルパー | json, sys, os      | `plugins/sdd-workflow/scripts/hook_common.py`      |
 | hooks.json          | `PostToolUse`（matcher `Write\|Edit`）へのスクリプト登録                            | -                 | `plugins/sdd-workflow/hooks/hooks.json`            |
 
@@ -104,21 +106,33 @@ graph TD
 | 順序 | 検知条件                                                        | 動作                                       | 対応 FR |
 |----|---------------------------------------------------------------|-------------------------------------------|--------|
 | 0  | `file_path` が空 / プロジェクト外                                 | 何もしない（return）                         | -      |
-| 1  | `.sdd/specification/` 配下かつ `.md`                             | PRD ↔ spec ↔ design の整合性確認を注入        | FR-001 |
-| 2  | `.sdd/requirement/` 配下かつ `.md`（PRD）                        | 下流 spec / design への変更伝播確認を注入      | FR-002 |
-| 3  | `.sdd/` 配下のその他                                             | 何もしない（return）                         | FR-005 |
-| 4  | ソース拡張子（`SOURCE_EXTENSIONS`）かつ対応 `{stem}_design.md` あり | design 同期を注入                            | FR-003 |
-| 5  | 上記いずれにも該当しない（対応 design なし等）                       | 何もしない                                   | FR-005 |
+| 1  | `.sdd/specification/` 配下かつ `.md`                             | PRD ↔ spec ↔ adr の整合性確認を注入           | FR-001 |
+| 2  | `.sdd/requirement/` 配下かつ `.md`（PRD）                        | 下流 spec への変更伝播確認を注入               | FR-002 |
+| 3  | `.sdd/adr/` 配下かつ `.md`（決定ログ）                            | 追記専用の原則と spec 反映確認を注入            | FR-006 |
+| 4  | `.sdd/` 配下のその他                                             | 何もしない（return）                         | FR-005 |
+| 5  | ソース拡張子（`SOURCE_EXTENSIONS`）かつ対応 spec あり              | spec 同期を注入                              | FR-003 |
+| 6  | 上記いずれにも該当しない（対応 spec なし等）                         | 何もしない                                   | FR-005 |
 
-`.sdd` パス（`sdd_root` / `requirement_dir` / `specification_dir`）は `load_sdd_paths` により解決され、
-`.sdd-config.json` があればその設定を、なければ既定値（`.sdd` / `requirement` / `specification`）を用いる。
+`.sdd/` 配下の判定は `DOC_REMINDERS` テーブルを回す `_process_sdd_doc` に閉じ込め、「該当なしの
+`.sdd/` ファイルは無出力」という catch-all はそのループ**後**に置く。これによりディレクトリ種別を追加する
+際に「catch-all より前に置く」ことを人間が覚えている必要がなくなる（順序制約を構造で保証する）。
+ソースファイルの処理は `_process_source_file` に分離する。
 
-## 5.2. ソース → 設計書の対応付け（find_design_doc）
+`.sdd` パス（`sdd_root` / `requirement_dir` / `specification_dir` / `adr_dir`）は `load_sdd_paths` により
+解決され、`.sdd-config.json` の `directories.{requirement,specification,adr}` があればその設定を、なければ
+既定値（`.sdd` / `requirement` / `specification` / `adr`）を用いる。フックは環境変数に依存せず
+`.sdd-config.json` を直接読むため、セッション開始時に書き出される `SDD_ADR_DIR` / `SDD_ADR_PATH`
+（スキル・テンプレート向け）とは同じ設定値を独立に解決する関係にある。
+
+## 5.2. ソース → 抽象仕様書の対応付け（find_spec_doc）
 
 ソースコード編集時は、編集ファイルの拡張子を除いた basename（`stem`）を用いて、仕様書ディレクトリ配下を
-`os.walk` で走査し `{stem}_design.md` を探索する。発見した場合のみ design 同期を促す。
+`rglob` で走査し `{stem}_spec.md` → `{stem}.md` の順に spec を探索する。発見した場合のみ spec 同期を促す。
 
 - 対応付けは basename ベースのため、ディレクトリ階層（フラット / 階層構造）を問わず発見できる
+- サフィックス付き（`{stem}_spec.md`）を優先し、次にサフィックスなし（`{stem}.md`）を探す。
+  `{stem}_design.md` は spec ではないため一致しない
+- 同名候補が複数ある場合はパス文字列順で最初の 1 件を返す（決定的な結果を保証する）
 - 仕様書ディレクトリが存在しない場合（未初期化プロジェクト）は探索せず無出力
 
 ## 5.3. 警告内容（additionalContext）
@@ -137,9 +151,10 @@ graph TD
 
 | 分岐   | メッセージ要旨（英語で注入）                                                                        |
 |------|------------------------------------------------------------------------------------------|
-| 仕様書 | `'<rel_path>' was updated.` PRD ↔ `*_spec.md` ↔ `*_design.md`（要求 ID 参照・データモデル・API 定義）の整合性確認と doc-consistency-checker スキルの実行を促す |
-| PRD  | `'<rel_path>' (PRD) was updated.` 下流 `*_spec.md` / `*_design.md` への変更伝播（新規・変更された UR/FR/NFR）の確認と doc-consistency-checker スキルの実行を促す |
-| ソース | `'<rel_path>' was updated and a matching design document '<design_rel>' exists.` 実装挙動が変わった場合の設計書更新（真実の源の維持）を促す |
+| 仕様書 | `'<rel_path>' was updated.` PRD ↔ spec ↔ adr（要求 ID 参照・データモデル・API 定義）の整合性確認と doc-consistency-checker スキルの実行を促す |
+| PRD  | `'<rel_path>' (PRD) was updated.` 下流 spec への変更伝播（新規・変更された UR/FR/NFR）の確認と doc-consistency-checker スキルの実行を促す |
+| adr  | `'<rel_path>' (ADR) was updated.` 追記専用（過去エントリを書き換えない）の確認と、決定が spec に反映されているかの確認を促す |
+| ソース | `'<rel_path>' was updated and a matching specification '<spec_rel>' exists.` 公開 API・データモデル・振る舞いが変わった場合の spec 更新（真実の源の維持）と `/check-spec` を促す |
 
 ---
 
@@ -200,7 +215,7 @@ CI（`.github/workflows/ci.yml` の `test` ジョブ）から実行される。�
 
 | 課題                                       | 影響度 | 対応方針                                                       |
 |------------------------------------------|-----|-------------------------------------------------------------|
-| basename 衝突（同名 stem の複数ソース）で誤った design を提示する可能性 | 低   | 最初に発見した `{stem}_design.md` を用いる。厳密なパス対応は将来検討   |
+| basename 衝突（同名 stem の複数ソース）で誤った spec を提示する可能性 | 低   | パス文字列順で最初に発見した spec を用いる。厳密なパス対応は将来検討   |
 | パス規約から外れた配置のドキュメントは検知対象外            | 低   | パス判定ベースの設計上の制約。命名・配置規約は naming-enforcement で担保 |
 
 ---

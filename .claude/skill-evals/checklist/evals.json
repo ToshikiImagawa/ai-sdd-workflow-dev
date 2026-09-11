@@ -1,0 +1,53 @@
+{
+  "skill_name": "checklist",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/checklist/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+192/-179 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "sdd-init-checklist-generate",
+      "prompt": "プロジェクト初期化機能（`.sdd/specification/workflow-foundation/sdd-init_spec.md` とその設計書）の品質チェックリストを生成してください。ticket 番号は 9102 です。",
+      "sdd_inputs": [
+        ".sdd/specification/workflow-foundation/sdd-init_spec.md",
+        ".sdd/specification/workflow-foundation/sdd-init_design.md"
+      ],
+      "input_parity": "identical-on-both-branches",
+      "corpus_note": "The ticket (9102) does not exist in either corpus, so no ticket-scoped design draft is present. The design input that *does* exist in both eras is the persisted `sdd-init_design.md` named by the prompt. That asymmetry is what A3 grades: an era that only looks for a ticket-scoped draft finds nothing and narrows the design items away, even though a design document is sitting in the corpus and was named in the request.",
+      "fixture": {},
+      "expected_output": "A checklist whose items are extracted from the spec and design, each carrying a category and priority, traceable to the requirement IDs it verifies, with no invented items.",
+      "assertions": [
+        {
+          "text": "チェックリスト項目が仕様・設計から**抽出**されており、創作されていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "各項目にカテゴリと優先度が付与され、人間が着手順を判断できる",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "プロジェクトに実在する設計文書を実際に読み取って設計レビュー項目の根拠にしており、参照できる設計情報がありながら抽象仕様の範囲へ縮退していない。設計情報が本当にどこにも無い場合は処理を止めず、抽象仕様の範囲に限定したことを明示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "PRD/仕様の要求ID にチェックリスト項目が遡れる",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "採用した優先度体系（段階数・ラベル）の出所を明示しており、参照した複数の文書間（SKILL.md本文・テンプレート・出力）に優先度体系の齟齬があった場合はその齟齬と解消記録を報告している（齟齬が実行時に検出・解消されたのか、そもそも入力側に齟齬が無かったのかを区別できる形にする）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A3 を書き換えた。旧文言は「設計ドラフトが存在しない場合でも処理を止めず、**抽象仕様の範囲でレビュー項目を限定して**生成している」で、縮退そのものを合格条件にしていた。ところがこのフィクスチャには ticket スコープのドラフトが無い代わりに永続設計文書（`sdd-init_design.md`、プロンプトが名指ししている入力）が実在するため、旧文言は**実在する設計文書を無視した実行を PASS にし、それを読んだ実行を FAIL にしうる**という極性の誤りを持っていた（`ASSERTION_DESIGN.md` の削除済み assertion『(old_skill) 設計書が無くブロックされるか』と同じ、悪い結果を pass として数える形）。新文言は「実在する設計情報を根拠にしたか / 本当に無い場合は止まらず縮退を開示したか」というアウトカムに置き換えた。パス名も世代語彙も含まないので、設計が永続文書に載る世代と一時ドラフトに載る世代のどちらでも同一基準で採点できる。 | v3.5 (2026-09-10): A5 を書き換えた。旧文言「本文の優先度体系（P0 の有無を含む）」は main 世代テンプレート固有の語彙（P0）を assertion に埋め込んでおり、develop では恒真の死文になる境界事例だった（ASSERTION_DESIGN.md 判定基準違反）。加えて main のテンプレートに実在した P0 矛盾を実行時に手作業で解消した run と、矛盾がそもそも無かった develop の run が同じ PASS になり、develop の実在欠陥修正が数値に現れない識別力の欠落があった。新文言は優先度体系の出所明示と齟齬の解消記録を問う形に置き換え、P0 等の特定世代語彙を含まない。"
+}

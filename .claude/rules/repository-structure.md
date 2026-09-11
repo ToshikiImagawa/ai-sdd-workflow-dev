@@ -23,9 +23,9 @@ ai-sdd-workflow/
 │       │   ├── clarification-assistant.md  # 仕様明確化アシスタント
 │       │   ├── front-matter-reviewer.md  # front matter検証エージェント
 │       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
-│       ├── skills/                # 19スキル
+│       ├── skills/                # 20スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
-│       │   ├── check-spec/                 # 実装とdesignの整合性チェック
+│       │   ├── check-spec/                 # 実装とspecの整合性チェック
 │       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── checklist/                  # 品質チェックリスト生成
@@ -55,7 +55,10 @@ ai-sdd-workflow/
 │       │   ├── recommend-front-matter/     # front matter推奨
 │       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
+│       │   ├── render-adr-review/          # ADR決定ログのレビューHTML生成
+│       │   │   └── templates/{en,ja}/
 │       │   ├── run-checklist/              # チェックリスト自動検証
+│       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── sdd-init/                   # AI-SDDワークフロー初期化
 │       │   │   ├── scripts/
@@ -105,9 +108,13 @@ ai-sdd-workflow/
 ## 補足
 
 - **スキルのサポートディレクトリ**: 上のツリーは `templates/` と `scripts/` のみを示している。多くのスキルは
-  `references/`（全19スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは16スキル、
-  `scripts/` を持つのは7スキル（check-spec / constitution / generate-prd / generate-spec / plan-refactor /
-  recommend-front-matter / sdd-init）
+  `references/`（全20スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは17スキル、
+  `scripts/` を持つのは8スキル（check-spec / constitution / generate-prd / generate-spec / plan-refactor /
+  recommend-front-matter / run-checklist / sdd-init）
+- **上の件数の数え方**: ツリーとこの節の件数は `ls -1 plugins/sdd-workflow/skills/ | wc -l` と
+  `for d in plugins/sdd-workflow/skills/*/; do [ -d "$d/<sub>" ] && basename "$d"; done`（`<sub>` は
+  `templates` / `scripts` / `references` / `examples`）で数えている。スキルやサポートディレクトリを
+  追加・削除したら同じコマンドで数え直して更新する
 - **`plugin.json` の登録範囲**: `agents` 配列（6件）のみを宣言する。`skills` / `hooks` は宣言しない
   （CONSTITUTION T-002 v2.0.0）。`agents` はデフォルトの `agents/` スキャンを**置き換える**ため宣言が必須だが、
   `skills` は常にスキャンされるので宣言が冗長、`hooks` は標準パスを宣言すると二重ロードになる。

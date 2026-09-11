@@ -346,6 +346,7 @@ class TestSchema:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(documents)").fetchall()]
         assert "content_hash" in cols
         assert "priority" in cols
+        assert "sdd_version" in cols
 
     def test_idempotent(self):
         conn = sqlite3.connect(":memory:")
@@ -390,6 +391,14 @@ def _create_sdd_project(tmp_path):
 
 def _write_prd(tmp_path, name, content):
     f = tmp_path / ".sdd" / "requirement" / f"{name}.md"
+    f.write_text(content, encoding="utf-8")
+    return f
+
+
+def _write_adr(tmp_path, name, content):
+    adr_dir = tmp_path / ".sdd" / "adr"
+    adr_dir.mkdir(parents=True, exist_ok=True)
+    f = adr_dir / f"{name}.md"
     f.write_text(content, encoding="utf-8")
     return f
 
@@ -459,6 +468,57 @@ class TestRebuildAll:
         si.rebuild_all(str(proj))
         conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
         assert conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 0
+
+    def test_sdd_version_stored(self, tmp_path):
+        proj = _create_sdd_project(tmp_path)
+        _write_prd(proj, "auth", textwrap.dedent("""\
+            ---
+            id: prd-auth
+            title: Authentication
+            type: prd
+            sdd-version: "4.1.0"
+            ---
+            # UR-001 User Login
+        """))
+        si.rebuild_all(str(proj))
+
+        conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
+        row = conn.execute(
+            "SELECT sdd_version FROM documents WHERE doc_id='prd-auth'"
+        ).fetchone()
+        assert row == ("4.1.0",)
+        conn.close()
+
+    def test_sdd_version_absent_is_empty(self, tmp_path):
+        proj = _create_sdd_project(tmp_path)
+        _write_prd(proj, "auth", "---\nid: prd-auth\ntype: prd\n---\n# UR-001")
+        si.rebuild_all(str(proj))
+
+        conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
+        row = conn.execute(
+            "SELECT sdd_version FROM documents WHERE doc_id='prd-auth'"
+        ).fetchone()
+        assert row == ("",)
+        conn.close()
+
+    def test_includes_adr_docs(self, tmp_path):
+        proj = _create_sdd_project(tmp_path)
+        _write_adr(proj, "auth-decisions", textwrap.dedent("""\
+            ---
+            id: adr-auth
+            title: Auth decisions
+            type: adr
+            status: approved
+            created: 2026-01-01
+            updated: 2026-07-14
+            ---
+            # Decision log
+        """))
+        si.rebuild_all(str(proj))
+
+        conn = sqlite3.connect(str(proj / ".sdd" / ".cache" / "index.sqlite"))
+        docs = conn.execute("SELECT doc_id, type FROM documents").fetchall()
+        assert ("adr-auth", "adr") in docs
         conn.close()
 
 
@@ -506,6 +566,7 @@ class TestDeriveIndexFormat:
             title: Auth
             type: prd
             status: approved
+            sdd-version: "4.1.0"
             depends-on: []
             ---
             # UR-001 User Login
@@ -528,6 +589,8 @@ class TestDeriveIndexFormat:
 
         content = (proj / ".sdd" / ".cache" / "index.md").read_text()
         assert "## Metadata" in content
+        assert "| doc_id | type | path | status | impl-status | sdd-version | depends-on | category |" in content
+        assert "| prd-auth | prd |" in content and "| 4.1.0 |" in content
         assert "## Requirement IDs" in content
         assert "## SysML Relationships" in content
         assert "## SysML Elements" in content

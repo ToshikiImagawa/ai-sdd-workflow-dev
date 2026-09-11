@@ -1,0 +1,100 @@
+{
+  "skill_name": "generate-prd",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-prd/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+96/-22 lines (PR #116 が PRD レベル ID 形式の解決を id_conventions 参照へ変更した分を含む)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "run-checklist-prd-amend",
+      "prompt": "`.sdd/requirement/task-implementation/run-checklist.md` に、「検証結果を機械可読な形式でも出力し、CI から集計できるようにする」という新しい要求を追加してください。既存の要求は変更しないでください。",
+      "sdd_inputs": [
+        ".sdd/requirement/task-implementation/run-checklist.md"
+      ],
+      "input_parity": "identical-on-both-branches",
+      "fixture": {},
+      "expected_output": "The existing PRD preserved byte for byte, with the new requirement appended: IDs continuing the existing sequence, attributes assigned consistently with neighbouring requirements, and the new FR traceable to a UR.",
+      "assertions": [
+        {
+          "text": "既存の要求が変更されずに保持されている（非破壊的追記）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の ID が既存の連番を正しく継続している（衝突・欠番なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の属性（Priority / Risk / Verification）が、既存要求で実際に使われている値の語彙・粒度から逸脱せずに付与されている（既存に存在しない独自の値や表記を新規要求にだけ導入していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規 FR が UR に遡れる（トレーサビリティ維持）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全体再生成ではなく追記操作として実施されており、既存記述が失われていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾する場合、その矛盾が黙って見過ごされていない（矛盾を検出した上で報告し人間の判断に委ねている、または適切な確認を伴って解消している場合はPASS。検出されず矛盾が未報告のまま残っている場合はFAIL）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "完了レポートが成果物の外側で行う事実主張が実態に裏付けられている。すなわち (a) 生成・更新したと報告したファイルが実在し、書き込んでいないものを成果物として列挙していない、(b) 原則遵守の判定を示す場合は実際に原則ドキュメントを参照した結果であり、雛形の既定値をそのまま残していない、(c) 次のアクションとして案内した手順が、その時点のプロジェクト状態で実行できるか、できない場合は前提条件が添えられている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "documentation-index-prd-amend-multi-requirement",
+      "prompt": "`.sdd/requirement/workflow-foundation/documentation-index.md` に、「インデックス構築に許容する最大処理時間を超えた場合は構築を中断し、消費側を従来の Glob / Grep / Read フォールバックへ切り替える」という新しい機能要求を追加してください。既存の要求は変更しないでください。",
+      "sdd_inputs": [
+        ".sdd/requirement/workflow-foundation/documentation-index.md"
+      ],
+      "input_parity": "differs by design (both branches carry a real, independently-evolved PRD): main has FR_001/FR_001_01-04/DC_001 (4 sub-FRs, all verifymethod=test, risk mixed medium/low); develop adds FR_001_05 (sdd-version storage, 5 sub-FRs) on top of the same UR_001/FR_001/DC_001 skeleton. Chosen specifically because eval 0's PRD (run-checklist.md) has only one existing requirement (FR_001), which lets the 'stays consistent with existing vocabulary' assertion degenerate to 'copied the one existing value' -- this PRD gives that assertion 5-6 real reference points to be consistent (or inconsistent) with on both branches, while still letting the per-era `without` baseline absorb the branch-to-branch content difference.",
+      "fixture": {},
+      "expected_output": "The existing PRD preserved byte for byte, with the new requirement appended as a sub-FR of FR_001 (or a clearly justified sibling), IDs continuing the existing FR_001_0N sequence, attributes (risk, verifymethod) assigned consistently with the vocabulary already used by FR_001_01 through FR_001_04/05 (verifymethod=test is used throughout; risk should not introduce an unprecedented value), and traceable to UR_001.",
+      "assertions": [
+        {
+          "text": "既存の要求が変更されずに保持されている（非破壊的追記）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の ID が既存の連番を正しく継続している（衝突・欠番なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規要求の属性（Priority / Risk / Verification）が、既存要求で実際に使われている値の語彙・粒度から逸脱せずに付与されている（既存に存在しない独自の値や表記を新規要求にだけ導入していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規 FR が UR に遡れる（トレーサビリティ維持）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "全体再生成ではなく追記操作として実施されており、既存記述が失われていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "新規追記が既存の他セクション（Out of Scope、Constraints等）と論理的に矛盾する場合、その矛盾が黙って見過ごされていない（矛盾を検出した上で報告し人間の判断に委ねている、または適切な確認を伴って解消している場合はPASS。検出されず矛盾が未報告のまま残っている場合はFAIL）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "完了レポートが成果物の外側で行う事実主張が実態に裏付けられている。すなわち (a) 生成・更新したと報告したファイルが実在し、書き込んでいないものを成果物として列挙していない、(b) 原則遵守の判定を示す場合は実際に原則ドキュメントを参照した結果であり、雛形の既定値をそのまま残していない、(c) 次のアクションとして案内した手順が、その時点のプロジェクト状態で実行できるか、できない場合は前提条件が添えられている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.4 (2026-09-10): A7 を追加（完了レポートの事実主張の真偽）。`ASSERTION_DESIGN.md` の v3.3 節が立てた追加チェック項目——「このスキルの出力には、成果物の外側で行う事実主張（生成した／検査した／実装済みである）が含まれるか。含まれるなら、その主張の真偽を見る assertion があるか」——を generate-prd に当てると、既存6件（A1〜A6）は**すべて PRD の中身だけ**を見ており、完了レポートを1件も見ていなかった。このスキルの完了レポートは3種の主張を同時に行う: 生成物一覧、原則遵守の判定表、次に打てるコマンド。実際に修正された欠陥も3つともこの3種に対応する（内部セクションを別ファイルとして報告しうる／他スキルの役割を誤って説明する／その時点では必ず失敗するコマンドを最初に案内する）。3項目を1件に束ねたのは、どれも『レポートの主張と実態の一致』という同一の性質で、`check-spec` A5 と同じく条件を並べた方が世代非依存に保てるため。パス名・フラグ名・世代語彙を含まないので、どちらの世代でも同一基準で判定できる。 なお (c) はこのフィクスチャでは弱い: コーパスに仕様書ディレクトリが既に存在するため、実行可能性の分岐が起きるのは PRD をゼロから生成した直後（ディレクトリ不在）だけであり、この追記シナリオでは案内したコマンドがどちらの世代でも実行できてしまう。(a)(b) は追記モードでも成立する。 | v3.5 (2026-09-10): eval id=1 を新規追加した（複数要求を持つ PRD への --amend）。recurring_unaddressed_findings が2026-09-08から3回連続で指摘していた通り、eval 0 の唯一の対象PRD（run-checklist.md）は既存要求が FR_001 の1件のみで、「新規要求の属性が既存の語彙から逸脱していないか」という A3 が『唯一の既存値をコピーしたか』という弱い基準へ縮退していた。是正手段を assertion の文言強化（2026-09-07, 2026-09-08 で2回試行し失敗）から eval インスタンス追加へ転換し、既存要求が UR_001/FR_001/FR_001_01-04(main)またFR_001_05(develop)/DC_001 の5-6件ある documentation-index.md を新規コーパスとして採用した。assertions は eval 0 と同一（A1-A7）を再利用し、多様な入力での判別力を見る。"
+}

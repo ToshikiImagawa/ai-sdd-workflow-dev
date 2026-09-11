@@ -1,0 +1,61 @@
+{
+  "skill_name": "generate-spec",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test (`git archive <branch> -- .sdd`). No synthetic fixture is authored: `main` carries a v4-era corpus (no adr/, persisted *_design.md, v4 CONSTITUTION) and `develop` a v5-era one (adr/, task/{ticket}/design-draft.md, v5 CONSTITUTION), so each branch's skills are graded inside their own generation's world for free. Build it with build_sdd_fixture.py, which also re-renders .sdd/AI-SDD-PRINCIPLES.md and .claude/rules/ai-sdd-instructions.md from the branch's own plugin source -- the committed copies track the *installed* plugin (v4 on both branches), so leaving them would hand develop's skills a rulebook they do not implement.",
+  "variants": [
+    "main/skill -- main's .sdd/ corpus + main's SKILL.md",
+    "main/without -- main's .sdd/ corpus, skill not loaded",
+    "develop/skill -- develop's .sdd/ corpus + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus, skill not loaded"
+  ],
+  "measurement": "Improvement from main to develop is the difference of lifts: lift(era) = score(era/skill) - score(era/without), and improvement = lift(develop) - lift(main). Raw main/skill vs develop/skill scores are NOT compared directly: the .sdd/ corpus itself differs between the branches, so a raw difference cannot separate 'the skill got better' from 'develop's corpus got richer'. The per-era `without` baseline absorbs corpus difficulty, which is what makes the two lifts comparable. This does not contradict ASSERTION_DESIGN.md's rule against comparing main/without with develop/without -- the quantity compared is the lift, never the bare baseline.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py <main|develop> <outdir> --eval .claude/skill-evals/generate-spec/evals.json [--eval-id N]",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why.",
+  "skill_delta_main_to_develop": "+75/-28 lines",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "cross-platform-portability-spec-from-prd",
+      "prompt": "`.sdd/requirement/workflow-foundation/cross-platform-portability.md` の PRD から、抽象仕様と技術設計を生成してください。ticket 番号は 9101 です。",
+      "prompt_note": "The target artifacts are removed from the fixture so the skill has to produce them from the PRD alone. Ground truth is available: the removed files are the ones this project actually wrote for this PRD, recoverable with `git show <branch>:<path>`. The prompt deliberately does not name where the design belongs -- that is the generation-specific part, and naming it would give away what is being measured.",
+      "sdd_inputs": [
+        ".sdd/requirement/workflow-foundation/cross-platform-portability.md"
+      ],
+      "input_parity": "identical-on-both-branches (the PRD is byte-identical, and both target artifacts are removed in both eras)",
+      "fixture": {
+        "remove": [
+          ".sdd/specification/workflow-foundation/cross-platform-portability_spec.md",
+          ".sdd/specification/workflow-foundation/cross-platform-portability_design.md"
+        ]
+      },
+      "expected_output": "An abstract specification and a separate technical design artifact, each written to the location its own generation uses. The spec stays at requirement level, traces to the PRD's requirement IDs, and does not contradict the design.",
+      "assertions": [
+        {
+          "text": "抽象仕様が要求レベルに留まっており、技術詳細（実装手段・データ構造）が仕様側に混入していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "仕様の各機能要求が PRD の要求 ID に遡れ、PRD の範囲外の要求を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "抽象仕様と技術設計が別の成果物として分離されている（ファイル名・配置は世代依存なので問わない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "技術設計の内容が仕様と矛盾しない（API・振る舞いの齟齬なし）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "上流の PRD を検証なく書き換えていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "完了報告が列挙した成果物とサンドボックスに実在するファイルが一致している（書き込んでいないファイルを生成したと報告していない。生成を省いた成果物はその旨と理由を述べている）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.3 (2026-09-10): A6（報告した成果物が実在する）を追加。A3 は「抽象仕様と技術設計が別の成果物として分離されているか」を成果物の側から見ているが、**報告が成果物と一致しているか**はどの assertion も見ていなかった。この穴は実在の欠陥を通していた: 完了レポートのテンプレートが成果物の配置を旧世代のまま固定で列挙していたため、設計の書き込み先が変わった世代では、実際には書いていないファイルを「生成した」と報告し続ける。成果物の実在は採点者がサンドボックスを見れば確認できるので、パス名を assertion に書く必要はない（配置は世代依存なので A3 と同じく問わない）。"
+}

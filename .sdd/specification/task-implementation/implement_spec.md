@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-09-02"
 depends-on: ["prd-task-implementation-implement"]
 tags: ["tdd", "implementation", "checklist"]
 category: "task-implementation"
@@ -17,7 +17,7 @@ risk: "high"
 
 **関連 Design Doc:** [implement_design.md](implement_design.md)
 **関連 PRD:** [implement.md](../../requirement/task-implementation/implement.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 
 ---
 
@@ -59,15 +59,17 @@ AI-SDD ワークフローの Implement フェーズでは、実装が常に仕�
 | FR-006 | Polish 段階でリファクタリング・ドキュメント整備を行う                              | 必須  | 子 PRD FR_001_05                    |
 | FR-007 | 各段階・各タスクの完了に応じてチェックリスト進捗を逐次更新する                         | 必須  | 子 PRD FR_001 / 親 PRD UR_002       |
 | FR-008 | 仕様が曖昧・多義的な場合は実装を止め、明確化（`/clarify`）を促す                       | 必須  | 親 PRD B-001                        |
+| FR-009 | 実装開始時に対応する spec の `impl-status` を `in-progress` に、完了検証通過時に `implemented` に更新する | 必須  | 子 PRD FR_001 / 親 PRD UR_002（トレーサビリティ） |
 
 FR-003 のテストファーストは順序制約であり、テストのない Core 段階への進行を許容しない（親 PRD DC_001）。
 継続実行（continue）・段階スキップ（phase skip）・ドライラン（dry run）の実行モードを提供する。
+FR-009 の `impl-status` は spec の承認ライフサイクル（`status`）とは独立した軸であり、実装の追従状況のみを表す。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
 | ID      | カテゴリ      | 要件                                                     | 目標値                          |
 |---------|------------|--------------------------------------------------------|--------------------------------|
-| NFR-001 | トレーサビリティ | 実装が tasks.md・設計書・仕様に常にトレースされる状態を保つ           | 各タスクにテスト／検証手順が対応       |
+| NFR-001 | トレーサビリティ | 実装が tasks.md・設計ドラフト・仕様に常にトレースされる状態を保つ         | 各タスクにテスト／検証手順が対応       |
 | NFR-002 | 多言語      | 出力言語を `SDD_LANG` に従い切り替え、単一文書内で混在させない         | en / ja（原則 B-002）            |
 | NFR-003 | 可視性      | 5 段階の進捗を TaskList で可視化する（利用不可環境は Markdown で代替） | `/tasks` / `Ctrl+T` で確認可能   |
 
@@ -75,7 +77,7 @@ FR-003 のテストファーストは順序制約であり、テストのない 
 
 | 種別    | 配置場所                       | 名前      | 概要                                                                     |
 |-------|----------------------------|---------|------------------------------------------------------------------------|
-| skill | `skills/implement/SKILL.md` | implement | tasks.md を入力に 5 段階 TDD で実装し進捗を更新するユーザー呼び出しスキル（FR-001〜008） |
+| skill | `skills/implement/SKILL.md` | implement | tasks.md を入力に 5 段階 TDD で実装し進捗を更新するユーザー呼び出しスキル（FR-001〜009） |
 | template | `skills/implement/templates/{en,ja}/` | implement templates | 段階規則・TDD サイクル・進捗追跡・検証・エラー等の出力テンプレート群（日英）（NFR-002） |
 
 ## 4.1. 入出力定義
@@ -87,12 +89,14 @@ FR-003 のテストファーストは順序制約であり、テストのない 
 | 引数            | 必須 | 説明                                                          |
 |---------------|----|-------------------------------------------------------------|
 | `feature-name` | 必須 | 対象機能名またはパス（例: `user-auth`, `auth/user-login`）             |
-| `ticket-number` | 任意 | タスクディレクトリ名。省略時は `feature-name` を使用                     |
+| `ticket-number` | 任意 | タスクディレクトリ名（`tasks.md` / `design-draft.md` の位置）。省略時は `feature-name` を使用 |
 | `--continue`    | 任意 | 中断した実装を再開する（continue モード）                             |
 | `--phase`       | 任意 | 特定段階へスキップする（phase skip モード。慎重に使用）                   |
 | `--dry-run`     | 任意 | 変更を加えず実装をシミュレートする（dry run モード）                     |
 
-前提として `tasks.md`・`*_design.md`・`*_spec.md` が存在すること。
+前提として `task/{ticket}/tasks.md`・`task/{ticket}/design-draft.md`・抽象仕様書が存在すること。
+抽象仕様書は `_spec` サフィックスが任意であるため、`{feature}.md` / `{feature}_spec.md` のいずれかが
+存在すれば前提を満たす。
 
 **出力**: 実装コード（TDD サイクルに基づく）、更新された tasks.md 進捗、実装ログ
 （`implementation_progress.md` / front matter 付き実装ログ）。出力言語は `SDD_LANG` に従う。
@@ -151,7 +155,7 @@ sequenceDiagram
   [run-checklist.md](../../requirement/task-implementation/run-checklist.md) /
   [task-cleanup.md](../../requirement/task-implementation/task-cleanup.md) で扱う）
 - バージョン管理操作（コミット・PR 作成等）はプロジェクト運用・他ツールに委ねる
-- 実装品質は基盤モデルの能力および仕様書・設計書の明確度に依存する
+- 実装品質は基盤モデルの能力および仕様書・設計ドラフトの明確度に依存する
 
 # 9. 原則との整合性
 
@@ -159,4 +163,5 @@ sequenceDiagram
 |-------|--------------------------|----------------------------------------------------------------------|
 | B-001 | Vibe Coding 防止          | 仕様の曖昧・多義を検出したら実装を止め明確化を促し、推測実装を排除する               |
 | B-002 | 多言語対応（EN/JA）の一貫性 | 段階規則・TDD サイクル等のテンプレートを日英で維持し `SDD_LANG` で切り替える         |
-| D-001 | Specification-Driven      | tasks.md・設計書・仕様を真実の源とし、実装を常にトレース可能に保つ                   |
+| D-001 | Specification-Driven      | tasks.md・設計ドラフト・仕様を真実の源とし、実装を常にトレース可能に保つ                |
+| D-002 | ファイル命名規則の厳守      | 前提条件の解決で `_spec` サフィックス任意・`design-draft.md` 固定名の命名規則に従う      |
