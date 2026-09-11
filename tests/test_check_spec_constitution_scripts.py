@@ -113,6 +113,41 @@ class TestSortedDocs:
         assert result == sorted(result)
         assert [Path(p).name for p in result] == ["a.md", "z_spec.md"]
 
+    def test_design_draft_is_unaffected(self, tmp_path):
+        # sorted_docs is reused for task/{ticket}/design-draft.md, which
+        # legitimately declares `type: "design"` in front matter (see
+        # _draft() below) -- unlike sorted_spec_docs, it must never consult
+        # front matter, only the filename heuristic (design-draft.md's stem
+        # "design-draft" never matches "*_design" anyway).
+        draft = tmp_path / "9" / "design-draft.md"
+        draft.parent.mkdir(parents=True)
+        draft.write_text('---\ntype: "design"\n---\n# d', encoding="utf-8")
+        assert fs.sorted_docs([draft]) == [str(draft)]
+
+
+class TestSortedSpecDocs:
+    def test_front_matter_type_spec_overrides_design_suffix(self, tmp_path):
+        # The _spec suffix is optional, so a legitimately named new spec can
+        # itself end in "_design" (e.g. api_design.md); its own front matter
+        # `type: spec` must keep it in the spec list despite the filename.
+        spec_file = tmp_path / "api_design.md"
+        spec_file.write_text('---\ntype: "spec"\n---\n# api', encoding="utf-8")
+        legacy = tmp_path / "legacy_design.md"
+        legacy.write_text("# legacy (no front matter)", encoding="utf-8")
+        result = fs.sorted_spec_docs([spec_file, legacy])
+        assert result == [str(spec_file)]
+
+    def test_front_matter_type_design_excludes_regardless_of_name(self, tmp_path):
+        declared_design = tmp_path / "notes.md"
+        declared_design.write_text('---\ntype: "design"\n---\n# notes', encoding="utf-8")
+        result = fs.sorted_spec_docs([declared_design])
+        assert result == []
+
+    def test_falls_back_to_filename_heuristic_without_front_matter(self, tmp_path):
+        legacy = tmp_path / "legacy_design.md"
+        legacy.write_text("# legacy (no front matter)", encoding="utf-8")
+        assert fs.sorted_spec_docs([legacy]) == []
+
 
 class TestFindDesignDrafts:
     def test_missing_task_dir_is_not_an_error(self, tmp_path):
@@ -317,6 +352,67 @@ class TestSelectAdrDocs:
         assert fs.select_adr_docs(
             str(spec), spec_dir, adr_dir, fs.index_adr_docs(adr_dir)
         ) == ([], "none")
+
+
+class TestFindSpecDocuments:
+    def test_partial_match_target_with_glob_metacharacters(self, tmp_path):
+        # The CLI target falls into the partial-match fallback unescaped; a
+        # target containing fnmatch metacharacters (e.g. "a[bc]") must match
+        # that literal file, not any file whose name happens to fit the
+        # resulting character-class pattern (e.g. "ab_spec.md").
+        spec_dir = tmp_path
+        target_file = spec_dir / "a[bc]_spec.md"
+        target_file.write_text("# t", encoding="utf-8")
+        (spec_dir / "ab_spec.md").write_text("# unrelated", encoding="utf-8")
+        (spec_dir / "ac_spec.md").write_text("# unrelated", encoding="utf-8")
+
+        result = fs.find_spec_documents(spec_dir, "a[bc]")
+        assert result == [str(target_file)]
+
+
+class TestGenerateMapping:
+    def test_design_field_never_self_references_the_spec(self, tmp_path):
+        # A spec legitimately named "api_design.md" (kept in the spec list by
+        # its own `type: spec` front matter) must not be reported as its own
+        # auxiliary design doc: feature_name() strips "_design" from the
+        # stem, so naively resolving `{basename}_design.md` would resolve
+        # back to the spec file itself.
+        spec_dir = tmp_path / "specification"
+        spec_dir.mkdir()
+        spec_file = spec_dir / "api_design.md"
+        spec_file.write_text('---\ntype: "spec"\n---\n# api', encoding="utf-8")
+        adr_dir = tmp_path / "adr"
+        adr_dir.mkdir()
+
+        fs.generate_mapping(
+            [str(spec_file)], [], [], "none",
+            spec_dir, adr_dir, fs.index_adr_docs(adr_dir),
+            tmp_path / "file_mapping.json",
+        )
+        mapping = json.loads(
+            (tmp_path / "file_mapping.json").read_text(encoding="utf-8")
+        )
+        assert mapping["spec_documents"][0]["design"] == ""
+
+    def test_design_field_still_finds_a_real_sibling_design_doc(self, tmp_path):
+        spec_dir = tmp_path / "specification"
+        spec_dir.mkdir()
+        spec_file = spec_dir / "auth_spec.md"
+        spec_file.write_text("# s", encoding="utf-8")
+        design_file = spec_dir / "auth_design.md"
+        design_file.write_text("# d", encoding="utf-8")
+        adr_dir = tmp_path / "adr"
+        adr_dir.mkdir()
+
+        fs.generate_mapping(
+            [str(spec_file)], [], [], "none",
+            spec_dir, adr_dir, fs.index_adr_docs(adr_dir),
+            tmp_path / "file_mapping.json",
+        )
+        mapping = json.loads(
+            (tmp_path / "file_mapping.json").read_text(encoding="utf-8")
+        )
+        assert mapping["spec_documents"][0]["design"] == str(design_file)
 
 
 class TestParseArgs:
@@ -718,6 +814,36 @@ class TestValidateFiles:
         env = env_file.read_text(encoding="utf-8")
         assert "CONSTITUTION_CACHE_DIR" in env
         assert f"{ROOT}/.cache/constitution" in env
+
+    def test_front_matter_type_disambiguates_design_suffixed_spec(self, tmp_path):
+        # The `_spec` suffix is optional, so a legitimately named new spec can
+        # itself end in "_design" (e.g. api_design.md); its own front matter
+        # `type: spec` must keep it counted as a spec, not a design doc, while
+        # a real legacy design doc (no front matter) still counts as one.
+        proj = _make_project(tmp_path)
+        spec_dir = proj / ROOT / "specification"
+        (spec_dir / "api_design.md").write_text(
+            '---\ntype: "spec"\n---\n# api', encoding="utf-8"
+        )
+        (spec_dir / "legacy_design.md").write_text("# legacy", encoding="utf-8")
+        env_file = tmp_path / "env"
+        env_file.write_text("", encoding="utf-8")
+
+        result = _run(VALIDATE_FILES, proj, env_file)
+        assert result.returncode == 0, result.stderr
+
+        cache = proj / ROOT / ".cache" / "constitution"
+        summary = json.loads(
+            (cache / "scan_summary.json").read_text(encoding="utf-8")
+        )
+        assert summary["spec_files"] == 1
+        assert summary["design_files"] == 1
+
+        spec_txt = (cache / "spec_files.txt").read_text(encoding="utf-8")
+        design_txt = (cache / "design_files.txt").read_text(encoding="utf-8")
+        assert "api_design.md" in spec_txt
+        assert "legacy_design.md" in design_txt
+        assert "api_design.md" not in design_txt
 
     def test_missing_dirs_zero_counts(self, tmp_path):
         proj = tmp_path / "project"

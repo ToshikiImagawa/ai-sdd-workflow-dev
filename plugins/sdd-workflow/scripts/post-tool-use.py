@@ -27,7 +27,7 @@ from hook_common import (  # noqa: E402
     read_stdin_json,
     relative_to_project,
 )
-from doc_walker import find_legacy_design_doc, find_spec_doc  # noqa: E402
+from doc_walker import find_spec_or_legacy_design_doc  # noqa: E402
 
 
 def readme_pointer() -> str:
@@ -133,7 +133,10 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
     if not spec_dir.is_dir():
         return
 
-    spec_doc = find_spec_doc(str(spec_dir), rel.stem)
+    # A single directory walk resolves both candidates instead of walking
+    # specification/ up to three times (find_spec_doc alone tries two suffix
+    # candidates, and find_legacy_design_doc would be a third walk).
+    spec_doc, design_doc = find_spec_or_legacy_design_doc(str(spec_dir), rel.stem)
     if spec_doc:
         spec_rel = str(Path(spec_doc).relative_to(Path(project_root)))
         emit_additional_context(
@@ -148,7 +151,6 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
     # No spec, but a v4.x persisted design doc may still describe this file.
     # It stays valid as supplementary input, so the reminder points at the adr/
     # migration rather than treating the design doc as a sync target.
-    design_doc = find_legacy_design_doc(str(spec_dir), rel.stem)
     if not design_doc:
         return
 

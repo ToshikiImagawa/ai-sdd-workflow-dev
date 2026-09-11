@@ -122,6 +122,7 @@ def run_command(command: str, cwd: Path) -> dict:
     try:
         result = subprocess.run(
             args, cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS,
+            encoding="utf-8", errors="replace",
         )
         outcome = {
             "command": command,
@@ -192,10 +193,15 @@ def main() -> None:
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return
 
+    # Every attempt above returned to the loop only on TOOL_NOT_FOUND (any other
+    # status returns immediately), so reaching here means all candidates were
+    # missing -- report TOOL_NOT_FOUND (see SKILL.md's status table) rather than
+    # SKIPPED, which is reserved for "no candidate command is defined" and
+    # "the tool ran but had nothing to verify".
     result = {
         "category": category,
         "project_type": project_type,
-        "status": "SKIPPED",
+        "status": "TOOL_NOT_FOUND",
         "reason": f"None of the candidate tools were installed: {[c for c in candidates]}",
         "attempts": attempts,
     }

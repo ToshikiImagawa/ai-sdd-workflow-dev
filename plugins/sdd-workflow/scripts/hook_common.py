@@ -10,7 +10,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 def read_stdin_json() -> Dict[str, Any]:
@@ -96,15 +96,31 @@ _DIR_FIELDS = {
 }
 
 
-def load_sdd_paths(project_root: str) -> SddPaths:
-    """Resolve the .sdd directory layout from .sdd-config.json, else defaults."""
+def read_sdd_config_json(project_root: str) -> dict:
+    """Read and parse .sdd-config.json, or {} if absent/invalid.
+
+    Callers that need more than one config-derived value in the same
+    invocation (e.g. both the directory layout and the naming ignore
+    patterns) should read this once and pass it as the ``raw`` argument to
+    :func:`load_sdd_paths` / :func:`load_naming_ignore_patterns` instead of
+    letting each of them re-read and re-parse the file.
+    """
     config_path = Path(project_root) / ".sdd-config.json"
     if not config_path.is_file():
-        return SddPaths()
+        return {}
     try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
+        return json.loads(config_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return SddPaths()
+        return {}
+
+
+def load_sdd_paths(project_root: str, raw: Optional[dict] = None) -> SddPaths:
+    """Resolve the .sdd directory layout from .sdd-config.json, else defaults.
+
+    Pass an already-parsed ``raw`` config dict to avoid re-reading the file.
+    """
+    if raw is None:
+        raw = read_sdd_config_json(project_root)
 
     dirs = raw.get("directories") or {}
     resolved = {
@@ -138,19 +154,15 @@ def resolve_lang_and_root(project_root: Path) -> Tuple[str, str]:
     return sdd_lang, sdd_root
 
 
-def load_naming_ignore_patterns(project_root: str) -> Tuple[str, ...]:
+def load_naming_ignore_patterns(project_root: str, raw: Optional[dict] = None) -> Tuple[str, ...]:
     """Return the naming.ignore_patterns glob list from .sdd-config.json, or () if absent.
 
     Patterns are ``fnmatch`` globs (e.g. ``"*_test.md"``) matched against a
-    file's basename by ``naming.validate_naming``.
+    file's basename by ``naming.validate_naming``. Pass an already-parsed
+    ``raw`` config dict to avoid re-reading the file.
     """
-    config_path = Path(project_root) / ".sdd-config.json"
-    if not config_path.is_file():
-        return ()
-    try:
-        raw = json.loads(config_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return ()
+    if raw is None:
+        raw = read_sdd_config_json(project_root)
     patterns = raw.get("naming", {}).get("ignore_patterns", [])
     if not isinstance(patterns, list):
         return ()

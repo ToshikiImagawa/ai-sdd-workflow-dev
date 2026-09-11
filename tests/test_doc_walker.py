@@ -126,6 +126,16 @@ class TestFindSpecDoc:
         (tmp_path / "spec").mkdir()
         assert dw.find_spec_doc(str(tmp_path / "spec"), "missing") == ""
 
+    def test_stem_with_glob_metacharacters_matches_literally(self, tmp_path):
+        # A source file named e.g. parse[v2].py has stem "parse[v2]"; the
+        # brackets must be matched literally, not treated as an fnmatch
+        # character class (which would make "[v2]" match a single "v"/"2").
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        target = spec / "parse[v2]_spec.md"
+        target.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_doc(str(spec), "parse[v2]") == str(target)
+
 
 class TestFindLegacyDesignDoc:
     def test_finds_v4_design_doc_recursively(self, tmp_path):
@@ -157,6 +167,60 @@ class TestFindLegacyDesignDoc:
     def test_returns_empty_when_absent(self, tmp_path):
         (tmp_path / "spec").mkdir()
         assert dw.find_legacy_design_doc(str(tmp_path / "spec"), "missing") == ""
+
+    def test_stem_with_glob_metacharacters_matches_literally(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        target = spec / "parse[v2]_design.md"
+        target.write_text("# d", encoding="utf-8")
+        assert dw.find_legacy_design_doc(str(spec), "parse[v2]") == str(target)
+
+
+class TestFindSpecOrLegacyDesignDoc:
+    """One walk, same classification as find_spec_doc + find_legacy_design_doc."""
+
+    def test_returns_spec_and_empty_design(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        target = spec / "user-login_spec.md"
+        target.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_or_legacy_design_doc(str(spec), "user-login") == (
+            str(target), "",
+        )
+
+    def test_suffixed_spec_wins_over_suffixless(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        (spec / "user-login.md").write_text("# plain", encoding="utf-8")
+        suffixed = spec / "user-login_spec.md"
+        suffixed.write_text("# s", encoding="utf-8")
+        spec_path, design_path = dw.find_spec_or_legacy_design_doc(str(spec), "user-login")
+        assert spec_path == str(suffixed)
+        assert design_path == ""
+
+    def test_returns_empty_spec_and_design_when_only_design_doc_exists(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        design = spec / "user-login_design.md"
+        design.write_text("# d", encoding="utf-8")
+        assert dw.find_spec_or_legacy_design_doc(str(spec), "user-login") == (
+            "", str(design),
+        )
+
+    def test_returns_both_empty_when_absent(self, tmp_path):
+        (tmp_path / "spec").mkdir()
+        assert dw.find_spec_or_legacy_design_doc(str(tmp_path / "spec"), "missing") == (
+            "", "",
+        )
+
+    def test_stem_with_glob_metacharacters_matches_literally(self, tmp_path):
+        spec = tmp_path / "spec"
+        spec.mkdir()
+        target = spec / "parse[v2]_spec.md"
+        target.write_text("# s", encoding="utf-8")
+        assert dw.find_spec_or_legacy_design_doc(str(spec), "parse[v2]") == (
+            str(target), "",
+        )
 
 
 class TestIterLegacyDesignDocs:

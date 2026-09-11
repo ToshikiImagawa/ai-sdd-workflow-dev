@@ -28,6 +28,7 @@ from hook_common import (  # noqa: E402
     get_project_root,
     load_naming_ignore_patterns,
     load_sdd_paths,
+    read_sdd_config_json,
     read_stdin_json,
     relative_to_project,
 )
@@ -94,9 +95,13 @@ def main() -> None:
     if not rel_path:
         return
 
-    paths = load_sdd_paths(project_root)
+    # Read .sdd-config.json once and share it, rather than letting each of
+    # load_sdd_paths / load_naming_ignore_patterns re-read and re-parse the
+    # same file on every single Write/Edit tool call.
+    raw_config = read_sdd_config_json(project_root)
+    paths = load_sdd_paths(project_root, raw_config)
 
-    ignore_patterns = load_naming_ignore_patterns(project_root)
+    ignore_patterns = load_naming_ignore_patterns(project_root, raw_config)
     error = validate_naming(
         rel_path, paths.requirement_prefix, ignore_patterns
     )

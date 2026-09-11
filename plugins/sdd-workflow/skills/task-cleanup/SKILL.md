@@ -170,16 +170,17 @@ order:
 3. **If not exists**: fall back to the entry format defined in `AI-SDD-PRINCIPLES.md` § Architecture Decision
    Record → Entry Format
 
-One file holds many entries. The items below are required either way; when the project's template adds
-sections of its own, follow the template and keep these items:
+One file holds many entries. Follow the field definitions in `AI-SDD-PRINCIPLES.md` § Architecture Decision
+Record → Entry Format exactly (heading, `- **Decision**:`, `- **Rationale**:`, `- **Rejected
+alternatives**:`, optional `- **Supersedes**:`) — that table is the canonical source, so it is not
+restated here in full. The notes below only add cleanup-specific refinements the canonical definition
+does not cover:
 
-| Item                                      | Required | Content                                                                                                 |
-|:------------------------------------------|:---------|:--------------------------------------------------------------------------------------------------------|
-| Heading: `## YYYY-MM-DD {decision title}` | Yes      | Date the decision was finalized (take it from the task file / its last commit date recorded in step 2 — not today's cleanup date when they differ), then a short title naming what was decided. No colon in the title, so the anchor stays predictable |
-| `- **Decision**:`                         | Yes      | What was decided, in one or two sentences                                                               |
-| `- **Rationale**:`                        | Yes      | Why it was chosen, including the constraint that forced it                                              |
-| `- **Rejected alternatives**:`            | Yes      | Each alternative considered and why it lost. Write `None considered` when the task files record none — never invent one |
-| `- **Supersedes**:`                       | No       | Only when this decision reverses an earlier entry **in the same file**: a markdown anchor link to that entry's heading plus one line on what changed. Omit the item entirely otherwise |
+- **Heading date**: take it from the task file / its last commit date recorded in step 2 — not today's
+  cleanup date when they differ. Omit any colon from the title so the anchor stays predictable
+- **Rejected alternatives**: write `None considered` when the task files record none — never invent one
+
+When the project's template adds sections of its own, follow the template and keep these items.
 
 Rules:
 
