@@ -9,87 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **`check-spec` no longer attaches another ticket's design draft when exactly one draft exists** -
-  `find-spec-docs.py`'s sole-draft fallback used to accept the only draft on disk even when its
-  `depends-on` front matter named a different spec entirely — positive evidence it belongs to another
-  feature, not merely an untagged draft that happens to be alone. That draft is now excluded from the
-  sole-draft exception and the run falls back to `unscoped` (or to a remaining untagged draft, if one
-  exists)
-- **`check-spec` / `constitution validate` no longer misclassify a spec named e.g. `api_design.md` as a
-  legacy v4.x design doc** - The `_spec` suffix is optional under `specification/`, so a legitimately
-  named new spec can itself end in `_design`; the filename-only heuristic could not tell the two apart
-  and silently dropped such a spec from both commands' output. A file's own front matter `type` now
-  overrides the heuristic when declared
-- **`post-tool-use.py`'s spec-sync reminder now matches a source file name literally, even when it
-  contains glob metacharacters** - `find_spec_doc` / `find_legacy_design_doc` interpolated the file's
-  stem unescaped into an `rglob` pattern, so a file like `parse[v2].py` had `[v2]` treated as a wildcard
-  character class instead of literal text, silencing the reminder for a spec that actually existed. The
-  same fix applies to `check-spec`'s CLI target argument in its partial-match fallback
-- **`run-checklist`'s verification script no longer reports `SKIPPED` when every candidate tool for a
-  category is genuinely missing** - It now reports `TOOL_NOT_FOUND`, matching the status SKILL.md
-  already documents for that case (`SKIPPED` remains reserved for "no command is defined for this
-  category" and "the tool ran but had nothing to verify")
-- **`run-checklist`'s verification script no longer risks an uncaught crash decoding non-UTF-8 tool
-  output** - `subprocess.run` now decodes with `errors="replace"` instead of the locale's default, which
-  could raise `UnicodeDecodeError` in a non-UTF-8 locale (e.g. a `LANG=C` CI container) and abort the
-  script without producing the JSON result the skill expects
-- **`evaluate-skills`' safety-guard audit no longer stops checking a keyword after its first, negated
-  occurrence** - `audit_run_artifacts.py` located only the first occurrence of each keyword in a
-  transcript; if that occurrence sat in a negated context ("...must not skip the check..."), a genuine
-  later violation of the same keyword was never examined
-- **`evaluate-skills`' skill-creator path resolver no longer aborts silently when no version has ever
-  been cached** - Under `set -euo pipefail`, `find` failing on a nonexistent cache directory short-circuited
-  the script before it could print its own "not installed" error message. It also no longer picks the
-  wrong "latest" version when multiple are cached: the cache directories are named by an installation
-  hash, not a sortable version number, so a lexical `sort` had no real ordering signal; it now picks by
-  modification time instead
-
-### Changed
-
-- **`check-spec`'s front-matter-reviewer delegation now states explicitly when it could not run** -
-  Previously, an environment where agent delegation is unavailable silently skipped front matter
-  validation while still reporting the check as done. It now says so and lists it as a manual review item
-- **`generate-prd`'s prd-reviewer / front-matter-reviewer delegation has the same explicit fallback** -
-  Same fix as above, applied to both call sites (initial generation and `--amend`)
-- **`checklist` items now disclose their basis** - Each item states which document and statement it was
-  derived from, or `synthesized from: {component}` when inferred from an implementation component's
-  existence rather than quoted from a document, so a reviewer can tell "extracted" from "invented"
-- **`clarify` now records a Clear/Partial/Missing classification for all 9 categories**, not only the
-  ones that became a question, so the analysis's actual coverage is visible in the output
-- **`generate-requirements-diagram` states a priority when completeness and the 10-15-requirement
-  readability guideline conflict** - Completeness wins; split into a per-subsystem diagram first, and
-  only compress sub-requirements into a single annotated node when splitting does not apply, stating
-  explicitly which sub-requirements were compressed and why
-- **`clarify` now checks the implementation before flagging an NFR/constraint as ambiguous** - When the
-  target feature's `impl-status` is `implemented`, an apparently undefined threshold or timeout may
-  already be a concrete decision recorded only in code (a `TIMEOUT_SECONDS` constant, for example)
-  rather than in the spec's prose; the analysis now searches the implementation for that value before
-  raising a question the codebase has already settled
-- **`generate-requirements-diagram` no longer edits the target document to fill a missing diagram
-  section** - The "returns text only" contract now says explicitly that a missing section must not be
-  "helpfully" filled in with `Write`/`Edit`; the diagram is still returned as text, leaving the write
-  decision to the caller
-- **`checklist` requires a priority on every item, in every category** - Including any category added
-  beyond the standard nine (e.g. a principle-compliance category), and the priority-scheme origin note
-  now requires an actual comparison between the SKILL.md body and the template rather than a copy of the
-  reminder text
-- **`check-spec` matches NFRs individually against the implementation, the same way FRs are** - A closing
-  summary sentence for NFRs no longer satisfies the per-requirement matching check; severity
-  classification also now states explicitly that severity tracks impact (public interface / observable
-  behavior / data model vs. internal-only), not detection confidence
-- **`task-cleanup`'s ADR entry-format guidance no longer duplicates the full field table already defined
-  in `AI-SDD-PRINCIPLES.md`** - It now references that table as the canonical source and keeps only the
-  cleanup-specific refinements (heading date sourcing, the "None considered" wording) locally, so the
-  two copies cannot silently drift apart
-- **The `PreToolUse` hook reads `.sdd-config.json` once per tool call instead of twice** - Path resolution
-  and the naming-ignore-pattern lookup each used to open and parse the file independently on every
-  single Write/Edit
-- **The `PostToolUse` hook's spec-sync reminder walks `specification/` once per source-file edit instead
-  of up to three times** - `find_spec_doc`'s two suffix candidates and the separate `find_legacy_design_doc`
-  fallback are now resolved from a single directory listing
-
 ## [5.0.0] - 2026-09-10
 
 **Note**: This is a major release with breaking changes to the document model. Read
@@ -594,6 +513,40 @@ move their decisions into `adr/`, at your own pace.
   IDs its own PRD template wrote. All three now resolve the format per
   `shared/references/id_conventions_config.md` § PRD-Level ID Format Resolution, falling back to
   `UR_xxx` / `FR_xxx` / `NFR_xxx`, so a configured convention is honored end to end
+- **`check-spec` no longer attaches another ticket's design draft when exactly one draft exists** -
+  `find-spec-docs.py`'s sole-draft fallback used to accept the only draft on disk even when its
+  `depends-on` front matter named a different spec entirely — positive evidence it belongs to another
+  feature, not merely an untagged draft that happens to be alone. That draft is now excluded from the
+  sole-draft exception and the run falls back to `unscoped` (or to a remaining untagged draft, if one
+  exists)
+- **`check-spec` / `constitution validate` no longer misclassify a spec named e.g. `api_design.md` as a
+  legacy v4.x design doc** - The `_spec` suffix is optional under `specification/`, so a legitimately
+  named new spec can itself end in `_design`; the filename-only heuristic could not tell the two apart
+  and silently dropped such a spec from both commands' output. A file's own front matter `type` now
+  overrides the heuristic when declared
+- **`post-tool-use.py`'s spec-sync reminder now matches a source file name literally, even when it
+  contains glob metacharacters** - `find_spec_doc` / `find_legacy_design_doc` interpolated the file's
+  stem unescaped into an `rglob` pattern, so a file like `parse[v2].py` had `[v2]` treated as a wildcard
+  character class instead of literal text, silencing the reminder for a spec that actually existed. The
+  same fix applies to `check-spec`'s CLI target argument in its partial-match fallback
+- **`run-checklist`'s verification script no longer reports `SKIPPED` when every candidate tool for a
+  category is genuinely missing** - It now reports `TOOL_NOT_FOUND`, matching the status SKILL.md
+  already documents for that case (`SKIPPED` remains reserved for "no command is defined for this
+  category" and "the tool ran but had nothing to verify")
+- **`run-checklist`'s verification script no longer risks an uncaught crash decoding non-UTF-8 tool
+  output** - `subprocess.run` now decodes with `errors="replace"` instead of the locale's default, which
+  could raise `UnicodeDecodeError` in a non-UTF-8 locale (e.g. a `LANG=C` CI container) and abort the
+  script without producing the JSON result the skill expects
+- **`evaluate-skills`' safety-guard audit no longer stops checking a keyword after its first, negated
+  occurrence** - `audit_run_artifacts.py` located only the first occurrence of each keyword in a
+  transcript; if that occurrence sat in a negated context ("...must not skip the check..."), a genuine
+  later violation of the same keyword was never examined
+- **`evaluate-skills`' skill-creator path resolver no longer aborts silently when no version has ever
+  been cached** - Under `set -euo pipefail`, `find` failing on a nonexistent cache directory short-circuited
+  the script before it could print its own "not installed" error message. It also no longer picks the
+  wrong "latest" version when multiple are cached: the cache directories are named by an installation
+  hash, not a sortable version number, so a lexical `sort` had no real ordering signal; it now picks by
+  modification time instead
 
 ### Changed
 
@@ -732,6 +685,47 @@ move their decisions into `adr/`, at your own pace.
   implementation changes — contradictions are reported for a human to resolve, not silently written back
 - **`shared/references/document_dependencies.md`** - Updated to the `adr/` model (previously still
   described `specification/*_design.md` as persistent, out of sync with the rest of the redesign)
+- **`check-spec`'s front-matter-reviewer delegation now states explicitly when it could not run** -
+  Previously, an environment where agent delegation is unavailable silently skipped front matter
+  validation while still reporting the check as done. It now says so and lists it as a manual review item
+- **`generate-prd`'s prd-reviewer / front-matter-reviewer delegation has the same explicit fallback** -
+  Same fix as above, applied to both call sites (initial generation and `--amend`)
+- **`checklist` items now disclose their basis** - Each item states which document and statement it was
+  derived from, or `synthesized from: {component}` when inferred from an implementation component's
+  existence rather than quoted from a document, so a reviewer can tell "extracted" from "invented"
+- **`clarify` now records a Clear/Partial/Missing classification for all 9 categories**, not only the
+  ones that became a question, so the analysis's actual coverage is visible in the output
+- **`generate-requirements-diagram` states a priority when completeness and the 10-15-requirement
+  readability guideline conflict** - Completeness wins; split into a per-subsystem diagram first, and
+  only compress sub-requirements into a single annotated node when splitting does not apply, stating
+  explicitly which sub-requirements were compressed and why
+- **`clarify` now checks the implementation before flagging an NFR/constraint as ambiguous** - When the
+  target feature's `impl-status` is `implemented`, an apparently undefined threshold or timeout may
+  already be a concrete decision recorded only in code (a `TIMEOUT_SECONDS` constant, for example)
+  rather than in the spec's prose; the analysis now searches the implementation for that value before
+  raising a question the codebase has already settled
+- **`generate-requirements-diagram` no longer edits the target document to fill a missing diagram
+  section** - The "returns text only" contract now says explicitly that a missing section must not be
+  "helpfully" filled in with `Write`/`Edit`; the diagram is still returned as text, leaving the write
+  decision to the caller
+- **`checklist` requires a priority on every item, in every category** - Including any category added
+  beyond the standard nine (e.g. a principle-compliance category), and the priority-scheme origin note
+  now requires an actual comparison between the SKILL.md body and the template rather than a copy of the
+  reminder text
+- **`check-spec` matches NFRs individually against the implementation, the same way FRs are** - A closing
+  summary sentence for NFRs no longer satisfies the per-requirement matching check; severity
+  classification also now states explicitly that severity tracks impact (public interface / observable
+  behavior / data model vs. internal-only), not detection confidence
+- **`task-cleanup`'s ADR entry-format guidance no longer duplicates the full field table already defined
+  in `AI-SDD-PRINCIPLES.md`** - It now references that table as the canonical source and keeps only the
+  cleanup-specific refinements (heading date sourcing, the "None considered" wording) locally, so the
+  two copies cannot silently drift apart
+- **The `PreToolUse` hook reads `.sdd-config.json` once per tool call instead of twice** - Path resolution
+  and the naming-ignore-pattern lookup each used to open and parse the file independently on every
+  single Write/Edit
+- **The `PostToolUse` hook's spec-sync reminder walks `specification/` once per source-file edit instead
+  of up to three times** - `find_spec_doc`'s two suffix candidates and the separate `find_legacy_design_doc`
+  fallback are now resolved from a single directory listing
 
 ## [4.1.0] - 2026-08-19
 
