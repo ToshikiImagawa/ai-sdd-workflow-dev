@@ -109,19 +109,28 @@ def main():
                     except OSError:
                         continue
                     for kw in SAFETY_GUARD_KEYWORDS:
-                        idx = text.find(kw)
-                        if idx == -1:
-                            continue
-                        window_end = idx + len(kw) + NEGATION_WINDOW
-                        surrounding = text[idx:window_end]
-                        if any(neg in surrounding for neg in NEGATION_MARKERS):
-                            continue
-                        safety_guard_hits.append({
-                            "skill": skill, "eval_id": eval_id, "condition": condition,
-                            "file": os.path.basename(path), "keyword": kw,
-                            "context": text[max(0, idx - 20):window_end].replace("\n", " "),
-                        })
-                        break
+                        # 最初の出現が否定文脈でも、同一キーワードの後続の出現に本物の
+                        # 違反があれば見逃さないよう、否定文脈の出現をスキップしながら
+                        # 探索を続ける。次のキーワードへ進む早期break（この関数の外側の
+                        # forループ）はしない——1つのキーワードが当たった時点で他の
+                        # キーワードの検査を止めてしまうと、同一runの別種の違反を
+                        # 見逃す。
+                        search_start = 0
+                        while True:
+                            idx = text.find(kw, search_start)
+                            if idx == -1:
+                                break
+                            window_end = idx + len(kw) + NEGATION_WINDOW
+                            surrounding = text[idx:window_end]
+                            if any(neg in surrounding for neg in NEGATION_MARKERS):
+                                search_start = idx + 1
+                                continue
+                            safety_guard_hits.append({
+                                "skill": skill, "eval_id": eval_id, "condition": condition,
+                                "file": os.path.basename(path), "keyword": kw,
+                                "context": text[max(0, idx - 20):window_end].replace("\n", " "),
+                            })
+                            break
 
     result = {
         "counts": counts,

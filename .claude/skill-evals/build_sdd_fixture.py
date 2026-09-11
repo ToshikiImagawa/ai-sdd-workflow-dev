@@ -39,6 +39,15 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# plugins/sdd-workflow/scripts holds fm_parser.py, the single source of truth for front
+# matter detection that the real skills (and pre-tool-use.py) consume -- imported below so
+# this fixture builder's own front-matter stripping stays bounded the same way.
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parent.parent.parent / "plugins" / "sdd-workflow" / "scripts"),
+)
+from fm_parser import FM_MAX_LINES  # noqa: E402
+
 # The eval definitions state, in plain text, exactly what each run is graded on. Leaving
 # them inside the sandbox would let a run read its own answer key, so they never ship.
 EXCLUDE_PREFIXES = (".claude/skill-evals",)
@@ -189,10 +198,16 @@ def drop_generated(out_dir: Path) -> List[str]:
 
 def strip_front_matter(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
-    stripped = FRONT_MATTER_RE.sub("", text, count=1)
-    if stripped == text:
+    match = FRONT_MATTER_RE.match(text)
+    if not match:
         return False
-    path.write_text(stripped, encoding="utf-8")
+    # fm_parser.find_front_matter_bounds (the real skills' single source of truth) only
+    # looks for the closing `---` within the first FM_MAX_LINES lines. A closing fence
+    # beyond that window would be stripped here but left untouched by the skill under
+    # test, making this fixture diverge from actual skill behavior.
+    if match.group(0).count("\n") > FM_MAX_LINES:
+        return False
+    path.write_text(text[match.end():], encoding="utf-8")
     return True
 
 

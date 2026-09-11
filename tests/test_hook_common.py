@@ -108,6 +108,35 @@ class TestLoadSddPaths:
         assert paths.adr_prefix == os.path.join("docs", "adr")
         assert paths.task_prefix == os.path.join("docs", "task")
 
+    def test_accepts_a_preread_raw_config_without_touching_disk(self, tmp_path):
+        # A caller that also needs load_naming_ignore_patterns can read
+        # .sdd-config.json once via read_sdd_config_json and pass the result
+        # to both, instead of each of them re-reading the file.
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"root": "docs"}), encoding="utf-8",
+        )
+        raw = hc.read_sdd_config_json(str(tmp_path))
+        (tmp_path / ".sdd-config.json").unlink()  # prove no re-read happens
+        assert hc.load_sdd_paths(str(tmp_path), raw) == hc.SddPaths(root="docs")
+
+
+# --- read_sdd_config_json ---------------------------------------------------
+
+
+class TestReadSddConfigJson:
+    def test_missing_config_returns_empty_dict(self, tmp_path):
+        assert hc.read_sdd_config_json(str(tmp_path)) == {}
+
+    def test_reads_parsed_config(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"root": "docs"}), encoding="utf-8",
+        )
+        assert hc.read_sdd_config_json(str(tmp_path)) == {"root": "docs"}
+
+    def test_broken_config_returns_empty_dict(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text("{ broken", encoding="utf-8")
+        assert hc.read_sdd_config_json(str(tmp_path)) == {}
+
 
 # --- load_naming_ignore_patterns -------------------------------------------
 
@@ -146,6 +175,15 @@ class TestLoadNamingIgnorePatterns:
             encoding="utf-8",
         )
         assert hc.load_naming_ignore_patterns(str(tmp_path)) == ("*_test.md",)
+
+    def test_accepts_a_preread_raw_config_without_touching_disk(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"naming": {"ignore_patterns": ["*_test.md"]}}),
+            encoding="utf-8",
+        )
+        raw = hc.read_sdd_config_json(str(tmp_path))
+        (tmp_path / ".sdd-config.json").unlink()
+        assert hc.load_naming_ignore_patterns(str(tmp_path), raw) == ("*_test.md",)
 
 
 # --- relative_to_project ---------------------------------------------------

@@ -15,8 +15,9 @@ Also hosts find_spec_doc / find_legacy_design_doc (used by the post-tool-use
 hook). All traversal is pathlib-based for cross-platform behavior.
 """
 
+import glob
 from pathlib import Path
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from naming import DESIGN_SUFFIX, SPEC_SUFFIX
 
@@ -85,9 +86,10 @@ def find_spec_doc(spec_dir: PathLike, stem: str) -> str:
     wins, so the result is deterministic.
     """
     base = Path(spec_dir)
+    escaped_stem = glob.escape(stem)
     # Suffix-first so an explicit {stem}_spec.md wins over a bare {stem}.md.
     for suffix in (f"{SPEC_SUFFIX}.md", ".md"):
-        found = min((str(p) for p in base.rglob(f"{stem}{suffix}")), default="")
+        found = min((str(p) for p in base.rglob(f"{escaped_stem}{suffix}")), default="")
         if found:
             return found
     return ""
@@ -105,5 +107,36 @@ def find_legacy_design_doc(spec_dir: PathLike, stem: str) -> str:
     """
     base = Path(spec_dir)
     return min(
-        (str(p) for p in base.rglob(f"{stem}{DESIGN_SUFFIX}.md")), default="",
+        (str(p) for p in base.rglob(f"{glob.escape(stem)}{DESIGN_SUFFIX}.md")),
+        default="",
     )
+
+
+def find_spec_or_legacy_design_doc(spec_dir: PathLike, stem: str) -> Tuple[str, str]:
+    """Return ``(spec_path, legacy_design_path)`` for ``stem`` in a single directory walk.
+
+    Equivalent to calling :func:`find_spec_doc` then, if it returns '',
+    :func:`find_legacy_design_doc` -- but for a caller that always wants both
+    (the post-tool-use spec-sync reminder), doing so walks specification/ up
+    to three times (two suffix candidates inside find_spec_doc, plus one more
+    inside find_legacy_design_doc) for a single source-file edit. This
+    collects every ``{stem}*.md`` candidate once and classifies them in
+    memory instead.
+    """
+    base = Path(spec_dir)
+    candidates = [str(p) for p in base.rglob(f"{glob.escape(stem)}*.md")]
+    spec_suffixed_name = f"{stem}{SPEC_SUFFIX}.md"
+    spec_bare_name = f"{stem}.md"
+    design_name = f"{stem}{DESIGN_SUFFIX}.md"
+
+    spec_path = min(
+        (c for c in candidates if Path(c).name == spec_suffixed_name), default="",
+    )
+    if not spec_path:
+        spec_path = min(
+            (c for c in candidates if Path(c).name == spec_bare_name), default="",
+        )
+    design_path = min(
+        (c for c in candidates if Path(c).name == design_name), default="",
+    )
+    return spec_path, design_path

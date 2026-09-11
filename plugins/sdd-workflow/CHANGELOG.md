@@ -17,6 +17,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   feature, not merely an untagged draft that happens to be alone. That draft is now excluded from the
   sole-draft exception and the run falls back to `unscoped` (or to a remaining untagged draft, if one
   exists)
+- **`check-spec` / `constitution validate` no longer misclassify a spec named e.g. `api_design.md` as a
+  legacy v4.x design doc** - The `_spec` suffix is optional under `specification/`, so a legitimately
+  named new spec can itself end in `_design`; the filename-only heuristic could not tell the two apart
+  and silently dropped such a spec from both commands' output. A file's own front matter `type` now
+  overrides the heuristic when declared
+- **`post-tool-use.py`'s spec-sync reminder now matches a source file name literally, even when it
+  contains glob metacharacters** - `find_spec_doc` / `find_legacy_design_doc` interpolated the file's
+  stem unescaped into an `rglob` pattern, so a file like `parse[v2].py` had `[v2]` treated as a wildcard
+  character class instead of literal text, silencing the reminder for a spec that actually existed. The
+  same fix applies to `check-spec`'s CLI target argument in its partial-match fallback
+- **`run-checklist`'s verification script no longer reports `SKIPPED` when every candidate tool for a
+  category is genuinely missing** - It now reports `TOOL_NOT_FOUND`, matching the status SKILL.md
+  already documents for that case (`SKIPPED` remains reserved for "no command is defined for this
+  category" and "the tool ran but had nothing to verify")
+- **`run-checklist`'s verification script no longer risks an uncaught crash decoding non-UTF-8 tool
+  output** - `subprocess.run` now decodes with `errors="replace"` instead of the locale's default, which
+  could raise `UnicodeDecodeError` in a non-UTF-8 locale (e.g. a `LANG=C` CI container) and abort the
+  script without producing the JSON result the skill expects
+- **`evaluate-skills`' safety-guard audit no longer stops checking a keyword after its first, negated
+  occurrence** - `audit_run_artifacts.py` located only the first occurrence of each keyword in a
+  transcript; if that occurrence sat in a negated context ("...must not skip the check..."), a genuine
+  later violation of the same keyword was never examined
+- **`evaluate-skills`' skill-creator path resolver no longer aborts silently when no version has ever
+  been cached** - Under `set -euo pipefail`, `find` failing on a nonexistent cache directory short-circuited
+  the script before it could print its own "not installed" error message. It also no longer picks the
+  wrong "latest" version when multiple are cached: the cache directories are named by an installation
+  hash, not a sortable version number, so a lexical `sort` had no real ordering signal; it now picks by
+  modification time instead
 
 ### Changed
 
@@ -51,6 +79,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   summary sentence for NFRs no longer satisfies the per-requirement matching check; severity
   classification also now states explicitly that severity tracks impact (public interface / observable
   behavior / data model vs. internal-only), not detection confidence
+- **`task-cleanup`'s ADR entry-format guidance no longer duplicates the full field table already defined
+  in `AI-SDD-PRINCIPLES.md`** - It now references that table as the canonical source and keeps only the
+  cleanup-specific refinements (heading date sourcing, the "None considered" wording) locally, so the
+  two copies cannot silently drift apart
+- **The `PreToolUse` hook reads `.sdd-config.json` once per tool call instead of twice** - Path resolution
+  and the naming-ignore-pattern lookup each used to open and parse the file independently on every
+  single Write/Edit
+- **The `PostToolUse` hook's spec-sync reminder walks `specification/` once per source-file edit instead
+  of up to three times** - `find_spec_doc`'s two suffix candidates and the separate `find_legacy_design_doc`
+  fallback are now resolved from a single directory listing
 
 ## [5.0.0] - 2026-09-10
 

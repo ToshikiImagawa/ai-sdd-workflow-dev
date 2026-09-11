@@ -40,9 +40,11 @@ def _process(rel_path: str, project_root) -> None:
 class TestFindSpecDoc:
     def test_reexports_the_shared_implementation(self):
         # Behavior is covered by tests/test_doc_walker.py; assert only the wiring
-        # so a future local reimplementation is caught here.
-        assert ptu.find_spec_doc.__module__ == "doc_walker"
-        assert ptu.find_legacy_design_doc.__module__ == "doc_walker"
+        # so a future local reimplementation is caught here. A single combined
+        # lookup is used (not find_spec_doc / find_legacy_design_doc
+        # separately) so _process_source_file walks specification/ once per
+        # source-file edit instead of up to three times.
+        assert ptu.find_spec_or_legacy_design_doc.__module__ == "doc_walker"
 
 
 # --- _extract_file_paths ---------------------------------------------------

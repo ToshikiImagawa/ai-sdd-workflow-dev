@@ -28,6 +28,7 @@ the normal state for a feature whose decisions are not recorded yet, so an empty
 result is never an error.
 """
 
+import glob
 import json
 import sys
 from pathlib import Path
@@ -61,15 +62,50 @@ def read_config(project_root: Path) -> SddPaths:
 
 
 def sorted_docs(paths) -> list:
-    """Sorted unique file paths, excluding v4.x persisted design docs.
+    """Sorted unique file paths, excluding v4.x persisted design docs by name.
 
-    A ``{feature}_design.md`` under specification/ is a design doc, not a spec
-    (see naming.is_design_stem), so it never enters the spec list; it is exposed
-    as the optional ``design`` field of a mapping entry instead.
+    A ``{feature}_design.md`` is a design doc, not a spec (see
+    naming.is_design_stem), so it never enters the result. This filename-only
+    check is safe for *any* file collection where "ends in ``_design``" is
+    never a false positive -- e.g. ``task/{ticket}/design-draft.md`` (whose
+    stem is ``design-draft``, not ``*_design``) passes through unaffected. For
+    the specification/ document list specifically, where a legitimately named
+    new spec can itself end in ``_design`` (e.g. ``api_design.md``), use
+    :func:`sorted_spec_docs` instead -- it disambiguates via front matter
+    ``type`` before falling back to this same filename heuristic.
     """
     return sorted({
         str(p) for p in paths if p.is_file() and not is_design_stem(p.stem)
     })
+
+
+def sorted_spec_docs(paths) -> list:
+    """Like :func:`sorted_docs`, but for the specification/ document list.
+
+    The ``_spec`` suffix is optional under specification/, so a *new*,
+    legitimately named spec can itself end in ``_design`` (e.g.
+    ``api_design.md``) -- the filename heuristic alone cannot tell that apart
+    from a v4.x persisted design doc. A file's own front matter ``type``
+    overrides the heuristic when declared: ``type: spec`` keeps the file even
+    though its stem ends in ``_design``, and ``type: design`` excludes it even
+    when the stem does not. Files without a declared ``type`` (the common case
+    for legacy v4.x design docs, which predate this field) fall back to the
+    filename heuristic, same as :func:`sorted_docs`.
+    """
+    result = set()
+    for p in paths:
+        if not p.is_file():
+            continue
+        declared_type = read_front_matter(p).get("type", "")
+        if declared_type == "spec":
+            is_design = False
+        elif declared_type == "design":
+            is_design = True
+        else:
+            is_design = is_design_stem(p.stem)
+        if not is_design:
+            result.add(str(p))
+    return sorted(result)
 
 
 def write_lines(path: Path, lines: list) -> None:
@@ -92,7 +128,7 @@ def find_spec_documents(specification_path: Path, target: str) -> list:
 
     if not target:
         log("Searching for all specification documents...")
-        specs = sorted_docs(iter_specification_docs(specification_path))
+        specs = sorted_spec_docs(iter_specification_docs(specification_path))
         log(f"Found {len(specs)} specification documents")
         return specs
 
@@ -100,7 +136,7 @@ def find_spec_documents(specification_path: Path, target: str) -> list:
 
     # Exact matches first: flat (both suffix forms), then a feature directory
     # (hierarchical structure, e.g. auth/index.md + auth/user-login_spec.md).
-    specs = sorted_docs([
+    specs = sorted_spec_docs([
         specification_path / f"{target}{SPEC_SUFFIX}.md",
         specification_path / f"{target}.md",
         *iter_all_markdown(specification_path / target),
@@ -110,7 +146,7 @@ def find_spec_documents(specification_path: Path, target: str) -> list:
         return specs
 
     # Fall back to partial matches
-    specs = sorted_docs(specification_path.rglob(f"*{target}*.md"))
+    specs = sorted_spec_docs(specification_path.rglob(f"*{glob.escape(target)}*.md"))
     if specs:
         log(f"Found {len(specs)} matching specification file(s)")
     else:
@@ -346,9 +382,18 @@ def generate_mapping(
         spec_path = Path(spec_file)
         basename = feature_name(spec_path.stem)
 
-        # v4.x projects may still keep a sibling persisted design doc.
+        # v4.x projects may still keep a sibling persisted design doc. Guard
+        # against a spec whose own stem already ends in `_design` (kept in the
+        # spec list by a `type: spec` front matter override in
+        # sorted_spec_docs) -- feature_name() strips that suffix
+        # unconditionally, so without this check the candidate path would
+        # resolve back to the spec file itself.
         design_candidate = spec_path.parent / f"{basename}{DESIGN_SUFFIX}.md"
-        design_file = str(design_candidate) if design_candidate.is_file() else ""
+        design_file = (
+            str(design_candidate)
+            if design_candidate.is_file() and design_candidate != spec_path
+            else ""
+        )
 
         adr_docs, adr_basis = select_adr_docs(
             spec_file, specification_path, adr_path, adr_index
