@@ -82,6 +82,7 @@ ai-sdd-workflow/
 │       │   ├── post-tool-use.py   # ドキュメント更新漏れ検知
 │       │   ├── sdd_index.py       # .sdd/ ドキュメントの構造化インデックス生成
 │       │   ├── hook_common.py     # 共通ヘルパー（stdin/stdout・パス解決・.sdd-config読込）
+│       │   ├── principles_sync.py # 共有: AI-SDD-PRINCIPLES.md / ai-sdd-instructions.md 再生成
 │       │   ├── fm_parser.py       # 共有: front matter 検出・パース
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
