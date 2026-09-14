@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`/migrate-design-to-adr` skill** - Migrates a v4.x persisted `specification/{feature-name}_design.md`
+  into the append-only decision log `adr/{feature-name}.md`. Carries over only the decisions, their
+  rationale and the rejected alternatives (the *why*), leaving implementation status, module breakdowns,
+  data models, test strategies, change history and open questions behind. The entry format is resolved
+  with the same two-step fallback `/task-cleanup` uses (`ADR_TEMPLATE.md`, else
+  `AI-SDD-PRINCIPLES.md` § Architecture Decision Record), so no second format is introduced. Takes a
+  feature name or `--all`; with `--all` a pilot file is approved first, then the rest are processed in
+  one pass. Deleting the original `*_design.md` always requires explicit confirmation, and keeping it
+  stays a valid outcome. A helper script detects the references to the migrated file and splits them
+  into core standard references (a rewrite is proposed) and project-specific ones (reported for manual
+  handling); generated files, `CHANGELOG.md`, existing ADR entries and `design-draft.md` references are
+  never reported
+
 ## [5.0.0] - 2026-09-10
 
 **Note**: This is a major release with breaking changes to the document model. Read
