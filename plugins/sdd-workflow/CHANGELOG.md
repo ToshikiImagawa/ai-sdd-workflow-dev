@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-16
+
 ### Added
 
 - **`/migrate-design-to-adr` skill** - Migrates a v4.x persisted `specification/{feature-name}_design.md`
@@ -26,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`/sdd-init` left stale `AI-SDD-PRINCIPLES.md` / `ai-sdd-instructions.md` after a plugin reload** -
+  The regeneration logic that `session-start.py` ran (`get_plugin_version` /
+  `sync_principles_file` / `sync_rules_files`) is now shared via
+  `plugins/sdd-workflow/scripts/principles_sync.py` and called from both `session-start.py` and
+  `init-structure.py`. Previously, running `/sdd-init` right after `/reload-plugins` switched the
+  plugin version left `.sdd/AI-SDD-PRINCIPLES.md` and `.claude/rules/ai-sdd-instructions.md` on the
+  old version, because the `SessionStart` event that normally regenerates them does not fire in
+  that case
 - **`AI-SDD-PRINCIPLES.md` wording inconsistencies** - Two dependency-direction bullets under
   §Document Dependencies were missing the `{ticket-number}` placeholder for `task/design-draft.md`
   (9 other occurrences in the same file use it), and two `Check Target` table rows under
