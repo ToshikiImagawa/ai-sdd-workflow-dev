@@ -312,6 +312,95 @@ class TestExportEnvVars:
         )
 
 
+class TestPrinciplesSyncOnInit:
+    """/sdd-init 単独実行でプラグイン管理ファイルが再生成されること。
+
+    `/reload-plugins` 後は SessionStart フックが走らないため、`/sdd-init` 自身が
+    `${CLAUDE_PLUGIN_ROOT}` から両ファイルを再生成する必要がある。
+    """
+
+    def _make_plugin_root(self, tmp_path, version="9.9.9"):
+        plugin_root = tmp_path / "plugin"
+        (plugin_root / ".claude-plugin").mkdir(parents=True)
+        (plugin_root / ".claude-plugin" / "plugin.json").write_text(
+            json.dumps({"name": "sdd-workflow", "version": version}),
+            encoding="utf-8",
+        )
+        (plugin_root / "AI-SDD-PRINCIPLES.source.md").write_text(
+            '---\nversion: "0.0.0"\n---\n# Principles\n', encoding="utf-8"
+        )
+        tdir = plugin_root / "skills" / "sdd-init" / "templates"
+        tdir.mkdir(parents=True)
+        (tdir / "ai_sdd_instructions_rules.md").write_text(
+            '---\npaths:\n  - "{SDD_ROOT}/**"\n---\n'
+            "# AI-SDD Instructions (v{PLUGIN_VERSION})\n",
+            encoding="utf-8",
+        )
+        return plugin_root
+
+    def _run_main(self, tmp_path, monkeypatch, config):
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps(config), encoding="utf-8"
+        )
+        plugin_root = self._make_plugin_root(tmp_path)
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(plugin_root))
+        monkeypatch.delenv("CLAUDE_ENV_FILE", raising=False)
+
+        with pytest.raises(SystemExit) as exc:
+            init_structure.main()
+        assert exc.value.code == 0
+        return project_root
+
+    def test_regenerates_both_files(self, tmp_path, monkeypatch):
+        project_root = self._run_main(tmp_path, monkeypatch, {"root": ".sdd"})
+
+        principles = project_root / ".sdd" / "AI-SDD-PRINCIPLES.md"
+        assert 'version: "9.9.9"' in principles.read_text(encoding="utf-8")
+
+        rules = project_root / ".claude" / "rules" / "ai-sdd-instructions.md"
+        content = rules.read_text(encoding="utf-8")
+        assert "v9.9.9" in content
+        assert '".sdd/**"' in content
+
+    def test_overwrites_stale_files(self, tmp_path, monkeypatch):
+        project_root = tmp_path / "project"
+        (project_root / ".sdd").mkdir(parents=True)
+        (project_root / ".sdd" / "AI-SDD-PRINCIPLES.md").write_text(
+            '---\nversion: "4.1.0"\n---\nSTALE\n', encoding="utf-8"
+        )
+        (project_root / ".claude" / "rules").mkdir(parents=True)
+        (project_root / ".claude" / "rules" / "ai-sdd-instructions.md").write_text(
+            "STALE RULES", encoding="utf-8"
+        )
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": ".sdd"}), encoding="utf-8"
+        )
+        plugin_root = self._make_plugin_root(tmp_path)
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(plugin_root))
+        monkeypatch.delenv("CLAUDE_ENV_FILE", raising=False)
+
+        with pytest.raises(SystemExit):
+            init_structure.main()
+
+        principles = (project_root / ".sdd" / "AI-SDD-PRINCIPLES.md").read_text(encoding="utf-8")
+        assert "STALE" not in principles
+        assert 'version: "9.9.9"' in principles
+        rules = (project_root / ".claude" / "rules" / "ai-sdd-instructions.md").read_text(encoding="utf-8")
+        assert "STALE RULES" not in rules
+        assert "v9.9.9" in rules
+
+    def test_custom_root_is_honored(self, tmp_path, monkeypatch):
+        project_root = self._run_main(tmp_path, monkeypatch, {"root": ".ai-docs"})
+
+        assert (project_root / ".ai-docs" / "AI-SDD-PRINCIPLES.md").is_file()
+        rules = (project_root / ".claude" / "rules" / "ai-sdd-instructions.md").read_text(encoding="utf-8")
+        assert '".ai-docs/**"' in rules
+
+
 # ---------------------------------------------------------------------------
 # update-claude-md.py
 # ---------------------------------------------------------------------------

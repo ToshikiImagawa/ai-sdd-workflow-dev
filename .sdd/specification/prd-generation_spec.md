@@ -13,7 +13,7 @@ category: "prd-generation"
 
 # PRD 生成パイプライン
 
-**関連 Design Doc:** [prd-generation_design.md](prd-generation_design.md)
+**関連 ADR:** [prd-generation.md](../adr/prd-generation.md)
 **関連 PRD:** [prd-generation.md](../requirement/prd-generation.md)
 **準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, A-002（フックとスクリプトの責務分離）, T-002（plugin.json 登録の徹底）
 
@@ -52,7 +52,7 @@ AI-SDD ワークフローの Specify フェーズでは、ビジネス要件を�
   逆算に転用してはならない（FR_001_05 / UR_005 / DC_004）
 
 具体的な実装方式（サブスキルのコンテキスト分離・モデル選定・準備スクリプトの 2 フェーズ実行）は
-[prd-generation_design.md](prd-generation_design.md) に委ねる。
+[prd-generation.md](../adr/prd-generation.md) に委ねる。
 
 # 3. 要求定義
 

@@ -16,8 +16,7 @@ risk: "high"
 
 # 実装と仕様の整合性チェック
 
-**関連 Design Doc:** [impl-spec-check_design.md](impl-spec-check_design.md)（v4.x 由来の永続 design。現行の
-Design Doc は `task/{ticket-number}/design-draft.md` の一時ドラフト）
+**関連 ADR:** [impl-spec-check.md](../../adr/quality-guardrails/impl-spec-check.md)
 **関連 PRD:** [impl-spec-check.md](../../requirement/quality-guardrails/impl-spec-check.md)
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md)（v2.0.0）の B-001, A-001, A-002, B-002, D-001, D-002
 
@@ -65,7 +64,7 @@ Design Doc は `task/{ticket-number}/design-draft.md` の一時ドラフト）
   場合は spec → design draft → 実装の 3 層）で比較し、値ドリフトを検出する。
 
 **「何を実現するか」に焦点を当て、具体的なスクリプト構成・処理アルゴリズムの詳細は
-[impl-spec-check_design.md](impl-spec-check_design.md) に委ねる。**
+[impl-spec-check.md](../../adr/quality-guardrails/impl-spec-check.md) に委ねる。**
 
 # 3. 要求定義
 

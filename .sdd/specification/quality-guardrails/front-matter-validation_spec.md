@@ -15,7 +15,7 @@ risk: "low"
 
 # front matter 検証 抽象仕様書
 
-**関連 Design Doc:** [front-matter-validation_design.md](front-matter-validation_design.md)
+**関連 ADR:** [front-matter-validation.md](../../adr/quality-guardrails/front-matter-validation.md)
 **関連 PRD:** [front-matter-validation.md](../../requirement/quality-guardrails/front-matter-validation.md)
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の A-002（生成と検証の責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 

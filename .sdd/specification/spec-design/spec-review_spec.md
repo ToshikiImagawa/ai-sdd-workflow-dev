@@ -13,7 +13,7 @@ category: "spec-design"
 
 # 仕様・設計レビュー
 
-**関連 Design Doc:** [spec-review_design.md](spec-review_design.md)
+**関連 ADR:** [spec-review.md](../../adr/spec-design/spec-review.md)
 **関連 PRD:** [spec-review.md](../../requirement/spec-design/spec-review.md)（親: [spec-design](../../requirement/spec-design/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding防止）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 

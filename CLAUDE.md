@@ -13,9 +13,9 @@ Coding問題を防ぎ、仕様書を真実の源として高品質な実装を�
 `plugins/sdd-workflow/AI-SDD-PRINCIPLES.source.md` とはリリースまで一致しません。手で同期しないこと。
 詳細は [plugin-development.md](.claude/rules/plugin-development.md) を参照）。
 
-## AI-SDD Instructions (v4.1.0)
+## AI-SDD Instructions (v5.0.0)
 
-<!-- sdd-workflow version: "4.1.0" -->
+<!-- sdd-workflow version: "5.0.0" -->
 
 このプロジェクトは AI-SDD（AI駆動仕様駆動開発）ワークフローに従います。
 

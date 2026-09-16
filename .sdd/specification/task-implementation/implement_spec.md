@@ -15,7 +15,7 @@ risk: "high"
 
 # TDD 実装
 
-**関連 Design Doc:** [implement_design.md](implement_design.md)
+**関連 ADR:** [implement.md](../../adr/task-implementation/implement.md)
 **関連 PRD:** [implement.md](../../requirement/task-implementation/implement.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 
@@ -43,7 +43,7 @@ AI-SDD ワークフローの Implement フェーズでは、実装が常に仕�
 - **仕様準拠の維持**: 段階境界で仕様との乖離を検出し、乖離時は実装を止めて明確化を促す（B-001 / D-001）
 
 「どの段階で何を実施し、どのようにトレーサビリティを保つか」を定義し、TDD サイクルの具体的な手順・
-進捗管理の実行方式・エラー処理は [implement_design.md](implement_design.md) に委ねる。
+進捗管理の実行方式・エラー処理は [implement.md](../../adr/task-implementation/implement.md) に委ねる。
 
 # 3. 要求定義
 

@@ -23,7 +23,7 @@ ai-sdd-workflow/
 │       │   ├── clarification-assistant.md  # 仕様明確化アシスタント
 │       │   ├── front-matter-reviewer.md  # front matter検証エージェント
 │       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
-│       ├── skills/                # 20スキル
+│       ├── skills/                # 21スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
 │       │   ├── check-spec/                 # 実装とspecの整合性チェック
 │       │   │   ├── scripts/
@@ -48,6 +48,9 @@ ai-sdd-workflow/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── generate-usecase-diagram/   # ユースケース図生成
 │       │   ├── implement/                  # TDD実装
+│       │   │   └── templates/{en,ja}/
+│       │   ├── migrate-design-to-adr/      # v4.x design doc の adr/ 移行
+│       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── plan-refactor/              # リファクタリング計画
 │       │   │   ├── scripts/
@@ -82,6 +85,7 @@ ai-sdd-workflow/
 │       │   ├── post-tool-use.py   # ドキュメント更新漏れ検知
 │       │   ├── sdd_index.py       # .sdd/ ドキュメントの構造化インデックス生成
 │       │   ├── hook_common.py     # 共通ヘルパー（stdin/stdout・パス解決・.sdd-config読込）
+│       │   ├── principles_sync.py # 共有: AI-SDD-PRINCIPLES.md / ai-sdd-instructions.md 再生成
 │       │   ├── fm_parser.py       # 共有: front matter 検出・パース
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
@@ -108,9 +112,9 @@ ai-sdd-workflow/
 ## 補足
 
 - **スキルのサポートディレクトリ**: 上のツリーは `templates/` と `scripts/` のみを示している。多くのスキルは
-  `references/`（全20スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは17スキル、
-  `scripts/` を持つのは8スキル（check-spec / constitution / generate-prd / generate-spec / plan-refactor /
-  recommend-front-matter / run-checklist / sdd-init）
+  `references/`（全21スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは18スキル、
+  `scripts/` を持つのは9スキル（check-spec / constitution / generate-prd / generate-spec /
+  migrate-design-to-adr / plan-refactor / recommend-front-matter / run-checklist / sdd-init）
 - **上の件数の数え方**: ツリーとこの節の件数は `ls -1 plugins/sdd-workflow/skills/ | wc -l` と
   `for d in plugins/sdd-workflow/skills/*/; do [ -d "$d/<sub>" ] && basename "$d"; done`（`<sub>` は
   `templates` / `scripts` / `references` / `examples`）で数えている。スキルやサポートディレクトリを

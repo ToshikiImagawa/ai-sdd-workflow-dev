@@ -15,7 +15,7 @@ risk: "medium"
 
 # クロスプラットフォーム移植性
 
-**関連 Design Doc:** [cross-platform-portability_design.md](cross-platform-portability_design.md)
+**関連 ADR:** [cross-platform-portability.md](../../adr/workflow-foundation/cross-platform-portability.md)
 **関連 PRD:** [cross-platform-portability.md](../../requirement/workflow-foundation/cross-platform-portability.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, D-001（Specification-Driven）
 
@@ -48,7 +48,7 @@ risk: "medium"
   完全対応（インストーラ・シェル統合等）は含まない
 
 「移植性として何を満たすか」を定義し、具体的な実装方式（標準ライブラリの選定・パス抽象化の
-方法・CI マトリクス構成）は [cross-platform-portability_design.md](cross-platform-portability_design.md) に委ねる。
+方法・CI マトリクス構成）は [cross-platform-portability.md](../../adr/workflow-foundation/cross-platform-portability.md) に委ねる。
 
 # 3. 要求定義
 

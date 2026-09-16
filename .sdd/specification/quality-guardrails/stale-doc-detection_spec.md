@@ -15,8 +15,7 @@ risk: "medium"
 
 # ドキュメント更新漏れ検知
 
-**関連 Design Doc:** [stale-doc-detection_design.md](stale-doc-detection_design.md)（v4.x 由来の永続 design。
-現行の Design Doc は `task/{ticket-number}/design-draft.md` の一時ドラフト）
+**関連 ADR:** [stale-doc-detection.md](../../adr/quality-guardrails/stale-doc-detection.md)
 **関連 PRD:** [stale-doc-detection.md](../../requirement/quality-guardrails/stale-doc-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）
 
@@ -48,7 +47,7 @@ risk: "medium"
 実装完了後に削除されるため、ソースコード編集時に同期を促す対象は抽象仕様書（spec）である。
 
 「何を検知し、どう促すか」を定義し、パス判定ロジックの具体や検知メッセージの詳細は
-[stale-doc-detection_design.md](stale-doc-detection_design.md) に委ねる。
+[stale-doc-detection.md](../../adr/quality-guardrails/stale-doc-detection.md) に委ねる。
 
 # 3. 要求定義
 

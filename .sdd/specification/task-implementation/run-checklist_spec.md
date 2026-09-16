@@ -15,7 +15,7 @@ risk: "medium"
 
 # チェックリスト自動検証
 
-**関連 Design Doc:** [run-checklist_design.md](run-checklist_design.md)
+**関連 ADR:** [run-checklist.md](../../adr/task-implementation/run-checklist.md)
 **関連 PRD:** [run-checklist.md](../../requirement/task-implementation/run-checklist.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 
@@ -42,7 +42,7 @@ risk: "medium"
 - **失敗時の継続**: あるテストが失敗しても記録して他の検証を継続し、未導入ツールは SKIPPED として記録する
 
 「何を検証し、結果をどう記録・判定するか」を定義し、環境検出・コマンドマッピング・進捗管理の具体的な実行方式は
-[run-checklist_design.md](run-checklist_design.md) に委ねる。
+[run-checklist.md](../../adr/task-implementation/run-checklist.md) に委ねる。
 
 # 3. 要求定義
 

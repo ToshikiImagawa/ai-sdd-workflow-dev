@@ -15,7 +15,7 @@ risk: "high"
 
 # セッション設定初期化
 
-**関連 Design Doc:** [session-config_design.md](session-config_design.md)
+**関連 ADR:** [session-config.md](../../adr/workflow-foundation/session-config.md)
 **関連 PRD:** [session-config.md](../../requirement/workflow-foundation/session-config.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
@@ -34,7 +34,7 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 
 本仕様は、既存実装（`plugins/sdd-workflow/scripts/session-start.py` および共有モジュール
 `hook_common.py` / `env_export.py` / `sdd_index.py`、`hooks/hooks.json` 登録）を真実の源として
-逆算的に明文化したものである（詳細な経緯は [session-config_design.md](session-config_design.md) の 1 節を参照）。
+逆算的に明文化したものである（詳細な経緯は [session-config.md](../../adr/workflow-foundation/session-config.md) の 1 節を参照）。
 
 # 2. 概要
 
@@ -52,7 +52,7 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 - **言語切り替え**: `SDD_LANG` により EN/JA を切り替える（B-002）
 
 「セッション開始時に何を初期化するか」を定義し、具体的な実装方式（フックスクリプトの処理フロー・
-設定スキーマ・環境変数エクスポート方式・インデックス構築）は [session-config_design.md](session-config_design.md) に委ねる。
+設定スキーマ・環境変数エクスポート方式・インデックス構築）は [session-config.md](../../adr/workflow-foundation/session-config.md) に委ねる。
 
 # 3. 要求定義
 

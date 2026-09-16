@@ -15,7 +15,7 @@ risk: "medium"
 
 # プロジェクト原則管理
 
-**関連 Design Doc:** [constitution-management_design.md](constitution-management_design.md)
+**関連 ADR:** [constitution-management.md](../../adr/workflow-foundation/constitution-management.md)
 **関連 PRD:** [constitution-management.md](../../requirement/workflow-foundation/constitution-management.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
@@ -34,7 +34,7 @@ AI-SDD ワークフローは仕様書を真実の源として扱うが、その�
 集約することで、原則ガバナンスの起点を明確にする。
 
 なお本仕様は、既存実装（`plugins/sdd-workflow/skills/constitution/`）を真実の源として逆算的に
-明文化したものである（詳細な経緯は [constitution-management_design.md](constitution-management_design.md) の 1 節を参照）。
+明文化したものである（詳細な経緯は [constitution-management.md](../../adr/workflow-foundation/constitution-management.md) の 1 節を参照）。
 
 # 2. 概要
 
@@ -52,7 +52,7 @@ AI-SDD ワークフローは仕様書を真実の源として扱うが、その�
 - **セマンティックバージョニング**: 原則の追加・変更・修正をバージョンに反映し、変更履歴を残す
 
 「何を管理・検証するか」を定義し、具体的な実装方式（スクリプトの走査ロジック・環境変数連携・
-テンプレート適用手順）は [constitution-management_design.md](constitution-management_design.md) に委ねる。
+テンプレート適用手順）は [constitution-management.md](../../adr/workflow-foundation/constitution-management.md) に委ねる。
 
 # 3. 要求定義
 
