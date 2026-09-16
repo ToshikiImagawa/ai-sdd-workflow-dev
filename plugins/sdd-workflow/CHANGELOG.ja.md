@@ -22,6 +22,14 @@
   （手動対応として報告）に分類する。生成ファイル・`CHANGELOG.md`・既存 ADR エントリ・`design-draft.md`
   への参照は報告しない
 
+### 修正
+
+- **`AI-SDD-PRINCIPLES.md` の表記不整合** - §Document Dependencies の依存関係の説明にある2箇所で
+  `task/design-draft.md` に `{ticket-number}` プレースホルダが欠落していた（同ファイル内の他9箇所は
+  プレースホルダ付き）。また §Consistency Checking の「Check Target」表の2行で `Implementation` の
+  大文字表記が同じ表の他の行・直後の「Check Execution Timing」表と揺れていた。表記のみの修正で
+  挙動に変更はない
+
 ## [5.0.0] - 2026-09-10
 
 **注記**: ドキュメントモデルに破壊的変更を含むメジャーリリースである。既存プロジェクトを

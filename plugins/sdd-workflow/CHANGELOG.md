@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   handling); generated files, `CHANGELOG.md`, existing ADR entries and `design-draft.md` references are
   never reported
 
+### Fixed
+
+- **`AI-SDD-PRINCIPLES.md` wording inconsistencies** - Two dependency-direction bullets under
+  §Document Dependencies were missing the `{ticket-number}` placeholder for `task/design-draft.md`
+  (9 other occurrences in the same file use it), and two `Check Target` table rows under
+  §Consistency Checking capitalized `Implementation` inconsistently with the rest of the table and
+  the adjacent `Check Execution Timing` table. Wording only; no behavior change
+
 ## [5.0.0] - 2026-09-10
 
 **Note**: This is a major release with breaking changes to the document model. Read
