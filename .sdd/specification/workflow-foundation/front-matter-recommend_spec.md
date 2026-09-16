@@ -15,7 +15,7 @@ risk: "low"
 
 # front matter 推奨
 
-**関連 Design Doc:** [front-matter-recommend_design.md](front-matter-recommend_design.md)
+**関連 ADR:** [front-matter-recommend.md](../../adr/workflow-foundation/front-matter-recommend.md)
 **関連 PRD:** [front-matter-recommend.md](../../requirement/workflow-foundation/front-matter-recommend.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
@@ -34,7 +34,7 @@ AI-SDD ドキュメントは YAML front matter によって機械的な検索・
 後方互換であり、付与しない既存ドキュメントも引き続き有効として扱う。
 
 本仕様は、既存実装（`plugins/sdd-workflow/skills/recommend-front-matter/`）を真実の源として
-逆算的に明文化したものである（詳細な経緯は [front-matter-recommend_design.md](front-matter-recommend_design.md) の 1 節を参照）。
+逆算的に明文化したものである（詳細な経緯は [front-matter-recommend.md](../../adr/workflow-foundation/front-matter-recommend.md) の 1 節を参照）。
 
 # 2. 概要
 
@@ -50,7 +50,7 @@ front matter 付与を推奨・適用できるようにする。主要な設計�
 - **推奨に留める**: 本機能は付与の推奨・適用までを担い、front matter の検証は担当しない
 
 「何を推奨・適用するか」を定義し、具体的な実装方式（スキャンロジック・種別判定・依存推論・
-適用手順）は [front-matter-recommend_design.md](front-matter-recommend_design.md) に委ねる。
+適用手順）は [front-matter-recommend.md](../../adr/workflow-foundation/front-matter-recommend.md) に委ねる。
 
 # 3. 要求定義
 

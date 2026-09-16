@@ -15,7 +15,7 @@ risk: "medium"
 
 # ドキュメントインデックス
 
-**関連 Design Doc:** [documentation-index_design.md](documentation-index_design.md)
+**関連 ADR:** [documentation-index.md](../../adr/workflow-foundation/documentation-index.md)
 **関連 PRD:** [documentation-index.md](../../requirement/workflow-foundation/documentation-index.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, D-001（Specification-Driven）, D-003（ドキュメント永続性）
 
@@ -48,7 +48,7 @@ API シグネチャという構造化された情報を持つ。これらをセ�
 - **非停止**: 構築・更新の失敗はワークフローを止めず、消費側はフォールバックする
 
 「何を抽出し、どう提供するか」を定義し、スキーマ・抽出ロジック・キャッシュ方式の具体は
-[documentation-index_design.md](documentation-index_design.md) に委ねる。
+[documentation-index.md](../../adr/workflow-foundation/documentation-index.md) に委ねる。
 
 # 3. 要求定義
 

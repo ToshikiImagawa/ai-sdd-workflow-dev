@@ -15,7 +15,7 @@ risk: "medium"
 
 # リファクタリング計画 - 抽象仕様書
 
-**関連 Design Doc:** [plan-refactor_design.md](plan-refactor_design.md)（本リポジトリは `.sdd/` 全体の v5.0.0 レイアウト移行が未了のため、自プロジェクトの設計書はまだ `specification/` 配下に永続化されている）
+**関連 ADR:** [plan-refactor.md](../../adr/spec-design/plan-refactor.md)
 **関連 PRD:** [plan-refactor.md](../../requirement/spec-design/plan-refactor.md)
 **親 PRD:** [spec-design](../../requirement/spec-design/index.md)
 

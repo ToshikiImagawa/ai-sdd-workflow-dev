@@ -15,7 +15,7 @@ risk: "medium"
 
 # プロジェクト初期化
 
-**関連 Design Doc:** [sdd-init_design.md](sdd-init_design.md)
+**関連 ADR:** [sdd-init.md](../../adr/workflow-foundation/sdd-init.md)
 **関連 PRD:** [sdd-init.md](../../requirement/workflow-foundation/sdd-init.md)（親: [workflow-foundation](../../requirement/workflow-foundation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）, T-003（日本語出力の文字化け防止）
 
@@ -32,7 +32,7 @@ AI-SDD Instructions セクションを設定する `/sdd-init` スキルを提�
 最小限の操作で整えることを目的とする。既存の `CLAUDE.md` 記述やテンプレートは破壊せず共存させる。
 
 本仕様は、既存実装（`plugins/sdd-workflow/skills/sdd-init/`）を真実の源として逆算的に明文化した
-ものである（詳細な経緯は [sdd-init_design.md](sdd-init_design.md) の 1 節を参照）。
+ものである（詳細な経緯は [sdd-init.md](../../adr/workflow-foundation/sdd-init.md) の 1 節を参照）。
 
 # 2. 概要
 
@@ -49,7 +49,7 @@ AI-SDD Instructions セクションを設定する `/sdd-init` スキルを提�
 - **原則管理の包含**: プロジェクト原則の定義・管理は兄弟機能 [constitution-management.md](../../requirement/workflow-foundation/constitution-management.md) が担い、CONSTITUTION.md は本機能では生成しない
 
 「何を初期化するか」を定義し、具体的な実装方式（2 フェーズ実行・スクリプトの処理内容・
-CLAUDE.md 更新ロジック）は [sdd-init_design.md](sdd-init_design.md) に委ねる。
+CLAUDE.md 更新ロジック）は [sdd-init.md](../../adr/workflow-foundation/sdd-init.md) に委ねる。
 
 # 3. 要求定義
 
