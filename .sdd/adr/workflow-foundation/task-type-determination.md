@@ -19,7 +19,9 @@ category: "workflow-foundation"
 （このポリシーを利用する下流の振る舞い）
 
 このファイルは append-only の決定ログである。過去のエントリは書き換えず、決定を覆す場合は新しい
-エントリを追記し、`supersedes` / `superseded-by` で相互参照する。
+エントリを追記し、新しいエントリ側の `- **Supersedes**:` にのみ一方向で記録する。覆された側の
+エントリは編集せず、back-pointer も追加しない。front matter の `supersedes` / `superseded-by` は
+エントリ間の覆しには使わない（決定ログファイル全体の引退を表すフィールドのため）。
 
 ---
 
@@ -92,3 +94,24 @@ issue #96 の指摘（元の空白）を解消するには、提案と実行を�
 
 - **推奨開始フェーズをリスクレベルの一部として統合する**: 出力項目を減らせるが、上記の理由により
   「明確だが PRD が無い依頼は素通りする」という issue #96 の指摘そのものを再現してしまうため却下
+
+---
+
+## 2026-09-16 Keep the upstream English field names for ADR entries
+
+- **Decision**: Keep `- **Decision**:` / `- **Rationale**:` / `- **Rejected alternatives**:` /
+  `- **Supersedes**:` as the canonical entry field names, unchanged from `.sdd/ADR_TEMPLATE.md` and
+  `AI-SDD-PRINCIPLES.md`. Do not rewrite this file's existing `##` entries, which keep their Japanese
+  field names (`**決定**` / `**理由**` / `**却下した代替案**`) as a historical artifact predating this
+  file's adoption of the v5.0.0 ADR template.
+- **Rationale**: The upstream Japanese-locale template itself
+  (`plugins/sdd-workflow/skills/sdd-init/templates/ja/adr_template.md:44-46`) prescribes English field
+  names as the required entry format — only the surrounding prose and entry content are localized, not
+  the field names. `.sdd/ADR_TEMPLATE.md` (the `/sdd-init`-copied project template) carries the same
+  rule, so the deviation to fix is this file's Japanese field names, not the template.
+- **Rejected alternatives**: Rewrite this file's existing entries to English field names for full
+  consistency — rejected because it would require an exception to the append-only rule (past entries
+  are never rewritten) just to unify notation, which is not a strong enough justification. Define
+  Japanese field names as a project-specific customization in `.sdd/ADR_TEMPLATE.md` — rejected because
+  it would deliberately diverge from the upstream template, creating an ongoing maintenance cost to
+  keep re-applying that divergence across `/sdd-init` re-runs and plugin updates.
