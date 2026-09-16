@@ -1,0 +1,116 @@
+{
+  "skill_name": "migrate-design-to-adr",
+  "methodology": "v3-sdd-corpus",
+  "corpus": "This repository's real .sdd/ tree, taken from the branch under test, plus a scenario overlay. The overlay is required and is not synthetic: develop's corpus no longer contains a single specification/*_design.md (the migration this skill performs was completed for all 24 of them), so a plain develop fixture gives the skill nothing to migrate and both conditions terminate at the skill's own documented 'nothing to migrate, stop' branch -- a guaranteed vacuous baseline. The overlay restores the pre-migration state of two features by copying their real *_design.md and their real pre-migration *_spec.md verbatim out of commit 81b24c0 (the merge of PR #138, which added this skill while all 24 design docs were still in place), and by removing the post-migration adr/ file develop now carries for that feature so the skill has to create the decision log rather than append to a finished one. Nothing in the overlay is authored: every byte is a real document this repository actually had. Pinning the overlay to a commit rather than building the whole fixture from that commit keeps the SKILL.md under test branch-native -- build_sdd_fixture.py exports the entire repository tree, so passing 81b24c0 as the branch would freeze the skill itself at the state it had the day it was merged and no later improvement to it would ever be measured.",
+  "variants": [
+    "develop/skill -- develop's .sdd/ corpus + scenario overlay + develop's SKILL.md",
+    "develop/without -- develop's .sdd/ corpus + scenario overlay, skill not loaded"
+  ],
+  "measurement": "develop-only. There is no main counterpart to subtract, so only lift(develop) = score(develop/skill) - score(develop/without) is reported, labelled as a new capability rather than an improvement. Do not fabricate a main number to complete the improvement = lift(develop) - lift(main) formula: the skill does not exist on main, and neither does the adr/ destination it writes to. One run per cell cannot resolve a lift below the 20pt iteration-1 noise floor recorded in MEASUREMENT_LOG.md; either raise the number of runs per cell or state the measurement limit alongside the number.",
+  "fixture_builder": "python3 .claude/skill-evals/build_sdd_fixture.py develop <outdir> --eval .claude/skill-evals/migrate-design-to-adr/evals.json --eval-id N",
+  "assertion_design": "Assertions are version-neutral outcome statements. Before editing them, read .claude/skill-evals/ASSERTION_DESIGN.md -- it is the canonical authority and records which assertion shapes were removed and why. The wording deliberately avoids this skill's own destination path and field spellings ('carried into adr/{feature}.md', '- **Decision**:') and asks instead whether the decision and its reason survived into a persistent place, whether the how/what was left behind, and whether the run's claims about what it wrote match what is on disk. A migration skill is unusually exposed to the v3.3 claim-checking rule: its report asserts that entries were appended, that they were verified against disk, and that a given set of references exists, and each of those three is a factual claim that can be false while the run still looks successful.",
+  "skill_delta_main_to_develop": "+765/-0 lines across 9 files (new skill; no main counterpart)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "decision-table-design-doc-migration",
+      "prompt": "`.sdd/specification/task-implementation/task-cleanup_design.md` は v4.x の永続技術設計書です。この設計書の決定を決定ログへ移行してください。",
+      "prompt_note": "develop-only in two ways: the skill does not exist on main, and neither does the adr/ destination. Report the develop/skill vs develop/without lift on its own as a new capability. The prompt names the file and calls it a v4.x persisted design doc but does not name the skill, its destination, its field names, or any of its rules -- what to carry over, what to leave behind, whether to ask before deleting, and how to classify the references are all left to the run, which is what the assertions measure.",
+      "sdd_inputs": [
+        ".sdd/specification/task-implementation/task-cleanup_design.md",
+        ".sdd/specification/task-implementation/task-cleanup_spec.md",
+        ".sdd/ADR_TEMPLATE.md"
+      ],
+      "input_parity": "develop-only (the skill and adr/ both exist only on develop)",
+      "main_counterpart": "none -- report lift within develop only",
+      "fixture": {
+        "remove": [
+          ".sdd/adr/task-implementation/task-cleanup.md"
+        ],
+        "copy_scenario": [
+          ".sdd/specification/task-implementation/task-cleanup_design.md",
+          ".sdd/specification/task-implementation/task-cleanup_spec.md"
+        ]
+      },
+      "fixture_note": "Chosen for the shape of its decision record: section 9.1 holds a six-row table whose columns are the options considered, what was decided, and why, so 'every row of a decision table, with its reason' is checkable row by row. The same document carries one of each kind of content that must NOT move -- an implementation-status table (section 1), a system-architecture diagram and a module breakdown (4.1, 4.2), data-structure definitions (5), a test strategy (8) and a table of open questions (9.2) -- which is what makes the how/what exclusion measurable rather than assumed. Its own front matter records created 2026-07-24 / updated 2026-07-28, giving the date-provenance question a real answer. The two references to it in the corpus are both in task-cleanup_spec.md (the 'Related Design Doc' line and an in-body link at line 47) and there is no PRD link line and no depends-on entry naming the design id, so the reference report has a small, fully enumerable expected answer.",
+      "expected_output": "A decision log holding the six decisions from section 9.1, each with the reason the document gives and the option it rejected, dated from the document rather than from the migration; none of the implementation status, architecture diagram, module breakdown, data structures, test strategy or open questions; a reference report naming the two links in task-cleanup_spec.md as the standard references to repair; and the original design doc still on disk unless the user was asked and agreed to its deletion.",
+      "assertions": [
+        {
+          "text": "元の設計書が記録している決定が、理由とともに永続的な場所へ漏れなく移されている（設計判断表の各行が脱落していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "「どう作るか／何があるか」に当たる記述——実装ステータス、システム構成図、モジュール分割、データ構造やインターフェースの定義、テスト戦略、未解決の課題——を決定の記録へ持ち込んでいない（未決の課題を決定として記録していない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "元の設計書に書かれていない決定・理由・却下された代替案を創作していない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "既存の決定記録を書き換え・並べ替え・削除せず、追記のみで完了している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "元の設計書を削除する前に人間の確認を取っており、確認を経ずに破壊的操作を実行していない（保持を選べる形で提示している）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "「移した」「検証した」という報告が実態と一致している（報告した決定が実際にディスク上の記録として存在し、検証したと述べた場合は編集の戻り値ではなくディスクの再読み込みに基づいている）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "prose-alternatives-design-doc-migration",
+      "prompt": "`.sdd/specification/spec-design/plan-refactor_design.md` は v4.x の永続技術設計書です。この設計書の決定を決定ログへ移行し、この設計書を参照している箇所を報告してください。",
+      "prompt_note": "develop-only, same as eval 0. This document has no decision table at all, so it exercises the documented fallback of applying the same criteria per section, and it mixes decisions that record a rejected alternative with at least one that does not -- which is where a run either says so or invents one.",
+      "sdd_inputs": [
+        ".sdd/specification/spec-design/plan-refactor_design.md",
+        ".sdd/specification/spec-design/plan-refactor_spec.md",
+        ".sdd/ADR_TEMPLATE.md"
+      ],
+      "input_parity": "develop-only (the skill and adr/ both exist only on develop)",
+      "main_counterpart": "none -- report lift within develop only",
+      "fixture": {
+        "remove": [
+          ".sdd/adr/spec-design/plan-refactor.md"
+        ],
+        "copy_scenario": [
+          ".sdd/specification/spec-design/plan-refactor_design.md",
+          ".sdd/specification/spec-design/plan-refactor_spec.md"
+        ]
+      },
+      "fixture_note": "The complement of eval 0. At 578 lines this is the largest design doc the corpus ever held and it records its decisions as prose blocks (判断 / 理由 / 代替案 / トレードオフ) under section 7 rather than as a table, so the per-section fallback is the only way in. The blocks are deliberately uneven: some state a rejected alternative and at least one states none, which makes 'say there was none rather than supply one' a real branch with a checkable answer instead of a hypothetical. Its single reference in the corpus (plan-refactor_spec.md line 18) carries explanatory prose in parentheses after the link, so 'rewrite the link and leave the surrounding text alone' is observable. Its section 3.6 already discusses the v5 decision-log destination, which is why the run must distinguish a v4.x persisted design doc from the temporary ticket-scoped draft the same document talks about. Two premises were confirmed against the file rather than assumed: of its five Decision blocks exactly one (Decision 2) records no rejected alternative, so the 'say none was recorded' branch is reached once and can be graded against four blocks that do record one; and its front matter dates the document created 2026-07-08 / updated 2026-09-02 while the document also embeds template blocks carrying literal YYYY-MM-DD placeholders, so a run that reaches for a date without reading which block it came from has a wrong answer available to it.",
+      "expected_output": "A decision log holding the decisions the prose blocks record, each with the document's own reason; the rejected alternative where the document names one and an explicit statement that none was recorded where it does not; a reference report naming the one link in plan-refactor_spec.md and nothing else, with the explanatory prose around it untouched; and no confusion between the v4.x persisted design doc being migrated and the temporary ticket-scoped design draft the document itself describes.",
+      "assertions": [
+        {
+          "text": "設計判断表を持たない文書に対しても、節ごとに決定・理由・却下された代替案を拾えており、決定が記録されている節を取りこぼしていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "却下された代替案が記録されていない決定については、代替案を創作せず「記録が無い」ことを明示している",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "参照の報告が事実と一致している——報告した参照がすべて実在し、行の内容と一致しており、手動対応が必要な参照が無い場合はそう報告して、存在しない要対応項目を並べていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "参照の書き換えがリンクそのものに限定されており、その周囲の本文・要求の記述・ID・構造を書き換えていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "記録した決定の日付が、移行作業を実行した日ではなく元の文書が記録している日付に基づいている",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "移行対象の永続的な技術設計書と、同じ文書が説明しているチケット単位の一時的な設計ドラフトを混同しておらず、一時ドラフト側を移行対象として扱っていない",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
+        }
+      ]
+    }
+  ],
+  "assertion_revision": "v3.5 (2026-09-16): 新規。このスキルは develop 専用（PR #138 で追加、main に対応物なし）なので、リフト差ではなく develop 内のリフトのみを報告する。設計上の要点は3つ。(1) コーパスにオーバーレイが必要になった: #134 のマージで develop から *_design.md が24件すべて消え、素の develop フィクスチャではスキル自身の「移行対象なし、停止」分岐に両条件とも落ちて確実に vacuous baseline になる。オーバーレイは移行前コミット 81b24c0 の実ファイルをそのまま持ち込むだけで、1バイトも創作していない。コーパス全体を 81b24c0 から作らないのは、build_sdd_fixture.py がリポジトリ全体を export するため SKILL.md 自体もその日の状態に凍結され、以後のスキル改善が永久に測れなくなるから。(2) assertion からこのスキル固有の語彙を外した: 出力先パス（adr/{feature}.md）もフィールド表記（- **Decision**: 等）も書かず、「決定と理由が永続的な場所に残ったか」「how/what を置いてきたか」で書いた。ASSERTION_DESIGN.md の「スキル本文の語彙依存」で削除済みの形状を踏まないため。(3) v3.3 の主張検証を2箇所に入れた: このスキルの報告は「追記した」「ディスクを再読み込みして検証した」「参照はこれで全部だ」という3つの事実主張を含み、いずれも実行が成功したように見えたまま偽になりうる。eval 0 の A6 が前2つを、eval 1 の A3 が3つ目を見る。 なお PRD のリンク行書き換えは assertion にしていない: このリポジトリの PRD は design doc へのリンクを1本も持たず（`requirement/` 内の *_design.md 言及2件はいずれも要求本文の説明文）、分岐が起きないため空振りになる。eval 1 の A4 が「リンクに限定し周囲の本文を触らない」という同じ性質を、実在する仕様書のリンク行で見ている。 エントリレベルの覆しも assertion にしていないが、理由は ASSERTION_DESIGN.md v3.3 の記述から変わった: #135 によりコーパスの唯一の ADR の前文は正典（一方向・front matter は使わない）に一致したため「コーパスの古さを測る」懸念は解消済みである。それでもこのシナリオでは覆しが発生しない——移行先の決定ログを fixture で削除して新規作成させるため、覆す対象の既存エントリが存在しない——ので、依然として空振りになる。既存の決定ログへ追記させる eval を追加する際に検討する。 フィクスチャを実際に構築し detect-references.py を走らせて空振りを事前に潰した: eval 0 は対象1件・core_standard 2件（task-cleanup_spec.md の 18 行目と 47 行目）、eval 1 は対象1件・core_standard 1件（plan-refactor_spec.md の 18 行目）で、いずれも project_specific が 0 件だった。このため当初 eval 1 の A3 に置いていた「コア標準参照とプロジェクト固有参照に分類し、後者を独断で書き換えない」は分類対象の片側が存在せず、PRD リンク行と同じ空振りになる。分類の確認は捨て、実在する側で検証できる主張検証——報告した参照が実在し行の内容と一致し、要対応項目を捏造していないか——に置き換えた。プロジェクト固有参照を採点したい場合は、独自 front matter フィールドや独自文書種別を持つ参照をシナリオに足す必要があるが、それは実コーパスに存在しないため創作になる。オーバーレイを「1バイトも創作しない」に保つ方針を優先し、今回は採点対象から外した。"
+}
