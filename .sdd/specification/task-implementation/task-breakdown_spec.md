@@ -15,7 +15,7 @@ risk: "high"
 
 # タスク分解
 
-**関連 Design Doc:** [task-breakdown_design.md](task-breakdown_design.md)
+**関連 ADR:** [task-breakdown.md](../../adr/task-implementation/task-breakdown.md)
 **関連 PRD:** [task-breakdown.md](../../requirement/task-implementation/task-breakdown.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 
@@ -43,7 +43,7 @@ AI-SDD ワークフローの Tasks フェーズでは、技術設計ドラフト
 - **要求カバレッジ**: PRD/spec が存在する場合、FR-xxx・NFR-xxx・API がタスクで網羅されるか検証する
 
 「何を分析し、どのようなタスク一覧を生成するか」を定義し、抽出手順・タスク分類・依存整理・
-front matter 生成の具体的な実行方式は [task-breakdown_design.md](task-breakdown_design.md) に委ねる。
+front matter 生成の具体的な実行方式は [task-breakdown.md](../../adr/task-implementation/task-breakdown.md) に委ねる。
 
 # 3. 要求定義
 

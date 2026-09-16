@@ -15,7 +15,7 @@ risk: "high"
 
 # ドキュメント間整合性チェック 抽象仕様書
 
-**関連 Design Doc:** [doc-consistency-check_design.md](doc-consistency-check_design.md)
+**関連 ADR:** [doc-consistency-check.md](../../adr/quality-guardrails/doc-consistency-check.md)
 **関連 PRD:** [doc-consistency-check.md](../../requirement/quality-guardrails/doc-consistency-check.md)
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) の B-001（Vibe Coding 防止）, D-001（Specification-Driven）, B-002（多言語対応の一貫性）, A-001（Skills-First）, A-002（責務分離）
 

@@ -15,7 +15,7 @@ risk: "medium"
 
 # タスククリーンアップ
 
-**関連 Design Doc:** [task-cleanup_design.md](task-cleanup_design.md)
+**関連 ADR:** [task-cleanup.md](../../adr/task-implementation/task-cleanup.md)
 **関連 PRD:** [task-cleanup.md](../../requirement/task-implementation/task-cleanup.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-003（ドキュメント永続性ルールの遵守）
 
@@ -44,7 +44,7 @@ task ディレクトリを削除し、設計知見が永続ドキュメントへ
 - **範囲確認**: 引数なし実行時は対象ディレクトリ内容を提示しユーザー確認を得る
 
 「何を統合し何を削除するか、どの順序で保証するか」を定義し、分類基準・統合先決定・削除手順の具体的な
-実行方式は [task-cleanup_design.md](task-cleanup_design.md) に委ねる。
+実行方式は [task-cleanup.md](../../adr/task-implementation/task-cleanup.md) に委ねる。
 
 # 3. 要求定義
 

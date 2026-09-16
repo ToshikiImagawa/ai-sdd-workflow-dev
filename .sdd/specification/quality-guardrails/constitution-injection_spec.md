@@ -15,7 +15,7 @@ risk: "medium"
 
 # CONSTITUTION 原則の自動注入
 
-**関連 Design Doc:** [constitution-injection_design.md](constitution-injection_design.md)
+**関連 ADR:** [constitution-injection.md](../../adr/quality-guardrails/constitution-injection.md)
 **関連 PRD:** [constitution-injection.md](../../requirement/quality-guardrails/constitution-injection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, D-001（Specification-Driven）, T-003（日本語出力の文字化け防止）
 
@@ -45,7 +45,7 @@ risk: "medium"
 - **対象の限定**: 注入対象はプロジェクト内のソースコードに限り、`.sdd/` 配下のドキュメント編集は対象外とする
 
 「何を・いつ・どこへ注入するか」を定義し、対象拡張子・マーカー方式・切り詰めロジックの具体は
-[constitution-injection_design.md](constitution-injection_design.md) に委ねる。
+[constitution-injection.md](../../adr/quality-guardrails/constitution-injection.md) に委ねる。
 
 # 3. 要求定義
 

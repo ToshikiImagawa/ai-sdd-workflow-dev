@@ -13,7 +13,7 @@ category: "distribution"
 
 # 配布・運用
 
-**関連 Design Doc:** [distribution_design.md](distribution_design.md)
+**関連 ADR:** [distribution.md](../adr/distribution.md)
 **関連 PRD:** [distribution.md](../requirement/distribution.md)
 **準拠する原則:** [CONSTITUTION.md](../CONSTITUTION.md)（参照した版: `v2.0.0`） B-002（多言語対応の一貫性）, T-001（JSON/Markdown 構文の正当性）, T-002（plugin.json 登録の徹底）, T-003（日本語出力の文字化け防止）
 
@@ -47,7 +47,7 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
   壊れたプラグインの配布を防止する（FR_004 / UR_003）
 
 具体的な実装方式（CI ジョブ構成・リリースワークフローの二段構え・検証スクリプトの実装言語）は
-[distribution_design.md](distribution_design.md) に委ねる。
+[distribution.md](../adr/distribution.md) に委ねる。
 
 # 3. 要求定義
 

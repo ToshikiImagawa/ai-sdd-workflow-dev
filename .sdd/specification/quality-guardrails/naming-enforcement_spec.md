@@ -15,7 +15,7 @@ risk: "medium"
 
 # ファイル命名規則の強制
 
-**関連 Design Doc:** [naming-enforcement_design.md](naming-enforcement_design.md)
+**関連 ADR:** [naming-enforcement.md](../../adr/quality-guardrails/naming-enforcement.md)
 **関連 PRD:** [naming-enforcement.md](../../requirement/quality-guardrails/naming-enforcement.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) D-002（ファイル命名規則の厳守）, B-001（Vibe Coding 防止）
 
@@ -45,7 +45,7 @@ risk: "medium"
 - **設定可能なパス**: 検証対象ディレクトリ名は `.sdd-config.json` から解決し、プロジェクト固有のディレクトリ名にも追従する
 
 「何を検証し、どうブロックするか」を定義し、具体的な検証対象パス・判定条件・拒否メッセージ形式の詳細は
-[naming-enforcement_design.md](naming-enforcement_design.md) に委ねる。
+[naming-enforcement.md](../../adr/quality-guardrails/naming-enforcement.md) に委ねる。
 
 # 3. 要求定義
 

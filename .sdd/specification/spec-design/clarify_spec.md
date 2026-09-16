@@ -15,7 +15,7 @@ risk: "high"
 
 # 仕様明確化
 
-**関連 Design Doc:** [clarify_design.md](clarify_design.md)
+**関連 ADR:** [clarify.md](../../adr/spec-design/clarify.md)
 **関連 PRD:** [clarify.md](../../requirement/spec-design/clarify.md)（親: [spec-design](../../requirement/spec-design/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 
@@ -44,7 +44,7 @@ AI 駆動開発では、仕様やユーザー要件に曖昧点・未定義点�
 - **回答統合と再評価**: ユーザー回答を仕様書の該当セクションへ統合し、明確度を再評価する反復ループを構成する
 
 「何を分析し、どう明確化を促すか」を定義し、質問生成・スコア算出・回答統合の具体的な実行方式は
-[clarify_design.md](clarify_design.md) に委ねる。
+[clarify.md](../../adr/spec-design/clarify.md) に委ねる。
 
 # 3. 要求定義
 

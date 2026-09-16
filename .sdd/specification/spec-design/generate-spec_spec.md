@@ -15,7 +15,7 @@ risk: "high"
 
 # 仕様書・設計書生成
 
-**関連 Design Doc:** [generate-spec_design.md](generate-spec_design.md)
+**関連 ADR:** [generate-spec.md](../../adr/spec-design/generate-spec.md)
 **関連 PRD:** [generate-spec.md](../../requirement/spec-design/generate-spec.md)（親: [spec-design](../../requirement/spec-design/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, A-001（Skills-First）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 
@@ -54,7 +54,7 @@ Vibe Coding 問題（[CONSTITUTION.md](../../CONSTITUTION.md) B-001）に陥る�
   整合を確認するオーケストレーションを担う
 
 「何を生成し、どの規約に準拠するか」を定義し、テンプレートの前処理方式・生成フローの実行手順・
-front matter の具体スキーマの詳細は [generate-spec_design.md](generate-spec_design.md) に委ねる。
+front matter の具体スキーマの詳細は [generate-spec.md](../../adr/spec-design/generate-spec.md) に委ねる。
 
 # 3. 要求定義
 

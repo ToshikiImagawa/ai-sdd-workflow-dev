@@ -15,7 +15,7 @@ risk: "high"
 
 # Vibe Coding 兆候検知
 
-**関連 Design Doc:** [vibe-detection_design.md](vibe-detection_design.md)
+**関連 ADR:** [vibe-detection.md](../../adr/quality-guardrails/vibe-detection.md)
 **関連 PRD:** [vibe-detection.md](../../requirement/quality-guardrails/vibe-detection.md)（親: [quality-guardrails](../../requirement/quality-guardrails/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）
 
@@ -44,7 +44,7 @@ AI 駆動開発では、ユーザーの曖昧な指示（「いい感じに」�
   曖昧性分析（判断・対話）の 2 層で構成する
 
 「何を検知し、どう促すか」を定義し、正規表現パターンの具体や実行方式の詳細は
-[vibe-detection_design.md](vibe-detection_design.md) に委ねる。
+[vibe-detection.md](../../adr/quality-guardrails/vibe-detection.md) に委ねる。
 
 # 3. 要求定義
 

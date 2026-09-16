@@ -15,7 +15,7 @@ risk: "medium"
 
 # チェックリスト生成
 
-**関連 Design Doc:** [checklist-generation_design.md](checklist-generation_design.md)
+**関連 ADR:** [checklist-generation.md](../../adr/task-implementation/checklist-generation.md)
 **関連 PRD:** [checklist-generation.md](../../requirement/task-implementation/checklist-generation.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md) B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）
 
@@ -45,7 +45,7 @@ AI-SDD ワークフローでは、実装が仕様（真実の源）にトレー�
 - **多言語対応**: 出力言語を `SDD_LANG` に従い切り替え、単一文書内で混在させない（B-002）
 
 「何を抽出し、どのような構造でチェックリストを生成するか」を定義し、抽出ロジック・ID 採番方式・
-テンプレート統合の具体的な実行方式は [checklist-generation_design.md](checklist-generation_design.md) に委ねる。
+テンプレート統合の具体的な実行方式は [checklist-generation.md](../../adr/task-implementation/checklist-generation.md) に委ねる。
 
 # 3. 要求定義
 
