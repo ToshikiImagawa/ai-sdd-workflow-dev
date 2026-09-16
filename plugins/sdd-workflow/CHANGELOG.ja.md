@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-16
+
 ### 追加
 
 - **`/migrate-design-to-adr` スキル** - v4.x で永続化された `specification/{feature-name}_design.md` を
@@ -24,6 +26,14 @@
 
 ### 修正
 
+- **`/sdd-init` 実行時に `AI-SDD-PRINCIPLES.md` / `ai-sdd-instructions.md` が旧バージョンのまま
+  取り残される不具合** - `session-start.py` が持っていた再生成ロジック（`get_plugin_version` /
+  `sync_principles_file` / `sync_rules_files`）を共通モジュール
+  `plugins/sdd-workflow/scripts/principles_sync.py` へ抽出し、`session-start.py` と
+  `init-structure.py` の両方から呼び出すようにした。`/reload-plugins` でプラグインバージョンを
+  切り替えた直後は `SessionStart` イベントが発火しないため、その状態で `/sdd-init` を実行すると
+  `.sdd/AI-SDD-PRINCIPLES.md` と `.claude/rules/ai-sdd-instructions.md` が旧バージョンのまま
+  取り残されていた
 - **`AI-SDD-PRINCIPLES.md` の表記不整合** - §Document Dependencies の依存関係の説明にある2箇所で
   `task/design-draft.md` に `{ticket-number}` プレースホルダが欠落していた（同ファイル内の他9箇所は
   プレースホルダ付き）。また §Consistency Checking の「Check Target」表の2行で `Implementation` の
