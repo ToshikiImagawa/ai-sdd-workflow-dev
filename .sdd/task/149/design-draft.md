@@ -36,11 +36,11 @@ risk: "medium"
 | モジュール/機能                                                    | ステータス | 備考                                                       |
 |------------------------------------------------------------|-------|----------------------------------------------------------|
 | `scripts/laws_header.py`（新規共有モジュール）                        | 🔴    | §5.5 前半                                                   |
-| `run-verification.py` の `proof` カテゴリ                       | 🔴    | §4.3 / §5.5 後半 / §9.1 D-01〜D-11                           |
+| `run-verification.py` の `proof` カテゴリ                       | 🔴    | §4.3 / §5.5 後半 / §9.1 D-01〜D-12（孤児 laws 判定を含む）           |
 | `hook_common.py` / `session-start.py` の `directories.laws` と `proof.*` | 🔴 | `SddPaths.laws_dir`、`load_proof_config()`、`SDD_LAWS_DIR` / `SDD_LAWS_PATH` |
 | `fm_parser.py` の `LIST_KEYS` に `laws`                        | 🔴    | 1 行変更 + テスト                                              |
 | `post-tool-use.py` の `.bend` / `# model-of:` リマインド           | 🔴    | stale-doc-detection_spec FR-007 / FR-008                 |
-| `front-matter-reviewer.md` / `front_matter_reference.md` の拡張 | 🔴    | front-matter-validation_spec FR-009                      |
+| `front-matter-reviewer.md` / `front_matter_reference.md` の拡張 | 🔴    | front-matter-validation_spec FR-009（`--cross-ref` の孤児 laws 逆方向検査を含む） |
 | checklist テンプレート `CHK-205`（en/ja）と checklist SKILL.md        | 🔴    | checklist-generation_spec FR-006                         |
 | run-checklist の SKILL.md / `verification_commands.md` / テンプレート | 🔴  | 判定表・`--category proof` 別名・PASS の意味の注記                     |
 | README / CHANGELOG / 原則文書の構成図                               | 🔴    | `laws/` の説明とモデル作成ガイド（§7.1）                               |
@@ -59,7 +59,8 @@ risk: "medium"
 4. **外部通信ゼロ**: `BEND_NO_TELEMETRY=1` を常に付与し、法則ディレクトリ内に実在するファイルへの相対 import と標準ライブラリ `Base`
    以外の import 文は検査器を起動する前に FAIL にする（allowlist。未知の形式・未解決の名前は FAIL 側に倒れる）
 5. **spec を正典に保つ**: spec → `laws:` → 法則ファイルの一方向参照だけを持ち、`depends-on`・PRD・spec の本文・front matter を
-   法則から変更しない
+   法則から変更しない。spec に結びつかない法則ディレクトリ（孤児 laws）は派生物として成立しないので、ゲートと
+   front-matter-reviewer の双方が静的に検出する（D-12）
 6. **PASS の意味を誤読させない**: 判定 JSON・結果ブロック・SKILL.md・README のすべてに「参照モデルが法則を満たす保証であり、
    実装の正しさではない」を載せる
 
@@ -72,11 +73,12 @@ risk: "medium"
 | 証明検査の実行                        | `run-verification.py` に `proof` カテゴリを追加（Python。`subprocess.run` で `bend` を起動）                      | スキルの `allowed-tools` が事前承認しているのはこのスクリプト 1 本だけ（Check 5.4 のスコープ付き Bash）。bend を直接呼ぶ経路を作らない（PRD DC_003、A-002）        |
 | 法則ディレクトリの指定                    | CLI 引数 `--laws-dir`（複数可、1 回の呼び出しで全部渡す）。省略時は `SDD_LAWS_PATH` 配下を再帰走査し `LAWS.bend` / `PROOF.bend` を直接含むディレクトリだけを対象にする | spec の `laws:` を読むのはスキル（LLM）の仕事、ディレクトリを検査・集約するのはスクリプトの仕事に分ける（haiku に集約させない）。既存の `Bash(... run-verification.py *)` パターンは追加引数を許す |
 | 判定                              | 純粋関数 `precheck()` / `judge_run()` / `needs_plain_fallback()`（ファイル有無・承認・import 検査 / 終了コード・出力 → status） | 判定表（spec 3.1.1）を `subprocess` から切り離してユニットテストできるようにする                                                               |
+| 孤児 laws の判定（spec 3.1.1 #4）         | `LAWS.bend` の `# spec:` の id を `${SDD_SPECIFICATION_PATH}` 配下の spec の front matter `id` に解決し、解決先の `laws:` に当該ディレクトリ（`${SDD_ROOT}` 相対）が含まれるかを見る。解決は `doc_walker.iter_specification_docs()` + `fm_parser.split_front_matter()` / `parse_front_matter()` を再利用し、新しい id 解決ロジックは書かない | spec が正典であり、spec に結びつかない法則は派生物として成立しない（D-12）。`.cache/index.md` に依存せず spec を直接走査すれば、インデックス未生成の環境でも判定が揺れない。走査は `proof` 実行 1 回につき 1 度だけ行い、全ディレクトリで共有する |
 | import の静的検査                    | `import` / `from` で始まる行をすべて拾い、「同じ法則ディレクトリ内に実在する `.bend` を相対パスで指す `import <path>`」と「Bend 同梱の標準ライブラリ `import Base`」だけを allowlist で許可する。それ以外（実在しないファイル名を含む）は FAIL | Bend Hub の import 構文を網羅的に deny するより allowlist のほうが構文変更に強い。コメント付き・別名・`from` 形式も「許可形式に一致しない」として FAIL 側に倒れる         |
 | 先頭コメント規約の解析                    | `scripts/laws_header.py`（新規共有モジュール）で `# key: value` 行を dict に読み、法則本文（先頭コメント部を除く）の内容ハッシュを算出する。`run-verification.py` / `post-tool-use.py` / 第 2 弾スキルで共用 | 規約の定義を 1 箇所に置く（naming.py / fm_parser.py と同じ「single source of truth」の流儀）                                           |
 | `.sdd-config.json` の拡張           | `directories.laws`（既定 `laws`）、`proof.timeout_seconds`（既定 300）、`proof.verdict`（既定 false）。CLI 引数が設定より優先 | 既存の `directories` の流儀に合わせる。`SddPaths` にフィールド追加、session-start が `SDD_LAWS_DIR` / `SDD_LAWS_PATH` をエクスポート            |
 | spec front matter                | `fm_parser.LIST_KEYS` に `laws` を追加。`laws-status` はスカラー                                              | インデックス・recommend-front-matter・reviewer がリストとして扱える                                                                   |
-| front matter の検証                | `front-matter-reviewer.md` の Spec 種別チェックに行追加、`--cross-ref` に `laws:` ディレクトリ実在（`${SDD_ROOT}/` + 要素値）・`# spec:` 一致・実態整合を追加 | 既存の「ルール基盤の軽量検証（haiku）」の範囲内。ファイル存在と先頭数行の照合だけで済む                                                                    |
+| front matter の検証                | `front-matter-reviewer.md` の Spec 種別チェックに行追加、`--cross-ref` に `laws:` ディレクトリ実在（`${SDD_ROOT}/` + 要素値）・`# spec:` 一致・実態整合、および逆方向（`${SDD_LAWS_PATH}` 配下の全 `LAWS.bend` について `# spec:` が ID レジストリに解決でき、解決先 spec の `laws:` が当該ディレクトリを指す。いずれも error）を追加 | 既存の「ルール基盤の軽量検証（haiku）」の範囲内。ファイル存在と先頭数行の照合だけで済み、Read / Glob / Grep で完結する（ハッシュ計算なし）                                                                    |
 | フックのリマインド                       | `post-tool-use.py` に 2 分岐を追加（`.bend` 編集 → 再実行促し、ソース編集 → `main.bend` の `# model-of:` 照合。spec 同期の促しと両方注入しうる） | 非ブロッキング `additionalContext`（stale-doc-detection の既定方針）。ソース編集時の照合は `laws/**/main.bend` の先頭コメント部だけ読む                     |
 | チェックリスト項目                      | `checklist_template.md`（en/ja）の仕様レビューに `CHK-205 [P2]` を固定項目として追加。`laws:` が無い spec では生成しない旨を checklist SKILL.md に記載。run-checklist SKILL.md は `--category proof` を「CHK-205 のみ」の別名として受理する | 既存 ID 体系（`CHK-{category}{nn}`、カテゴリ 1〜9）を崩さない（親 PRD IR_002）。既存の `--category` は CHK カテゴリ名を取るため、別名として足す       |
 | Windows                         | 分岐を設けない。`bend` が PATH に無ければ TOOL_NOT_FOUND                                                        | PRD DC_004。WSL 内では Linux として動く                                                                                       |
@@ -110,7 +112,8 @@ graph TD
     Hook["post-tool-use.py"] -->|".bend 編集 → 再実行促し"| L
     Hook -->|"# model-of: 照合 → 見直し促し"| M
     Hook --> LH
-    FMR["front-matter-reviewer"] -->|"laws:/laws-status: 検証<br/>--cross-ref: 実在 / # spec: 一致 / 承認実態"| FM
+    FMR["front-matter-reviewer"] -->|"laws:/laws-status: 検証<br/>--cross-ref: 実在 / # spec: 一致 / 承認実態 / 孤児 laws"| FM
+    RV -.->|"# spec: を id 解決し laws: の逆参照を照合（#4）"| FM
     FMR -.-> L
     Impl["対象プロジェクトの実装<br/>(# model-of: の先)"] -. "乖離は検知できない（リマインドのみ）" .-> M
 ```
@@ -120,12 +123,12 @@ graph TD
 | モジュール名                                              | 責務                                                                                     | 依存関係                                        | 配置場所                                                   |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------|---------------------------------------------|--------------------------------------------------------|
 | `laws_header.py`（新規）                                | 先頭コメント規約（`# spec:` / `# approved:` / `# model-of:`）の解析、法則本文の内容ハッシュ、承認行の有効性、import 文の allowlist 検査、`law` 宣言の有無 | なし（stdlib のみ）                                | `scripts/`（共有モジュール。sdd_index 等と同じ流儀）                   |
-| `run-verification.py`（拡張）                           | `proof` カテゴリ: 引数解析、設定読込、法則ディレクトリ探索、事前判定、`bend` 実行、フォールバック、判定、集約、JSON 出力。`--print-laws-hash` | `laws_header.py`, `hook_common`               | `skills/run-checklist/scripts/`                        |
+| `run-verification.py`（拡張）                           | `proof` カテゴリ: 引数解析、設定読込、法則ディレクトリ探索、spec id レジストリ構築（孤児判定）、事前判定、`bend` 実行、フォールバック、判定、集約、JSON 出力。`--print-laws-hash` | `laws_header.py`, `hook_common`, `fm_parser`, `doc_walker` | `skills/run-checklist/scripts/`                        |
 | `hook_common.py`（拡張）                                | `SddPaths.laws_dir` / `laws_prefix`、`load_proof_config()`（timeout / verdict）              | -                                           | `scripts/`                                             |
 | `session-start.py`（拡張）                              | `SDD_LAWS_DIR` / `SDD_LAWS_PATH` のエクスポート                                                 | `env_export.py`                             | `scripts/`                                             |
 | `fm_parser.py`（拡張）                                  | `LIST_KEYS = {"depends-on", "tags", "laws"}`                                             | -                                           | `scripts/`                                             |
 | `post-tool-use.py`（拡張）                              | `.bend` 編集時の再実行促し、ソース編集時の `# model-of:` 照合                                            | `laws_header.py`, `hook_common`             | `scripts/`                                             |
-| `front-matter-reviewer.md` / `front_matter_reference.md`（拡張） | Spec 種別チェック（`laws:` / `laws-status`）、`--cross-ref` の実在・一致・実態整合                           | -                                           | `agents/` / `shared/references/`                       |
+| `front-matter-reviewer.md` / `front_matter_reference.md`（拡張） | Spec 種別チェック（`laws:` / `laws-status`）、`--cross-ref` の実在・一致・実態整合・孤児 laws の逆方向検査（error）     | -                                           | `agents/` / `shared/references/`                       |
 | `checklist_template.md`（en/ja）・checklist `SKILL.md`（拡張） | `CHK-205 [P2] 法則証明（proof ゲート）`、`laws:` 無しなら生成しない                                        | -                                           | `skills/checklist/`                                    |
 | `result_format.md` / `report_format.md`（en/ja、拡張）    | proof の自動検証結果ブロック例・レポート節と PASS の意味の注記                                                   | -                                           | `skills/run-checklist/templates/{en,ja}/`              |
 | run-checklist `SKILL.md` / `verification_commands.md`（拡張） | `proof` の呼び出し手順（`laws:` → `--laws-dir` を 1 回で渡す）・判定表・`--category proof` 別名                 | -                                           | `skills/run-checklist/`                                |
@@ -142,25 +145,33 @@ flowchart TD
     B2 -- No --> F0["FAIL (laws dir not found)"]
     B2 -- Yes --> C{"#3 D/LAWS.bend が存在?"}
     C -- No --> SK1["SKIPPED (no LAWS.bend)"]
-    C -- Yes --> D{"#4 有効な # approved: 行?<br/>(日付 + 承認者 + 内容ハッシュ一致)"}
+    C -- Yes --> C2{"#4 # spec: の id が spec に解決でき<br/>その spec の laws: が D を含む?"}
+    C2 -- No --> F00["FAIL (orphan laws: unresolved spec id / not listed in spec laws:)"]
+    C2 -- Yes --> D{"#5 有効な # approved: 行?<br/>(日付 + 承認者 + 内容ハッシュ一致)"}
     D -- No --> SK2["SKIPPED (not approved / approval expired)"]
-    D -- Yes --> D2{"#5 law 宣言が 1 つ以上?"}
+    D -- Yes --> D2{"#6 law 宣言が 1 つ以上?"}
     D2 -- No --> SK3["SKIPPED (no laws declared)"]
-    D2 -- Yes --> E{"#6 D/PROOF.bend が存在?"}
+    D2 -- Yes --> E{"#7 D/PROOF.bend が存在?"}
     E -- No --> F1["FAIL (no PROOF.bend)"]
-    E -- Yes --> G{"#7 PROOF が LAWS を import し<br/>全 import が allowlist に一致?"}
+    E -- Yes --> G{"#8 PROOF が LAWS を import し<br/>全 import が allowlist に一致?"}
     G -- No --> F2["FAIL (disallowed import)"]
     G -- Yes --> H["BEND_NO_TELEMETRY=1 bend [--verdict] PROOF.bend"]
     H --> I{結果}
-    I -- "#8 timeout" --> TO[TIMEOUT]
-    I -- "#9 exit 0 かつ ALL PROOFS CHECK" --> PASS
-    I -- "#10 --verdict かつ stderr に再検査基盤の不備" --> K["--verdict なしで再実行<br/>verdict: unavailable を記録"]
+    I -- "#9 timeout" --> TO[TIMEOUT]
+    I -- "#10 exit 0 かつ ALL PROOFS CHECK" --> PASS
+    I -- "#11 --verdict かつ stderr に再検査基盤の不備" --> K["--verdict なしで再実行<br/>verdict: unavailable を記録"]
     K --> I
-    I -- "#11 その他" --> F3[FAIL]
+    I -- "#12 その他" --> F3[FAIL]
 ```
 
 複数ディレクトリの集約順位は FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS（最も悪い判定を全体の `status` にし、
 その判定を出したディレクトリの `reason` を全体の `reason` にする）。
+
+#4（孤児 laws）は `--laws-dir` 明示指定でも省略時の再帰走査でも同じ条件で評価する。#2 が spec → laws 方向（`laws:` の指す先が無い）、
+#4 が laws → spec 方向（`# spec:` が解決できない、または解決先の `laws:` に無い）の不整合で、両方向が揃って初めて正とする。
+#4 を承認判定（#5）より前に置くのは、承認行の有無にかかわらず「spec に結びつかない法則ディレクトリ」を SKIPPED で素通りさせないため。
+id → spec ファイルの解決は `doc_walker.iter_specification_docs()` で `${SDD_SPECIFICATION_PATH}` 配下を走査し、各ファイルの
+`fm_parser.split_front_matter()` / `parse_front_matter()` の結果から `id` → (path, `laws`) のレジストリを 1 回だけ組み立てる（§5.5.2 `build_spec_registry()`）。
 
 ## 4.4. 第 2 弾（spec → LAWS 案生成）の実装上の置き場所
 
@@ -418,6 +429,8 @@ from typing import Dict, List, Optional
 
 # skills/run-checklist/scripts/ -> plugins/sdd-workflow/scripts/ (shared modules)
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from doc_walker import iter_specification_docs  # noqa: E402
+from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
 from hook_common import load_sdd_paths, read_sdd_config_json  # noqa: E402
 from laws_header import (  # noqa: E402
     LAWS_FILE, MODEL_FILE, PROOF_FILE, declares_laws, disallowed_imports,
@@ -449,16 +462,50 @@ def discover_laws_dirs(laws_root: Path) -> List[Path]:
     return sorted(found)
 
 
-def precheck(bend_found: bool, dir_exists: bool, has_laws: bool, approved: Optional[str],
-             has_law_decl: bool, has_proof: bool, proof_imports_laws: bool,
-             bad_imports: List[str]) -> Optional[Dict[str, str]]:
-    """Spec 3.1.1 rows #1-#7. None means "run bend"."""
+def build_spec_registry(spec_root: Path) -> Dict[str, Dict[str, object]]:
+    """id -> {"path": Path, "laws": [str]} for every spec under ${SDD_SPECIFICATION_PATH}.
+
+    Reuses doc_walker / fm_parser (the same front matter rules the hooks and
+    sdd_index apply) instead of a new id resolver. Built once per proof run."""
+    registry: Dict[str, Dict[str, object]] = {}
+    for spec_file in iter_specification_docs(spec_root):
+        fm_text, _ = split_front_matter(spec_file.read_text(encoding="utf-8", errors="replace"))
+        fm = parse_front_matter(fm_text) if fm_text else {}
+        spec_id = fm.get("id")
+        if isinstance(spec_id, str) and spec_id:
+            laws = fm.get("laws", [])
+            registry[spec_id] = {"path": spec_file,
+                                 "laws": [laws] if isinstance(laws, str) else list(laws or [])}
+    return registry
+
+
+def orphan_reason(spec_id: Optional[str], laws_dir_sdd_relative: str,
+                  registry: Dict[str, Dict[str, object]]) -> Optional[str]:
+    """Spec 3.1.1 row #4. None means the laws dir is bound to a spec in both directions."""
+    if spec_id is None:
+        return f"{LAWS_FILE} has no '# spec:' line, so the laws directory is not bound to any spec"
+    entry = registry.get(spec_id)
+    if entry is None:
+        return f"orphan laws: '# spec: {spec_id}' does not resolve to any spec under the specification directory"
+    listed = [str(x).strip("/") for x in entry["laws"]]  # type: ignore[index]
+    if laws_dir_sdd_relative.strip("/") not in listed:
+        return (f"orphan laws: {entry['path']} (id {spec_id}) does not list "
+                f"'{laws_dir_sdd_relative}' in its laws: front matter")
+    return None
+
+
+def precheck(bend_found: bool, dir_exists: bool, has_laws: bool, orphan: Optional[str],
+             approved: Optional[str], has_law_decl: bool, has_proof: bool,
+             proof_imports_laws: bool, bad_imports: List[str]) -> Optional[Dict[str, str]]:
+    """Spec 3.1.1 rows #1-#8. None means "run bend"."""
     if not bend_found:
         return {"status": "TOOL_NOT_FOUND", "reason": "bend is not installed (not on PATH)"}
     if not dir_exists:
         return {"status": "FAIL", "reason": "laws directory not found (check the spec's laws: entry)"}
     if not has_laws:
         return {"status": "SKIPPED", "reason": f"no {LAWS_FILE} in this laws directory"}
+    if orphan is not None:
+        return {"status": "FAIL", "reason": orphan}
     if approved is None:
         return {"status": "SKIPPED",
                 "reason": f"{LAWS_FILE} has no valid '# approved:' line (missing, malformed, or its "
@@ -478,12 +525,12 @@ def precheck(bend_found: bool, dir_exists: bool, has_laws: bool, approved: Optio
 
 
 def needs_plain_fallback(exit_code: Optional[int], stderr: str, verdict_requested: bool) -> bool:
-    """Spec 3.1.1 row #10: --verdict was asked for but the Lean kernel is unavailable."""
+    """Spec 3.1.1 row #11: --verdict was asked for but the Lean kernel is unavailable."""
     return verdict_requested and exit_code not in (0, None) and BENDTT_INFRA_MARKER in stderr
 
 
 def judge_run(exit_code: Optional[int], stdout: str, timed_out: bool) -> Dict[str, str]:
-    """Spec 3.1.1 rows #8, #9, #11 for a finished bend run."""
+    """Spec 3.1.1 rows #9, #10, #12 for a finished bend run."""
     if timed_out:
         return {"status": "TIMEOUT", "reason": "bend exceeded the time limit"}
     if exit_code == 0 and ALL_PROOFS_CHECK in stdout:
@@ -509,7 +556,8 @@ def run_bend(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, object]:
                 "timed_out": False, "launch_error": True}
 
 
-def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, object]:
+def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int, sdd_root: Path,
+                  registry: Dict[str, Dict[str, object]]) -> Dict[str, object]:
     laws = laws_dir / LAWS_FILE
     proof = laws_dir / PROOF_FILE
     model = laws_dir / MODEL_FILE
@@ -525,10 +573,15 @@ def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, obje
         "model_of": model_header.get("model-of", []),
         "verdict": verdict_label,
     }
+    try:
+        sdd_relative = laws_dir.resolve().relative_to(sdd_root.resolve()).as_posix()
+    except ValueError:  # laws dir outside ${SDD_ROOT}: can never match a spec's laws: entry
+        sdd_relative = laws_dir.as_posix()
     early = precheck(
         bend_found=shutil.which("bend") is not None,
         dir_exists=laws_dir.is_dir(),
         has_laws=laws.is_file(),
+        orphan=orphan_reason(base["spec"], sdd_relative, registry) if laws.is_file() else None,  # type: ignore[arg-type]
         approved=approved,
         has_law_decl=declares_laws(laws) if laws.is_file() else False,
         has_proof=proof.is_file(),
@@ -602,7 +655,9 @@ def main_proof(argv: List[str]) -> None:
         print(json.dumps({"category": "proof", "laws_hash": hashes}, ensure_ascii=False, indent=2))
         return
 
-    results = [run_proof_dir(d, verdict, timeout) for d in laws_dirs]
+    sdd_root = project_root / paths.root
+    registry = build_spec_registry(project_root / paths.specification_prefix)  # once per run (row #4)
+    results = [run_proof_dir(d, verdict, timeout, sdd_root, registry) for d in laws_dirs]
     for r in results:
         r["laws_dir"] = os.path.relpath(str(r["laws_dir"]), str(project_root))
     summary = aggregate(results, verdict)
@@ -622,8 +677,8 @@ def main_proof(argv: List[str]) -> None:
 # never reaches it because of the dispatch above.
 ```
 
-実装時に関数の切り方は変えてよいが、**判定表 `precheck` / `needs_plain_fallback` / `judge_run` と `aggregate` の入出力**
-（spec 3.1.1）はテストで固定する。`hook_common.SddPaths` に `laws_dir` / `laws_prefix` を足すのは本書 §3 のとおり。
+実装時に関数の切り方は変えてよいが、**判定表 `precheck` / `orphan_reason` / `needs_plain_fallback` / `judge_run` と `aggregate` の入出力**
+（spec 3.1.1）はテストで固定する。`paths.root` / `paths.specification_prefix` は `hook_common.SddPaths` の既存プロパティを使う。`hook_common.SddPaths` に `laws_dir` / `laws_prefix` を足すのは本書 §3 のとおり。
 
 ---
 
@@ -706,8 +761,9 @@ tests/
 
 | テストレベル | 対象                                                               | カバレッジ目標                                                                                                                           |
 |--------|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| ユニット   | `precheck()` / `needs_plain_fallback()` / `judge_run()`           | spec 3.1.1 の全行（bend 不在 / ディレクトリ不在 / LAWS 不在 / 承認行なし・形式不正・ハッシュ不一致 / law 宣言なし / PROOF 不在 / LAWS 未 import / import 違反 / timeout / exit 0 + ALL PROOFS CHECK / exit 0 のみ / exit 1 + 基盤不備（verdict あり・なし）/ exit 1 / exit 2） |
+| ユニット   | `precheck()` / `needs_plain_fallback()` / `judge_run()`           | spec 3.1.1 の全行（bend 不在 / ディレクトリ不在 / LAWS 不在 / 孤児 laws（`# spec:` なし・未解決 id・解決先 `laws:` に無し。明示指定と再帰走査の両方）/ 承認行なし・形式不正・ハッシュ不一致 / law 宣言なし / PROOF 不在 / LAWS 未 import / import 違反 / timeout / exit 0 + ALL PROOFS CHECK / exit 0 のみ / exit 1 + 基盤不備（verdict あり・なし）/ exit 1 / exit 2） |
 | ユニット   | `laws_header.py`                                                 | 実在するローカル import の許可、`import Base` の許可、実在しない bare 名（Hub 風）の拒否、絶対パス・`..`・Hub 名前空間・URL・末尾コメント・`as` / `from` 形式の拒否、サブディレクトリの再帰、先頭コメントで打ち切り、BOM、承認行の形式と暦日検証、本文変更でハッシュ不一致、先頭コメント部の変更ではハッシュ不変、`model-of` 複数行、`law` 宣言の有無 |
+| ユニット   | `build_spec_registry()` / `orphan_reason()`                      | 複数 spec からの id → path / `laws` レジストリ構築、`laws` がスカラー・リスト・不在の各形、front matter なし spec の無視、末尾 `/` の正規化、`${SDD_ROOT}` 外のディレクトリは常に孤児、双方向一致で None                                                        |
 | ユニット   | `aggregate()` / `discover_laws_dirs()`                           | FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS、`reason` の採用元、`verdict` の集約 3 値、中間ディレクトリを数えない、空集合                                     |
 | ユニット   | `run-verification.py` subprocess 経路                            | PATH 先頭に置くダミー `bend` シェルスクリプト fixture（`tests/fixtures/laws/fake-bend/`。環境変数で exit 0 + `ALL PROOFS CHECK` / exit 1 + `SOME PROOFS FAIL` / exit 1 + `BendTT infrastructure` / sleep で timeout を切り替える）で、`run_bend` → `needs_plain_fallback` → `judge_run` の 3 分岐と `BEND_NO_TELEMETRY=1` の付与を自動化する（CI に bend を入れない制約下で成立。monkeypatch で `PATH` を差し替える） |
 | ユニット   | `run-verification.py` CLI                                        | `proof --laws-dir` 複数、省略時の `SDD_LAWS_PATH` 走査、`--print-laws-hash`、CLI と設定の優先順位、既存 4 カテゴリの後方互換（位置引数のみで動く）、bend 不在環境での JSON 形状（`importlib.util.spec_from_file_location` で読み込む） |
@@ -722,7 +778,7 @@ tests/
 
 ## 9.1. 決定事項
 
-issue #149「設計時に決める事項」の 4 点（D-01〜D-04）と、設計中に確定した事項（D-05〜D-11）。
+issue #149「設計時に決める事項」の 4 点（D-01〜D-04）と、設計中に確定した事項（D-05〜D-12）。D-12 は PR #152 レビュー中のユーザー指示（「laws があるけど spec が無いのは NG。静的チェックを入れたい」）で追加した。
 D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 として提示し、2026-10-17 にユーザーが提案どおりで承認した（確定）。
 
 | ID   | 決定事項                                                | 選択肢                                                                                                            | 決定内容                                                                                                               | 理由                                                                                                                                                                                                                                      |
@@ -738,6 +794,7 @@ D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 
 | D-09 | `main.bend` の要否                                      | (A) 必須<br>(B) 任意                                                                                               | **(B)** 任意（法則がモデル関数を参照しない自己完結の場合は省略できる）                                                                              | `# model-of:` は `main.bend` にのみ置くので、無ければ見直し促し（FR-009）の対象が無いだけで判定には影響しない                                                                                                                                                          |
 | D-10 | 階層 spec の法則ディレクトリ（Q6）                               | (A) `laws/{parent}/{child}/`<br>(B) `laws/{parent}-{child}/`                                                     | **(A)**                                                                                                              | spec / requirement / adr と同じ階層規則（AI-SDD の階層構造）に揃え、識別子をディレクトリ名に置く方針と整合する。`laws:` はパスのリストなので (B) でも動作はするが、既定を揃えておく。省略時の探索は「`LAWS.bend` / `PROOF.bend` を直接含むディレクトリ」だけを対象にし、中間ディレクトリを SKIPPED に数えない                                              |
 | D-11 | 承認の束縛                                               | (A) 承認行の有無だけを見る<br>(B) 承認行に法則本文の内容ハッシュを含め、不一致なら承認失効（SKIPPED）<br>(C) git の履歴で承認日以降の変更を検出                       | **(B)**                                                                                                              | (A) は「承認後に法則を弱めて PASS を得る」抜け道を残す（prd-reviewer / spec-reviewer 指摘）。(B) は `LAWS.bend` 単体で検証でき、先頭コメント部を除外することで承認行の追記自体では失効しない。`--print-laws-hash` で人がハッシュを得られる。(C) は git 非依存の方針（フックは git 無しでも動く）と相容れず、日付粒度で曖昧                                 |
+| D-12 | spec に結びつかない法則ディレクトリ（孤児 laws）の扱い              | (A) FAIL（ゲート #4）+ front-matter-reviewer `--cross-ref` の error の両方で静的に検出<br>(B) warning / SKIPPED に留める<br>(C) ゲート側のみで検出<br>(D) reviewer 側のみで検出 | **(A)** `LAWS.bend` の `# spec:` が実在する spec に解決でき、かつその spec の `laws:` が当該ディレクトリを指すこと（双方向）を成立条件とし、満たさなければゲートは FAIL、reviewer は error。明示指定・再帰走査とも同条件。承認判定（#5）より前に評価する | spec が正典であり（D-001）、spec に結びつかない法則は派生物として成立しないので「失敗ではない」（SKIPPED / warning）では済まない。(B) は `laws:` の書き忘れ・spec 削除後の取り残しが PASS/SKIPPED のノイズに埋もれ、承認済み法則が spec 無しで PASS を出しうる。(C) は bend 未導入環境（TOOL_NOT_FOUND で #4 に到達しない）で検出経路が無くなる。(D) は `--cross-ref` を実行しない限り見つからず、ゲート単体で判定の完全性を保てない。両方に置くことで bend の有無によらず静的に検出でき、既存 #2（spec → laws）と対になって双方向の整合が閉じる。`# spec:` による laws → spec の参照は検証のための照合で、`depends-on` の依存方向は変えない（spec §8） |
 
 ## 9.2. 未解決の課題
 
@@ -760,7 +817,7 @@ D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 
 | B-002 | 多言語対応（EN/JA）の一貫性 | ✅    | `CHK-205` / 結果ブロック / レポートを `templates/{en,ja}/` に対で追加                                                        |
 | A-001 | Skills-First              | ✅    | 新規コマンドなし。第 2 弾も `skills/` で実装する                                                                              |
 | A-002 | フックとスクリプトの責務分離   | ✅    | 探索・import 検査・bend 実行・判定・集約はスクリプト、spec の `laws:` 解釈と記録はスキル、促しはフック                                              |
-| D-001 | Specification-Driven      | ✅    | spec を正典に残す一方向派生。法則から spec / PRD（本文・front matter）を書き換えない                                                     |
+| D-001 | Specification-Driven      | ✅    | spec を正典に残す一方向派生。法則から spec / PRD（本文・front matter）を書き換えない。spec に結びつかない孤児 laws は FAIL / error（D-12）             |
 | D-002 | ファイル命名規則の厳守      | ✅    | `.md` の命名規則に変更なし。法則ファイルは固定名、識別子はディレクトリ名（D-02）                                                                 |
 | D-003 | ドキュメント永続性ルール     | ✅    | 本ドラフトは `task/149/` に置き、実装完了後に §9.1 を `adr/task-implementation/proof-gate.md` へ統合して削除する。spec の「関連 Design Doc」リンクは統合時に「関連 ADR」へ差し替える |
 | T-001 | JSON/Markdown 構文の正当性 | ✅    | `.sdd-config.json` の拡張は任意キーの追加のみ。相対リンクは整合チェックで確認                                                               |

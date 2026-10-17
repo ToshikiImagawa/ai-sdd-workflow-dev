@@ -68,11 +68,11 @@ front matter はオプション（後方互換）であるため人手で記述�
 | FR-006 | `--cross-ref` 指定時、プロジェクト全体を走査し ID 一意性（重複禁止・error）と `depends-on` 参照先の実在（error）を検証する。あわせて status 整合性（上流 draft × 下流 approved を warning）・status 伝播（上流 status 変更時の下流レビュー要否を info）も検証する | 必須  | PRD FR_001（ID 一意性）／ 親 UR_003                |
 | FR-007 | 検出結果を重要度（error / warning / info）付きで分類し、改善提案を添えて所定のレポート形式で出力する | 必須  | PRD FR_001（不備を検出・報告する）                      |
 | FR-008 | `sdd-version` の semver 形式を検証する。値が現行プラグインの major バージョンより古い場合は世代警告として warning を報告し、フィールド自体が不在の場合は info（本フィールド導入前の文書として正常）とする | 必須 | PRD FR_001（`sdd-version` の semver 形式検証と世代警告） |
-| FR-009 | spec 固有フィールド `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を検証する。`laws:` が spec 以外の種別にあれば warning、`laws-status` の許容値外は warning、`depends-on` にパス形式の値（`/` または `.bend` を含む）があれば error（法則ディレクトリは下流であり上流依存に書いてはならない）。`--cross-ref` 指定時は各 `laws:` 要素を `${SDD_ROOT}/` 配下で解決したディレクトリの実在（error）、`LAWS.bend` 先頭の `# spec:` が当該 spec の `id` と一致すること（error）、`laws-status` と法則ファイルの実態の整合（`approved` / `proven` なのに `# approved:` 行が無い、または承認行の形式（`YYYY-MM-DD <承認者> sha256:<12 桁 16 進>`）が不正、`proven` なのに `PROOF.bend` が無い → warning）を検証する。承認行の内容ハッシュが現在の法則本文と一致するかは本機能では検証せず、proof ゲート（`run-verification.py proof`。現在値は `--print-laws-hash`）に委ねる（本機能は読み取り専用で、ハッシュ計算を伴わない先頭数行の照合に留める） | 必須 | PRD FR_001（値の妥当性・依存方向）／ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_003 |
+| FR-009 | spec 固有フィールド `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を検証する。`laws:` が spec 以外の種別にあれば warning、`laws-status` の許容値外は warning、`depends-on` にパス形式の値（`/` または `.bend` を含む）があれば error（法則ディレクトリは下流であり上流依存に書いてはならない）。`--cross-ref` 指定時は各 `laws:` 要素を `${SDD_ROOT}/` 配下で解決したディレクトリの実在（error）、`LAWS.bend` 先頭の `# spec:` が当該 spec の `id` と一致すること（error）、`laws-status` と法則ファイルの実態の整合（`approved` / `proven` なのに `# approved:` 行が無い、または承認行の形式（`YYYY-MM-DD <承認者> sha256:<12 桁 16 進>`）が不正、`proven` なのに `PROOF.bend` が無い → warning）を検証する。さらに `--cross-ref` 指定時は逆方向（laws → spec）も検査し、`${SDD_LAWS_PATH}` 配下で `LAWS.bend` を持つ全ディレクトリについて、(a) 先頭の `# spec:` の id が ID レジストリ上の実在する spec に解決できること、(b) 解決先 spec の `laws:` が当該ディレクトリ（`${SDD_ROOT}` 相対）を含むこと、をいずれも error として検証する（孤児 laws の検出。Read / Glob / Grep で完結し、ハッシュ計算は伴わない）。承認行の内容ハッシュが現在の法則本文と一致するかは本機能では検証せず、proof ゲート（`run-verification.py proof`。現在値は `--print-laws-hash`）に委ねる（本機能は読み取り専用で、ハッシュ計算を伴わない先頭数行の照合に留める） | 必須 | PRD FR_001（値の妥当性・依存方向）／ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_003 |
 
 **重大度ポリシー:** 各チェックの重大度は次の原則に従う（詳細は design §4.3 に対応）。
 
-- **error**（トレーサビリティ・機械的整合を破壊する構造的不備）: 必須フィールド欠落、`type` とファイル配置の不一致、`depends-on` の依存方向逆転（法則ディレクトリのパスを `depends-on` に書く誤りを含む）、`--cross-ref` 時の ID 重複・`depends-on` 参照先の不在・`laws:` ディレクトリの不在・`LAWS.bend` の `# spec:` と spec `id` の不一致
+- **error**（トレーサビリティ・機械的整合を破壊する構造的不備）: 必須フィールド欠落、`type` とファイル配置の不一致、`depends-on` の依存方向逆転（法則ディレクトリのパスを `depends-on` に書く誤りを含む）、`--cross-ref` 時の ID 重複・`depends-on` 参照先の不在・`laws:` ディレクトリの不在・`LAWS.bend` の `# spec:` と spec `id` の不一致・孤児 laws（`LAWS.bend` の `# spec:` が実在する spec に解決できない、または解決先 spec の `laws:` に当該ディレクトリが無い）
 - **warning**（潜在的問題・非標準値）: `id` 形式不一致、`created`/`updated` の日付形式不正、`status`/`sdd-phase`/`priority`/`risk`/`laws-status` の許容値外、spec 以外の種別に置かれた `laws:`、`laws-status` と法則ファイル実態の不整合（承認行の有無・形式まで。ハッシュ一致は proof ゲートが判定）、status 整合性の齟齬、`sdd-version` の semver 形式不正または現行 major より古い
 - **info**（改善提案）: front matter の欠落（後方互換のため違反としない）、`impl-status` の実態一致（コード解析要）、status 伝播、`sdd-version` フィールド自体の不在
 
@@ -124,6 +124,7 @@ front matter はオプション（後方互換）であるため人手で記述�
 | 重要度（severity） | 検出した不備の深刻度分類（error / warning / info）                                  |
 | 後方互換          | front matter なしの既存ドキュメントを違反とせず有効なまま扱う方針                          |
 | laws / laws-status | spec 固有の任意フィールド。spec から法則ディレクトリ（Bend 証明ゲート）への一方向参照とその状態。意味は [proof-gate_spec.md](../task-implementation/proof-gate_spec.md) が定義し、本機能は形式・依存方向・実態整合を検証する |
+| 孤児 laws       | `LAWS.bend` の `# spec:` が実在する spec に解決できない、または解決先 spec の `laws:` が当該ディレクトリを指していない法則ディレクトリ。`--cross-ref` 時に error として検出する（proof ゲートでは同条件を FAIL とする。定義は [proof-gate_spec.md](../task-implementation/proof-gate_spec.md) 用語集） |
 
 # 6. 使用例
 
