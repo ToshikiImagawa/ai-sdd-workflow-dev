@@ -4,7 +4,7 @@ title: "ドキュメント更新漏れ検知"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-09-02"
+updated: "2026-10-17"
 depends-on: ["prd-quality-guardrails"]
 tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -66,6 +66,7 @@ flowchart LR
 - ドキュメント更新漏れ検知
     - `.sdd/` ドキュメント（PRD / spec / adr）編集後の整合性確認リマインド
     - ソースコード編集時の spec 同期リマインド
+    - 法則ファイル（Bend 証明ゲート）編集後・参照モデル対象の実装編集後の見直しリマインド
 
 ---
 
@@ -105,6 +106,9 @@ DC_004（クロスプラットフォーム対応）が本機能に trace する�
   （`adr/` は単一種別ディレクトリでサフィックスが任意。命名規則の定義元は
   [naming-enforcement.md](naming-enforcement.md)）
 - ソースコード編集時: 対応する spec（`{stem}.md` / `{stem}_spec.md`）が存在する場合、仕様書の同期を促す
+- 法則ファイル（`${SDD_LAWS_PATH}` 配下の `.bend`）の編集後: 証明検査の再実行を促す。参照モデルが `# model-of:` で写す
+  実装ファイルの編集後: 参照モデルと法則の見直しを促す（Bend 証明ゲート [proof-gate.md](../task-implementation/proof-gate.md) の
+  FR_005 からの委譲。法則ディレクトリを持たないプロジェクトでは発火しない）
 
 **検証方法:** テストによる検証
 

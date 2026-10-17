@@ -61,8 +61,8 @@ risk: "medium"
 | FR-004 | 更新漏れの検知はブロックせず、非ブロッキングで確認・同期を促すコンテキストを注入する                    | 必須  | 子 PRD（スコープ外＝自動修正しない）/ 親 PRD DC_001 |
 | FR-005 | 更新漏れの可能性がない編集（対応 spec のないソース編集・対象外の `.sdd/` 編集）には何も出力しない       | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生   |
 | FR-006 | `.sdd/` 決定ログディレクトリ（`adr/`）の編集後に、追記専用の原則と決定の spec への反映確認を促す        | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
-| FR-007 | `.sdd/` 法則ディレクトリ（`laws/`）配下の `.bend` ファイル編集後に、`# spec:` が指す spec を示して proof ゲート（`/run-checklist --category proof`）の再実行を促す | 必須  | [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
-| FR-008 | ソースコード編集後に、いずれかの `laws/**/main.bend` の `# model-of:` が当該ファイルを指す場合、参照モデルと法則の見直しを促す（spec 同期の促し FR-003 とは独立に注入する） | 必須  | [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
+| FR-007 | 法則ディレクトリ（`${SDD_LAWS_PATH}`、既定 `laws/`）配下の `.bend` ファイル編集後に、`# spec:` が指す spec を示して proof ゲート（`/run-checklist {feature} {ticket} --category proof`）の再実行と、`LAWS.bend` 編集時は再承認の必要を促す | 必須  | 子 PRD FR_001（法則ファイル編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
+| FR-008 | ソースコード編集後に、いずれかの `${SDD_LAWS_PATH}/**/main.bend` の `# model-of:` が当該ファイルを指す場合、参照モデルと法則の見直しを促す（spec 同期の促し FR-003 とは独立に、両方を注入しうる） | 必須  | 子 PRD FR_001（参照モデル対象の実装編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
 
 FR-001〜FR-003・FR-006〜FR-008 は編集されたファイルの種別（仕様書 / 要求仕様 / 決定ログ / 法則ファイル / ソースコード）に応じて
 促す内容を切り替える。FR-007・FR-008 は Bend 証明ゲート（[proof-gate_spec.md](../task-implementation/proof-gate_spec.md) FR-009）の
@@ -102,7 +102,7 @@ doc-consistency-checker スキル等の検証手段への誘導文を含む。
 {
   "hookSpecificOutput": {
     "hookEventName": "PostToolUse",
-    "additionalContext": "[AI-SDD] '<rel_path>' was updated. Verify consistency across PRD <-> *_spec.md <-> *_design.md ..."
+    "additionalContext": "[AI-SDD] '<rel_path>' was updated. Verify consistency across PRD <-> spec <-> adr ..."
   }
 }
 ```
@@ -117,7 +117,7 @@ doc-consistency-checker スキル等の検証手段への誘導文を含む。
 | 非ブロッキング        | 編集やツール実行を拒否せず、警告・促しに留める動作                                            |
 | spec 同期          | ソースコードの公開 API・データモデル・振る舞いが変わった際に、対応する抽象仕様書（`{stem}.md` / `{stem}_spec.md`）を真実の源として更新すること |
 | 決定ログ（adr）      | `adr/` 配下の追記専用の決定記録。過去のエントリを書き換えず追記のみを行う                              |
-| 法則ファイル         | `laws/{feature}/` 配下の `LAWS.bend` / `PROOF.bend` / `main.bend`。spec から一方向に派生した Bend の法則・証明・参照モデル（proof-gate_spec） |
+| 法則ファイル         | `${SDD_LAWS_PATH}/{feature}/`（既定 `laws/`）配下の `LAWS.bend` / `PROOF.bend` / `main.bend`。spec から一方向に派生した Bend の法則・証明・参照モデル（proof-gate_spec） |
 | `# model-of:`     | `main.bend` 先頭のコメント行。参照モデルが写す実装ファイルのプロジェクト相対パス。ここに挙がった実装の編集が法則見直しの促しの契機になる |
 
 # 6. 使用例
@@ -147,7 +147,7 @@ Edit: src/auth/user_login.py（.sdd/specification/**/user_login_spec.md が存�
 # 法則ファイルを編集 → proof ゲートの再実行を促す
 Edit: .sdd/laws/auth/user-login/LAWS.bend（# spec: spec-auth-user-login）
   → [AI-SDD] '...LAWS.bend' was updated (laws of 'spec-auth-user-login'). Re-run
-    /run-checklist ... --category proof; an edited LAWS.bend needs re-approval ...
+    /run-checklist auth/user-login {ticket} --category proof; an edited LAWS.bend needs re-approval ...
 
 # # model-of: に挙がった実装を編集 → 参照モデルと法則の見直しを促す
 Edit: src/auth/user_login.py（.sdd/laws/auth/user-login/main.bend に # model-of: src/auth/user_login.py）
@@ -178,10 +178,13 @@ sequenceDiagram
         Hook -->> Runtime: 追記専用の原則と spec 反映確認を注入
     else .sdd/laws 配下の .bend（法則ファイル）
         Hook -->> Runtime: proof ゲート再実行の促しを注入
-    else ソースコード + 対応 spec あり
-        Hook -->> Runtime: spec 同期を注入
-    else ソースコード + main.bend の # model-of: に一致
-        Hook -->> Runtime: 参照モデル・法則の見直しを注入
+    else ソースコード
+        opt 対応 spec あり
+            Hook -->> Runtime: spec 同期を注入
+        end
+        opt main.bend の # model-of: に一致
+            Hook -->> Runtime: 参照モデル・法則の見直しを注入
+        end
     else 更新漏れの可能性なし
         Hook -->> Runtime: 出力なし（介入しない）
     end
@@ -214,5 +217,5 @@ sequenceDiagram
 | 要求カバレッジ     | 子 PRD FR_001 の 3 つのトリガー（.sdd 仕様書・要求仕様編集 / adr 編集 / ソース編集）を FR-001〜FR-003・FR-006 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求）。FR-007・FR-008 は task-implementation の proof-gate PRD FR_005（法則の見直し促し）を本機能のフックで提供するもの |
 | 要求 ID 参照      | 各 FR に対応する子 PRD / 親 PRD（UR_003・FR_004・DC_001・NFR_001・IR_001）の要求 ID を「根拠」列に明記 |
 | 非機能要求の反映   | 親 PRD NFR_001・IR_001・DC_001・DC_004 を NFR-001〜003 および制約事項に反映                       |
-| 用語整合性        | 親 PRD 用語集の「フック」「additionalContext」定義に整合。本機能固有の「更新漏れ」「design 同期」を追加定義 |
+| 用語整合性        | 親 PRD 用語集の「フック」「additionalContext」定義に整合。本機能固有の「更新漏れ」「spec 同期」「法則ファイル」「`# model-of:`」を追加定義 |
 | スコープ整合性     | 子 PRD スコープ外（整合性検証・自動修正・編集前ガード）を制約事項として明記                          |

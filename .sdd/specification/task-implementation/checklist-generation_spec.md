@@ -5,8 +5,8 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-09-02"
-depends-on: ["prd-task-implementation-checklist-generation"]
+updated: "2026-10-17"
+depends-on: ["prd-task-implementation-checklist-generation", "prd-task-implementation-proof-gate"]
 tags: ["checklist", "quality"]
 category: "task-implementation"
 priority: "medium"
@@ -58,6 +58,7 @@ AI-SDD ワークフローでは、実装が仕様（真実の源）にトレー�
 | FR-003 | 各項目に優先度（P1/P2/P3）を付与する                                          | 必須  | 子 PRD FR_001                     |
 | FR-004 | 生成したチェックリストを task ディレクトリ配下の `checklist.md` に保存する         | 必須  | 親 PRD IR_001                     |
 | FR-005 | 既存チェックリストの更新（`--update`）で完了状態を保持しつつ差分を反映する          | 任意  | 子 PRD FR_001（保守利用）          |
+| FR-006 | 対象 spec の front matter に `laws:` がある場合に限り、仕様レビューの固定項目 `CHK-205`（P2・法則証明）を生成する。`laws:` の無い spec では生成しない | 必須  | [proof-gate.md](../../requirement/task-implementation/proof-gate.md) IR_001（判定・規約は [proof-gate_spec.md](proof-gate_spec.md) FR-007） |
 
 抽出元のうち `*_spec.md` は必須、PRD・技術設計ドラフト・tasks.md は存在する場合に読み込む。
 技術設計ドラフトは実装完了後に削除される一時文書であるため任意入力として扱い、不在時は

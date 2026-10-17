@@ -130,7 +130,7 @@ sequenceDiagram
 
     User ->> Skill: /run-checklist {feature} {ticket}
     Skill ->> CL: checklist.md を読み込み（CHK-ID・優先度・コマンド解析）
-    Skill ->> Env: 環境検出（テスト/リンター/型/セキュリティ）
+    Skill ->> Env: 環境検出（テスト/リンター/型/セキュリティ/証明検査器）
     loop 自動検証可能な項目
         Skill ->> Env: 検証コマンド実行
         alt ツール未導入
