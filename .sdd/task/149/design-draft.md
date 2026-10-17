@@ -232,7 +232,7 @@ laws-status: "approved"                                   # none | drafted | app
 `LAWS.bend` の先頭:
 
 ```
-# spec: spec-{feature}
+# spec: spec-{parent}-{feature}
 # approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
 
 import Base
@@ -242,7 +242,7 @@ import ./main
 `main.bend` の先頭:
 
 ```
-# spec: spec-{feature}
+# spec: spec-{parent}-{feature}
 # model-of: src/{module}.py
 # model-of: src/{other-module}.py
 
@@ -251,6 +251,7 @@ import Base
 
 - 解析するのは**先頭から連続する**コメント行（`#` 始まり）と空行のみ。最初の非コメント・非空行で打ち切る。UTF-8 BOM は読み飛ばす
 - キーは `spec` / `approved` / `model-of` の 3 つ。`model-of` は複数行可。未知のキーは無視する
+- 承認行は追記式でよい（`valid_approval()` は全承認行を走査し、いずれか 1 行がハッシュ一致すれば有効）。失効時の `reason` には現在のハッシュを含める
 - `approved` の値は `^\d{4}-\d{2}-\d{2}\s+\S+\s+sha256:[0-9a-f]{12}$` に一致し、かつ日付が暦日として有効であること
   （日付・承認者・内容ハッシュのいずれかが無い行、不正な日付の行は承認行とみなさない）。内容ハッシュは
   **先頭コメント部を除いた** `LAWS.bend` の残り全文を UTF-8 で SHA-256 したものの先頭 12 桁。先頭コメント部を除くのは、
@@ -535,6 +536,9 @@ def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, obje
         bad_imports=disallowed_imports(laws_dir) if laws_dir.is_dir() else [],
     )
     if early is not None:
+        if approved is None and laws.is_file() and early["status"] == "SKIPPED":
+            # spec §4.1 (R10): give the current hash so the approver can rewrite the line directly.
+            early = {**early, "reason": early["reason"] + f" Current law-body hash: sha256:{law_body_hash(laws)}"}
         return {**base, **early}
 
     run = run_bend(laws_dir, verdict, timeout)
@@ -723,7 +727,7 @@ D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 
 
 | ID   | 決定事項                                                | 選択肢                                                                                                            | 決定内容                                                                                                               | 理由                                                                                                                                                                                                                                      |
 |------|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| D-01 | hub import（ネットワーク経由の import）をゲートで禁止するか（Q4）          | (A) 一律 FAIL（import 行の静的 allowlist）<br>(B) `.sdd-config.json` で許可可能にする<br>(C) 禁止せず bend に任せる                     | **(A)** 法則ディレクトリ内のファイルを相対パスで指す `import` だけ許可し、それ以外（未知の形式を含む）は検査器を起動する前に FAIL                                 | 判定の再現性（オフライン）・テレメトリ停止方針・サプライチェーン面の安全性を揃える。allowlist なら Hub の構文変更に強く、未知の形式は FAIL 側に倒れる。(B) は「許可した途端に PASS がネットワーク状態に依存する」ため、必要になった時点で別途議論する。(C) は bend が解決に行ってしまう（PRD NFR_002）                                  |
+| D-01 | hub import（ネットワーク経由の import）をゲートで禁止するか（Q4）          | (A) 一律 FAIL（import 行の静的 allowlist）<br>(B) `.sdd-config.json` で許可可能にする<br>(C) 禁止せず bend に任せる                     | **(A)** Bend 同梱の標準ライブラリ `Base` と、法則ディレクトリ内に実在する `.bend` への相対 `import` だけ許可し、それ以外（未知の形式・未解決の名前を含む）は検査器を起動する前に FAIL                                 | 判定の再現性（オフライン）・テレメトリ停止方針・サプライチェーン面の安全性を揃える。allowlist なら Hub の構文変更に強く、未知の形式は FAIL 側に倒れる。(B) は「許可した途端に PASS がネットワーク状態に依存する」ため、必要になった時点で別途議論する。(C) は bend が解決に行ってしまう（PRD NFR_002）                                  |
 | D-02 | `laws/` 配下の命名検証を `naming.py` の対象にするか                 | (A) `naming.py` を `.bend` に拡張し pre-tool-use で deny<br>(B) 対象にせず、固定ファイル名の不備はゲート実行時の SKIPPED / FAIL の理由で報告        | **(B)**                                                                                                              | `naming.py` は「requirement/ と specification/ を名前だけで区別する」ための書き込み時 deny で、opt-in 機能のために `.md` 前提（naming.py / doc_walker / sdd_index）を崩す価値がない。`main.bend` が import する補助 `.bend` を置く余地も残る。front-matter-reviewer の `--cross-ref` と post-tool-use が不備を可視化する |
 | D-03 | `laws-status: proven` を run-checklist が自動で立てるか、人が立てるか（Q2） | (A) run-checklist が PASS 時に spec の front matter を書き換える<br>(B) 人が立て、run-checklist はレポートで遷移を推奨するのみ               | **(B)**                                                                                                              | PASS は実行環境（bend の版、Lean の有無）に依存し、AI の自己昇格を許す経路になる。run-checklist の書き込みは `task/{ticket}/` に閉じている（spec 本文・front matter への書き込み経路を増やさない。PRD DC_002）。`impl-status` のように機械更新する前例はあるが、`proven` は「人が承認した法則が証明された」という承認連鎖の終端なので人の手に置く。front-matter-reviewer が `proven` の前提（承認行・PROOF.bend）を warning で検証する |
 | D-04 | 対応するチェックリスト ID と優先度（Q5）                             | (A) `CHK-205 [P2]`（仕様レビューの固定項目、`laws:` がある spec のみ生成）<br>(B) `CHK-205 [P1]`<br>(C) 新カテゴリ 10（`CHK-10xx`）     | **(A)**。あわせて `/run-checklist --category proof` を「CHK-205 のみ」の別名として受理する                                                | Bend は必須依存ではないため P1（マージ前必須）にするとマージが環境依存になる（PRD DC_001）。カテゴリ 1〜9 は親 PRD IR_002 で固定され、2xx 既存項目（CHK-204 制約の実装）の隣が意味的にも自然。`laws:` の無い spec に項目を出すと常に SKIPPED のノイズになる。既存の `--category` は CHK カテゴリ名を取るため、`proof` は別名として定義する |
@@ -744,7 +748,7 @@ D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 
 | 承認行の真正性（AI が `# approved:` を書いてしまう事故）                        | 中   | D-11 は「承認後の改変」を塞ぐが「AI が承認行を書く」ことは塞がない。PR レビューで承認行の追加を確認する運用 + 法則案生成スキルの指示で禁止。pre-tool-use での deny は「`.bend` への書き込み主体を判別できない」ため採らない              |
 | spec テンプレート（en/ja）への任意「Laws」節の追加（issue #148 の候補）                | 低   | 本チケットでは見送る。法則への参照は front matter `laws:` で表現でき、本文節は重複になるため。利用者から要望があれば実装チケットで判断              |
 | 本リポジトリ自身の dogfooding 用 `.sdd/laws/` を実装チケットで作るか                | 低   | 実装チケットで判断。作る場合は `proof-gate_spec.md` の 3.1.1 判定表を法則化する候補                                                                                      |
-| 関連 PRD（stale-doc-detection / run-checklist）への受け皿の追記             | 低   | 本 PR で最小限の受け皿（FR_001 への 1 項目）を追記済み。妥当性はレビューで人が判断する                                                                                            |
+| 関連 PRD（stale-doc-detection / run-checklist）への受け皿の追記             | 低   | 本 PR で最小限の受け皿（FR_001 への 1 項目）を追記済み。親 index.md の FR_006 と合わせ、2026-10-17 ユーザー承認済み                                                                                            |
 
 ---
 
