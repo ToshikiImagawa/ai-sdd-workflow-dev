@@ -87,6 +87,7 @@ ai-sdd-workflow/
 │       │   ├── hook_common.py     # 共通ヘルパー（stdin/stdout・パス解決・.sdd-config読込）
 │       │   ├── principles_sync.py # 共有: AI-SDD-PRINCIPLES.md / ai-sdd-instructions.md 再生成
 │       │   ├── fm_parser.py       # 共有: front matter 検出・パース
+│       │   ├── laws_header.py     # 共有: Bend 法則ファイル規約（先頭コメント・内容ハッシュ・import allowlist）
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
 │       │   └── env_export.py      # 共有: CLAUDE_ENV_FILE への export 書き出し
@@ -97,7 +98,7 @@ ai-sdd-workflow/
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
 ├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 6本）
-├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む）
+├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
 ├── dist/
 │   └── README.md                   # 配布リポジトリ用README
 ├── CLAUDE.md                       # 共通プロジェクト指示（正本）

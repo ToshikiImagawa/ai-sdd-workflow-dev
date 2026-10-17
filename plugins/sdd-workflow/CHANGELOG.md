@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Bend proof gate (opt-in)** - `/run-checklist` gains a `proof` verification category that checks a spec's
+  constraints as Bend laws (`${SDD_LAWS_PATH}/{feature}/` with `LAWS.bend` / `PROOF.bend` / `main.bend`). It is
+  optional: without `bend`, a law file or an approved law it reads `TOOL_NOT_FOUND` / `SKIPPED` and never fails the
+  run. A law counts only with a human-written `# approved:` line bound to a content hash of the law text, so editing
+  an approved law expires the approval. `bend` always runs with `BEND_NO_TELEMETRY=1`, and only `import Base` and
+  relative imports inside the laws directory are allowed. Law directories not bound to a spec in both directions
+  (orphan laws) fail. **PASS means the reference model satisfies the approved laws, not that the implementation is correct.**
+  `run-verification.py proof` takes `--laws-dir` (repeatable), `--verdict`, `--timeout` and `--print-laws-hash`
+- Spec front matter `laws:` / `laws-status:` (`front-matter-reviewer` validates them, and with `--cross-ref` the
+  directory, `# spec:` match, status vs. files and orphan laws); `CHK-205 [P2]` generated only for specs with `laws:`
+- `post-tool-use` reminders: re-run the proof gate after a `.bend` edit, and review the model after editing a file
+  named in a `main.bend` `# model-of:` line
+- `.sdd-config.json`: `directories.laws`, `proof.timeout_seconds`, `proof.verdict`; `SDD_LAWS_DIR` / `SDD_LAWS_PATH` exported at session start
+
 ## [5.1.0] - 2026-09-16
 
 ### Added

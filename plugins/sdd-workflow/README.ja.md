@@ -547,6 +547,66 @@ CONSTITUTION.md 準拠、必須セクションの網羅性、曖昧な記述の�
 `adr/` のフィールド・フォーマットの全体は `AI-SDD-PRINCIPLES.md` の「Architecture Decision Record」節を
 参照してください。
 
+## Bend 証明ゲート（opt-in）
+
+spec の制約・不変条件・事後条件を [Bend](https://github.com/HigherOrderCO/Bend) の法則として検査する任意の品質ゲートです。
+**既定では無効**で、spec に `laws:` が無い・`bend` CLI が無い・承認済みの法則ファイルが無い場合は何も実行せず、
+失敗にもなりません（結果は `SKIPPED` / `TOOL_NOT_FOUND`）。CI に `bend` を入れる必要はありません。
+
+### PASS の意味
+
+> **PASS は参照モデル（`main.bend`）が承認済みの法則を満たす保証であり、プロジェクトの実装の正しさの保証ではありません。**
+> モデルは実装を Bend で小さく書き直したもので、両者の乖離は証明では検知できません。`# model-of:` に挙げた
+> ファイルを編集すると、フックがモデルと法則の見直しを促します。
+
+### 配置
+
+```
+.sdd/laws/{feature}/        # 階層 spec は spec と同じ階層（例: laws/auth/user-login/）
+├── LAWS.bend               # 法則の宣言。先頭コメント: `# spec:` と `# approved:`
+├── PROOF.bend              # 証明。LAWS を import すること
+└── main.bend               # 参照モデル（省略可）。先頭コメント: `# spec:` と `# model-of:`
+```
+
+spec 側は front matter で指し示します（依存関係ではなくポインタ。`depends-on` には書きません）。
+
+```yaml
+laws: ["laws/auth/user-login"]   # ${SDD_ROOT} 相対
+laws-status: "approved"          # none | drafted | approved | proven
+```
+
+`LAWS.bend` は `# spec: <spec の id>` で始めます。`# spec:` が無い、spec に解決できない、または解決先 spec の `laws:` に
+載っていない法則ディレクトリは**孤児 laws** で、ゲートは FAIL、`front-matter-reviewer --cross-ref` は error にします。
+
+### 承認（人が行う）
+
+人がレビューし、現在の法則本文に束縛された承認行を追記して初めて法則が有効になります。
+
+```
+# approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
+```
+
+ハッシュは `python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" proof --print-laws-hash --laws-dir .sdd/laws/auth/user-login` で得ます。
+ハッシュは先頭コメント部を除いた本文が対象なので、承認行の追記では失効しませんが、法則本文の変更（空白でも）で失効し、
+ゲートは新しいハッシュ付きで `SKIPPED` を返します。AI は承認行を書きません（PR レビューで確認してください）。
+`laws-status` を `approved` / `proven` に進めるのも人の作業です。
+
+### 実行
+
+`/run-checklist {feature} {ticket}` が `CHK-205`（`laws:` を持つ spec でのみ生成）を検証し、`--category proof` はその項目だけを検証します。
+全ディレクトリを 1 回の `run-verification.py proof --laws-dir ...` で渡し、最も悪い判定
+（FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS）を記録します。`bend` は常に `BEND_NO_TELEMETRY=1` で起動し、
+`import Base` と法則ディレクトリ内の `.bend` への相対 import だけを許可します（それ以外は `bend` 起動前に FAIL）。
+オプション: `--verdict`（Lean での再検査。使えなければ `verdict: "unavailable"` でフォールバック）、`--timeout`。
+`.sdd-config.json` のキー: `directories.laws`、`proof.timeout_seconds`、`proof.verdict`。
+macOS / Linux のみ（Windows は WSL 経由）。Bend v2.0.37 で検証済み、Lean での再検査には Lean v4.34.0 が必要です。
+
+### モデルの書き方
+
+- モデルは小さく。対象は制約・不変条件・事後条件のみで、IO・外部境界・性能はモデルにしません
+- 法則 `X` の証明は `PROOF.bend` の `def X` で与えます。モデルの関数が法則を呼んだり、証明が自分の証明する法則を経由して自分自身を呼んではいけません。関数名と法則名は分けます（関数 `sort`、法則 `sort_preserves_length`）
+- 法則を改訂したら承認し直します
+
 ## 既知の制約
 
 - **`adr/` と実装の乖離は自動検出されません。** `/check-spec` は実装を抽象仕様と突き合わせ、`--full` は
@@ -588,6 +648,8 @@ CONSTITUTION.md 準拠、必須セクションの網羅性、曖昧な記述の�
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | 仕様書フルパス       |
 | `SDD_ADR_PATH`           | `.sdd/adr`           | 決定ログ（ADR）フルパス |
 | `SDD_TASK_PATH`          | `.sdd/task`          | タスクログフルパス     |
+| `SDD_LAWS_DIR`           | `laws`               | Bend 法則ディレクトリ（opt-in の証明ゲート） |
+| `SDD_LAWS_PATH`          | `.sdd/laws`          | Bend 法則ディレクトリのフルパス |
 | `SDD_INDEX`              | `on`                 | ドキュメントインデックスが有効（`index: true`、デフォルト）な間は `on` に設定される。`index` が `false` の場合は設定されず、スキルはこれによりインデックス高速パスが使えないことを判定する |
 
 ### フックのデバッグ
@@ -853,6 +915,9 @@ CONSTITUTION.md → requirement/ → *_spec.md → task/{ticket-number}/design-d
 | `directories.specification` | `specification` | 仕様書/設計書ディレクトリ                                                               |
 | `directories.adr`           | `adr`           | ADR（決定ログ）ディレクトリ                                                            |
 | `directories.task`          | `task`          | 一時タスクログディレクトリ                                                               |
+| `directories.laws`          | `laws`          | opt-in の証明ゲート用 Bend 法則ディレクトリ                                                   |
+| `proof.timeout_seconds`     | `300`           | 証明ゲートの法則ディレクトリごとの制限時間（正の整数）                                              |
+| `proof.verdict`             | `false`         | Lean カーネルでも再検査する（`--verdict`）                                                    |
 | `index`                     | `true`          | 真偽値。セッション開始時に `.sdd` ドキュメントの圧縮インデックス（SQLite → `index.md`）を構築しトークンを削減する。`false` で無効化。 |
 | `naming.ignore_patterns`    | `[]`            | ファイル名（basename）に対して照合する glob パターン（`fnmatch` 形式）。マッチしたファイルは `requirement`/`specification` の命名規則チェックをスキップする（例: テスト用ファイルの `*_test.md`）。 |
 
@@ -920,6 +985,7 @@ sdd-workflow/
 │   ├── sdd_index.py               # .sdd/ ドキュメントの構造化インデックス生成
 │   ├── hook_common.py             # 共有: stdin/stdout・パス解決・.sdd-config読込
 │   ├── fm_parser.py               # 共有: front matter 検出・パース
+│   ├── laws_header.py             # 共有: Bend 法則ファイル規約の解析（証明ゲート）
 │   ├── naming.py                  # 共有: 命名規則検証・ドキュメント種別判定
 │   ├── doc_walker.py              # 共有: 対象ドキュメント走査・design doc探索
 │   └── env_export.py              # 共有: CLAUDE_ENV_FILE への export 書き出し

@@ -87,7 +87,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 | 1  | `bend` が PATH に無い（または起動できない）                                                            | TOOL_NOT_FOUND | 失敗ではない                                              |
 | 2  | 明示指定された法則ディレクトリが存在しない                                                                  | FAIL           | `laws:` のタイプミスを素通りさせない（spec → laws 方向の不整合）                |
 | 3  | `LAWS.bend` が無い                                                                           | SKIPPED        | 法則を持たない（失敗ではない）                                      |
-| 4  | 孤児 laws: `LAWS.bend` の `# spec:` が指す id の spec ファイルが存在しない、または解決先 spec の front matter `laws:` に当該ディレクトリ（`${SDD_ROOT}` 相対）が含まれていない | FAIL           | spec に結びつかない法則は派生物として成立しない（laws → spec 方向の不整合。#2 と対になる）。`--laws-dir` 省略時の再帰走査でも明示指定でも同じ条件を課す。`reason` に解決できなかった id、または「どの spec の `laws:` に無いか」を含める |
+| 4  | 孤児 laws: `LAWS.bend` に `# spec:` 行が無い、`# spec:` が指す id の spec ファイルが存在しない、または解決先 spec の front matter `laws:` に当該ディレクトリ（`${SDD_ROOT}` 相対）が含まれていない | FAIL           | spec に結びつかない法則は派生物として成立しない（laws → spec 方向の不整合。#2 と対になる）。`--laws-dir` 省略時の再帰走査でも明示指定でも同じ条件を課す。`reason` に「`# spec:` 行が無い」、解決できなかった id、または「どの spec の `laws:` に無いか」を含める |
 | 5  | `LAWS.bend` に有効な承認行が無い（行が無い、形式不正、内容ハッシュ不一致）                                              | SKIPPED        | 未承認・承認失効。承認前の下書きには規約違反の有無を問わず FAIL を出さない（孤児判定 #4 は承認より前に評価する） |
 | 6  | `LAWS.bend` に `law` 宣言が 1 つも無い                                                            | SKIPPED        | 空の法則集合を PASS にしない                                        |
 | 7  | `PROOF.bend` が無い                                                                          | FAIL           | 承認済みなのに証明が無い                                            |
@@ -101,7 +101,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 （spec → laws）、#4 は法則ディレクトリが spec に結びつかない（laws → spec）。spec → laws と laws → spec の双方向が
 揃って初めて正とする。#4 の id → spec ファイルの解決は、front matter の `id` を走査する既存の仕組み
 （[front-matter-validation_spec.md](../quality-guardrails/front-matter-validation_spec.md) FR-009 の逆方向検査と同じ規則）に
-従い、ゲートは `${SDD_SPECIFICATION_PATH}` 配下の spec を読んで解決する。
+従い、ゲートは `${SDD_SPECIFICATION_PATH}` 配下の spec を読んで解決する。検査の向きは相補的で、ゲートは spec 側を全走査して `# spec:` の id を解決し、front-matter-reviewer は laws 側（`${SDD_LAWS_PATH}` 配下）を走査して ID レジストリと照合する。
 
 複数ディレクトリの集約判定は FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS の順で最も悪いものとし、個別判定を併記する。
 集約の `verdict` は、いずれかが `unavailable` なら `unavailable`、`--verdict` 指定時はそれ以外 `checked`、未指定なら `not-requested`。
@@ -262,7 +262,7 @@ laws-status: "approved"                          # none / drafted / approved / p
 | 再検査（verdict） | `bend --verdict` による Lean 形式化カーネルでの再検査。基盤不在時は `verdict: "unavailable"` を併記して通常検査にフォールバックする |
 | laws-status   | spec の front matter フィールド。法則の状態（`none` → `drafted` → `approved` → `proven`）                    |
 | 自己採点          | AI が生成した法則を AI 自身が証明して合格を得ること。承認行の要求で抑止する                                                 |
-| 孤児 laws       | `LAWS.bend` の `# spec:` が指す id の spec が存在しない、または解決先 spec の front matter `laws:` に当該ディレクトリが含まれていない法則ディレクトリ。spec に結びつかない法則は派生物として成立しないため、ゲート（3.1.1 #4）と front-matter-reviewer（`--cross-ref`）の双方が規約違反（FAIL / error）として検出する |
+| 孤児 laws       | `LAWS.bend` に `# spec:` 行が無い、`# spec:` が指す id の spec が存在しない、または解決先 spec の front matter `laws:` に当該ディレクトリが含まれていない法則ディレクトリ。spec に結びつかない法則は派生物として成立しないため、ゲート（3.1.1 #4）と front-matter-reviewer（`--cross-ref`）の双方が規約違反（FAIL / error）として検出する |
 
 # 6. 使用例
 

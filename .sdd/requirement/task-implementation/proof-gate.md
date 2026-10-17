@@ -276,7 +276,7 @@ Bend にはメタデータ構文が無いため、機能の識別子は**ディ�
 先頭コメント行で `LAWS.bend` に spec（`# spec:`）と承認（`# approved:`）を、`main.bend` に参照モデルが写す実装（`# model-of:`）を
 記録する。法則ファイルに front matter は持たせない。
 
-法則は必ず spec に結びつく。`LAWS.bend` の `# spec:` が指す id の spec が存在しない、またはその spec の `laws:` が当該
+法則は必ず spec に結びつく。`LAWS.bend` に `# spec:` 行が無い、`# spec:` が指す id の spec が存在しない、またはその spec の `laws:` が当該
 ディレクトリを指していない法則ディレクトリ（孤児 laws）は規約違反として検出する（proof ゲートでは FAIL、front matter
 検証では error）。spec → 法則（`laws:`）と法則 → spec（`# spec:`）の双方向が揃って初めて正とする。
 
@@ -463,4 +463,4 @@ TOOL_NOT_FOUND で素通りし、プラットフォーム固有の分岐を設�
 | `--verdict`   | Lean 形式化カーネルで証明を再検査する bend CLI のオプション。Lean 不在時は通常検査の判定を返し、再検査未実施を併記する（検査器不在の TOOL_NOT_FOUND とは区別する） |
 | hub import    | 法則ディレクトリ外を指す import（Bend Hub 名前空間・URL・親ディレクトリや絶対パス、ディレクトリ内に実在しないファイル名を含む）。Bend 同梱の標準ライブラリ（`Base`）は除く。ゲートでは規約違反（FAIL）として扱う |
 | laws-status   | spec の front matter フィールド。法則の状態（`none` → `drafted` → `approved` → `proven`）を表す。法則本文の改訂・承認取消・再検査の失敗で後退しうる |
-| 孤児 laws       | `# spec:` が指す id の spec が存在しない、またはその spec の `laws:` が当該ディレクトリを指していない法則ディレクトリ。spec に結びつかない法則は派生物として成立しないため規約違反として検出する（ゲートでは FAIL、front matter 検証では error） |
+| 孤児 laws       | `# spec:` 行が無い、`# spec:` が指す id の spec が存在しない、またはその spec の `laws:` が当該ディレクトリを指していない法則ディレクトリ。spec に結びつかない法則は派生物として成立しないため規約違反として検出する（ゲートでは FAIL、front matter 検証では error） |

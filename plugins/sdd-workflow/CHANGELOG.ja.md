@@ -9,6 +9,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Bend 証明ゲート（opt-in）** - `/run-checklist` に検証カテゴリ `proof` を追加し、spec の制約を Bend の法則
+  （`${SDD_LAWS_PATH}/{feature}/` の `LAWS.bend` / `PROOF.bend` / `main.bend`）として検査する。任意機能であり、
+  `bend`・法則ファイル・承認済みの法則が無ければ `TOOL_NOT_FOUND` / `SKIPPED` となり実行全体を失敗させない。
+  法則は、法則本文の内容ハッシュに束縛された人手の `# approved:` 行があって初めて有効になり、承認済みの法則本文を
+  編集すると承認は失効する。`bend` は常に `BEND_NO_TELEMETRY=1` で起動し、`import Base` と法則ディレクトリ内の
+  相対 import のみ許可する。spec と双方向に結びつかない法則ディレクトリ（孤児 laws）は FAIL。
+  **PASS は参照モデルが承認済みの法則を満たす保証であり、実装の正しさの保証ではない。**
+  `run-verification.py proof` は `--laws-dir`（複数可）、`--verdict`、`--timeout`、`--print-laws-hash` を取る
+- spec の front matter に `laws:` / `laws-status:` を追加（`front-matter-reviewer` が検証し、`--cross-ref` では
+  ディレクトリの実在・`# spec:` の一致・状態と実ファイルの整合・孤児 laws も検査）。`laws:` を持つ spec でのみ `CHK-205 [P2]` を生成
+- `post-tool-use` のリマインド: `.bend` 編集後に proof ゲートの再実行、`main.bend` の `# model-of:` に挙げたファイルの編集後にモデルの見直しを促す
+- `.sdd-config.json` に `directories.laws` / `proof.timeout_seconds` / `proof.verdict` を追加。セッション開始時に `SDD_LAWS_DIR` / `SDD_LAWS_PATH` をエクスポート
+
 ## [5.1.0] - 2026-09-16
 
 ### 追加
