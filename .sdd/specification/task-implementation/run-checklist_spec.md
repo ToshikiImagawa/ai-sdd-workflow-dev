@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-17"
 depends-on: ["prd-task-implementation-run-checklist"]
 tags: ["checklist", "verification"]
 category: "task-implementation"
@@ -59,6 +59,9 @@ risk: "medium"
 FR-003 のカテゴリ別自動検証度は、実装（4xx）・テスト（5xx）・セキュリティ（7xx）を Yes、
 要求（1xx）・仕様（2xx）・設計（3xx）・ドキュメント（6xx）・パフォーマンス（8xx）・デプロイ（9xx）を
 Partial として扱う（詳細は Design Doc）。
+仕様（2xx）のうち法則証明の項目（`CHK-205`）だけは、検証カテゴリ `proof` として自動検証できる
+（opt-in。判定ロジック・法則ファイル規約・承認フローは [proof-gate_spec.md](proof-gate_spec.md) に定義し、
+本機能は `proof` を既存の検証カテゴリと同じ JSON 契約で受け入れて結果を記録する）。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -75,6 +78,7 @@ Partial として扱う（詳細は Design Doc）。
 | skill | `skills/run-checklist/SKILL.md` | run-checklist | `checklist.md` を読み込み検証コマンドを実行し結果を記録するユーザー呼び出しスキル（FR-001〜005） |
 | reference | `skills/run-checklist/references/verification_commands.md` | verification_commands | 検証コマンドマッピング表 |
 | template | `skills/run-checklist/templates/{en,ja}/` | run-checklist templates | 結果・レポート・TaskList パターンの出力テンプレート（日英）（NFR-002） |
+| script | `skills/run-checklist/scripts/run-verification.py` | run-verification | 検証カテゴリ（`test` / `lint` / `typecheck` / `security` / `proof`）ごとにツール検出・実行・判定を行い JSON を返す。スキルはこの 1 本だけを事前承認で呼ぶ（FR-003） |
 
 ## 4.1. 入出力定義
 
@@ -101,6 +105,7 @@ Partial として扱う（詳細は Design Doc）。
 | 自動検証可否      | CHK-ID のカテゴリごとに定めた、自動検証が可能（Yes）か部分的（Partial）かの区分            |
 | 検証コマンド      | チェックリスト項目のコードブロックから抽出する、実行対象のテスト・リンター等のコマンド         |
 | SKIPPED       | 検証ツールが未導入のためスキップした状態。理由と導入提案を併記する                          |
+| 検証カテゴリ      | 検証スクリプトが受け付ける区分（`test` / `lint` / `typecheck` / `security` / `proof`）。`proof` の内容は proof-gate_spec が定義する |
 | 検証レポート      | 検証結果のサマリを記録する文書（`verification_report.md`）                            |
 | 品質基準の充足判定  | 検証結果に基づき、実装が品質基準を満たすか（合否）を判定すること                            |
 
@@ -148,6 +153,8 @@ sequenceDiagram
   [implement.md](../../requirement/task-implementation/implement.md) /
   quality-guardrails カテゴリの check-spec で扱う）
 - CI 環境でのテスト実行基盤の提供は対象プロジェクトの CI 構成に委ねる
+- `proof` カテゴリは opt-in であり、証明検査器（`bend`）不在時は TOOL_NOT_FOUND / SKIPPED として他カテゴリの検証を継続する
+  （判定の詳細は [proof-gate_spec.md](proof-gate_spec.md)）
 
 # 9. 原則との整合性
 

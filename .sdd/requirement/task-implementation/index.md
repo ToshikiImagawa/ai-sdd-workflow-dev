@@ -4,9 +4,9 @@ title: "タスク・実装"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-10-17"
 depends-on: []
-tags: ["task-breakdown", "tdd", "checklist", "verification", "task-cleanup"]
+tags: ["task-breakdown", "tdd", "checklist", "verification", "task-cleanup", "proof"]
 category: "task-implementation"
 priority: "high"
 risk: "high"
@@ -29,6 +29,7 @@ AI-SDD ワークフローの Tasks / Implement & Review フェーズでは、技
 - TDD に基づく段階的実装とチェックリスト進捗管理
 - 品質チェックリストの生成
 - チェックリストの自動検証（テスト・リンター・セキュリティ・整合性）
+- 法則（Bend law）による spec の制約・不変条件の証明検査（opt-in の `proof` カテゴリ）
 - 実装完了後のタスクログ整理（設計知見の永続化）
 
 本 PRD は親機能概要であり、各機能要求（FR）の詳細は子 PRD に分割されている（「2.2. 機能一覧」参照）。
@@ -56,6 +57,7 @@ flowchart LR
         ImplementTdd([TDDで実装する])
         GenerateChecklist([品質チェックリストを生成する])
         RunChecklist([チェックリストを自動検証する])
+        RunProof([法則の証明を検査する])
         CleanupTasks([タスクログを整理する])
     end
 
@@ -63,9 +65,11 @@ flowchart LR
     Developer --- ImplementTdd
     Developer --- GenerateChecklist
     Developer --- RunChecklist
+    Developer --- RunProof
     Developer --- CleanupTasks
     ImplementTdd -.->|"<<包含>>進捗更新"| BreakdownTasks
     RunChecklist -.->|"<<拡張>>実装後検証"| ImplementTdd
+    RunProof -.->|"<<拡張>>proof カテゴリ"| RunChecklist
     CleanupTasks -.->|"<<拡張>>完了後"| ImplementTdd
 ```
 
@@ -77,6 +81,7 @@ flowchart LR
 | TDD 実装 | [implement.md](implement.md) | 5 段階（Setup → Tests → Core → Integration → Polish）の TDD で実装し、チェックリスト進捗を逐次更新する |
 | チェックリスト生成 | [checklist-generation.md](checklist-generation.md) | 仕様・計画から構造化 ID・カテゴリ付きの品質チェックリストを生成する |
 | チェックリスト自動検証 | [run-checklist.md](run-checklist.md) | チェックリスト項目をテスト・リンター・セキュリティスキャン・仕様整合性チェックで自動検証する |
+| Bend 証明ゲート | [proof-gate.md](proof-gate.md) | spec の制約・不変条件を Bend の法則として表現し、参照モデルの証明を検査器で検証する opt-in の `proof` カテゴリ |
 | タスククリーンアップ | [task-cleanup.md](task-cleanup.md) | 重要な設計決定を ADR（`adr/{feature}.md`）へ統合したうえで task ディレクトリを削除する |
 
 ---
@@ -85,7 +90,7 @@ flowchart LR
 
 ## 3.1. 全体要求図
 
-各 FR ノード（FR_001〜FR_005）の詳細説明・サブ機能は、対応する子 PRD（「2.2. 機能一覧」参照）に記載する。
+各 FR ノード（FR_001〜FR_006）の詳細説明・サブ機能は、対応する子 PRD（「2.2. 機能一覧」参照）に記載する。
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
@@ -153,6 +158,13 @@ requirementDiagram
         verifymethod: demonstration
     }
 
+    functionalRequirement ProofGate {
+        id: FR_006
+        text: "specの制約をBendの法則として証明検査しopt-inで判定を記録する"
+        risk: medium
+        verifymethod: test
+    }
+
     requirement TaskGranularity {
         id: NFR_001
         text: "分解されたタスクは独立してテスト可能な粒度である"
@@ -207,6 +219,8 @@ requirementDiagram
     TestFirst - traces -> TddImplement
     PersistBeforeDelete - traces -> TaskCleanup
     ChecklistVerification - traces -> ChecklistGeneration
+    ProofGate - derives -> QualityVerification
+    ProofGate - traces -> ChecklistVerification
     ChecklistGeneration - traces -> ChecklistLayout
 ```
 
@@ -303,6 +317,8 @@ task ディレクトリの削除は、重要な設計決定の ADR（`adr/{featu
 
 - チェックリスト自動検証が実行するテスト・リンター・セキュリティスキャナーは、
   対象プロジェクトに導入済みのツールに依存する（本機能群はツール自体を提供しない）
+- Bend 証明ゲートが用いる証明検査器（`bend`）も同様に対象プロジェクト環境への導入に依存し、
+  必須依存にしない（未導入環境では素通りする。[proof-gate.md](proof-gate.md) DC_001）
 - TDD 実装の品質は基盤モデルの能力および仕様書・設計書の明確度に依存する
 
 ## 5.2. ビジネス的制約

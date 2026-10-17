@@ -4,7 +4,7 @@ title: "チェックリスト自動検証"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-10-17"
 depends-on: ["prd-task-implementation"]
 tags: ["checklist", "verification"]
 category: "task-implementation"
@@ -116,3 +116,5 @@ requirementDiagram
 - TDD 実装そのもの（[implement.md](implement.md) で扱う）
 - 実装と設計書の乖離検出（quality-guardrails カテゴリの check-spec が扱う）
 - CI 環境でのテスト実行基盤の提供（対象プロジェクトの CI 構成に委ねる）
+- Bend 証明ゲート（`proof` カテゴリ）の判定ロジック・法則ファイル規約・承認フロー（[proof-gate.md](proof-gate.md) で扱う。
+  本機能は `proof` を検証カテゴリの 1 つとして受け入れ、結果を記録する基盤を提供する）
