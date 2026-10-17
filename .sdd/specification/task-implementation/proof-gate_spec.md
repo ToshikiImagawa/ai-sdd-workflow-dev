@@ -62,9 +62,9 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
 | ID     | 要件                                                                                                                                                   | 優先度 | 根拠（上流要求）                          |
 |--------|------------------------------------------------------------------------------------------------------------------------------------------------------|-----|-----------------------------------------|
 | FR-001 | 検証カテゴリ `proof` を受け付け、対象 spec の `laws:` が指す各法則ディレクトリについて証明検査を実行し、判定を返す                                                      | 必須  | 子 PRD FR_001 / 親 PRD UR_003            |
-| FR-002 | 判定ロジック: `bend` 不在 → TOOL_NOT_FOUND、`LAWS.bend` 不在 → SKIPPED、`LAWS.bend` に承認行なし → SKIPPED（未承認）、`PROOF.bend` 不在 → FAIL、検査器 exit 0 → PASS、exit 1 かつ再検査基盤不備 → TOOL_NOT_FOUND（verdict）、exit 1 → FAIL、制限時間超過 → TIMEOUT | 必須  | 子 PRD FR_001・FR_004・NFR_001           |
+| FR-002 | 判定ロジック（この順で最初に該当したものを採用）: `bend` 不在 → TOOL_NOT_FOUND、`LAWS.bend` 不在 → SKIPPED、`LAWS.bend` に有効な承認行なし（行が無い、または内容ハッシュ不一致）→ SKIPPED（未承認・承認失効）、`PROOF.bend` 不在 → FAIL、hub import あり → FAIL、検査器 exit 0 → PASS、exit 1 かつ再検査基盤不備 → TOOL_NOT_FOUND（verdict）、exit 1 → FAIL、制限時間超過 → TIMEOUT | 必須  | 子 PRD FR_001・FR_004・NFR_001           |
 | FR-003 | 法則ディレクトリは `${SDD_ROOT}/{laws}/{feature}/`（`{laws}` は `.sdd-config.json` の `directories.laws`、既定 `laws`）とし、`LAWS.bend` / `PROOF.bend` / `main.bend` の固定ファイル名で構成する。識別子はディレクトリ名に置く | 必須  | 子 PRD FR_002・IR_002                    |
-| FR-004 | 法則ファイル先頭のコメント行（`# spec:` / `# model-of:` / `# approved:`）を規約として解析する。`# spec:` は対象 spec の id、`# model-of:` は参照モデルが写す実装ファイルのプロジェクト相対パス、`# approved:` は承認日と承認者 | 必須  | 子 PRD FR_002・FR_004                    |
+| FR-004 | 法則ファイル先頭のコメント行（`# spec:` / `# model-of:` / `# approved:`）を規約として解析する。`# spec:` は対象 spec の id、`# model-of:` は参照モデルが写す実装ファイルのプロジェクト相対パス、`# approved:` は承認日・承認者・承認時点の法則本文の内容ハッシュ。承認行は、内容ハッシュが現在の法則本文（先頭コメント部を除いた `LAWS.bend` の内容）のハッシュと一致するときのみ有効とする | 必須  | 子 PRD FR_002・FR_004                    |
 | FR-005 | 検査器の子プロセスには常に `BEND_NO_TELEMETRY=1` を付与し、法則ディレクトリ内のファイル以外を指す import 行（hub import・URL・ディレクトリ外パス）が 1 行でもあれば検査器を実行せず FAIL（規約違反）とする | 必須  | 子 PRD NFR_002                           |
 | FR-006 | Lean 形式化カーネルによる再検査（`--verdict`）は opt-in とし、再検査基盤の不備（`BendTT infrastructure` エラー）時は通常検査にフォールバックして判定を返し、再検査が未実施であることを結果に併記する | 任意  | 子 PRD FR_001（`--verdict` の opt-in）    |
 | FR-007 | 判定を仕様レビューカテゴリの固定項目 `CHK-205`（P2）としてチェックリストと検証レポートに記録し、PASS の意味（参照モデルが法則を満たす保証であり実装の正しさではない）を結果に併記する。`laws:` を持たない spec では項目を生成・検証しない | 必須  | 子 PRD IR_001・NFR_003                   |
@@ -118,6 +118,7 @@ FR-008 の形式検証ルールは [front-matter-validation_spec.md](../quality-
 | `--laws-dir <path>`   | 任意 | 検査する法則ディレクトリ（プロジェクト相対。複数指定可）。省略時は `${SDD_LAWS_PATH}` 配下の全ディレクトリを対象にする                        |
 | `--verdict`           | 任意 | Lean 形式化カーネルによる再検査を要求する（FR-006）                                                                    |
 | `--timeout <sec>`     | 任意 | 制限時間（既定は `.sdd-config.json` の `proof.timeout_seconds`、未設定なら 300）                                     |
+| `--print-laws-hash`   | 任意 | 指定した法則ディレクトリの `LAWS.bend` 法則本文の内容ハッシュを表示して終了する（読み取り専用。人が承認行を書くときに使う）           |
 | 環境変数 `SDD_LAWS_PATH` | 任意 | 法則ディレクトリの既定の探索先（session-start が `.sdd-config.json` から解決してエクスポートする）                                   |
 
 スキル（run-checklist）は、対象 spec の front matter `laws:` を読み、その各要素を `--laws-dir` に渡して呼び出す。
@@ -152,7 +153,7 @@ FR-008 の形式検証ルールは [front-matter-validation_spec.md](../quality-
 |:-----------------|:--------------------------------------------------------------------------------------|:------------|
 | `PASS`           | 承認済みの全法則について `bend` が `ALL PROOFS CHECK` を返した                                        | 合格          |
 | `FAIL`           | `SOME PROOFS FAIL` / 構文エラー、`PROOF.bend` 不在、または外部 import の規約違反                          | 不合格         |
-| `SKIPPED`        | `LAWS.bend` が無い、または `# approved:` 行が無い（未承認）                                            | 失敗ではない      |
+| `SKIPPED`        | `LAWS.bend` が無い、`# approved:` 行が無い（未承認）、または承認後に法則本文が変わり内容ハッシュが一致しない（承認失効）   | 失敗ではない      |
 | `TOOL_NOT_FOUND` | `bend` が PATH に無い。`--verdict` 時に Lean 基盤が無い場合は `verdict: "unavailable"` を併記して通常検査の判定を返す | 失敗ではない      |
 | `TIMEOUT`        | 制限時間を超過した                                                                            | 手動確認が必要     |
 
@@ -168,7 +169,7 @@ ${SDD_ROOT}/laws/{feature}/          # 階層 spec は spec と同じ階層（�
 | 規約行           | 配置                 | 値                                                | 必須                        |
 |:--------------|:-------------------|:-------------------------------------------------|:--------------------------|
 | `# spec:`     | `LAWS.bend`（他は任意） | 対象 spec の front matter `id`（例: `spec-task-implementation-proof-gate`） | 必須                        |
-| `# approved:` | `LAWS.bend`        | `YYYY-MM-DD` と承認者（例: `2026-10-17 @reviewer`）。人がレビュー後に追記する | PASS の前提（無ければ SKIPPED）     |
+| `# approved:` | `LAWS.bend`        | `YYYY-MM-DD <承認者> sha256:<内容ハッシュ先頭 12 桁>`（例: `2026-10-17 @reviewer sha256:3f9a1c0b7d2e`）。人がレビュー後に追記する。内容ハッシュは先頭コメント部を除いた `LAWS.bend` の内容から算出し、`--print-laws-hash` で得る | PASS の前提（無い・不一致なら SKIPPED） |
 | `# model-of:` | `main.bend`        | 参照モデルが写す実装ファイルのプロジェクト相対パス。1 行 1 パス、複数可           | 任意（あれば FR-009 の見直し促しの対象になる） |
 
 規約行は、ファイル先頭の連続するコメント行・空行（検査器が import より前に読み飛ばす範囲）に置く。
@@ -207,7 +208,7 @@ laws-status: "approved"                              # none / drafted / approved
 | 証明（proof）    | 法則と同名の定義として与える証明。`PROOF.bend` に置く                                                          |
 | 参照モデル        | 法則が述べる対象として Bend で書いた型・関数（`main.bend`）。対象プロジェクトの実装を写したものであり、実装そのものではない                   |
 | 証明検査器        | `bend` CLI。全法則が証明済みなら終了コード 0 と `ALL PROOFS CHECK`、それ以外は終了コード 1 と `SOME PROOFS FAIL` を返す     |
-| 承認行           | `LAWS.bend` の `# approved:` コメント行。人がレビューしたことを示し、無ければゲートは PASS にしない                           |
+| 承認行           | `LAWS.bend` の `# approved:` コメント行（承認日・承認者・内容ハッシュ）。人がレビューしたことを示し、無い・内容ハッシュ不一致ならゲートは PASS にしない |
 | hub import    | ローカルファイル以外（Bend Hub 名前空間・URL・法則ディレクトリ外のパス）を指す import。ゲートでは規約違反（FAIL）として扱う                 |
 | 再検査（verdict） | `bend --verdict` による Lean 形式化カーネルでの再検査。基盤不在時は `verdict: "unavailable"` を併記して通常検査にフォールバックする |
 | laws-status   | spec の front matter フィールド。法則の状態（`none` → `drafted` → `approved` → `proven`）                    |
@@ -271,8 +272,8 @@ stateDiagram-v2
     none --> drafted: AI が spec から LAWS.bend 案を生成（第 2 弾）
     drafted --> approved: 人がレビューし # approved: を追記
     approved --> proven: proof ゲート PASS を受けて人が遷移
-    proven --> approved: LAWS.bend を改訂（承認行を更新）
-    approved --> drafted: 人が承認を取り消す（承認行を削除）
+    proven --> drafted: LAWS.bend の法則本文を改訂（内容ハッシュ不一致で承認失効）
+    approved --> drafted: 法則本文を改訂、または人が承認行を削除
 ```
 
 # 8. 制約事項
@@ -282,8 +283,8 @@ stateDiagram-v2
 - **表現できる範囲**: 法則にできるのは spec の制約・不変条件・事後条件（純粋な性質）に限る。PRD・ADR・CONSTITUTION・
   API の IO・外部境界は証明対象外（issue #148 の結論）
 - **任意依存**: Bend は必須依存ではなく、本リポジトリの CI にも導入しない。Windows は WSL 経由のみ
-- **承認は人のプロセス**: ゲートが検査するのは承認行の有無のみで、誰が書いたかは検証できない。承認行の追加は
-  レビュー（PR）で確認する運用とし、AI は承認行を書かない
+- **承認は人のプロセス**: ゲートが検査するのは承認行の有無と内容ハッシュの一致までで、誰が書いたかは検証できない。
+  承認行の追加は レビュー（PR）で確認する運用とし、AI は承認行を書かない。承認後に法則本文を変えると承認は失効する
 - **一方向派生**: 法則・検査結果から spec・PRD を書き換えない。spec と法則の矛盾は報告し人が判断する
 - **命名の書き込み時ブロックはしない**: 法則ファイルの固定ファイル名の不備は、書き込み時の deny ではなく
   ゲート実行時の SKIPPED / FAIL の理由として報告する（naming-enforcement の対象に含めない）
@@ -309,7 +310,7 @@ stateDiagram-v2
 | FR_001          | 法則ファイルの証明検査（判定・テレメトリ停止・`--verdict`・タイムアウト） | FR-001, FR-002, FR-005, FR-006, NFR-002 |
 | FR_002          | 法則ファイルの配置と識別                          | FR-003, FR-004                   |
 | FR_003          | spec からの一方向参照                           | FR-008                           |
-| FR_004          | 人による承認ゲート                              | FR-002（承認行なし → SKIPPED）, FR-004 |
+| FR_004          | 人による承認ゲート                              | FR-002（有効な承認行なし → SKIPPED）, FR-004（内容ハッシュによる承認の束縛） |
 | FR_005          | 法則の見直し促し                               | FR-009                           |
 | FR_006          | spec から法則案を生成する承認フロー（第 2 弾）           | FR-010, §7.2 状態遷移               |
 | NFR_001         | 任意依存                                    | NFR-001                          |

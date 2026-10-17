@@ -52,7 +52,8 @@ risk: "medium"
    JSON 契約（`status` / `reason`）を読むだけで済む形にする。新しいスキル・エージェント・ベアな Bash 権限は追加しない
 2. **不在時は無害**: `bend` が無い・法則ファイルが無い・Windows である、のいずれでも TOOL_NOT_FOUND / SKIPPED で
    素通りし、他カテゴリの検証と CI（bend 非導入）に影響を与えない
-3. **自己採点を構造的に防ぐ**: 人の `# approved:` 行が無い限り PASS を返さない。AI は承認行を書かない
+3. **自己採点を構造的に防ぐ**: 人の `# approved:` 行が無い限り PASS を返さない。承認行は法則本文の内容ハッシュに束縛し、
+   承認後に法則を弱めると承認が失効する。AI は承認行を書かない
 4. **外部通信ゼロ**: `BEND_NO_TELEMETRY=1` を常に付与し、法則ディレクトリ外を指す import は検査器を起動する前に FAIL にする
 5. **spec を正典に保つ**: spec → `laws:` → 法則ファイルの一方向参照だけを持ち、`depends-on`・PRD・spec 本文を法則から変更しない
 6. **PASS の意味を誤読させない**: 判定 JSON・結果ブロック・SKILL.md・README のすべてに「参照モデルが法則を満たす保証であり、
@@ -68,7 +69,7 @@ risk: "medium"
 | 法則ディレクトリの指定                    | CLI 引数 `--laws-dir`（複数可）。省略時は `SDD_LAWS_PATH` 配下を全走査                                              | spec の `laws:` を読むのはスキル（LLM）の仕事、ディレクトリを検査するのはスクリプトの仕事に分ける。既存の `Bash(... run-verification.py *)` パターンは追加引数を許す |
 | 判定                              | 純粋関数 `precheck()` / `judge_run()`（ファイル有無・承認行・import 検査 / 終了コード・stderr → status）                                   | 判定ロジックを `subprocess` から切り離してユニットテストできるようにする                                                                        |
 | import の静的検査                    | 先頭コメント・空行を読み飛ばした後の `import` 行を正規表現で抽出し、ローカル相対パスのみ許可する allowlist                                     | Bend Hub の import 構文を網羅的に deny するより、「法則ディレクトリ内のファイルだけ許す」allowlist のほうが構文変更に強い                                     |
-| 先頭コメント規約の解析                    | `laws_header.py`（新規共有モジュール）で `# key: value` 行を dict に読む。`run-verification.py` / `post-tool-use.py` / 第 2 弾スキルで共用 | 規約の定義を 1 箇所に置く（naming.py / fm_parser.py と同じ「single source of truth」の流儀）                                           |
+| 先頭コメント規約の解析                    | `laws_header.py`（新規共有モジュール）で `# key: value` 行を dict に読み、法則本文（先頭コメント部を除く）の SHA-256 を算出する。`run-verification.py` / `post-tool-use.py` / 第 2 弾スキルで共用 | 規約の定義を 1 箇所に置く（naming.py / fm_parser.py と同じ「single source of truth」の流儀）                                           |
 | `.sdd-config.json` の拡張           | `directories.laws`（既定 `laws`）、`proof.timeout_seconds`（既定 300）、`proof.verdict`（既定 false）             | 既存の `directories` の流儀に合わせる。`SddPaths` にフィールド追加、session-start が `SDD_LAWS_DIR` / `SDD_LAWS_PATH` をエクスポート            |
 | spec front matter                | `fm_parser.LIST_KEYS` に `laws` を追加。`laws-status` はスカラー                                              | インデックス・recommend-front-matter・reviewer がリストとして扱える                                                                   |
 | front matter の検証                | `front-matter-reviewer.md` の Spec 種別チェックに行追加、`--cross-ref` に `laws:` ディレクトリ実在・`# spec:` 一致・実態整合を追加 | 既存の「ルール基盤の軽量検証（haiku）」の範囲内。ファイル存在と先頭数行の照合だけで済む                                                                    |
@@ -131,8 +132,8 @@ flowchart TD
     B -- No --> TNF[TOOL_NOT_FOUND]
     B -- Yes --> C{D/LAWS.bend が存在?}
     C -- No --> SK1["SKIPPED (no LAWS.bend)"]
-    C -- Yes --> D{"LAWS.bend に # approved: 行?"}
-    D -- No --> SK2["SKIPPED (not approved)"]
+    C -- Yes --> D{"有効な # approved: 行?<br/>(日付 + 内容ハッシュ一致)"}
+    D -- No --> SK2["SKIPPED (not approved / approval expired)"]
     D -- Yes --> E{D/PROOF.bend が存在?}
     E -- No --> F1["FAIL (no PROOF.bend)"]
     E -- Yes --> G{"全 .bend の import がディレクトリ内?"}
@@ -179,7 +180,7 @@ flowchart TD
     {
       "laws_dir": ".sdd/laws/task-implementation/proof-gate",
       "spec": "spec-task-implementation-proof-gate",
-      "approved": "2026-10-17 @reviewer",
+      "approved": "2026-10-17 @reviewer sha256:3f9a1c0b7d2e",
       "model_of": ["plugins/sdd-workflow/skills/run-checklist/scripts/run-verification.py"],
       "status": "FAIL",
       "reason": "bend reported SOME PROOFS FAIL",
@@ -194,7 +195,7 @@ flowchart TD
       "approved": null,
       "model_of": [],
       "status": "SKIPPED",
-      "reason": "LAWS.bend has no '# approved:' line; unapproved laws are never reported as PASS"
+      "reason": "LAWS.bend has no valid '# approved:' line (missing, or its content hash no longer matches the law body); unapproved laws are never reported as PASS"
     }
   ],
   "note": "PASS means the reference model (main.bend) satisfies the approved laws. It does not prove the project's implementation."
@@ -246,7 +247,7 @@ laws-status: "approved"                                   # none | drafted | app
 
 ```
 # spec: spec-task-implementation-proof-gate
-# approved: 2026-10-17 @reviewer
+# approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
 # model-of: plugins/sdd-workflow/skills/run-checklist/scripts/run-verification.py
 # model-of: plugins/sdd-workflow/scripts/laws_header.py
 
@@ -256,7 +257,11 @@ import ./main
 - 解析するのは**先頭から連続する**コメント行（`#` 始まり）と空行のみ。最初の非コメント・非空行で打ち切る
   （Bend の `book_load` が import より前に読み飛ばす範囲と一致させる）
 - キーは `spec` / `approved` / `model-of` の 3 つ。`model-of` は複数行可。未知のキーは無視する
-- `approved` の値は `^\d{4}-\d{2}-\d{2}\b.*` に一致すること（日付が無い行は承認行とみなさない）
+- `approved` の値は `^\d{4}-\d{2}-\d{2}\s+\S+\s+sha256:[0-9a-f]{12}$` に一致すること（日付・承認者・内容ハッシュのいずれかが無い行は
+  承認行とみなさない）。内容ハッシュは **先頭コメント部（連続するコメント行・空行）を除いた** `LAWS.bend` の残り全文を UTF-8 で
+  SHA-256 したものの先頭 12 桁。先頭コメント部を除くのは、`# spec:` や承認行自体の追記で承認が失効しないようにするため。
+  現在の本文から算出した値と一致しないとき承認は失効（SKIPPED）。`run-verification.py proof --print-laws-hash --laws-dir D` が
+  この値を表示する（読み取り専用。人が承認行を書くときに使う）
 - import の allowlist: `^import\s+\.?/?([A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(\.bend)?\s*$` に一致し、解決先が法則ディレクトリ内に収まるもの。
   それ以外（`@` 始まりの Hub 名前空間、`http(s)://`、`..` を含むパス、絶対パス）は 1 行でも FAIL
   （Bend 側の正確な import 構文は実装時に `guide/GUIDE.md` で再確認し、allowlist の正規表現だけを調整する）
@@ -273,6 +278,7 @@ FR-002) can be unit-tested without spawning bend. `run_proof_dir()` does the
 I/O around them.
 """
 
+import hashlib
 import os
 import re
 import shutil
@@ -284,7 +290,7 @@ LAWS_FILE = "LAWS.bend"
 PROOF_FILE = "PROOF.bend"
 MODEL_FILE = "main.bend"
 BENDTT_INFRA_MARKER = "BendTT infrastructure"
-APPROVED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\b")
+APPROVED_RE = re.compile(r"^\d{4}-\d{2}-\d{2}\s+\S+\s+sha256:(?P<digest>[0-9a-f]{12})$")
 HEADER_RE = re.compile(r"^#\s*([A-Za-z][\w-]*):\s*(.*)$")
 IMPORT_RE = re.compile(r"^\s*import\s+(?P<target>\S+)\s*$")
 LOCAL_IMPORT_RE = re.compile(r"^\.?/?([A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(\.bend)?$")
@@ -306,6 +312,24 @@ def read_header(path: Path) -> Dict[str, List[str]]:
         if m:
             header.setdefault(m.group(1), []).append(m.group(2).strip())
     return header
+
+
+def law_body_hash(path: Path) -> str:
+    """SHA-256 (first 12 hex) of LAWS.bend minus its leading comment/blank header."""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    i = 0
+    while i < len(lines) and (not lines[i].strip() or lines[i].lstrip().startswith("#")):
+        i += 1
+    return hashlib.sha256("".join(lines[i:]).encode("utf-8")).hexdigest()[:12]
+
+
+def valid_approval(header: Dict[str, List[str]], body_hash: str) -> Optional[str]:
+    """Return the approval line whose digest matches the current law body, else None."""
+    for value in header.get("approved", []):
+        m = APPROVED_RE.match(value)
+        if m and m.group("digest") == body_hash:
+            return value
+    return None
 
 
 def disallowed_imports(laws_dir: Path) -> List[str]:
@@ -336,8 +360,9 @@ def precheck(bend_found: bool, has_laws: bool, approved: Optional[str],
         return {"status": "SKIPPED", "reason": f"no {LAWS_FILE} in this laws directory"}
     if approved is None:
         return {"status": "SKIPPED",
-                "reason": f"{LAWS_FILE} has no '# approved:' line; "
-                          "unapproved laws are never reported as PASS"}
+                "reason": f"{LAWS_FILE} has no valid '# approved:' line (missing, or its content "
+                          "hash no longer matches the law body); unapproved laws are never "
+                          "reported as PASS"}
     if not has_proof:
         return {"status": "FAIL", "reason": f"{LAWS_FILE} is approved but {PROOF_FILE} is missing"}
     if bad_imports:
@@ -378,8 +403,7 @@ def run_bend(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, object]:
 def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int) -> Dict[str, object]:
     laws = laws_dir / LAWS_FILE
     header = read_header(laws) if laws.is_file() else {}
-    approved_values = [v for v in header.get("approved", []) if APPROVED_RE.match(v)]
-    approved = approved_values[0] if approved_values else None
+    approved = valid_approval(header, law_body_hash(laws)) if laws.is_file() else None
     model = laws_dir / MODEL_FILE
     model_header = read_header(model) if model.is_file() else {}
     base: Dict[str, object] = {
@@ -482,8 +506,10 @@ tests/
   `def` が法則の名前を呼んではならず、証明 `def` が自分の証明する法則を経由して自分自身を呼んでもならない
   （循環すると検査が意味を持たない）。モデルの関数名と法則名は衝突させない（例: 関数 `sort`、法則 `sort_preserves_length`）
 - **参照モデルは小さく**: 証明対象は spec の制約・不変条件・事後条件だけ。IO・外部境界・性能はモデルにしない
-- **承認行は人が書く**: `# approved:` は PR レビューで追記する。AI が書かないことを法則案生成スキルの指示に明記する
-- **LAWS.bend を改訂したら承認し直す**: 承認行の日付を更新し、`laws-status` を `approved` に戻してから再検査する
+- **承認行は人が書く**: `# approved: YYYY-MM-DD <承認者> sha256:<ハッシュ>` は PR レビューで追記する（ハッシュは
+  `run-verification.py proof --print-laws-hash --laws-dir <dir>` で得る）。AI が書かないことを法則案生成スキルの指示に明記する
+- **LAWS.bend の法則本文を改訂したら承認し直す**: 内容ハッシュが変わり承認は自動的に失効する（SKIPPED）。承認行を更新し、
+  `laws-status` を `approved` に戻してから再検査する
 
 ---
 
@@ -492,7 +518,7 @@ tests/
 | テストレベル | 対象                                                               | カバレッジ目標                                                                                                                           |
 |--------|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | ユニット   | `precheck()` / `judge_run()`                                     | 判定表の全行（bend 不在 / LAWS 不在 / 未承認 / PROOF 不在 / import 違反 / exit 0 / exit 1 + BendTT marker（verdict あり・なし）/ exit 1 / timeout）              |
-| ユニット   | `disallowed_imports()` / `read_header()`                         | ローカル import 許可、Hub 名前空間・URL・`..`・絶対パスの拒否、先頭コメントで打ち切り、`approved` の日付必須、`model-of` 複数行                                              |
+| ユニット   | `disallowed_imports()` / `read_header()` / `law_body_hash()` / `valid_approval()` | ローカル import 許可、Hub 名前空間・URL・`..`・絶対パスの拒否、先頭コメントで打ち切り、承認行の形式（日付・承認者・ハッシュ）、本文変更でハッシュ不一致 → 承認失効、先頭コメント部の変更ではハッシュ不変、`model-of` 複数行 |
 | ユニット   | `aggregate()`                                                    | FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS                                                                                   |
 | ユニット   | `run-verification.py` CLI                                        | `proof --laws-dir` 複数、省略時の `SDD_LAWS_PATH` 走査、既存 4 カテゴリの後方互換（位置引数のみで動く）、bend 不在環境での JSON 形状                                           |
 | ユニット   | `fm_parser` / `hook_common` / `session-start`                    | `laws` のリスト解析、`directories.laws` と `proof.*` の既定値、`SDD_LAWS_*` のエクスポート（`test-session-start.sh` のゴールデンは `laws` 無し設定で不変であることを確認）         |
@@ -519,6 +545,7 @@ issue #149「設計時に決める事項」の 4 点（D-01〜D-04）と、設�
 | D-07 | 法則ディレクトリの指定方法                                       | (A) スクリプトが spec の front matter を読む<br>(B) スキルが `laws:` を読み `--laws-dir` で渡す（省略時は `SDD_LAWS_PATH` 全走査）           | **(B)**                                                                                                              | A-002: spec の解釈（LLM）とディレクトリ検査（スクリプト）を分ける。スクリプトに fm_parser 依存を持ち込まず、`--laws-dir` 無しでも全走査できるので手動実行にも使える                                                                                                                              |
 | D-08 | 複数法則ディレクトリの集約                                       | (A) 最悪判定を全体 `status` にする<br>(B) 個別判定のみ                                                                        | **(A)** + `results` に個別判定                                                                                           | run-checklist は 1 項目（CHK-205）に 1 判定を記録する。FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS の順で「見逃し」を作らない                                                                                                                                  |
 | D-09 | `main.bend` の要否                                      | (A) 必須<br>(B) 任意                                                                                               | **(B)** 任意                                                                                                           | 法則が自己完結する（モデル関数を参照しない）場合もある。`# model-of:` は `main.bend` にのみ置くので、無ければ見直し促し（FR-009）の対象が無いだけで判定には影響しない                                                                                                                                 |
+| D-11 | 承認の束縛                                             | (A) 承認行の有無だけを見る<br>(B) 承認行に法則本文の内容ハッシュを含め、不一致なら承認失効（SKIPPED）<br>(C) git の履歴で承認日以降の変更を検出     | **(B)**                                                                                                              | (A) は「承認後に法則を弱めて PASS を得る」抜け道を残す（prd-reviewer 指摘）。(B) は `LAWS.bend` 単体で検証でき、先頭コメント部を除外することで承認行の追記自体では失効しない。`--print-laws-hash` で人がハッシュを得られる。(C) は git 非依存の方針（フックは git 無しでも動く）と相容れず、日付粒度で曖昧 |
 | D-10 | 階層 spec の法則ディレクトリ                                   | (A) `laws/{parent}/{child}/`<br>(B) `laws/{parent}-{child}/`                                                     | **(A)**（統括 / ユーザーの回答で変わりうる）                                                                                        | spec / requirement / adr と同じ階層規則（AI-SDD の階層構造）に揃え、識別子をディレクトリ名に置く方針と整合する。`laws:` はパスのリストなので (B) でも動作はするが、既定を揃えておく                                                                                                                      |
 
 ## 9.2. 未解決の課題
@@ -528,7 +555,7 @@ issue #149「設計時に決める事項」の 4 点（D-01〜D-04）と、設�
 | clarify Q1〜Q6（D-01 / D-03 / D-04 / D-05 / D-06 / D-10）のユーザー回答    | 中   | 統括セッション経由で回答待ち。既定値で記述済み。回答で変わる場合は spec §4.1 / 本書 §9.1 / front-matter-validation_spec FR-009 を同時に更新する                                            |
 | Bend Hub の import 構文の正確な形                                    | 低   | allowlist 方式なので構文が確定しなくても FAIL 側に倒れる。実装時に `guide/GUIDE.md` で確認し `LOCAL_IMPORT_RE` だけ調整                                                         |
 | `sdd_index.py` に `laws` / `laws_status` 列を持たせるか                 | 低   | 本チケットでは持たせない（スキーマ bump が必要）。doc-consistency-checker で「`drafted` のまま放置された spec」を列挙したくなった時点で別チケット                                                 |
-| 承認行の真正性（AI が `# approved:` を書いてしまう事故）                        | 中   | ゲートは有無しか見られない。PR レビューで承認行の追加を確認する運用 + 法則案生成スキルの指示で禁止。pre-tool-use での deny は「`.bend` への書き込み主体を判別できない」ため採らない                                      |
+| 承認行の真正性（AI が `# approved:` を書いてしまう事故）                        | 中   | ゲートは有無と内容ハッシュの一致しか見られない（D-11 は「承認後の改変」を塞ぐが「AI が承認行を書く」ことは塞がない）。PR レビューで承認行の追加を確認する運用 + 法則案生成スキルの指示で禁止。pre-tool-use での deny は「`.bend` への書き込み主体を判別できない」ため採らない                                      |
 | 本リポジトリ自身の dogfooding 用 `.sdd/laws/` を実装チケットで作るか                | 低   | 実装チケットで判断。作る場合は `proof-gate_spec.md` の FR-002 判定表を法則化する候補                                                                                      |
 
 ---
