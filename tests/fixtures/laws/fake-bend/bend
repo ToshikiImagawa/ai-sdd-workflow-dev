@@ -1,0 +1,36 @@
+#!/bin/sh
+# Dummy `bend` for tests/test_run_verification_proof.py.
+#
+# Put this directory at the front of PATH so run-verification.py's `proof`
+# category spawns it instead of a real Bend install (CI has none). Behavior is
+# selected with FAKE_BEND_MODE:
+#   pass   -> exit 0, prints "ALL PROOFS CHECK"            (spec 3.1.1 #10)
+#   fail   -> exit 1, prints "SOME PROOFS FAIL"            (#12)
+#   infra  -> exit 1, stderr mentions "BendTT infrastructure" when --verdict
+#             is passed; behaves like `pass` otherwise      (#11 fallback)
+#   quiet  -> exit 0 with no ALL PROOFS CHECK marker         (#12)
+#   sleep  -> sleeps FAKE_BEND_SLEEP seconds (default 5)     (#9 timeout)
+# When FAKE_BEND_LOG is set, the arguments and BEND_NO_TELEMETRY are appended
+# to that file so the test can assert on the environment the gate passed.
+if [ -n "${FAKE_BEND_LOG:-}" ]; then
+    printf 'args=%s telemetry=%s cwd=%s\n' "$*" "${BEND_NO_TELEMETRY:-unset}" "$(pwd)" >> "$FAKE_BEND_LOG"
+fi
+case "${FAKE_BEND_MODE:-pass}" in
+    pass)
+        echo "ALL PROOFS CHECK"; exit 0 ;;
+    fail)
+        echo "SOME PROOFS FAIL"; exit 1 ;;
+    quiet)
+        echo "checked 0 proofs"; exit 0 ;;
+    infra)
+        case " $* " in
+            *" --verdict "*)
+                echo "error: BendTT infrastructure is not available (Lean not found)" >&2; exit 1 ;;
+            *)
+                echo "ALL PROOFS CHECK"; exit 0 ;;
+        esac ;;
+    sleep)
+        sleep "${FAKE_BEND_SLEEP:-5}"; echo "ALL PROOFS CHECK"; exit 0 ;;
+    *)
+        echo "unknown FAKE_BEND_MODE" >&2; exit 2 ;;
+esac
