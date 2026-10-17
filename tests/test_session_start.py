@@ -694,3 +694,28 @@ class TestMainIntegration:
         ss.main()
 
         assert 'export SDD_LANG="jp"' in env_file.read_text(encoding="utf-8")
+
+
+# --- absolute / external .sdd root (issue #151) -----------------------------
+
+
+class TestWarnExternalRoot:
+    def test_absolute_root_warns_on_stderr(self, tmp_path, capsys):
+        external = tmp_path / "external-sdd"
+        assert ss.warn_if_external_root(str(external), str(tmp_path / "proj")) is True
+        err = capsys.readouterr().err
+        assert "[AI-SDD] Warning" in err
+        assert "not supported" in err
+        assert str(external) in err
+        # Points the user at the supported alternatives.
+        assert "relative" in err
+        assert "submodule" in err
+
+    def test_parent_traversal_root_warns(self, tmp_path, capsys):
+        assert ss.warn_if_external_root("../shared", str(tmp_path / "proj")) is True
+        assert "not supported" in capsys.readouterr().err
+
+    def test_relative_root_is_silent(self, tmp_path, capsys):
+        assert ss.warn_if_external_root(".sdd", str(tmp_path)) is False
+        assert ss.warn_if_external_root("docs/sdd", str(tmp_path)) is False
+        assert capsys.readouterr().err == ""

@@ -9,6 +9,19 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **`.sdd-config.json` の `root` に絶対パスを指定するとフックが無音で壊れる** (#151) -
+  プロジェクト外を指す `root` では、`pre-tool-use.py` が外部ドキュメントを警告なく素通りし
+  （命名規則検証・CONSTITUTION 注入が効かない）、`post-tool-use.py` はソース編集が外部 spec に
+  マッチすると `Path.relative_to` の `ValueError` で落ち（rc=1）、`session-start.py` は何も警告しなかった。
+  絶対パス／プロジェクト外の root は現時点で**未対応**であり、本修正はそれを無音ではなく明示する:
+  `session-start.py` が警告（相対パスまたは git サブモジュールを案内）を出して処理を継続し、
+  `post-tool-use.py` はプロジェクト外ドキュメントを無視して落ちなくなり、`pre-tool-use.py` は新設の
+  `hook_common.is_within_project()` / `is_external_sdd_root()` ヘルパー（将来外部 root を対応する際の
+  差し替え点）でプロジェクト外パスを「対象外」として扱い、`init-structure.py` は無意味になる
+  `{root}/.cache/` の `.gitignore` 追記をスキップして警告する。
+
 ## [5.1.0] - 2026-09-16
 
 ### 追加

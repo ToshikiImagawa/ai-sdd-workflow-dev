@@ -25,7 +25,11 @@ from typing import Any, Dict
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doc_walker import iter_legacy_design_docs  # noqa: E402
 from env_export import rewrite_exports  # noqa: E402
-from hook_common import resolve_project_root  # noqa: E402
+from hook_common import (  # noqa: E402
+    EXTERNAL_ROOT_WARNING,
+    is_external_sdd_root,
+    resolve_project_root,
+)
 # Re-exported so this module keeps exposing the sync API it used to own.
 from principles_sync import (  # noqa: E402,F401
     get_plugin_version,
@@ -123,6 +127,20 @@ def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
         cfg.task_dir = dirs["task"]
     cfg.index = parse_index_flag(raw.get("index"))
     return cfg
+
+
+def warn_if_external_root(sdd_root: str, project_root: str) -> bool:
+    """Warn (stderr) when ``root`` is absolute or outside the project.
+
+    Absolute / external roots are not supported yet (issue #151): the
+    PreToolUse/PostToolUse hooks skip files outside the project, so the user
+    must be told that the documents there are unprotected. Processing continues
+    so the session still starts. Returns True when a warning was printed.
+    """
+    if not is_external_sdd_root(sdd_root, project_root):
+        return False
+    print(EXTERNAL_ROOT_WARNING.format(root=sdd_root), file=sys.stderr)
+    return True
 
 
 def ensure_sdd_directory(sdd_dir: str, docs_root: str) -> None:
@@ -378,6 +396,7 @@ def main() -> None:
     raw_config = load_or_create_config(config_path, args.default_lang)
     cfg = build_sdd_config(raw_config, args.default_lang)
 
+    warn_if_external_root(cfg.root, project_root)
     sdd_dir = str(Path(project_root) / cfg.root)
     ensure_sdd_directory(sdd_dir, cfg.root)
 
