@@ -4,7 +4,7 @@ title: "チェックリスト自動検証"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-10-17"
 depends-on: ["prd-task-implementation"]
 tags: ["checklist", "verification"]
 category: "task-implementation"
@@ -59,6 +59,7 @@ flowchart LR
 
 - チェックリスト自動検証
     - チェックリスト項目の自動検証（テスト・リンター・セキュリティスキャン・仕様整合性）
+    - opt-in の検証カテゴリ `proof`（法則証明）の受け入れと結果記録（判定は [proof-gate.md](proof-gate.md)）
     - 品質基準の充足判定と検証結果（合否・根拠）の記録
 
 ---
@@ -91,6 +92,8 @@ requirementDiagram
 
 生成されたチェックリスト項目を、テスト実行・リンター・セキュリティスキャナー・
 仕様整合性チェックにより自動検証し、実装が品質基準を満たすか判定する。
+検証カテゴリは拡張可能であり、opt-in の `proof`（法則証明。判定・規約は [proof-gate.md](proof-gate.md)）も
+同じ結果契約で受け入れて記録する。
 [index.md](index.md) の UR_003 から派生。
 
 **トリガー方式:** 手動（開発者による `/run-checklist` スキル呼び出し）
@@ -116,3 +119,5 @@ requirementDiagram
 - TDD 実装そのもの（[implement.md](implement.md) で扱う）
 - 実装と設計書の乖離検出（quality-guardrails カテゴリの check-spec が扱う）
 - CI 環境でのテスト実行基盤の提供（対象プロジェクトの CI 構成に委ねる）
+- Bend 証明ゲート（`proof` カテゴリ）の判定ロジック・法則ファイル規約・承認フロー（[proof-gate.md](proof-gate.md) で扱う。
+  本機能は `proof` を検証カテゴリの 1 つとして受け入れ、結果を記録する基盤を提供する）
