@@ -11,6 +11,8 @@ sdd-version: "5.1.0"
 depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-run-checklist", "spec-quality-guardrails-front-matter-validation", "spec-quality-guardrails-stale-doc-detection"]
 tags: ["proof", "bend", "laws", "checklist", "verification", "front-matter", "hooks"]
 category: "task-implementation"
+priority: "low"
+risk: "medium"
 ---
 
 # Bend 証明ゲート（run-checklist の proof カテゴリ）の技術設計 `<MUST>`
