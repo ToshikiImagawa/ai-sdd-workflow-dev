@@ -67,10 +67,10 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
 | FR-002 | 判定は「3.1.1 判定表」の順で最初に該当したものを採用する                                                                                                           | 必須  | 子 PRD FR_001・FR_004・NFR_001           |
 | FR-003 | 法則ディレクトリは `${SDD_LAWS_PATH}/{feature}/`（`SDD_LAWS_PATH` は `${SDD_ROOT}/` + `.sdd-config.json` の `directories.laws`、既定 `laws`）とし、`LAWS.bend` / `PROOF.bend` / `main.bend` の固定ファイル名で構成する。識別子はディレクトリ名に置く | 必須  | 子 PRD FR_002・IR_002                    |
 | FR-004 | 法則ファイル先頭のコメント行（`# spec:` / `# model-of:` / `# approved:`）を規約として解析する。`# spec:` は対象 spec の id、`# model-of:` は参照モデルが写す実装ファイルのプロジェクト相対パス、`# approved:` は承認日・承認者・承認時点の法則本文の内容ハッシュ。承認行は、内容ハッシュが現在の法則本文（先頭コメント部を除いた `LAWS.bend` の内容）のハッシュと一致するときのみ有効とする | 必須  | 子 PRD FR_002・FR_004                    |
-| FR-005 | 検査器の子プロセスには常に `BEND_NO_TELEMETRY=1` を付与する。法則ディレクトリ内の全 `.bend` ファイルの import 文を静的に検査し、「同じ法則ディレクトリ内のファイルを相対パスで指す `import`」以外の import 文（hub import、URL、絶対パス、親ディレクトリ、別名・部分 import 等の未知の形式）が 1 行でもあれば検査器を実行せず FAIL（規約違反）とする | 必須  | 子 PRD NFR_002                           |
+| FR-005 | 検査器の子プロセスには常に `BEND_NO_TELEMETRY=1` を付与する。法則ディレクトリ内の全 `.bend` ファイルの import 文を静的に検査し、「同じ法則ディレクトリ内に実在する `.bend` ファイルを相対パスで指す `import`」と「Bend 同梱の標準ライブラリ（`import Base`）」以外の import 文（hub import、URL、絶対パス、親ディレクトリ、ディレクトリ内に実在しないファイル名、別名・部分 import 等の未知の形式）が 1 行でもあれば検査器を実行せず FAIL（規約違反）とする | 必須  | 子 PRD NFR_002                           |
 | FR-006 | Lean 形式化カーネルによる再検査（`--verdict`）は opt-in とする。再検査基盤の不備を検査器が示した場合は通常検査にフォールバックして判定を返し、再検査が未実施であること（`verdict: "unavailable"`）を結果に併記する | 任意  | 子 PRD FR_001（`--verdict` の opt-in）    |
 | FR-007 | 判定を仕様レビューカテゴリの固定項目 `CHK-205`（P2）としてチェックリストと検証レポートに記録し、PASS の意味（参照モデルが法則を満たす保証であり実装の正しさではない）を結果に併記する。`CHK-205` は `laws:` を持つ spec でのみ生成・検証する。`/run-checklist` の `--category` は CHK のカテゴリ名を取るため、`--category specification`（2xx）と無指定で `CHK-205` を検証し、加えて `--category proof` を「`CHK-205` のみを検証する別名」として受理する | 必須  | 子 PRD IR_001・NFR_003                   |
-| FR-008 | spec の front matter に `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト。例: `laws/task-implementation/proof-gate`）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を定義する。法則は下流であり `depends-on` に含めない（`laws:` は依存関係ではなく探索用ポインタ）。`laws-status` の遷移はすべて人が行い、ゲートは PASS 時に `proven` への遷移を**推奨**するに留める | 必須  | 子 PRD FR_003 / DC_002                   |
+| FR-008 | spec の front matter に `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト。例: `laws/task-implementation/proof-gate`）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を定義する。法則は下流であり `depends-on` に含めない（`laws:` は依存関係ではなく探索用ポインタ）。`laws-status` のうち `approved` / `proven` への遷移は人が行い（`drafted` は法則案生成スキルが付与してよい）、ゲートは PASS 時に `proven` への遷移を**推奨**するに留める | 必須  | 子 PRD FR_003 / DC_002                   |
 | FR-009 | 法則ファイル（`.bend`）編集後は proof ゲートの再実行を、`# model-of:` に記録された実装ファイルの編集後は参照モデルと法則の見直しを、非ブロッキングで促す | 必須  | 子 PRD FR_005                            |
 | FR-010 | spec の制約事項・機能要件表から `LAWS.bend` 案を生成し、人の承認後に参照モデルと証明を書く承認フローの境界（入力・出力・状態遷移）を定義する。生成スキルの実装は別チケット | 任意  | 子 PRD FR_006 / DC_002                   |
 
@@ -90,7 +90,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 | 4  | `LAWS.bend` に有効な承認行が無い（行が無い、形式不正、内容ハッシュ不一致）                                              | SKIPPED        | 未承認・承認失効。承認前の下書きには規約違反の有無を問わず FAIL を出さない                  |
 | 5  | `LAWS.bend` に `law` 宣言が 1 つも無い                                                            | SKIPPED        | 空の法則集合を PASS にしない                                        |
 | 6  | `PROOF.bend` が無い                                                                          | FAIL           | 承認済みなのに証明が無い                                            |
-| 7  | `PROOF.bend` が `LAWS.bend` を import していない、または規約外の import がある（FR-005）                          | FAIL           | 検査器を実行せず規約違反として扱う                                      |
+| 7  | `PROOF.bend` が `LAWS.bend` を import していない、または規約外の import がある（FR-005。実在しないローカルファイル名を含む） | FAIL           | 検査器を実行せず規約違反として扱う                                      |
 | 8  | 検査器が制限時間を超過した                                                                           | TIMEOUT        | 手動確認が必要                                              |
 | 9  | 検査器が成功（終了コード 0）かつ標準出力に `ALL PROOFS CHECK` を含む                                            | PASS           | `--verdict` で再検査済みなら `verdict: "checked"`                   |
 | 10 | `--verdict` 指定時に、検査器が再検査基盤の不備を示した                                                        | （フォールバック）    | `--verdict` なしで再実行し、その結果を #8〜#11 で判定。`verdict: "unavailable"` を併記（FR-006） |
@@ -248,7 +248,7 @@ laws-status: "approved"                          # none / drafted / approved / p
 | 証明検査器        | `bend` CLI。全法則が証明済みなら成功（終了コード 0、`ALL PROOFS CHECK`）、それ以外は失敗（終了コード 1、`SOME PROOFS FAIL`）を返す |
 | 承認行           | `LAWS.bend` の `# approved:` コメント行（承認日・承認者・内容ハッシュ）。人がレビューしたことを示し、無い・内容ハッシュ不一致ならゲートは PASS にしない |
 | 内容ハッシュ        | 先頭コメント部を除いた `LAWS.bend` の内容から算出したハッシュの先頭 12 桁。承認を法則本文に束縛する                                 |
-| hub import    | 法則ディレクトリ外を指す import（Bend Hub 名前空間・URL・親ディレクトリ・絶対パスを含む）。ゲートでは規約違反（FAIL）として扱う            |
+| hub import    | 法則ディレクトリ外を指す import（Bend Hub 名前空間・URL・親ディレクトリ・絶対パス、ディレクトリ内に実在しないファイル名を含む）。Bend 同梱の標準ライブラリ `Base` は除く。ゲートでは規約違反（FAIL）として扱う |
 | 再検査（verdict） | `bend --verdict` による Lean 形式化カーネルでの再検査。基盤不在時は `verdict: "unavailable"` を併記して通常検査にフォールバックする |
 | laws-status   | spec の front matter フィールド。法則の状態（`none` → `drafted` → `approved` → `proven`）                    |
 | 自己採点          | AI が生成した法則を AI 自身が証明して合格を得ること。承認行の要求で抑止する                                                 |

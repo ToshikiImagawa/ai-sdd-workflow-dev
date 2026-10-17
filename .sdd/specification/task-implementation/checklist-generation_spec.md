@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
 updated: "2026-10-17"
-depends-on: ["prd-task-implementation-checklist-generation", "prd-task-implementation-proof-gate"]
+depends-on: ["prd-task-implementation-checklist-generation"]
 tags: ["checklist", "quality"]
 category: "task-implementation"
 priority: "medium"

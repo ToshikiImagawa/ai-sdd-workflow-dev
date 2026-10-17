@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
 updated: "2026-10-17"
-depends-on: ["prd-quality-guardrails-front-matter-validation", "prd-task-implementation-proof-gate"]
+depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
 priority: "low"

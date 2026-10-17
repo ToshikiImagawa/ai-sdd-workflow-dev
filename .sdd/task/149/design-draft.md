@@ -56,8 +56,8 @@ risk: "medium"
    素通りし、他カテゴリの検証と CI（bend 非導入）に影響を与えない
 3. **自己採点を構造的に抑止する**: 有効な `# approved:` 行（承認日・承認者・法則本文の内容ハッシュ）が無い限り PASS を返さない。
    承認後に法則本文を弱めると承認が失効する。AI は承認行を書かない
-4. **外部通信ゼロ**: `BEND_NO_TELEMETRY=1` を常に付与し、法則ディレクトリ内の相対 import 以外の import 文は検査器を起動する前に
-   FAIL にする（allowlist。未知の形式は FAIL 側に倒れる）
+4. **外部通信ゼロ**: `BEND_NO_TELEMETRY=1` を常に付与し、法則ディレクトリ内に実在するファイルへの相対 import と標準ライブラリ `Base`
+   以外の import 文は検査器を起動する前に FAIL にする（allowlist。未知の形式・未解決の名前は FAIL 側に倒れる）
 5. **spec を正典に保つ**: spec → `laws:` → 法則ファイルの一方向参照だけを持ち、`depends-on`・PRD・spec の本文・front matter を
    法則から変更しない
 6. **PASS の意味を誤読させない**: 判定 JSON・結果ブロック・SKILL.md・README のすべてに「参照モデルが法則を満たす保証であり、
@@ -72,7 +72,7 @@ risk: "medium"
 | 証明検査の実行                        | `run-verification.py` に `proof` カテゴリを追加（Python。`subprocess.run` で `bend` を起動）                      | スキルの `allowed-tools` が事前承認しているのはこのスクリプト 1 本だけ（Check 5.4 のスコープ付き Bash）。bend を直接呼ぶ経路を作らない（PRD DC_003、A-002）        |
 | 法則ディレクトリの指定                    | CLI 引数 `--laws-dir`（複数可、1 回の呼び出しで全部渡す）。省略時は `SDD_LAWS_PATH` 配下を再帰走査し `LAWS.bend` / `PROOF.bend` を直接含むディレクトリだけを対象にする | spec の `laws:` を読むのはスキル（LLM）の仕事、ディレクトリを検査・集約するのはスクリプトの仕事に分ける（haiku に集約させない）。既存の `Bash(... run-verification.py *)` パターンは追加引数を許す |
 | 判定                              | 純粋関数 `precheck()` / `judge_run()` / `needs_plain_fallback()`（ファイル有無・承認・import 検査 / 終了コード・出力 → status） | 判定表（spec 3.1.1）を `subprocess` から切り離してユニットテストできるようにする                                                               |
-| import の静的検査                    | `import` / `from` で始まる行をすべて拾い、「同じ法則ディレクトリ内のファイルを相対パスで指す `import <path>`」だけを allowlist で許可する。それ以外は FAIL | Bend Hub の import 構文を網羅的に deny するより allowlist のほうが構文変更に強い。コメント付き・別名・`from` 形式も「許可形式に一致しない」として FAIL 側に倒れる         |
+| import の静的検査                    | `import` / `from` で始まる行をすべて拾い、「同じ法則ディレクトリ内に実在する `.bend` を相対パスで指す `import <path>`」と「Bend 同梱の標準ライブラリ `import Base`」だけを allowlist で許可する。それ以外（実在しないファイル名を含む）は FAIL | Bend Hub の import 構文を網羅的に deny するより allowlist のほうが構文変更に強い。コメント付き・別名・`from` 形式も「許可形式に一致しない」として FAIL 側に倒れる         |
 | 先頭コメント規約の解析                    | `scripts/laws_header.py`（新規共有モジュール）で `# key: value` 行を dict に読み、法則本文（先頭コメント部を除く）の内容ハッシュを算出する。`run-verification.py` / `post-tool-use.py` / 第 2 弾スキルで共用 | 規約の定義を 1 箇所に置く（naming.py / fm_parser.py と同じ「single source of truth」の流儀）                                           |
 | `.sdd-config.json` の拡張           | `directories.laws`（既定 `laws`）、`proof.timeout_seconds`（既定 300）、`proof.verdict`（既定 false）。CLI 引数が設定より優先 | 既存の `directories` の流儀に合わせる。`SddPaths` にフィールド追加、session-start が `SDD_LAWS_DIR` / `SDD_LAWS_PATH` をエクスポート            |
 | spec front matter                | `fm_parser.LIST_KEYS` に `laws` を追加。`laws-status` はスカラー                                              | インデックス・recommend-front-matter・reviewer がリストとして扱える                                                                   |
@@ -218,24 +218,35 @@ flowchart TD
 
 ```yaml
 ---
-id: "spec-task-implementation-proof-gate"
+id: "spec-{parent}-{feature}"
 type: "spec"
 sdd-phase: "specify"
-depends-on: ["prd-task-implementation-proof-gate"]        # laws は含めない（下流）
-laws: ["laws/task-implementation/proof-gate"]             # ${SDD_ROOT} 相対ディレクトリ。LIST_KEYS。スキルは ${SDD_ROOT}/ を前置して渡す
+depends-on: ["prd-{parent}-{feature}"]                    # laws は含めない（下流）
+laws: ["laws/{parent}/{feature}"]                         # ${SDD_ROOT} 相対ディレクトリ。LIST_KEYS。スキルは ${SDD_ROOT}/ を前置して渡す
 laws-status: "approved"                                   # none | drafted | approved | proven
 ---
 ```
 
 ## 5.4. 法則ファイルの先頭コメント規約（`laws_header.py` が解析する範囲）
 
-```
-# spec: spec-task-implementation-proof-gate
-# approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
-# model-of: plugins/sdd-workflow/skills/run-checklist/scripts/run-verification.py
-# model-of: plugins/sdd-workflow/scripts/laws_header.py
+`LAWS.bend` の先頭:
 
+```
+# spec: spec-{feature}
+# approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
+
+import Base
 import ./main
+```
+
+`main.bend` の先頭:
+
+```
+# spec: spec-{feature}
+# model-of: src/{module}.py
+# model-of: src/{other-module}.py
+
+import Base
 ```
 
 - 解析するのは**先頭から連続する**コメント行（`#` 始まり）と空行のみ。最初の非コメント・非空行で打ち切る。UTF-8 BOM は読み飛ばす
@@ -245,10 +256,11 @@ import ./main
   **先頭コメント部を除いた** `LAWS.bend` の残り全文を UTF-8 で SHA-256 したものの先頭 12 桁。先頭コメント部を除くのは、
   `# spec:` や承認行自体の追記で承認が失効しないようにするため。現在の本文から算出した値と一致しないとき承認は失効（SKIPPED）。
   `run-verification.py proof --print-laws-hash --laws-dir D` がこの値を表示する（読み取り専用。人が承認行を書くときに使う）
-- import の allowlist: `import` または `from` で始まる行はすべて検査対象。許可するのは
-  `^import\s+(\./)?([A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(\.bend)?$`（行全体。末尾コメント・別名・`from` 形式は不一致 → FAIL）に一致し、
-  かつ解決先が法則ディレクトリ内に収まるもの。絶対パス・`..`・`@` 始まりの Hub 名前空間・URL は FAIL。サブディレクトリの `.bend` も
-  再帰的に検査する。Bend 側の正確な import 構文は実装時に `guide/GUIDE.md` で再確認し、必要なら allowlist の正規表現だけを調整する
+- import の allowlist: `import` または `from` で始まる行はすべて検査対象。許可するのは (a) `import Base`（Bend 同梱の標準ライブラリ。
+  `STDLIB_IMPORTS` に列挙）と、(b) `^import\s+(\./)?([A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(\.bend)?$`（行全体。末尾コメント・別名・`from` 形式は
+  不一致 → FAIL）に一致し、解決先が法則ディレクトリ内に収まり、かつ対応する `.bend` ファイルが**実在**するもの。実在確認により、
+  bare 名の Hub import（`import SomePkg`）が相対 import に見えて素通りすることを防ぐ。絶対パス・`..`・`@` 始まりの Hub 名前空間・URL は FAIL。
+  サブディレクトリの `.bend` も再帰的に検査する。Bend 側の正確な import 構文は実装時に `guide/GUIDE.md` で再確認し、必要なら allowlist の正規表現だけを調整する
 - `PROOF.bend` は `LAWS` を import していなければ FAIL（検査器自身が拒否するという調査時の観察に依存せず、ゲートが自前で課す）
 - `law` 宣言の有無は `^\s*law\s+[A-Za-z_]` に一致する行の有無で見る（実装時に GUIDE.md で構文を再確認）
 
@@ -284,6 +296,9 @@ LOCAL_IMPORT_RE = re.compile(
     r"^import\s+(?P<target>(?:\./)?(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(?:\.bend)?)$"
 )
 LAWS_IMPORT_RE = re.compile(r"^import\s+(?:\./)?LAWS(?:\.bend)?$")
+# Bend's bundled standard library: importable by bare name without a file in the laws dir.
+# Confirm the exact name against guide/GUIDE.md at implementation time.
+STDLIB_IMPORTS = frozenset({"Base"})
 LAW_DECL_RE = re.compile(r"^\s*law\s+[A-Za-z_]")
 
 
@@ -344,22 +359,35 @@ def imports_laws(proof_path: Path) -> bool:
     return any(LAWS_IMPORT_RE.match(line.strip()) for line in _read_lines(proof_path))
 
 
+def _local_import_exists(bend_file: Path, root: Path, target: str) -> bool:
+    """True if ``target`` resolves inside ``root`` to an existing ``.bend`` file."""
+    resolved = (bend_file.parent / target).resolve()
+    if resolved != root and root not in resolved.parents:
+        return False
+    candidates = [resolved] if resolved.suffix == ".bend" else [resolved.with_suffix(".bend"), resolved]
+    return any(c.is_file() for c in candidates)
+
+
 def disallowed_imports(laws_dir: Path) -> List[str]:
-    """Import lines (any ``import``/``from`` line) that are not a local relative import
-    resolving inside ``laws_dir``. Everything not matching the allowlist fails."""
+    """Import lines (any ``import``/``from`` line) that are neither the bundled standard
+    library nor a relative import of an existing ``.bend`` file inside ``laws_dir``.
+    Everything not matching the allowlist fails (unknown forms, unresolved names)."""
     root = laws_dir.resolve()
     bad: List[str] = []
     for bend_file in sorted(laws_dir.rglob("*.bend")):
         for raw in _read_lines(bend_file):
             if not IMPORT_LINE_RE.match(raw):
                 continue
-            m = LOCAL_IMPORT_RE.match(raw.strip())
+            line = raw.strip()
+            m = LOCAL_IMPORT_RE.match(line)
             if m is None:
-                bad.append(f"{bend_file.relative_to(laws_dir)}: {raw.strip()}")
+                bad.append(f"{bend_file.relative_to(laws_dir)}: {line}")
                 continue
-            resolved = (bend_file.parent / m.group("target")).resolve()
-            if resolved != root and root not in resolved.parents:
-                bad.append(f"{bend_file.relative_to(laws_dir)}: {raw.strip()}")
+            target = m.group("target")
+            if target in STDLIB_IMPORTS:
+                continue
+            if not _local_import_exists(bend_file, root, target):
+                bad.append(f"{bend_file.relative_to(laws_dir)}: {line}")
     return bad
 ```
 
@@ -628,7 +656,7 @@ tests/
 ├── test_hook_common.py（拡張）                 # directories.laws / proof.* の既定値
 ├── test_fm_parser.py（拡張）                   # laws のインライン / ブロックリスト
 ├── test_post_tool_use.py（拡張）               # .bend 編集 / # model-of: 一致 / 法則ディレクトリ無し（無出力）
-└── fixtures/laws/                           # LAWS.bend / PROOF.bend / main.bend の最小 fixture（bend 不要: 判定表は純粋関数）
+└── fixtures/laws/                           # LAWS.bend / PROOF.bend / main.bend の最小 fixture と fake-bend/（ダミー bend シェルスクリプト。§8）
 
 .claude/rules/repository-structure.md        # scripts 一覧に laws_header.py を追記（実装チケットで）
 .sdd/laws/                                   # 本リポジトリでは本チケットでは作らない（実装チケットで dogfooding 用に 1 件作るかは別途判断）
@@ -674,8 +702,9 @@ tests/
 | テストレベル | 対象                                                               | カバレッジ目標                                                                                                                           |
 |--------|------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | ユニット   | `precheck()` / `needs_plain_fallback()` / `judge_run()`           | spec 3.1.1 の全行（bend 不在 / ディレクトリ不在 / LAWS 不在 / 承認行なし・形式不正・ハッシュ不一致 / law 宣言なし / PROOF 不在 / LAWS 未 import / import 違反 / timeout / exit 0 + ALL PROOFS CHECK / exit 0 のみ / exit 1 + 基盤不備（verdict あり・なし）/ exit 1 / exit 2） |
-| ユニット   | `laws_header.py`                                                 | ローカル import 許可、絶対パス・`..`・Hub 名前空間・URL・末尾コメント・`as` / `from` 形式の拒否、サブディレクトリの再帰、先頭コメントで打ち切り、BOM、承認行の形式と暦日検証、本文変更でハッシュ不一致、先頭コメント部の変更ではハッシュ不変、`model-of` 複数行、`law` 宣言の有無 |
+| ユニット   | `laws_header.py`                                                 | 実在するローカル import の許可、`import Base` の許可、実在しない bare 名（Hub 風）の拒否、絶対パス・`..`・Hub 名前空間・URL・末尾コメント・`as` / `from` 形式の拒否、サブディレクトリの再帰、先頭コメントで打ち切り、BOM、承認行の形式と暦日検証、本文変更でハッシュ不一致、先頭コメント部の変更ではハッシュ不変、`model-of` 複数行、`law` 宣言の有無 |
 | ユニット   | `aggregate()` / `discover_laws_dirs()`                           | FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS、`reason` の採用元、`verdict` の集約 3 値、中間ディレクトリを数えない、空集合                                     |
+| ユニット   | `run-verification.py` subprocess 経路                            | PATH 先頭に置くダミー `bend` シェルスクリプト fixture（`tests/fixtures/laws/fake-bend/`。環境変数で exit 0 + `ALL PROOFS CHECK` / exit 1 + `SOME PROOFS FAIL` / exit 1 + `BendTT infrastructure` / sleep で timeout を切り替える）で、`run_bend` → `needs_plain_fallback` → `judge_run` の 3 分岐と `BEND_NO_TELEMETRY=1` の付与を自動化する（CI に bend を入れない制約下で成立。monkeypatch で `PATH` を差し替える） |
 | ユニット   | `run-verification.py` CLI                                        | `proof --laws-dir` 複数、省略時の `SDD_LAWS_PATH` 走査、`--print-laws-hash`、CLI と設定の優先順位、既存 4 カテゴリの後方互換（位置引数のみで動く）、bend 不在環境での JSON 形状（`importlib.util.spec_from_file_location` で読み込む） |
 | ユニット   | `fm_parser` / `hook_common` / `session-start`                    | `laws` のリスト解析、`directories.laws` と `proof.*` の既定値、`SDD_LAWS_*` のエクスポート（`test-session-start.sh` のゴールデンは `laws` 無し設定で不変であることを確認）         |
 | 回帰     | `post-tool-use.py`（`scripts/test-hook-scripts.sh` / pytest）     | `.bend` 編集で再実行促し、`# model-of:` 一致で見直し促し、spec 同期の促しと両方注入、法則ディレクトリ無しで無出力                                                               |
@@ -712,6 +741,7 @@ D-01 / D-03 / D-04 / D-05 / D-06 / D-10 は clarify Q4 / Q2 / Q5 / Q1 / Q3 / Q6 
 | Bend 側の観察に依存する前提（先頭コメント部の読み飛ばし、LAWS 未 import の拒否、Hub import の構文、`bend --version` の形式） | 低 | ゲートは観察に依存せず自前で同じ条件を課す設計（§5.4）。実装時に GUIDE.md と実機で再確認し、結果を `adr/task-implementation/proof-gate.md` に記録                                     |
 | `sdd_index.py` に `laws` / `laws_status` 列を持たせるか                 | 低   | 本チケットでは持たせない（スキーマ bump が必要）。doc-consistency-checker で「`drafted` のまま放置された spec」を列挙したくなった時点で別チケット                                                 |
 | 承認行の真正性（AI が `# approved:` を書いてしまう事故）                        | 中   | D-11 は「承認後の改変」を塞ぐが「AI が承認行を書く」ことは塞がない。PR レビューで承認行の追加を確認する運用 + 法則案生成スキルの指示で禁止。pre-tool-use での deny は「`.bend` への書き込み主体を判別できない」ため採らない              |
+| spec テンプレート（en/ja）への任意「Laws」節の追加（issue #148 の候補）                | 低   | 本チケットでは見送る。法則への参照は front matter `laws:` で表現でき、本文節は重複になるため。利用者から要望があれば実装チケットで判断              |
 | 本リポジトリ自身の dogfooding 用 `.sdd/laws/` を実装チケットで作るか                | 低   | 実装チケットで判断。作る場合は `proof-gate_spec.md` の 3.1.1 判定表を法則化する候補                                                                                      |
 | 関連 PRD（stale-doc-detection / run-checklist）への受け皿の追記             | 低   | 本 PR で最小限の受け皿（FR_001 への 1 項目）を追記済み。妥当性はレビューで人が判断する                                                                                            |
 

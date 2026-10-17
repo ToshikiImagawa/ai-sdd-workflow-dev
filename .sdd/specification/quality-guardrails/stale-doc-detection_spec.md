@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
 updated: "2026-10-17"
-depends-on: ["prd-quality-guardrails-stale-doc-detection", "prd-task-implementation-proof-gate"]
+depends-on: ["prd-quality-guardrails-stale-doc-detection"]
 tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
 priority: "medium"
@@ -198,6 +198,8 @@ sequenceDiagram
   `/check-spec` 等に委ねる（子 PRD スコープ外の記載に準拠）
 - 検知した更新漏れの自動修正は行わない。修正は開発者と AI の対話に委ねる
 - ファイル種別・パスの判定に基づくため、パス規約から外れた配置のドキュメントは検知対象外となりうる
+- FR-003 / FR-008 の契機となる「ソースコード編集」は、フックが既知のソース拡張子として扱うファイルに限る（`# model-of:` に
+  対象外の拡張子のファイルを書いても促しは発火しない）
 - 編集前のガード（命名規則の強制・原則注入）は本機能のスコープ外（親 PRD の他の子 PRD で扱う）
 
 # 9. 原則との整合性
