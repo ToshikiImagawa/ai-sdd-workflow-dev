@@ -30,8 +30,8 @@ def _load_module():
 rv = _load_module()
 
 SPEC_ID = "spec-auth-user-login"
-LAWS_BODY = "import Base\nimport ./main\n\nlaw sort_len: (xs: List(Nat)) -> len(sort(xs)) == len(xs)\n"
-PROOF_TEXT = "import ./LAWS\nimport ./main\n\ndef sort_len: ...\n"
+LAWS_BODY = "import Base\nimport ./main.bend as Model\n\nlaw sort_len: (xs: List(Nat)) -> len(sort(xs)) == len(xs)\n"
+PROOF_TEXT = "import Base\nimport ./LAWS.bend as Laws\nimport ./main.bend as Model\n\ndef sort_len: ...\n"
 MODEL_TEXT = f"# spec: {SPEC_ID}\n# model-of: src/auth/user_login.py\n\nimport Base\ndef sort(xs): xs\n"
 
 
@@ -381,7 +381,7 @@ class TestRunProofDir:
         fake_bend("pass")
         root = _project(tmp_path)
         laws = root / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
-        body = "import Base\nimport ./main\n\ndef nothing: 1\n"
+        body = "import Base\nimport ./main.bend as Model\n\ndef nothing: 1\n"
         laws.write_text(f"# spec: {SPEC_ID}\n" + LAWS_BODY, encoding="utf-8")
         digest = rv.law_body_hash(_write(laws, f"# spec: {SPEC_ID}\n" + body))
         laws.write_text(f"# spec: {SPEC_ID}\n# approved: 2026-10-17 @r sha256:{digest}\n" + body,
@@ -405,7 +405,7 @@ class TestRunProofDir:
         log = fake_bend("pass")
         root = _project(tmp_path)
         _write(root / ".sdd" / "laws" / "auth" / "user-login" / "PROOF.bend",
-               "import ./LAWS\nimport @hub/sort\n")
+               "import ./LAWS.bend as Laws\nimport @hub/sort\n")
         r = self._run(root)
         assert r["status"] == "FAIL" and "import @hub/sort" in r["reason"]
         assert not log.exists()
@@ -413,9 +413,9 @@ class TestRunProofDir:
     def test_model_optional(self, tmp_path, fake_bend):
         fake_bend("pass")
         root = _project(tmp_path, with_model=False)
-        _write(root / ".sdd" / "laws" / "auth" / "user-login" / "PROOF.bend", "import ./LAWS\n")
+        _write(root / ".sdd" / "laws" / "auth" / "user-login" / "PROOF.bend", "import ./LAWS.bend as Laws\n")
         laws = root / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
-        text = laws.read_text(encoding="utf-8").replace("import ./main\n", "")
+        text = laws.read_text(encoding="utf-8").replace("import ./main.bend as Model\n", "")
         body = text.split("\n", 2)[2]
         digest = rv.law_body_hash(_write(laws, body))
         laws.write_text(f"# spec: {SPEC_ID}\n# approved: 2026-10-17 @r sha256:{digest}\n" + body,

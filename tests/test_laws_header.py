@@ -144,11 +144,17 @@ class TestDeclarations:
         assert lh.declares_laws(p) is False
 
     def test_imports_laws_spellings(self, tmp_path):
-        for text in ("import LAWS\n", "import ./LAWS\n", "import ./LAWS.bend\n", "  import LAWS  \n"):
+        for text in ("import ./LAWS.bend as Laws\n", "import LAWS.bend as L\n", "  import ./LAWS.bend  as  Laws_1  \n"):
             assert lh.imports_laws(_write(tmp_path / "PROOF.bend", text)) is True
 
     def test_imports_laws_false(self, tmp_path):
-        assert lh.imports_laws(_write(tmp_path / "PROOF.bend", "import Base\nimport ./main\n")) is False
+        assert lh.imports_laws(_write(tmp_path / "PROOF.bend", "import Base\nimport ./main.bend as Model\n")) is False
+
+    def test_imports_laws_without_alias_or_extension_is_false(self, tmp_path):
+        # Bend 2.0.37 rejects these as syntax errors, so they never count as importing LAWS.
+        for text in ("import ./LAWS\n", "import ./LAWS.bend\n", "import LAWS\n", "import ./LAWS as Laws\n",
+                     "import ./LAWS.bend as Laws # laws\n", "import ./LAWS.bend as La-ws\n"):
+            assert lh.imports_laws(_write(tmp_path / "PROOF.bend", text)) is False
 
 
 # --- disallowed_imports ----------------------------------------------------
@@ -157,53 +163,83 @@ class TestDeclarations:
 class TestDisallowedImports:
     def _laws_dir(self, tmp_path):
         d = tmp_path / "laws" / "f"
-        _write(d / "LAWS.bend", "import Base\nimport ./main\nlaw a: 1\n")
+        _write(d / "LAWS.bend", "import Base\nimport ./main.bend as Model\nlaw a: 1\n")
         _write(d / "main.bend", "import Base\n")
-        _write(d / "PROOF.bend", "import ./LAWS\nimport ./main\n")
+        _write(d / "PROOF.bend", "import Base\nimport ./LAWS.bend as Laws\nimport ./main.bend as Model\n")
         return d
 
     def test_clean_directory(self, tmp_path):
         assert lh.disallowed_imports(self._laws_dir(tmp_path)) == []
 
-    def test_local_import_without_dot_slash_and_with_extension(self, tmp_path):
+    def test_dot_slash_optional_and_alias_spacing_and_charset(self, tmp_path):
         d = self._laws_dir(tmp_path)
-        _write(d / "PROOF.bend", "import LAWS\nimport main.bend\n")
+        _write(d / "PROOF.bend", "import LAWS.bend as L\nimport ./main.bend  as  Model_2\n")
         assert lh.disallowed_imports(d) == []
 
-    def test_nonexistent_bare_name_hub_style_rejected(self, tmp_path):
+    def test_local_import_without_alias_rejected(self, tmp_path):
+        # The pre-#162 allowlist accepted these; Bend 2.0.37 does not (syntax error).
         d = self._laws_dir(tmp_path)
-        _write(d / "PROOF.bend", "import ./LAWS\nimport SomePkg\n")
-        assert lh.disallowed_imports(d) == ["PROOF.bend: import SomePkg"]
+        _write(d / "PROOF.bend", "import ./LAWS.bend\nimport ./main\nimport LAWS\n")
+        assert len(lh.disallowed_imports(d)) == 3
+
+    def test_local_import_without_bend_extension_rejected(self, tmp_path):
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend", "import ./LAWS as Laws\nimport ./main as Model\n")
+        assert len(lh.disallowed_imports(d)) == 2
+
+    def test_bad_alias_rejected(self, tmp_path):
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend", "import ./main.bend as M-x\nimport ./main.bend as M.x\nimport ./main.bend as\n")
+        assert len(lh.disallowed_imports(d)) == 3
+
+    def test_base_with_alias_rejected(self, tmp_path):
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend", "import Base as B\n")
+        assert lh.disallowed_imports(d) == ["PROOF.bend: import Base as B"]
+
+    def test_nonexistent_file_rejected(self, tmp_path):
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend", "import ./LAWS.bend as Laws\nimport ./missing.bend as Missing\n")
+        assert lh.disallowed_imports(d) == ["PROOF.bend: import ./missing.bend as Missing"]
+
+    def test_hub_import_forms_rejected(self, tmp_path):
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend",
+               "import 0x1234abcd/main.bend as P\nimport foo@1.0.0.0/main.bend as Q\nimport SomePkg\n")
+        assert len(lh.disallowed_imports(d)) == 3
 
     def test_parent_absolute_namespace_url_rejected(self, tmp_path):
         d = self._laws_dir(tmp_path)
         _write(d / "PROOF.bend",
-               "import ./LAWS\nimport ../other\nimport /abs/path\nimport @hub/pkg\nimport https://x.y/z.bend\n")
+               "import ./LAWS.bend as Laws\nimport ../other.bend as O\nimport /abs/path.bend as A\n"
+               "import @hub/pkg.bend as H\nimport https://x.y/z.bend as U\n")
         bad = lh.disallowed_imports(d)
         assert len(bad) == 4
         assert all(b.startswith("PROOF.bend: import ") for b in bad)
 
-    def test_trailing_comment_alias_and_from_forms_rejected(self, tmp_path):
+    def test_trailing_comment_and_from_forms_rejected(self, tmp_path):
         d = self._laws_dir(tmp_path)
-        _write(d / "PROOF.bend", "import ./LAWS # laws\nimport ./main as M\nfrom ./main import sort\n")
+        _write(d / "PROOF.bend",
+               "import ./LAWS.bend as Laws # laws\nimport Base # std\nfrom ./main.bend import sort\n")
         assert len(lh.disallowed_imports(d)) == 3
 
     def test_subdirectory_recursion_and_relative_resolution(self, tmp_path):
         d = self._laws_dir(tmp_path)
         _write(d / "lib" / "helper.bend", "import Base\n")
-        _write(d / "lib" / "util.bend", "import Base\nimport ./helper\nimport ../main\nimport ./missing\n")
-        _write(d / "PROOF.bend", "import ./LAWS\nimport ./lib/util\n")
+        _write(d / "lib" / "util.bend",
+               "import Base\nimport ./helper.bend as H\nimport ../main.bend as M\nimport ./missing.bend as X\n")
+        _write(d / "PROOF.bend", "import ./LAWS.bend as Laws\nimport ./lib/util.bend as U\n")
         bad = lh.disallowed_imports(d)
         # ./helper exists next to util.bend; `..` is never allowed even when it
         # would stay inside the laws directory; ./missing does not exist.
-        assert bad == [str(Path("lib") / "util.bend") + ": import ../main",
-                       str(Path("lib") / "util.bend") + ": import ./missing"]
+        assert bad == [str(Path("lib") / "util.bend") + ": import ../main.bend as M",
+                       str(Path("lib") / "util.bend") + ": import ./missing.bend as X"]
 
     def test_escape_via_subdirectory_dotdot_rejected(self, tmp_path):
         d = self._laws_dir(tmp_path)
         _write(tmp_path / "laws" / "outside.bend", "import Base\n")
-        _write(d / "lib" / "util.bend", "import ../../outside\n")
-        assert lh.disallowed_imports(d) == [str(Path("lib") / "util.bend") + ": import ../../outside"]
+        _write(d / "lib" / "util.bend", "import ../../outside.bend as O\n")
+        assert lh.disallowed_imports(d) == [str(Path("lib") / "util.bend") + ": import ../../outside.bend as O"]
 
     def test_missing_directory(self, tmp_path):
         assert lh.disallowed_imports(tmp_path / "nope") == []

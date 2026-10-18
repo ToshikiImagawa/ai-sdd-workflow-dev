@@ -596,7 +596,7 @@ laws-status: "approved"          # none | drafted | approved | proven
 `/run-checklist {feature} {ticket}` が `CHK-205`（`laws:` を持つ spec でのみ生成）を検証し、`--category proof` はその項目だけを検証します。
 全ディレクトリを 1 回の `run-verification.py proof --laws-dir ...` で渡し、最も悪い判定
 （FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS）を記録します。`bend` は常に `BEND_NO_TELEMETRY=1` で起動し、
-`import Base` と法則ディレクトリ内の `.bend` への相対 import だけを許可します（それ以外は `bend` 起動前に FAIL）。
+`import Base` と法則ディレクトリ内の `.bend` への別名付き相対 import（Bend が要求する `import ./main.bend as Model` の形）だけを許可します（別名のないローカル import を含むそれ以外は `bend` 起動前に FAIL）。
 オプション: `--verdict`（Lean での再検査。使えなければ `verdict: "unavailable"` でフォールバック）、`--timeout`。
 `.sdd-config.json` のキー: `directories.laws`、`proof.timeout_seconds`、`proof.verdict`。
 macOS / Linux のみ（Windows は WSL 経由）。Bend v2.0.37 で検証済み、Lean での再検査には Lean v4.34.0 が必要です。
@@ -604,7 +604,7 @@ macOS / Linux のみ（Windows は WSL 経由）。Bend v2.0.37 で検証済み�
 ### モデルの書き方
 
 - モデルは小さく。対象は制約・不変条件・事後条件のみで、IO・外部境界・性能はモデルにしません
-- 法則 `X` の証明は `PROOF.bend` の `def X` で与えます。モデルの関数が法則を呼んだり、証明が自分の証明する法則を経由して自分自身を呼んではいけません。関数名と法則名は分けます（関数 `sort`、法則 `sort_preserves_length`）
+- Bend のローカル import は必ず別名付きです（`import ./LAWS.bend as Laws`）。法則 `X` の証明は `PROOF.bend` の `def Laws.X` で与えます。モデルの関数が法則を呼んだり、証明が自分の証明する法則を経由して自分自身を呼んではいけません。関数名と法則名は分けます（関数 `sort`、法則 `sort_preserves_length`）
 - 法則を改訂したら承認し直します
 
 ## 既知の制約
