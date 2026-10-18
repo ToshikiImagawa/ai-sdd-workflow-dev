@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-10-17"
-updated: "2026-10-17"
+updated: "2026-10-18"
 sdd-version: "5.1.0"
 depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-run-checklist", "spec-task-implementation-checklist-generation", "spec-quality-guardrails-front-matter-validation", "spec-quality-guardrails-stale-doc-detection"]
 tags: ["proof", "bend", "laws", "checklist", "verification", "front-matter", "hooks"]
@@ -193,7 +193,7 @@ id → spec ファイルの解決は `doc_walker.iter_specification_docs()` で 
 契約は spec §4.1 を正とする。本節は spec の例に対する差分だけを示す。
 
 - トップレベル `reason` は、集約判定を出したディレクトリの `reason`（ディレクトリが 1 つなら同じ値）。
-  例: `"1 of 2 laws directories FAILED: .sdd/laws/auth/user-login - bend reported SOME PROOFS FAIL"`
+  例: `"1 of 2 laws directories FAIL: .sdd/laws/auth/user-login - bend exited 1 (SOME PROOFS FAIL or a syntax error)"`
 - `results[]` の各要素は `laws_dir` / `spec` / `approved` / `model_of` / `status` / `reason` / `verdict` を常に持ち、
   bend を実行した場合のみ `command` / `exit_code` / `stdout` / `stderr` を持つ
 - `project_type` は含めない（`proof` はプロジェクト種別に依存しない。既存カテゴリは従来どおり）
@@ -265,7 +265,7 @@ import Base
 - 承認行は追記式でよい（`valid_approval()` は全承認行を走査し、いずれか 1 行がハッシュ一致すれば有効）。失効時の `reason` には現在のハッシュを含める
 - `approved` の値は `^\d{4}-\d{2}-\d{2}\s+\S+\s+sha256:[0-9a-f]{12}$` に一致し、かつ日付が暦日として有効であること
   （日付・承認者・内容ハッシュのいずれかが無い行、不正な日付の行は承認行とみなさない）。内容ハッシュは
-  **先頭コメント部を除いた** `LAWS.bend` の残り全文を UTF-8 で SHA-256 したものの先頭 12 桁。先頭コメント部を除くのは、
+  **先頭コメント部を除いた** `LAWS.bend` の残りを、行区切り（CRLF / LF）と末尾改行を正規化した本文（`splitlines()` した行を `\n` で連結したもの）として UTF-8 で SHA-256 したものの先頭 12 桁。先頭コメント部を除くのは、
   `# spec:` や承認行自体の追記で承認が失効しないようにするため。現在の本文から算出した値と一致しないとき承認は失効（SKIPPED）。
   `run-verification.py proof --print-laws-hash --laws-dir D` がこの値を表示する（読み取り専用。人が承認行を書くときに使う）
 - import の allowlist: `import` または `from` で始まる行はすべて検査対象。許可するのは (a) `import Base`（Bend 同梱の標準ライブラリ。
@@ -612,7 +612,7 @@ def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int, sdd_root: Path,
 def aggregate(results: List[Dict[str, object]], verdict_requested: bool) -> Dict[str, object]:
     """Worst status wins (FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS); its reason is the top-level reason."""
     if len(results) == 0:
-        return {"status": "SKIPPED", "reason": "no laws directories found", "verdict": "not-requested"}
+        return {"status": "SKIPPED", "reason": "no laws directories found", "verdict": "checked" if verdict_requested else "not-requested"}
     worst = max(results, key=lambda r: SEVERITY[str(r["status"])])
     verdicts = {str(r.get("verdict")) for r in results}
     if "unavailable" in verdicts:
@@ -750,8 +750,8 @@ tests/
 - **承認行は人が書く**: `# approved: YYYY-MM-DD <承認者> sha256:<ハッシュ>` は PR レビューで追記する（ハッシュは
   `run-verification.py proof --print-laws-hash --laws-dir <dir>` で得る）。AI が書かないことを法則案生成スキルの指示に明記する
 - **LAWS.bend の法則本文を改訂したら承認し直す**: 内容ハッシュが変わり承認は自動的に失効する（SKIPPED）。ハッシュは先頭コメント部を
-  除いた本文の素のバイト列から取るため、法則の意味を変えないコメント追加・空白や改行の整形だけでも失効する（意図的に単純な方式を
-  採り、正規化による取りこぼしを避ける）。承認行を更新し、`laws-status` を `approved` に戻してから再検査する
+  除いた本文を、行区切り（CRLF / LF）と末尾改行だけ正規化して取る。そのため改行コードの変換や末尾改行の有無では失効しないが、
+  法則の意味を変えないコメント追加・行内の空白の整形は失効する（行内は意図的に正規化せず、正規化による取りこぼしを避ける）。承認行を更新し、`laws-status` を `approved` に戻してから再検査する
 - **参考**: Bend リポジトリの `guide/GUIDE.md`（law / def 構文）と `demos/proof_insertion_sort`（法則と証明の分割例）。
   いずれも実装時に版を確認する
 

@@ -200,6 +200,10 @@ class TestAggregate:
         agg = rv.aggregate([], False)
         assert agg["status"] == "SKIPPED" and agg["verdict"] == "not-requested"
 
+    def test_empty_with_verdict_requested_reports_checked(self):
+        # spec 3.1.1: with --verdict the aggregate verdict is "checked" unless unavailable.
+        assert rv.aggregate([], True)["verdict"] == "checked"
+
 
 # --- discover_laws_dirs / build_spec_registry / orphan_reason ----------------
 

@@ -4,7 +4,7 @@ title: "Bend 証明ゲート"
 type: "prd"
 status: "draft"
 created: "2026-10-17"
-updated: "2026-10-17"
+updated: "2026-10-18"
 sdd-version: "5.1.0"
 depends-on: ["prd-task-implementation"]
 tags: ["checklist", "verification", "proof", "bend", "laws"]

@@ -161,7 +161,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `session-start` | SessionStart | `.sdd-config.json` から設定を読み込み、環境変数を自動設定 |
 | `user-prompt-submit` | UserPromptSubmit | ユーザープロンプト内の Vibe Coding 兆候（曖昧な指示）を検知し、明確化リマインダーを注入 |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | ファイル命名規則に違反する `.sdd/` ドキュメントへの書き込みを拒否し、実装ソースコード編集時に `CONSTITUTION.md` の原則を注入（セッションごとに1回） |
-| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する） |
+| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する）。あわせて `.bend` 法則ファイルの編集後に proof ゲートの再実行を、`main.bend` の `# model-of:` に挙げたファイルの編集後に参照モデルの見直しを促す |
 
 **注**: フックはプラグインインストール時に自動的に有効化されます。追加の設定は不要です。
 
@@ -587,7 +587,7 @@ laws-status: "approved"          # none | drafted | approved | proven
 ```
 
 ハッシュは `python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" proof --print-laws-hash --laws-dir .sdd/laws/auth/user-login` で得ます。
-ハッシュは先頭コメント部を除いた本文が対象なので、承認行の追記では失効しませんが、法則本文の変更（空白でも）で失効し、
+ハッシュは先頭コメント部を除いた本文が対象なので、承認行の追記では失効しませんが、法則本文の変更（行内の空白でも。改行コードと末尾改行の違いは無視）で失効し、
 ゲートは新しいハッシュ付きで `SKIPPED` を返します。AI は承認行を書きません（PR レビューで確認してください）。
 `laws-status` を `approved` / `proven` に進めるのも人の作業です。
 
@@ -630,7 +630,7 @@ macOS / Linux のみ（Windows は WSL 経由）。Bend v2.0.37 で検証済み�
 | `session-start` | SessionStart | `.sdd-config.json` から設定を読み込み、環境変数を設定 |
 | `user-prompt-submit` | UserPromptSubmit | ユーザープロンプト内の Vibe Coding 兆候（曖昧な指示）を検知し、明確化リマインダーを注入 |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | ファイル命名規則に違反する `.sdd/` ドキュメントへの書き込みを拒否し、実装ソースコード編集時に `CONSTITUTION.md` の原則を注入（セッションごとに1回） |
-| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する） |
+| `post-tool-use` | PostToolUse (Write/Edit) | `.sdd/` ドキュメントや対応する仕様書を持つソースファイルを編集した後、ドキュメント整合性チェックを促す（v4 の design doc しか対応しない場合は `adr/` への移行を案内する）。あわせて `.bend` 法則ファイルの編集後に proof ゲートの再実行を、`main.bend` の `# model-of:` に挙げたファイルの編集後に参照モデルの見直しを促す |
 
 ### 設定される環境変数
 

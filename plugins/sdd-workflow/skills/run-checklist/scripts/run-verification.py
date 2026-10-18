@@ -30,6 +30,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 # skills/run-checklist/scripts/ -> plugins/sdd-workflow/scripts/ (shared modules)
+# Imported eagerly on purpose: these are stdlib-only modules shipped in the same plugin
+# tree, so loading them cannot fail independently of this script, and the proof functions
+# below are called directly by tests (a lazy import would need threading through each).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 from doc_walker import iter_specification_docs  # noqa: E402
 from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
@@ -379,7 +382,7 @@ def aggregate(results: List[Dict[str, object]], verdict_requested: bool) -> Dict
     """Worst status wins; its directory's reason becomes the top-level reason."""
     if len(results) == 0:
         return {"status": "SKIPPED", "reason": "no laws directories found",
-                "verdict": "not-requested"}
+                "verdict": "checked" if verdict_requested else "not-requested"}
     worst = max(results, key=lambda r: SEVERITY[str(r["status"])])
     verdicts = {str(r.get("verdict")) for r in results}
     if "unavailable" in verdicts:

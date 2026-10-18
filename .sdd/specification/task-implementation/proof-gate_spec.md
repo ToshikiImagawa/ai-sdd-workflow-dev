@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-10-17"
-updated: "2026-10-17"
+updated: "2026-10-18"
 sdd-version: "5.1.0"
 depends-on: ["prd-task-implementation-proof-gate"]
 tags: ["checklist", "verification", "proof", "bend", "laws"]
@@ -168,7 +168,7 @@ design は差分だけを記述する。
 {
   "category": "proof",
   "status": "PASS",
-  "reason": "1 laws directory checked: PASS",
+  "reason": "1 of 1 laws directories PASS: .sdd/laws/task-implementation/proof-gate - bend reported ALL PROOFS CHECK",
   "verdict": "unavailable",
   "timeout_seconds": 300,
   "results": [
