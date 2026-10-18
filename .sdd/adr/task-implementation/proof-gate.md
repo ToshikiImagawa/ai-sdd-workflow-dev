@@ -125,7 +125,7 @@ category: "task-implementation"
 
 ## 2026-10-18 ローカル import は別名付きのみ許可する（2026-10-17「hub import を静的 allowlist で禁止する」を改訂）
 
-- **Decision**: 法則ファイルで許可する import を `import Base` と `import <相対パス>.bend as <Name>` の 2 形式にする。`<Name>` は英数字と `_`、パスは同じ法則ディレクトリ内に実在する `.bend` ファイル（`./` は任意、サブディレクトリ可）。別名のないローカル import、拡張子のない指定、`from` 形式、hub import（`0x<hash>/…`、`<name>@<version>/…`）、URL、絶対パス、親ディレクトリ（`..`）、末尾コメント付きの行は、従来どおり検査器の起動前に FAIL とする。`PROOF.bend` の LAWS import は `import ./LAWS.bend as <Name>`（`./` 任意）だけを有効とする。2026-10-17 のエントリの「別名付きを含む」を FAIL とする部分だけを改め、hub import 禁止・親ディレクトリ禁止・固定ファイル名という設計意図は変えない。
+- **Decision**: 法則ファイルで許可する import を `import Base` と `import <相対パス>.bend as <Name>` の 2 形式にする。`<Name>` は英字または `_` で始まる英数字と `_`、パスは同じ法則ディレクトリ内に実在する `.bend` ファイル（`./` は任意、サブディレクトリ可）。別名のないローカル import、拡張子のない指定、`from` 形式、hub import（`0x<hash>/…`、`<name>@<version>/…`）、URL、絶対パス、親ディレクトリ（`..`）、末尾コメント付きの行は、従来どおり検査器の起動前に FAIL とする。`PROOF.bend` の LAWS import は `import ./LAWS.bend as <Name>`（`./` 任意）だけを有効とする。2026-10-17 のエントリの「別名付きを含む」を FAIL とする部分だけを改め、hub import 禁止・親ディレクトリ禁止・固定ファイル名という設計意図は変えない。
 - **Supersedes**: [2026-10-17 hub import を静的 allowlist で禁止する](#2026-10-17-hub-import-を静的-allowlist-で禁止する) のうち、別名付きの import を FAIL とする部分のみ。それ以外の決定は現行のまま。
 - **Rationale**: 実機（Bend 2.0.37）はローカル import に必ず別名を要求し、別名のない形を構文エラーにする。`import ./LAWS.bend` を検査すると次の出力で終了コード 1 になった。
   ```
@@ -134,7 +134,7 @@ category: "task-implementation"
   - expected : an import ('import Base', or 'import <path> as <Name>')
   - observed : 'import ./LAWS.bend'
   ```
-  一方、公式 demo と同じ `import ./LAWS.bend as Laws`（証明は `def Laws.<law名>`）は `ALL PROOFS CHECK` になる。旧 allowlist は別名付きを拒否し別名なしを許可していたため、実機で通る法則ファイルがすべて規約違反の FAIL になり、PASS を得る経路が存在しなかった。許可を広げるのは別名付きの相対 import だけで、外部取得に至る形（hub・URL）は引き続き静的に拒否するため、オフライン再現性（NFR-003）と PRD NFR_002 は保たれる。実機の許容範囲（`.bend` 拡張子が必須、`./` は任意、別名は英数字と `_`、`..` はファイル不在で失敗）に合わせて正規表現を定めた。
+  一方、公式 demo と同じ `import ./LAWS.bend as Laws`（証明は `def Laws.<law名>`）は `ALL PROOFS CHECK` になる。旧 allowlist は別名付きを拒否し別名なしを許可していたため、実機で通る法則ファイルがすべて規約違反の FAIL になり、PASS を得る経路が存在しなかった。許可を広げるのは別名付きの相対 import だけで、外部取得に至る形（hub・URL）は引き続き静的に拒否するため、オフライン再現性（NFR-003）と PRD NFR_002 は保たれる。実機の許容範囲（`.bend` 拡張子が必須、`./` は任意、別名は英字または `_` で始まる英数字と `_`（`1A` は構文エラー）、`..` はファイル不在で失敗）に合わせて正規表現を定めた。
 - **Rejected alternatives**: 別名なしのみ許可する旧決定を維持する — 実機の bend が構文エラーにする形だけを許すことになり、dogfooding を含む全ての実利用で PASS が取れないため却下。ゲートを変えず別 issue に分離する — #162 の受け入れ基準（実機で PASS を確認する）を満たせず、不具合を抱えたまま法則ファイルを置くことになるため却下。別名の有無を問わず許可する — 別名なしは実機で構文エラーとなり、ゲートが通した後に bend が失敗する二重の経路が残るため却下。
 
 ## 2026-10-18 PRD FR_005 の優先度を Must に揃える

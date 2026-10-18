@@ -25,15 +25,16 @@ APPROVED_RE = re.compile(
 )
 IMPORT_LINE_RE = re.compile(r"^\s*(?:import|from)\b")
 # Bend 2.0.37 only accepts `import Base` and `import <path>.bend as <Name>`; a local
-# import without `as <Name>` or without the `.bend` extension is a syntax error there.
+# import without `as <Name>`, without the `.bend` extension or with a digit-leading
+# <Name> is a syntax error there.
 # Whole-line match: a trailing comment, a `from` form, a non-.bend path or a missing
 # alias never matches and therefore fails the allowlist. Path segments exclude `.`,
 # so `..` can never match (parent directories are not allowed).
 LOCAL_IMPORT_RE = re.compile(
     r"^import\s+(?P<target>(?:\./)?(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+\.bend)"
-    r"\s+as\s+(?P<alias>[A-Za-z0-9_]+)$"
+    r"\s+as\s+(?P<alias>[A-Za-z_][A-Za-z0-9_]*)$"
 )
-LAWS_IMPORT_RE = re.compile(r"^import\s+(?:\./)?LAWS\.bend\s+as\s+[A-Za-z0-9_]+$")
+LAWS_IMPORT_RE = re.compile(r"^import\s+(?:\./)?LAWS\.bend\s+as\s+[A-Za-z_][A-Za-z0-9_]*$")
 # Bend's bundled standard library: imported by bare name, never aliased, no file needed.
 STDLIB_IMPORT_RE = re.compile(r"^import\s+Base$")
 LAW_DECL_RE = re.compile(r"^\s*law\s+[A-Za-z_]")

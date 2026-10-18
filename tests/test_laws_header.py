@@ -153,7 +153,8 @@ class TestDeclarations:
     def test_imports_laws_without_alias_or_extension_is_false(self, tmp_path):
         # Bend 2.0.37 rejects these as syntax errors, so they never count as importing LAWS.
         for text in ("import ./LAWS\n", "import ./LAWS.bend\n", "import LAWS\n", "import ./LAWS as Laws\n",
-                     "import ./LAWS.bend as Laws # laws\n", "import ./LAWS.bend as La-ws\n"):
+                     "import ./LAWS.bend as Laws # laws\n", "import ./LAWS.bend as La-ws\n",
+                     "import ./LAWS.bend as 1Laws\n"):
             assert lh.imports_laws(_write(tmp_path / "PROOF.bend", text)) is False
 
 
@@ -191,6 +192,12 @@ class TestDisallowedImports:
         d = self._laws_dir(tmp_path)
         _write(d / "PROOF.bend", "import ./main.bend as M-x\nimport ./main.bend as M.x\nimport ./main.bend as\n")
         assert len(lh.disallowed_imports(d)) == 3
+
+    def test_digit_leading_alias_rejected(self, tmp_path):
+        # Bend 2.0.37 rejects `as 1A` as a syntax error; `_A` and `A1` are accepted.
+        d = self._laws_dir(tmp_path)
+        _write(d / "PROOF.bend", "import ./main.bend as 1A\nimport ./main.bend as _A\nimport ./main.bend as A1\n")
+        assert lh.disallowed_imports(d) == ["PROOF.bend: import ./main.bend as 1A"]
 
     def test_base_with_alias_rejected(self, tmp_path):
         d = self._laws_dir(tmp_path)
