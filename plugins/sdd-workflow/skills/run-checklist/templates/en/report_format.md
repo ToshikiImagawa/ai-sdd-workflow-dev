@@ -43,6 +43,15 @@
 | CHK-701  | P1       | ✅ PASS | No vulnerabilities found   |
 | CHK-702  | P1       | ⚠️ SKIP | Auth testing requires manual review |
 
+### Specification Review (CHK-2xx): Law Proof (opt-in, only when the spec has `laws:`)
+
+| ID       | Priority | Status  | Details                                                          |
+|:---------|:---------|:--------|:-----------------------------------------------------------------|
+| CHK-205  | P2       | ✅ PASS | 1 of 1 laws directories PASS (verdict: not-requested)            |
+
+> PASS means the reference model (`main.bend`) satisfies the approved laws. It does not prove the project's
+> implementation. SKIPPED / TOOL_NOT_FOUND are not failures. Moving `laws-status` to `proven` is a human step.
+
 ## Command Execution Log
 
 ### npm test -- --coverage

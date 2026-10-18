@@ -47,6 +47,7 @@ class SddConfig:
     specification_dir: str = "specification"
     adr_dir: str = "adr"
     task_dir: str = "task"
+    laws_dir: str = "laws"
     index: bool = True
 
 
@@ -125,6 +126,8 @@ def build_sdd_config(raw: Dict[str, Any], default_lang: str) -> SddConfig:
         cfg.adr_dir = dirs["adr"]
     if dirs.get("task"):
         cfg.task_dir = dirs["task"]
+    if dirs.get("laws"):
+        cfg.laws_dir = dirs["laws"]
     cfg.index = parse_index_flag(raw.get("index"))
     return cfg
 
@@ -157,10 +160,12 @@ def write_env_vars(cfg: SddConfig) -> None:
         f'export SDD_SPECIFICATION_DIR="{cfg.specification_dir}"',
         f'export SDD_ADR_DIR="{cfg.adr_dir}"',
         f'export SDD_TASK_DIR="{cfg.task_dir}"',
+        f'export SDD_LAWS_DIR="{cfg.laws_dir}"',
         f'export SDD_REQUIREMENT_PATH="{cfg.root}/{cfg.requirement_dir}"',
         f'export SDD_SPECIFICATION_PATH="{cfg.root}/{cfg.specification_dir}"',
         f'export SDD_ADR_PATH="{cfg.root}/{cfg.adr_dir}"',
         f'export SDD_TASK_PATH="{cfg.root}/{cfg.task_dir}"',
+        f'export SDD_LAWS_PATH="{cfg.root}/{cfg.laws_dir}"',
         f'export SDD_LANG="{cfg.lang}"',
     ]
 

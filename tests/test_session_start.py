@@ -729,6 +729,29 @@ class TestMainIntegration:
         assert 'export SDD_LANG="jp"' in env_file.read_text(encoding="utf-8")
 
 
+class TestLawsEnvExports:
+    def test_default_laws_dir_exported(self, tmp_path, monkeypatch):
+        env_file = tmp_path / "env.sh"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+        ss.write_env_vars(ss.SddConfig())
+        text = env_file.read_text(encoding="utf-8")
+        assert 'export SDD_LAWS_DIR="laws"' in text
+        assert 'export SDD_LAWS_PATH=".sdd/laws"' in text
+
+    def test_directories_laws_override(self, tmp_path, monkeypatch):
+        cfg = ss.build_sdd_config({"root": ".docs", "directories": {"laws": "proofs"}}, "en")
+        assert cfg.laws_dir == "proofs"
+        env_file = tmp_path / "env.sh"
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+        ss.write_env_vars(cfg)
+        assert 'export SDD_LAWS_PATH=".docs/proofs"' in env_file.read_text(encoding="utf-8")
+
+    def test_generated_default_config_has_no_laws_key(self, tmp_path):
+        # laws/ is opt-in: the auto-generated .sdd-config.json must not declare it.
+        result = ss.load_or_create_config(str(tmp_path / ".sdd-config.json"), "en")
+        assert "laws" not in result["directories"]
+
+
 # --- absolute / external .sdd root (issue #151) -----------------------------
 
 

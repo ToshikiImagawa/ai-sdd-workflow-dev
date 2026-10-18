@@ -69,6 +69,9 @@ class SddPaths:
     specification_dir: str = "specification"
     adr_dir: str = "adr"
     task_dir: str = "task"
+    # Opt-in Bend law directories (proof gate). sdd-init does not write this
+    # key; the default applies until a project sets ``directories.laws``.
+    laws_dir: str = "laws"
 
     @property
     def requirement_prefix(self) -> str:
@@ -86,6 +89,10 @@ class SddPaths:
     def task_prefix(self) -> str:
         return str(Path(self.root) / self.task_dir)
 
+    @property
+    def laws_prefix(self) -> str:
+        return str(Path(self.root) / self.laws_dir)
+
 
 # Field name -> .sdd-config.json "directories" key.
 _DIR_FIELDS = {
@@ -93,7 +100,10 @@ _DIR_FIELDS = {
     "specification_dir": "specification",
     "adr_dir": "adr",
     "task_dir": "task",
+    "laws_dir": "laws",
 }
+
+PROOF_TIMEOUT_DEFAULT = 300
 
 
 def read_sdd_config_json(project_root: str) -> dict:
@@ -129,6 +139,27 @@ def load_sdd_paths(project_root: str, raw: Optional[dict] = None) -> SddPaths:
     if raw.get("root"):
         resolved["root"] = raw["root"]
     return SddPaths(**resolved)
+
+
+def load_proof_config(project_root: str, raw: Optional[dict] = None) -> Dict[str, Any]:
+    """Return the proof-gate settings from .sdd-config.json ``proof`` (with defaults).
+
+    ``timeout_seconds`` must be a positive int (a bool is not accepted even
+    though it is an int subclass), else the default (300) applies.
+    ``verdict`` is coerced with ``bool()`` and defaults to False.
+    """
+    if raw is None:
+        raw = read_sdd_config_json(project_root)
+    section = raw.get("proof") or {}
+    if not isinstance(section, dict):
+        section = {}
+    timeout = section.get("timeout_seconds", PROOF_TIMEOUT_DEFAULT)
+    if isinstance(timeout, bool) or not isinstance(timeout, int) or timeout <= 0:
+        timeout = PROOF_TIMEOUT_DEFAULT
+    return {
+        "timeout_seconds": timeout,
+        "verdict": bool(section.get("verdict", False)),
+    }
 
 
 def resolve_lang_and_root(project_root: Path) -> Tuple[str, str]:

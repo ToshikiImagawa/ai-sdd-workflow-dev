@@ -192,6 +192,73 @@ class TestProcessSingleFile:
         assert capsys.readouterr().out == ""
 
 
+# --- laws reminders (stale-doc-detection_spec FR-007 / FR-008) --------------
+
+
+def _laws_project(tmp_path, model_of=("src/auth/user_login.py",)):
+    d = tmp_path / ".sdd" / "laws" / "auth" / "user-login"
+    d.mkdir(parents=True)
+    (d / "LAWS.bend").write_text("# spec: spec-auth-user-login\n\nlaw a: 1\n", encoding="utf-8")
+    lines = "".join(f"# model-of: {m}\n" for m in model_of)
+    (d / "main.bend").write_text(f"# spec: spec-auth-user-login\n{lines}\nimport Base\n",
+                                 encoding="utf-8")
+    return d
+
+
+class TestLawsReminders:
+    def test_laws_bend_edit_reminds_rerun_and_reapproval(self, tmp_path, capsys):
+        _laws_project(tmp_path)
+        _process(os.path.join(".sdd", "laws", "auth", "user-login", "LAWS.bend"), tmp_path)
+        out = capsys.readouterr().out
+        assert "spec-auth-user-login" in out
+        assert "/run-checklist auth/user-login" in out and "--category proof" in out
+        assert "re-approval" in out
+
+    def test_other_bend_edit_reminds_rerun_without_reapproval(self, tmp_path, capsys):
+        _laws_project(tmp_path)
+        _process(os.path.join(".sdd", "laws", "auth", "user-login", "PROOF.bend"), tmp_path)
+        out = capsys.readouterr().out
+        assert "--category proof" in out and "re-approval" not in out
+
+    def test_bend_edit_without_laws_header_still_reminds(self, tmp_path, capsys):
+        d = tmp_path / ".sdd" / "laws" / "x"
+        d.mkdir(parents=True)
+        (d / "PROOF.bend").write_text("import ./LAWS\n", encoding="utf-8")
+        _process(os.path.join(".sdd", "laws", "x", "PROOF.bend"), tmp_path)
+        assert "--category proof" in capsys.readouterr().out
+
+    def test_bend_outside_laws_dir_is_silent(self, tmp_path, capsys):
+        _process(os.path.join("src", "x.bend"), tmp_path)
+        assert capsys.readouterr().out == ""
+
+    def test_model_of_source_edit_reminds_review(self, tmp_path, capsys):
+        _laws_project(tmp_path)
+        _process(os.path.join("src", "auth", "user_login.py"), tmp_path)
+        out = capsys.readouterr().out
+        assert "main.bend" in out and "reference model" in out and "auth/user-login" in out
+
+    def test_model_of_and_spec_sync_both_injected(self, tmp_path, capsys):
+        _laws_project(tmp_path)
+        spec = tmp_path / ".sdd" / "specification"
+        spec.mkdir(parents=True)
+        (spec / "user_login_spec.md").write_text("# spec\n", encoding="utf-8")
+        _process(os.path.join("src", "auth", "user_login.py"), tmp_path)
+        out = capsys.readouterr().out
+        assert "matching specification" in out and "reference model" in out
+
+    def test_non_matching_source_is_silent(self, tmp_path, capsys):
+        _laws_project(tmp_path)
+        _process(os.path.join("src", "other.py"), tmp_path)
+        assert capsys.readouterr().out == ""
+
+    def test_no_laws_directory_is_silent(self, tmp_path, capsys):
+        _process(os.path.join("src", "auth", "user_login.py"), tmp_path)
+        assert capsys.readouterr().out == ""
+
+    def test_bend_is_not_a_source_extension(self):
+        assert ".bend" not in ptu.SOURCE_EXTENSIONS
+
+
 # --- absolute / external .sdd root (issue #151) -----------------------------
 
 
@@ -232,4 +299,20 @@ class TestExternalSddRoot:
         payload = {"cwd": str(proj), "tool_input": {"file_path": str(proj / "foo.py")}}
         monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
         ptu.main()  # must not raise (previously ValueError -> rc=1)
+        assert capsys.readouterr().out == ""
+
+
+class TestModelOfOutsideProject:
+    def test_absolute_laws_root_outside_project_is_silent(self, tmp_path, capsys):
+        # #151: an absolute .sdd-config.json root points laws/ outside the project.
+        project = tmp_path / "project"
+        (project / "src" / "auth").mkdir(parents=True)
+        external = tmp_path / "external-sdd"
+        d = external / "laws" / "auth" / "user-login"
+        d.mkdir(parents=True)
+        (d / "main.bend").write_text(
+            "# spec: spec-x\n# model-of: src/auth/user_login.py\n\nimport Base\n", encoding="utf-8")
+        paths = ptu.SddPaths(root=str(external))
+        ptu._process_model_of(Path("src/auth/user_login.py"), "src/auth/user_login.py",
+                              str(project), paths)
         assert capsys.readouterr().out == ""

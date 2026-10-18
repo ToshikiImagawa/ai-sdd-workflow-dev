@@ -163,7 +163,7 @@ customized to your project instead of copied from a generic template.
 | `session-start` | SessionStart | Loads settings from `.sdd-config.json` and sets environment variables automatically |
 | `user-prompt-submit` | UserPromptSubmit | Detects Vibe Coding signals (vague instructions) in the user prompt and injects a clarification reminder |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | Denies writes to `.sdd/` documents that violate file naming conventions, and injects `CONSTITUTION.md` principles when editing implementation source code (once per session) |
-| `post-tool-use` | PostToolUse (Write/Edit) | Reminds about document consistency checks after editing `.sdd/` docs or source files with a matching spec (or points at the `adr/` migration when only a v4.x design doc matches) |
+| `post-tool-use` | PostToolUse (Write/Edit) | Reminds about document consistency checks after editing `.sdd/` docs or source files with a matching spec (or points at the `adr/` migration when only a v4.x design doc matches); also reminds to re-run the proof gate after a `.bend` law file edit and to review the reference model after editing a file named in a `main.bend` `# model-of:` line |
 
 **Note**: Hooks are automatically enabled when the plugin is installed. No additional configuration is required.
 
@@ -557,6 +557,66 @@ rationale / rejected alternatives.
 See `AI-SDD-PRINCIPLES.md` § "Architecture Decision Record" for the full `adr/` field and format
 reference.
 
+## Bend Proof Gate (opt-in)
+
+An optional quality gate that checks a spec's constraints, invariants and postconditions as [Bend](https://github.com/HigherOrderCO/Bend) laws.
+It is **off by default**: without a `laws:` entry in a spec, a `bend` CLI, or an approved law file, nothing runs and
+nothing fails (the result is `SKIPPED` / `TOOL_NOT_FOUND`). CI does not need `bend` installed.
+
+### What PASS means
+
+> **PASS guarantees that the reference model (`main.bend`) satisfies the approved laws. It does not prove that the
+> project's implementation is correct.** The model is a small Bend rewrite of the implementation; a mismatch between
+> the two cannot be detected by a proof. After editing a file named in `# model-of:`, the hook reminds you to review
+> the model and the laws.
+
+### Layout
+
+```
+.sdd/laws/{feature}/        # hierarchical specs mirror the spec hierarchy, e.g. laws/auth/user-login/
+├── LAWS.bend               # law declarations. Leading comments: `# spec:` and `# approved:`
+├── PROOF.bend              # proofs; must import LAWS
+└── main.bend               # reference model (optional). Leading comments: `# spec:` and `# model-of:`
+```
+
+The spec points to the directory in its front matter (a pointer, not a dependency; never put it in `depends-on`):
+
+```yaml
+laws: ["laws/auth/user-login"]   # relative to ${SDD_ROOT}
+laws-status: "approved"          # none | drafted | approved | proven
+```
+
+`LAWS.bend` must start with `# spec: <the spec's id>`. A law directory whose `# spec:` is missing, does not resolve
+to a spec, or is not listed in that spec's `laws:` is an **orphan** and fails the gate (and `front-matter-reviewer --cross-ref`).
+
+### Approval (a human step)
+
+A law counts only after a person reviews it and appends an approval line that binds to the current law text:
+
+```
+# approved: 2026-10-17 @reviewer sha256:3f9a1c0b7d2e
+```
+
+Get the hash with `python3 "${CLAUDE_PLUGIN_ROOT}/skills/run-checklist/scripts/run-verification.py" proof --print-laws-hash --laws-dir .sdd/laws/auth/user-login`.
+The hash covers everything after the leading comment block, so adding the approval line does not expire it, but any
+change to the law text (even spacing inside a line) does, and the gate then reports `SKIPPED` with the new hash. AI never writes
+this line; review it in the PR. Moving `laws-status` to `approved` / `proven` is also a human step.
+
+### Running it
+
+`/run-checklist {feature} {ticket}` verifies `CHK-205` (generated only for specs with `laws:`); `--category proof` verifies just that item.
+It calls `run-verification.py proof --laws-dir ...` once for all directories and records the worst status
+(FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS). `bend` always runs with `BEND_NO_TELEMETRY=1`, and only
+`import Base` and relative imports of `.bend` files inside the laws directory are allowed (anything else fails before `bend` starts).
+Options: `--verdict` (extra Lean re-check, falls back with `verdict: "unavailable"`), `--timeout`; `.sdd-config.json` keys: `directories.laws`, `proof.timeout_seconds`, `proof.verdict`.
+macOS / Linux only (Windows via WSL). Verified against Bend v2.0.37; the Lean re-check needs Lean v4.34.0.
+
+### Writing the model
+
+- Keep the model small: only constraints, invariants and postconditions. IO, external boundaries and performance are out of scope
+- A law `X` is proven by a `def X` in `PROOF.bend`. The model's functions must not call a law, and a proof must not reach itself through the law it proves; keep function names and law names distinct (function `sort`, law `sort_preserves_length`)
+- Revising a law means re-approving it
+
 ## Known Limitations
 
 - **`adr/` drift against the implementation is not detected automatically.** `/check-spec` compares the
@@ -580,7 +640,7 @@ This plugin automatically loads `.sdd-config.json` and sets environment variable
 | `session-start` | SessionStart | Loads settings from `.sdd-config.json` and sets environment variables |
 | `user-prompt-submit` | UserPromptSubmit | Detects Vibe Coding signals (vague instructions) in the user prompt and injects a clarification reminder |
 | `pre-tool-use`  | PreToolUse (Write/Edit) | Denies writes to `.sdd/` documents that violate file naming conventions, and injects `CONSTITUTION.md` principles when editing implementation source code (once per session) |
-| `post-tool-use` | PostToolUse (Write/Edit) | Reminds about document consistency checks after editing `.sdd/` docs or source files with a matching spec (or points at the `adr/` migration when only a v4.x design doc matches) |
+| `post-tool-use` | PostToolUse (Write/Edit) | Reminds about document consistency checks after editing `.sdd/` docs or source files with a matching spec (or points at the `adr/` migration when only a v4.x design doc matches); also reminds to re-run the proof gate after a `.bend` law file edit and to review the reference model after editing a file named in a `main.bend` `# model-of:` line |
 
 ### Environment Variables Set
 
@@ -598,6 +658,8 @@ The following environment variables are automatically set at session start:
 | `SDD_SPECIFICATION_PATH` | `.sdd/specification` | Specification document full path        |
 | `SDD_ADR_PATH`           | `.sdd/adr`           | Decision log (ADR) full path            |
 | `SDD_TASK_PATH`          | `.sdd/task`          | Task log full path                      |
+| `SDD_LAWS_DIR`           | `laws`               | Bend law directory (opt-in proof gate)  |
+| `SDD_LAWS_PATH`          | `.sdd/laws`          | Bend law directory full path            |
 | `SDD_INDEX`              | `on`                 | Set to `on` while the document index is enabled (`index: true`, the default). Left unset when `index` is `false`, which is how skills detect that the index fast path is unavailable |
 
 ### Hook Debugging
@@ -862,6 +924,9 @@ Place a `.sdd-config.json` file in your project root to customize directory name
 | `directories.specification` | `specification` | Specification/design document directory                                                           |
 | `directories.adr`           | `adr`           | Architecture Decision Record (decision log) directory                                             |
 | `directories.task`          | `task`          | Temporary task logs directory                                                                     |
+| `directories.laws`          | `laws`          | Bend law directory for the opt-in proof gate                                                      |
+| `proof.timeout_seconds`     | `300`           | Proof gate time limit per laws directory (positive integer)                                       |
+| `proof.verdict`             | `false`         | Also re-check with the Lean kernel (`--verdict`)                                                  |
 | `index`                     | `true`          | Boolean. Build a compressed `.sdd` document index (SQLite → `index.md`) at session start for token reduction. Set to `false` to disable. |
 | `naming.ignore_patterns`    | `[]`            | Glob patterns (`fnmatch` syntax) matched against a file's basename. Matching files skip the `requirement`/`specification` naming check (e.g. `*_test.md` for test fixtures). |
 
@@ -929,6 +994,7 @@ sdd-workflow/
 │   ├── sdd_index.py               # Structured index generation for .sdd/ documents
 │   ├── hook_common.py             # Shared: stdin/stdout, path resolution, .sdd-config loading
 │   ├── fm_parser.py               # Shared: front matter detection and parsing
+│   ├── laws_header.py             # Shared: Bend law-file conventions (proof gate)
 │   ├── naming.py                  # Shared: naming convention validation, document type detection
 │   ├── doc_walker.py              # Shared: target document traversal, design doc lookup
 │   └── env_export.py              # Shared: export writing to CLAUDE_ENV_FILE
