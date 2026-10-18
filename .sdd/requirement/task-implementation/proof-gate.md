@@ -54,11 +54,11 @@ flowchart LR
         RemindReview([法則の見直しを促す])
     end
 
-    Developer --- DraftLaws
-    Approver --- ApproveLaws
-    Developer --- WriteModel
-    Developer --- RunProof
-    ClaudeCode --- RemindReview
+    Developer ---|"生成を依頼する"| DraftLaws
+    Approver ---|"承認する"| ApproveLaws
+    Developer ---|"作成を依頼する"| WriteModel
+    Developer ---|"検査を起動する"| RunProof
+    ClaudeCode ---|"促す"| RemindReview
     DraftLaws --> ApproveLaws
     ApproveLaws --> WriteModel
     WriteModel --> RunProof
