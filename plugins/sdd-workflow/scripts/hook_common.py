@@ -194,11 +194,48 @@ def emit_additional_context(event_name: str, text: str) -> None:
     }, ensure_ascii=False))
 
 
-def relative_to_project(file_path: str, project_root: str) -> str:
-    """Return file_path relative to project_root, or '' if outside."""
+def is_within_project(file_path: str, project_root: str) -> bool:
+    """True if file_path resolves to project_root or somewhere beneath it.
+
+    This is the single decision point for "is this path in scope for the
+    hooks?". Paths outside the project (which includes everything under an
+    absolute ``.sdd-config.json`` ``root`` pointing outside the project, see
+    issue #151) are currently out of scope: the hooks neither validate nor
+    index them. If external roots are ever supported, change this helper (and
+    :func:`is_external_sdd_root`) rather than each hook.
+    """
     abs_path = Path(file_path).resolve()
     abs_root = Path(project_root).resolve()
-    try:
-        return str(abs_path.relative_to(abs_root))
-    except ValueError:
+    return abs_path == abs_root or abs_root in abs_path.parents
+
+
+def relative_to_project(file_path: str, project_root: str) -> str:
+    """Return file_path relative to project_root, or '' if outside."""
+    if not is_within_project(file_path, project_root):
         return ""
+    return str(Path(file_path).resolve().relative_to(Path(project_root).resolve()))
+
+
+def is_external_sdd_root(sdd_root: str, project_root: str) -> bool:
+    """True if the configured ``root`` is absolute or escapes the project.
+
+    Absolute roots are unsupported even when they happen to point inside the
+    project, because the hooks derive project-relative prefixes from the
+    configured string (``SddPaths.requirement_prefix`` etc.) and compare them
+    against project-relative paths. ``..`` segments that leave the project are
+    treated the same way.
+    """
+    if Path(sdd_root).is_absolute():
+        return True
+    return not is_within_project(str(Path(project_root) / sdd_root), project_root)
+
+
+EXTERNAL_ROOT_WARNING = (
+    "[AI-SDD] Warning: '.sdd-config.json' sets \"root\" to '{root}', which is "
+    "an absolute path or points outside the project. This is not supported "
+    "yet: the PreToolUse/PostToolUse hooks only cover files inside the project, "
+    "so naming validation, CONSTITUTION injection and the document index will "
+    "not apply to that directory. Use a relative path inside the project "
+    "(e.g. \".sdd\" or \"docs/sdd\"), or add the external directory as a git "
+    "submodule inside the project."
+)

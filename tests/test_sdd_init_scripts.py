@@ -565,3 +565,26 @@ class TestUpdateClaudeMdMain:
         with pytest.raises(SystemExit) as exc:
             update_claude_md.main()
         assert exc.value.code == 1
+
+
+class TestUpdateGitignoreExternalRoot:
+    """絶対パス root では `{root}/.cache/` 行が無意味なので追記せず警告する（issue #151）。"""
+
+    def test_absolute_root_skips_and_warns(self, tmp_path, capsys):
+        gitignore = tmp_path / ".gitignore"
+        gitignore.write_text("node_modules/\n", encoding="utf-8")
+        init_structure.update_gitignore(tmp_path, str(tmp_path.parent / "external-sdd"))
+        assert gitignore.read_text(encoding="utf-8") == "node_modules/\n"
+        err = capsys.readouterr().err
+        assert "Skipped .gitignore" in err
+        assert "not supported" in err
+
+    def test_absolute_root_does_not_create_gitignore(self, tmp_path, capsys):
+        init_structure.update_gitignore(tmp_path, "/abs/external-sdd")
+        assert not (tmp_path / ".gitignore").exists()
+        assert "Skipped .gitignore" in capsys.readouterr().err
+
+    def test_parent_traversal_root_skips_and_warns(self, tmp_path, capsys):
+        init_structure.update_gitignore(tmp_path, "../shared-sdd")
+        assert not (tmp_path / ".gitignore").exists()
+        assert "Skipped .gitignore" in capsys.readouterr().err
