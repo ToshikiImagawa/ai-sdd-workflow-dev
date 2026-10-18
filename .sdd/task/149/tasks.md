@@ -2,7 +2,7 @@
 id: "task-task-implementation-proof-gate"
 title: "Bend 証明ゲート（run-checklist の proof カテゴリ）"
 type: "task"
-status: "in-progress"
+status: "completed"
 sdd-phase: "tasks"
 created: "2026-10-17"
 updated: "2026-10-17"
