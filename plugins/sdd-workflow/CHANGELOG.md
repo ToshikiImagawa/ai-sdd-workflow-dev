@@ -25,6 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   named in a `main.bend` `# model-of:` line
 - `.sdd-config.json`: `directories.laws`, `proof.timeout_seconds`, `proof.verdict`; `SDD_LAWS_DIR` / `SDD_LAWS_PATH` exported at session start
 
+### Fixed
+
+- **Hooks broke silently when `.sdd-config.json` `root` was an absolute path** (#151) -
+  With a `root` pointing outside the project, `pre-tool-use.py` skipped external documents without
+  a word (no naming validation / CONSTITUTION injection), `post-tool-use.py` crashed with a
+  `ValueError` from `Path.relative_to` (rc=1) whenever a source edit matched a spec outside the
+  project, and `session-start.py` never warned. Absolute / project-escaping roots are **not supported
+  yet**; this change makes that explicit instead of silent: `session-start.py` prints a warning
+  (suggesting a relative path or a git submodule) and continues, `post-tool-use.py` ignores
+  out-of-project documents without failing, `pre-tool-use.py` treats out-of-project paths as out of
+  scope via the new `hook_common.is_within_project()` / `is_external_sdd_root()` helpers (the single
+  place to change if external roots are supported later), and `init-structure.py` skips the
+  meaningless `{root}/.cache/` `.gitignore` entry with a warning.
+
 ## [5.1.0] - 2026-09-16
 
 ### Added

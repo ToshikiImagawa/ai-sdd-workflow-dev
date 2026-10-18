@@ -43,7 +43,7 @@ risk: "medium"
 | `front-matter-reviewer.md` / `front_matter_reference.md` の拡張 | 🟢    | front-matter-validation_spec FR-009（`--cross-ref` の孤児 laws 逆方向検査を含む） |
 | checklist テンプレート `CHK-205`（en/ja）と checklist SKILL.md        | 🟢    | checklist-generation_spec FR-006                         |
 | run-checklist の SKILL.md / `verification_commands.md` / テンプレート | 🟢  | 判定表・`--category proof` 別名・PASS の意味の注記                     |
-| README / CHANGELOG / 原則文書の構成図                               | 🟢    | README / CHANGELOG のみ。`AI-SDD-PRINCIPLES.source.md` は本チケットの範囲外（§7.1 のモデル作成ガイドは README に反映）                             |
+| README / CHANGELOG（原則文書の構成図は範囲外）                      | 🟢    | README / CHANGELOG のみ。`AI-SDD-PRINCIPLES.source.md` は本チケットの範囲外（§7.1 のモデル作成ガイドは README に反映）                             |
 | 第 2 弾: 法則案生成スキル                                            | ⏸️    | 境界は spec §4.1・§7.2 に一元化。本書 §4.4 は実装上の置き場所のみ。別チケット        |
 
 ---
@@ -704,7 +704,7 @@ plugins/sdd-workflow/
 ├── skills/checklist/
 │   ├── SKILL.md                             # laws: 無しなら CHK-205 を生成しない
 │   └── templates/{en,ja}/checklist_template.md   # CHK-205 [P2] 法則証明（proof ゲート）
-├── AI-SDD-PRINCIPLES.source.md              # 構成図に laws/ を追記（任意ディレクトリとして）
+├── AI-SDD-PRINCIPLES.source.md              # 変更しない（本チケットの範囲外。構成図への laws/ 追記は別チケットで判断。§1.1 参照）
 ├── README.md / README.ja.md                 # 「Bend 証明ゲート（opt-in）」節: PASS の意味、承認行の書き方、モデル作成ガイド（§7.1）
 └── CHANGELOG.md / CHANGELOG.ja.md           # [Unreleased] に追加
 

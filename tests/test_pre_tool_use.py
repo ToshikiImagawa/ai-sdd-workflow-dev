@@ -5,6 +5,7 @@
 """
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 
@@ -144,3 +145,65 @@ class TestMaybeInjectConstitution:
     def test_no_constitution_no_output(self, tmp_path, capsys):
         ptu.maybe_inject_constitution("src/app.py", str(tmp_path), ".sdd", "s1")
         assert capsys.readouterr().out == ""
+
+
+# --- absolute / external .sdd root (issue #151) -----------------------------
+
+
+class TestExternalSddRoot:
+    """絶対パス root は未対応。プロジェクト外のパスは「対象外」として明示的に無視する。"""
+
+    def _run_main(self, monkeypatch, capsys, payload: dict) -> str:
+        import io
+        import sys
+
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        ptu.main()
+        return capsys.readouterr().out
+
+    def test_external_path_is_out_of_scope_and_does_not_crash(self, tmp_path, monkeypatch, capsys):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        external = tmp_path / "external-sdd"
+        (external / "requirement").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external)}), encoding="utf-8",
+        )
+        target = external / "requirement" / "x_spec.md"
+
+        out = self._run_main(monkeypatch, capsys, {
+            "cwd": str(proj),
+            "tool_input": {"file_path": str(target)},
+        })
+        # Documented limitation: no deny is possible for an external root, but
+        # the hook must exit cleanly and the decision point is is_within_project.
+        assert out == ""
+        assert not ptu.is_within_project(str(target), str(proj))
+
+    def test_internal_path_still_validated_with_external_root(self, tmp_path, monkeypatch, capsys):
+        # The external root must not switch validation off for in-project paths:
+        # a naming violation under the (default-named) in-project requirement
+        # dir is still denied. Use a relative root that resolves inside the
+        # project for the denial, and an unrelated absolute root elsewhere.
+        proj = tmp_path / "proj"
+        (proj / "docs" / "requirement").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": "docs"}), encoding="utf-8",
+        )
+        out = self._run_main(monkeypatch, capsys, {
+            "cwd": str(proj),
+            "tool_input": {"file_path": str(proj / "docs" / "requirement" / "x_spec.md")},
+        })
+        assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+    def test_in_project_source_edit_with_external_root_does_not_crash(self, tmp_path, monkeypatch, capsys):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": str(tmp_path / "external-sdd")}), encoding="utf-8",
+        )
+        out = self._run_main(monkeypatch, capsys, {
+            "cwd": str(proj),
+            "tool_input": {"file_path": str(proj / "src" / "main.py")},
+        })
+        assert out == ""

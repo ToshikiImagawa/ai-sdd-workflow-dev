@@ -660,6 +660,39 @@ class TestMainIntegration:
         assert 'export SDD_LANG="ja"' in content
         assert 'export SDD_ROOT=".sdd"' in content
 
+    def test_main_warns_and_continues_for_absolute_root(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Issue #151: main() must call warn_if_external_root; removing that
+        # call would leave the unit tests green but make the problem silent.
+        project_root, env_file = self._setup_env(tmp_path, monkeypatch)
+        external = tmp_path / "external-sdd"
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external), "lang": "en"}), encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()  # returns normally (rc=0): processing continues
+
+        err = capsys.readouterr().err
+        assert "[AI-SDD] Warning" in err
+        assert "not supported" in err
+        assert str(external) in err
+        assert f'export SDD_ROOT="{external}"' in env_file.read_text(encoding="utf-8")
+
+    def test_main_is_silent_about_root_for_relative_root(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        project_root, _ = self._setup_env(tmp_path, monkeypatch)
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": ".sdd", "lang": "en"}), encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()
+
+        assert "not supported" not in capsys.readouterr().err
+
     def test_main_regenerates_migration_pending_every_session(
         self, tmp_path, monkeypatch
     ):
@@ -717,3 +750,28 @@ class TestLawsEnvExports:
         # laws/ is opt-in: the auto-generated .sdd-config.json must not declare it.
         result = ss.load_or_create_config(str(tmp_path / ".sdd-config.json"), "en")
         assert "laws" not in result["directories"]
+
+
+# --- absolute / external .sdd root (issue #151) -----------------------------
+
+
+class TestWarnExternalRoot:
+    def test_absolute_root_warns_on_stderr(self, tmp_path, capsys):
+        external = tmp_path / "external-sdd"
+        assert ss.warn_if_external_root(str(external), str(tmp_path / "proj")) is True
+        err = capsys.readouterr().err
+        assert "[AI-SDD] Warning" in err
+        assert "not supported" in err
+        assert str(external) in err
+        # Points the user at the supported alternatives.
+        assert "relative" in err
+        assert "submodule" in err
+
+    def test_parent_traversal_root_warns(self, tmp_path, capsys):
+        assert ss.warn_if_external_root("../shared", str(tmp_path / "proj")) is True
+        assert "not supported" in capsys.readouterr().err
+
+    def test_relative_root_is_silent(self, tmp_path, capsys):
+        assert ss.warn_if_external_root(".sdd", str(tmp_path)) is False
+        assert ss.warn_if_external_root("docs/sdd", str(tmp_path)) is False
+        assert capsys.readouterr().err == ""

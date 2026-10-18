@@ -9,7 +9,7 @@
 
 ## [Unreleased]
 
-### Added
+### 追加
 
 - **Bend 証明ゲート（opt-in）** - `/run-checklist` に検証カテゴリ `proof` を追加し、spec の制約を Bend の法則
   （`${SDD_LAWS_PATH}/{feature}/` の `LAWS.bend` / `PROOF.bend` / `main.bend`）として検査する。任意機能であり、
@@ -23,6 +23,19 @@
   ディレクトリの実在・`# spec:` の一致・状態と実ファイルの整合・孤児 laws も検査）。`laws:` を持つ spec でのみ `CHK-205 [P2]` を生成
 - `post-tool-use` のリマインド: `.bend` 編集後に proof ゲートの再実行、`main.bend` の `# model-of:` に挙げたファイルの編集後にモデルの見直しを促す
 - `.sdd-config.json` に `directories.laws` / `proof.timeout_seconds` / `proof.verdict` を追加。セッション開始時に `SDD_LAWS_DIR` / `SDD_LAWS_PATH` をエクスポート
+
+### 修正
+
+- **`.sdd-config.json` の `root` に絶対パスを指定するとフックが無音で壊れる** (#151) -
+  プロジェクト外を指す `root` では、`pre-tool-use.py` が外部ドキュメントを警告なく素通りし
+  （命名規則検証・CONSTITUTION 注入が効かない）、`post-tool-use.py` はソース編集が外部 spec に
+  マッチすると `Path.relative_to` の `ValueError` で落ち（rc=1）、`session-start.py` は何も警告しなかった。
+  絶対パス／プロジェクト外の root は現時点で**未対応**であり、本修正はそれを無音ではなく明示する:
+  `session-start.py` が警告（相対パスまたは git サブモジュールを案内）を出して処理を継続し、
+  `post-tool-use.py` はプロジェクト外ドキュメントを無視して落ちなくなり、`pre-tool-use.py` は新設の
+  `hook_common.is_within_project()` / `is_external_sdd_root()` ヘルパー（将来外部 root を対応する際の
+  差し替え点）でプロジェクト外パスを「対象外」として扱い、`init-structure.py` は無意味になる
+  `{root}/.cache/` の `.gitignore` 追記をスキップして警告する。
 
 ## [5.1.0] - 2026-09-16
 

@@ -257,3 +257,62 @@ class TestLawsReminders:
 
     def test_bend_is_not_a_source_extension(self):
         assert ".bend" not in ptu.SOURCE_EXTENSIONS
+
+
+# --- absolute / external .sdd root (issue #151) -----------------------------
+
+
+class TestExternalSddRoot:
+    """spec がプロジェクト外にあっても relative_to の ValueError で落とさない。"""
+
+    def _external_layout(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        external = tmp_path / "external-sdd"
+        (external / "specification").mkdir(parents=True)
+        (external / "specification" / "foo_spec.md").write_text("# foo\n", encoding="utf-8")
+        (proj / "foo.py").write_text("x = 1\n", encoding="utf-8")
+        paths = ptu.SddPaths(root=str(external))
+        return proj, external, paths
+
+    def test_source_edit_with_external_spec_does_not_raise(self, tmp_path, capsys):
+        proj, _external, paths = self._external_layout(tmp_path)
+        ptu._process_single_file("foo.py", str(proj), paths)  # must not raise
+        assert capsys.readouterr().out == ""
+
+    def test_source_edit_with_external_legacy_design_does_not_raise(self, tmp_path, capsys):
+        proj, external, paths = self._external_layout(tmp_path)
+        (external / "specification" / "foo_spec.md").unlink()
+        (external / "specification" / "foo_design.md").write_text("# d\n", encoding="utf-8")
+        ptu._process_single_file("foo.py", str(proj), paths)
+        assert capsys.readouterr().out == ""
+
+    def test_main_exits_cleanly_for_external_root(self, tmp_path, monkeypatch, capsys):
+        import io
+        import json
+        import sys
+
+        proj, external, _paths = self._external_layout(tmp_path)
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external)}), encoding="utf-8",
+        )
+        payload = {"cwd": str(proj), "tool_input": {"file_path": str(proj / "foo.py")}}
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+        ptu.main()  # must not raise (previously ValueError -> rc=1)
+        assert capsys.readouterr().out == ""
+
+
+class TestModelOfOutsideProject:
+    def test_absolute_laws_root_outside_project_is_silent(self, tmp_path, capsys):
+        # #151: an absolute .sdd-config.json root points laws/ outside the project.
+        project = tmp_path / "project"
+        (project / "src" / "auth").mkdir(parents=True)
+        external = tmp_path / "external-sdd"
+        d = external / "laws" / "auth" / "user-login"
+        d.mkdir(parents=True)
+        (d / "main.bend").write_text(
+            "# spec: spec-x\n# model-of: src/auth/user_login.py\n\nimport Base\n", encoding="utf-8")
+        paths = ptu.SddPaths(root=str(external))
+        ptu._process_model_of(Path("src/auth/user_login.py"), "src/auth/user_login.py",
+                              str(project), paths)
+        assert capsys.readouterr().out == ""

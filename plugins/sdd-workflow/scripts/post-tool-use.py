@@ -170,7 +170,12 @@ def _process_model_of(rel: Path, rel_path: str, project_root: str,
             continue
         if target not in (m.strip().replace("\\", "/") for m in mirrored):
             continue
-        model_rel = model.relative_to(Path(project_root)).as_posix()
+        # An absolute .sdd-config.json root puts laws_root outside the project
+        # (issue #151); such a model is out of scope, not an error.
+        model_rel = relative_to_project(str(model), project_root)
+        if not model_rel:
+            continue
+        model_rel = Path(model_rel).as_posix()
         feature = model.parent.relative_to(laws_root).as_posix()
         emit_additional_context(
             "PostToolUse",
@@ -195,8 +200,14 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
     # specification/ up to three times (find_spec_doc alone tries two suffix
     # candidates, and find_legacy_design_doc would be a third walk).
     spec_doc, design_doc = find_spec_or_legacy_design_doc(str(spec_dir), rel.stem)
+    # With an absolute .sdd-config.json "root" the matched document lives
+    # outside the project; relative_to_project returns '' instead of raising
+    # (issue #151). Such documents are out of scope: skip the reminder rather
+    # than fail the hook. session-start.py warns about the unsupported root.
     if spec_doc:
-        spec_rel = str(Path(spec_doc).relative_to(Path(project_root)))
+        spec_rel = relative_to_project(spec_doc, project_root)
+        if not spec_rel:
+            return
         emit_additional_context(
             "PostToolUse",
             f"[AI-SDD] '{rel_path}' was updated and a matching specification "
@@ -212,7 +223,9 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
     if not design_doc:
         return
 
-    design_rel = str(Path(design_doc).relative_to(Path(project_root)))
+    design_rel = relative_to_project(design_doc, project_root)
+    if not design_rel:
+        return
     emit_additional_context(
         "PostToolUse",
         f"[AI-SDD] '{rel_path}' was updated and a v4.x design document "
@@ -246,6 +259,7 @@ def main() -> None:
     paths = load_sdd_paths(project_root)
 
     for file_path in file_paths:
+        # Files outside the project are out of scope (issue #151).
         rel_path = relative_to_project(file_path, project_root)
         if not rel_path:
             continue
