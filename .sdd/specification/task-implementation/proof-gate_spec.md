@@ -17,7 +17,7 @@ risk: "medium"
 
 # Bend 証明ゲート
 
-**関連 Design Doc:** [design-draft.md](../../task/149/design-draft.md)（一時ドラフト。実装完了後に `adr/task-implementation/proof-gate.md` へ統合し、本リンクは「関連 ADR」に差し替える）
+**関連 ADR:** [proof-gate.md](../../adr/task-implementation/proof-gate.md)（決定と却下案の決定ログ）
 **関連 PRD:** [proof-gate.md](../../requirement/task-implementation/proof-gate.md)（親: [task-implementation](../../requirement/task-implementation/index.md)）
 **関連 spec:** [run-checklist_spec.md](run-checklist_spec.md)（`proof` カテゴリを受け入れる検証基盤）,
 [checklist-generation_spec.md](checklist-generation_spec.md)（固定項目 `CHK-205` の生成）,
@@ -55,7 +55,7 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
   TOOL_NOT_FOUND / TIMEOUT）に従う。新しいスキル・エージェント・ベアな Bash 権限は追加しない
 
 「何を検査し、どう判定・記録するか」を定義し、検査器の呼び出し方式・コメント解析・フック実装の具体は
-[design-draft.md](../../task/149/design-draft.md)（実装完了後は `adr/task-implementation/proof-gate.md`）に委ねる。
+[proof-gate.md](../../adr/task-implementation/proof-gate.md)（決定ログ）と実装に委ねる。
 
 # 3. 要求定義
 
@@ -162,7 +162,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 
 **出力**: 標準出力に JSON を 1 件。既存カテゴリと同じトップレベルの `category` / `status` / `reason` に加え、
 `verdict`・`timeout_seconds`・法則ディレクトリごとの `results`・PASS の意味の `note` を持つ。本節の形を正とし、
-design は差分だけを記述する。
+実装の差分は決定ログ（[proof-gate.md](../../adr/task-implementation/proof-gate.md)）に記録する。
 
 ```json
 {
