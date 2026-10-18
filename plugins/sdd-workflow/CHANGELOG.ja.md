@@ -9,7 +9,7 @@
 
 ## [Unreleased]
 
-### Fixed
+### 修正
 
 - **`.sdd-config.json` の `root` に絶対パスを指定するとフックが無音で壊れる** (#151) -
   プロジェクト外を指す `root` では、`pre-tool-use.py` が外部ドキュメントを警告なく素通りし

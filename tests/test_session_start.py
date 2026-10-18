@@ -660,6 +660,39 @@ class TestMainIntegration:
         assert 'export SDD_LANG="ja"' in content
         assert 'export SDD_ROOT=".sdd"' in content
 
+    def test_main_warns_and_continues_for_absolute_root(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Issue #151: main() must call warn_if_external_root; removing that
+        # call would leave the unit tests green but make the problem silent.
+        project_root, env_file = self._setup_env(tmp_path, monkeypatch)
+        external = tmp_path / "external-sdd"
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external), "lang": "en"}), encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()  # returns normally (rc=0): processing continues
+
+        err = capsys.readouterr().err
+        assert "[AI-SDD] Warning" in err
+        assert "not supported" in err
+        assert str(external) in err
+        assert f'export SDD_ROOT="{external}"' in env_file.read_text(encoding="utf-8")
+
+    def test_main_is_silent_about_root_for_relative_root(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        project_root, _ = self._setup_env(tmp_path, monkeypatch)
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": ".sdd", "lang": "en"}), encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()
+
+        assert "not supported" not in capsys.readouterr().err
+
     def test_main_regenerates_migration_pending_every_session(
         self, tmp_path, monkeypatch
     ):

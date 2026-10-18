@@ -181,6 +181,22 @@ class TestExternalSddRoot:
         assert not ptu.is_within_project(str(target), str(proj))
 
     def test_internal_path_still_validated_with_external_root(self, tmp_path, monkeypatch, capsys):
+        # The external root must not switch validation off for in-project paths:
+        # a naming violation under the (default-named) in-project requirement
+        # dir is still denied. Use a relative root that resolves inside the
+        # project for the denial, and an unrelated absolute root elsewhere.
+        proj = tmp_path / "proj"
+        (proj / "docs" / "requirement").mkdir(parents=True)
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": "docs"}), encoding="utf-8",
+        )
+        out = self._run_main(monkeypatch, capsys, {
+            "cwd": str(proj),
+            "tool_input": {"file_path": str(proj / "docs" / "requirement" / "x_spec.md")},
+        })
+        assert json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+    def test_in_project_source_edit_with_external_root_does_not_crash(self, tmp_path, monkeypatch, capsys):
         proj = tmp_path / "proj"
         proj.mkdir()
         (proj / ".sdd-config.json").write_text(
