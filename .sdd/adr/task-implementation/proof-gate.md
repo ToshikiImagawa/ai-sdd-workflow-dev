@@ -110,3 +110,9 @@ category: "task-implementation"
 - **Decision**: spec §4.1 が実装時に求める Bend 側の観察（先頭コメント部の読み飛ばし、`LAWS.bend` 未 import の拒否、Hub import の構文、`bend --version` の出力形式）の実機再確認は本チケットでは実施していない。ゲートはこれらの観察に依存せず、`laws_header.py` の静的検査（先頭コメント解析・内容ハッシュ・`law` 宣言・LAWS import・import allowlist）で同じ条件を自前で課す。実機再確認は別 issue で扱う。
 - **Rationale**: CI に本物の `bend` を入れない方針（NFR-001 / DC_001）のため、実装 PR の検証はダミー `bend` による subprocess テストに限られた。観察に依存しない設計なので、再確認の結果が変わってもゲートの判定表は影響を受けない。未実施を事実どおり記録し、spec の要求に対する受け皿を残す。
 - **Rejected alternatives**: 実機再確認が済むまで `impl-status: implemented` を保留する — ゲートの判定が観察に依存しないため、保留する実益がなく却下。再確認を省略して記録も残さない — spec §4.1 の「結果を決定ログに記録する」との不整合が残るため却下。
+
+## 2026-10-18 PRD FR_005 の優先度を Must に揃える
+
+- **Decision**: PRD（`requirement/task-implementation/proof-gate.md`）の FR_005「法則の見直し促し」の優先度を Should から Must に変更し、第 1 弾の要求 FR_001〜FR_005 をすべて Must とする。spec FR-009 は変更しない。
+- **Rationale**: spec FR-009 と実装（PR #154 の `post-tool-use.py` 拡張）は見直し促しを必須として扱っており、PRD だけが Should のまま残って優先度が食い違っていた（issue #157）。参照モデルと実装の乖離は証明では検知できず、編集直後の促しが唯一の緩和策であるため、PRD を実態に合わせて必須に引き上げる。issue #157 でオーナーが選択肢 A（PRD を Must に上げる）を決定した。
+- **Rejected alternatives**: spec FR-009 を推奨（任意）に下げる — 実装済みの必須挙動との整合が崩れ、spec → 実装の一方向派生に反するため却下。
