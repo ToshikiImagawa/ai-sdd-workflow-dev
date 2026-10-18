@@ -13,6 +13,8 @@ tags: ["checklist", "verification", "proof", "bend", "laws"]
 category: "task-implementation"
 priority: "low"
 risk: "medium"
+laws: ["laws/task-implementation/proof-gate"]
+laws-status: "drafted"
 ---
 
 # Bend 証明ゲート
