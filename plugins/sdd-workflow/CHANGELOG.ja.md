@@ -11,6 +11,7 @@
 
 ### 追加
 
+- 今後の `/draft-laws` スキルと proof ゲートの warning が使う共有モジュール `laws_drafting.py` を追加: `# source:` が指す spec 節の節ハッシュ、`bend` 不要の法則案の静的チェック（出典の実在・欠落、重複、自明法則、import 許可形式、`# model-api:` の整合）、出典ずれ検出、承認の有効性判定（`laws_header.py` を再利用）。既存の法則・proof ゲートの挙動は変わらない
 - **Bend 証明ゲート（opt-in）** - `/run-checklist` に検証カテゴリ `proof` を追加し、spec の制約を Bend の法則
   （`${SDD_LAWS_PATH}/{feature}/` の `LAWS.bend` / `PROOF.bend` / `main.bend`）として検査する。任意機能であり、
   `bend`・法則ファイル・承認済みの法則が無ければ `TOOL_NOT_FOUND` / `SKIPPED` となり実行全体を失敗させない。

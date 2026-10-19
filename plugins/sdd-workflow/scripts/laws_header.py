@@ -13,7 +13,7 @@ import datetime
 import hashlib
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 LAWS_FILE = "LAWS.bend"
 PROOF_FILE = "PROOF.bend"
@@ -119,6 +119,34 @@ def _local_import_exists(bend_file: Path, root: Path, target: str) -> bool:
     return resolved.is_file()
 
 
+def file_disallowed_imports(
+    bend_file: Path, root: Path, tolerate_missing: Iterable[str] = ()
+) -> List[str]:
+    """Import lines of one ``.bend`` file that fail the allowlist (the raw lines).
+
+    ``root`` is the resolved laws directory local imports must stay inside.
+    ``tolerate_missing`` lists import targets (as written, e.g. ``./main.bend``)
+    that are allowed even though the file does not exist yet (a draft law file
+    is written before its model).
+    """
+    tolerated = set(tolerate_missing)
+    bad: List[str] = []
+    for raw in _read_lines(bend_file):
+        if not IMPORT_LINE_RE.match(raw):
+            continue
+        line = raw.strip()
+        if STDLIB_IMPORT_RE.match(line):
+            continue
+        m = LOCAL_IMPORT_RE.match(line)
+        if m is None:
+            bad.append(line)
+        elif m.group("target") not in tolerated and not _local_import_exists(
+            bend_file, root, m.group("target")
+        ):
+            bad.append(line)
+    return bad
+
+
 def disallowed_imports(laws_dir: Path) -> List[str]:
     """Import lines that fail the allowlist, as ``"<relative file>: <line>"``.
 
@@ -135,13 +163,5 @@ def disallowed_imports(laws_dir: Path) -> List[str]:
     bad: List[str] = []
     for bend_file in sorted(laws_dir.rglob("*.bend")):
         rel = bend_file.relative_to(laws_dir)
-        for raw in _read_lines(bend_file):
-            if not IMPORT_LINE_RE.match(raw):
-                continue
-            line = raw.strip()
-            if STDLIB_IMPORT_RE.match(line):
-                continue
-            m = LOCAL_IMPORT_RE.match(line)
-            if m is None or not _local_import_exists(bend_file, root, m.group("target")):
-                bad.append(f"{rel}: {line}")
+        bad.extend(f"{rel}: {line}" for line in file_disallowed_imports(bend_file, root))
     return bad
