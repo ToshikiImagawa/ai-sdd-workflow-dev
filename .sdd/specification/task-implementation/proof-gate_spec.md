@@ -25,7 +25,7 @@ laws-status: "approved"
 [checklist-generation_spec.md](checklist-generation_spec.md)（固定項目 `CHK-205` の生成）,
 [front-matter-validation_spec.md](../quality-guardrails/front-matter-validation_spec.md)（`laws:` / `laws-status:` の検証ルールと孤児 laws の逆方向検査）,
 [stale-doc-detection_spec.md](../quality-guardrails/stale-doc-detection_spec.md)（法則の見直しリマインド）
-**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md)（参照した版: v2.0.0）A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）, T-002（plugin.json 登録の徹底）
+**準拠する原則:** [CONSTITUTION.md](../../CONSTITUTION.md)（参照した版: v2.0.0）A-001（Skills-First）, A-002（フックとスクリプトの責務分離）, B-001（Vibe Coding 防止）, B-002（多言語対応の一貫性）, D-001（Specification-Driven）, D-002（ファイル命名規則の厳守）, D-003（ドキュメント永続性）, T-002（plugin.json 登録の徹底）
 
 ---
 
@@ -349,6 +349,7 @@ stateDiagram-v2
   依存方向（`depends-on`）には影響しない（法則は引き続き下流であり、spec が法則に依存することにはならない）
 - **命名の書き込み時ブロックはしない**: 法則ファイルの固定ファイル名の不備は、書き込み時の deny ではなく
   ゲート実行時の SKIPPED / FAIL の理由として報告する（naming-enforcement の対象に含めない）
+- **`laws/` の永続性**: 法則ディレクトリは `task/` と異なり永続ドキュメントとして扱い、spec と同じライフサイクルで保守する（spec の廃止に合わせて削除する。D-003、PRD D-003）
 - **スコープ外**: チェックリストの生成そのもの・`proof` 以外の検証カテゴリ・front matter 形式検証の実行・
   リマインドの実装は、それぞれ checklist-generation / run-checklist / front-matter-validation / stale-doc-detection が担う
 
@@ -362,6 +363,7 @@ stateDiagram-v2
 | B-002 | 多言語対応（EN/JA）の一貫性 | `CHK-205`・結果ブロック・レポートの文言を en / ja テンプレートで維持し `SDD_LANG` で切り替える                            |
 | D-001 | Specification-Driven      | spec を正典に残し、法則は spec から一方向に派生させる。法則から spec・PRD を書き換えない                                   |
 | D-002 | ファイル命名規則の厳守      | 法則ファイルは固定名（`LAWS.bend` / `PROOF.bend` / `main.bend`）とし、識別子はディレクトリ名に置く。`.md` の命名規則には影響しない   |
+| D-003 | ドキュメント永続性         | `laws/` は永続ドキュメントとして spec と同じライフサイクルで保守し、spec の廃止に合わせて削除する。`task/` のように実装完了後に削除しない      |
 | T-002 | plugin.json 登録の徹底      | エージェントは新設せず既存の front-matter-reviewer を拡張する。`skills` / `hooks` は宣言しない                           |
 
 # 10. PRD 整合性レビュー結果
@@ -370,7 +372,7 @@ stateDiagram-v2
 
 | PRD 要求 ID       | 内容                                      | spec での対応                       |
 |:----------------|:----------------------------------------|:--------------------------------|
-| FR_001          | 法則ファイルの証明検査（判定・テレメトリ停止・再検査の opt-in・タイムアウト） | FR-001, FR-002（3.1.1 判定表、12 行）, FR-005, FR-006, NFR-002 |
+| FR_001          | 法則ファイルの証明検査（判定・テレメトリ停止・再検査の opt-in・タイムアウト） | FR-001, FR-002（3.1.1 判定表、12 行）, FR-005, FR-006（`--verdict` 再検査。FR_001 の「再検査は opt-in」に対応し、機能自体は任意）, NFR-002 |
 | FR_002          | 法則ファイルの配置と識別                          | FR-003, FR-004, 3.1.1 #4（孤児 laws → FAIL） |
 | FR_003          | spec からの一方向参照                           | FR-008, 3.1.1 #4（laws → spec の逆参照を検証のみに用いる） |
 | FR_004          | 人による承認ゲート                              | 3.1.1 #5（有効な承認行なし → SKIPPED）, FR-004（内容ハッシュによる承認の束縛） |
