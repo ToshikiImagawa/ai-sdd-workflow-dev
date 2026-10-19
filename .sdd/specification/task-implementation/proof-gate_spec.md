@@ -74,7 +74,7 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
 | FR-007 | 判定を仕様レビューカテゴリの固定項目 `CHK-205`（P2）としてチェックリストと検証レポートに記録し、PASS の意味（参照モデルが法則を満たす保証であり実装の正しさではない）を結果に併記する。`CHK-205` は `laws:` を持つ spec でのみ生成・検証する。`/run-checklist` の `--category` は CHK のカテゴリ名を取るため、`--category specification`（2xx）と無指定で `CHK-205` を検証し、加えて `--category proof` を「`CHK-205` のみを検証する別名」として受理する | 必須  | 子 PRD IR_001・NFR_003                   |
 | FR-008 | spec の front matter に `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト。例: `laws/task-implementation/proof-gate`）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を定義する。法則は下流であり `depends-on` に含めない（`laws:` は依存関係ではなく探索用ポインタ）。`laws-status` のうち `approved` / `proven` への遷移は人が行い（`drafted` は法則案生成スキルが付与してよい）、ゲートは PASS 時に `proven` への遷移を**推奨**するに留める | 必須  | 子 PRD FR_003 / DC_002                   |
 | FR-009 | 法則ファイル（`.bend`）編集後は proof ゲートの再実行を、`# model-of:` に記録された実装ファイルの編集後は参照モデルと法則の見直しを、非ブロッキングで促す | 必須  | 子 PRD FR_005                            |
-| FR-010 | spec の制約事項・機能要件表から `LAWS.bend` 案を生成し、人の承認後に参照モデルと証明を書く承認フローの境界（入力・出力・状態遷移）を定義する。境界の詳細は [laws-drafting_spec.md](laws-drafting_spec.md) に定義した。生成スキルの実装は別チケット | 任意  | 子 PRD FR_006 / DC_002                   |
+| FR-010 | spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` 案を生成し、人の承認後に参照モデルと証明を書く承認フローの境界（入力・出力・状態遷移）を定義する。境界の詳細は [laws-drafting_spec.md](laws-drafting_spec.md) に定義した。生成スキルの実装は別チケット | 任意  | 子 PRD FR_006 / DC_002                   |
 
 FR-009 の促しの提供機能は [stale-doc-detection_spec.md](../quality-guardrails/stale-doc-detection_spec.md) に、
 FR-008 の形式検証ルールと孤児 laws の静的検査（reviewer 側）は [front-matter-validation_spec.md](../quality-guardrails/front-matter-validation_spec.md) に、
@@ -141,7 +141,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 | agent    | `agents/front-matter-reviewer.md`                                 | front-matter-reviewer（拡張） | `laws:` / `laws-status:` の検証（FR-008。仕様は front-matter-validation_spec）                        |
 | reference | `shared/references/front_matter_reference.md`                    | front_matter_reference（拡張） | spec の `laws:` / `laws-status:` フィールド定義と状態遷移                                              |
 | doc      | `README.md` / `README.ja.md`                                      | 利用者向けドキュメント（拡張）        | 「Bend 証明ゲート（opt-in）」節: PASS の意味、法則ディレクトリの作り方、承認行の書き方（子 PRD NFR_003）                      |
-| skill    | （第 2 弾・別チケット）                                                   | 法則案生成スキル（名称未定）        | spec の制約事項・FR 表から `LAWS.bend` 案を生成し `laws-status: drafted` を付与する（FR-010。本 spec では境界のみ） |
+| skill    | （第 2 弾・別チケット）                                                   | 法則案生成スキル（名称未定）        | spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` 案を生成し `laws-status: drafted` を付与する（FR-010。本 spec では境界のみ） |
 
 ## 4.1. 入出力定義
 
@@ -377,7 +377,7 @@ stateDiagram-v2
 | FR_003          | spec からの一方向参照                           | FR-008, 3.1.1 #4（laws → spec の逆参照を検証のみに用いる） |
 | FR_004          | 人による承認ゲート                              | 3.1.1 #5（有効な承認行なし → SKIPPED）, FR-004（内容ハッシュによる承認の束縛） |
 | FR_005          | 法則の見直し促し                               | FR-009                           |
-| FR_006          | spec から法則案を生成する承認フロー（第 2 弾）           | FR-010, §7.2 状態遷移               |
+| FR_006          | spec から法則案を生成する承認フロー（第 2 弾）           | FR-010, §7.2 状態遷移（詳細: [laws-drafting_spec.md](laws-drafting_spec.md)） |
 | NFR_001         | 任意依存                                    | NFR-001                          |
 | NFR_002         | ネットワーク非依存                              | FR-005, NFR-003                  |
 | NFR_003         | PASS の意味の明示                             | FR-007, §4（README 行）, §8 制約事項     |

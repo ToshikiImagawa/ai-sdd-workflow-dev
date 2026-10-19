@@ -7,7 +7,7 @@ sdd-phase: "implement"
 created: "2026-10-17"
 updated: "2026-10-19"
 sdd-version: "5.1.0"
-depends-on: ["spec-task-implementation-proof-gate"]
+depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-laws-drafting"]
 ticket: "149"
 tags: ["checklist", "verification", "proof", "bend", "laws"]
 category: "task-implementation"
@@ -146,10 +146,10 @@ category: "task-implementation"
 ## 2026-10-19 第 2 弾（法則案の生成）を新 spec と 3 段階スキルで設計する
 
 - **Decision**: 法則案の生成と承認フローを新 spec [laws-drafting_spec.md](../../specification/task-implementation/laws-drafting_spec.md) に定義する（第 2 弾の実装は別チケット）。要点は次の 6 つ。
-  1. 抽出元は判定表・集約規則・状態遷移と、制約事項・不変条件・数値目標のうち機械的に等式化できるものだけとし、法則化しない理由を抽出レポートに残す。
+  1. 抽出元は判定表・状態遷移・集約規則と、制約事項・NFR の数値目標のうち機械的に等式化できるものだけ（FR 表の散文のみは対象外）とし、法則化しない理由を抽出レポートに残す。
   2. 新規スキル `/draft-laws`（仮称）とし、`/generate-spec` や `/checklist` は拡張しない。
   3. 法則数の既定上限は 10（`.sdd-config.json` の `laws.max_laws`）。優先順は判定表の単調性・順序 > 集約 > 不変条件 > 数値境界で、超過分は「未採用の候補」として残す。
-  4. 1 スキルに 3 段階（draft → 人の承認 → model/proof）を持たせ、`laws-status` と 1 対 1 に対応させる。承認済みかつ内容ハッシュ一致でなければ model/proof 段階を拒否する。承認行は AI が書かず、ハッシュと書式を案内するだけとする。
+  4. 1 スキルに 3 段階（draft → 人の承認 → model/proof）を持たせ、`laws-status` と 1 対 1 に対応させる。承認行が有効（内容ハッシュ一致）でなければ model/proof 段階を拒否する（`laws-status` は warning 併記に留める）。承認行は AI が書かず、ハッシュと書式を案内するだけとする。
   5. spec 変更への追従は post-tool-use の促し、法則本文側の `# source: <spec id> §<節> sha256:<節ハッシュ>` 出典コメント、`bend` 不要の静的チェック（出典の実在・欠落・重複・自明法則・import 許可形式）で行う。
   6. 検収は第 1 弾の手書き法則 5 件を再現できるかで行い、他 spec への適用は別チケットで提案する。`bend` が無い環境でも法則案の生成はでき、証明段階だけ TOOL_NOT_FOUND になる。
 - **Rationale**: clarify Q1〜Q6 として提示し 2026-10-19 にオーナーが承認した。spec が正典（D-001）で、法則は下流の opt-in 派生物なので、spec 生成スキルを拡張せず責務を分ける（A-001 / A-002）。承認の主体を人に固定したまま、承認後の工程だけを AI に任せる。
