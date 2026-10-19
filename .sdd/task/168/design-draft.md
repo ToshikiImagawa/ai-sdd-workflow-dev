@@ -1,5 +1,5 @@
 ---
-id: "design-task-implementation-laws-drafting"
+id: "design-168"
 title: "法則案の生成と承認フロー 設計ドラフト"
 type: "design"
 status: "draft"

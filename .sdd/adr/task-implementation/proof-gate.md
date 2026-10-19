@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-10-17"
-updated: "2026-10-18"
+updated: "2026-10-19"
 sdd-version: "5.1.0"
 depends-on: ["spec-task-implementation-proof-gate"]
 ticket: "149"

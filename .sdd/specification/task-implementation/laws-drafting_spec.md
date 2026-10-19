@@ -8,7 +8,7 @@ impl-status: "not-implemented"
 created: "2026-10-19"
 updated: "2026-10-19"
 sdd-version: "5.1.0"
-depends-on: ["prd-task-implementation-proof-gate", "spec-task-implementation-proof-gate"]
+depends-on: ["prd-task-implementation-proof-gate"]
 tags: ["laws", "bend", "proof", "drafting", "approval"]
 category: "task-implementation"
 priority: "low"
