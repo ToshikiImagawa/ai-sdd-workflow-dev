@@ -658,7 +658,21 @@ class TestExternalRootSkipped:
         si.rebuild_all(str(proj))
         assert not (external / ".cache").exists()
 
-    def test_update_one_skips_without_error(self, tmp_path):
+    def test_update_one_does_not_touch_existing_external_db(self, tmp_path):
+        # update_one returns early when no DB exists, so pre-create one: only
+        # the external-root guard keeps it from being updated.
         proj, external = self._project(tmp_path)
+        db_file = Path(si.db_path(str(proj), str(external)))
+        db_file.parent.mkdir(parents=True)
+        conn = si.connect(str(db_file))
+        si.init_schema(conn)
+        conn.commit()
+        conn.close()
+
         si.update_one(str(proj), "requirement/a.md")
-        assert not (external / ".cache").exists()
+
+        conn = sqlite3.connect(str(db_file))
+        try:
+            assert conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 0
+        finally:
+            conn.close()
