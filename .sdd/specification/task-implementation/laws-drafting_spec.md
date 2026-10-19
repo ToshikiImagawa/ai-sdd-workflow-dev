@@ -43,7 +43,7 @@ dogfooding 用の法則 5 件も手書きである。第 2 弾は、spec から�
 
 | 段階（サブコマンド） | 入力の前提 | 出力 | 遷移 | 主体 |
 |:--|:--|:--|:--|:--|
-| `draft` | spec が存在する | `LAWS.bend` 案（承認行なし）と抽出レポート | `none` → `drafted` | AI |
+| `draft` | spec が存在する | `LAWS.bend` 案（承認行なし）と抽出レポート。`laws:` / `laws-status: drafted` は提案 | `none` → `drafted` | AI（提案）／人（front matter への適用） |
 | （承認） | `drafted` の `LAWS.bend` | `# approved:` 行の追記 | `drafted` → `approved` | **人のみ** |
 | `model` | `approved` かつ内容ハッシュ一致 | `main.bend` と `PROOF.bend` | `approved` のまま | AI |
 | （検査・昇格） | `PROOF.bend` | `/run-checklist` の `CHK-205` の判定 | `approved` → `proven` | 検査は run-checklist、遷移は**人のみ** |
