@@ -71,12 +71,12 @@ dogfooding 用の法則 5 件も手書きである。第 2 弾は、spec から�
 | FR-005 | 法則化できる性質が 1 件も無い spec は、`LAWS.bend` を作らず、抽出レポートに「法則化しない理由」を節ごとに残して正常終了する（失敗ではない。`LAWS.draft.bend` も作らず、既存の `LAWS.bend` にも触れない）。spec が存在しない・読めない場合のみ失敗とする | 必須 | ADR 2026-10-19（Q1・Q3） |
 | FR-006 | 生成後に静的チェック（`bend` 不要）を実行し、結果を抽出レポートに併記する。チェックは 3.1.3 の 5 項目で、適用範囲は `draft` が出力した法則案に限る（第 1 弾の手書き法則には適用しない）。error があれば `LAWS.bend` 案は出力するが `drafted` 付与を提案しない | 必須 | Q5 |
 | FR-007 | `/draft-laws model <spec>` は、`LAWS.bend` に有効な承認行（第 1 弾 FR-004。内容ハッシュ一致）が無ければ**拒否**し（前提は承認行の有効性のみ。spec の `laws-status` が `approved` でなければ warning として併記するが、拒否の条件にはしない）、理由（承認行なし / 形式不正 / ハッシュ不一致と現在のハッシュ）を返す。spec に `laws:` が無い、または当該ディレクトリを指していない場合も、拒否はせず warning（孤児 laws として第 1 弾の判定表 #4 で FAIL になる旨）を併記する。有効なら `main.bend`（`# spec:` / `# model-of:` 付き）と `PROOF.bend` を書く | 必須 | Q4 |
-| FR-008 | `model` 段階は `LAWS.bend` を変更しない。法則の誤りに気付いた場合は、変更せずに指摘として返し、法則の改訂は人が行う（本文が変わるとハッシュが変わり承認は失効する）。`draft` の再実行は、承認行を持つ `LAWS.bend` を**上書きしない**: 差分を抽出レポートに出すだけとし、人が採用を決める。承認行の無い案も既定では温存し、再生成案は `LAWS.draft.bend` に出力する（上書きは明示オプション `--overwrite` のときだけ。承認行を持つ場合は `--overwrite` でも拒否する）。`LAWS.draft.bend` は人が採用または削除するまで残り、第 1 弾 FR-005 の静的検査と見直し促しの対象になる。モデルが実装すべき関数シグネチャ（法則が参照する `Model.*`）は `draft` が抽出レポートの「モデル API」節に列挙し、`model` 段階はそれに従う。`PROOF.bend` は第 1 弾 FR-005 の import 許可形式（`import ./LAWS.bend as Laws` と `import Base`）だけを使う | 必須 | Q4・第 1 弾 FR-005 |
+| FR-008 | `model` 段階は `LAWS.bend` を変更しない。法則の誤りに気付いた場合は、変更せずに指摘として返し、法則の改訂は人が行う（本文が変わるとハッシュが変わり承認は失効する）。`draft` の再実行は、承認行を持つ `LAWS.bend` を**上書きしない**: 差分を抽出レポートに出すだけとし、人が採用を決める。承認行の無い案も既定では温存し、再生成案は `LAWS.draft.bend` に出力する（上書きは明示オプション `--overwrite` のときだけ。承認行を持つ場合は `--overwrite` でも拒否する）。`LAWS.draft.bend` は人が採用または削除するまで残り、第 1 弾 FR-005 の静的検査と見直し促しの対象になる。モデルが実装すべき関数シグネチャ（法則が参照する `Model.*` の関数名・引数の型と順序・戻り値の型、および数値の符号化）は、`draft` が `LAWS.bend` の本文に `# model-api:` コメント行として書き、抽出レポートの「モデル API」節にも列挙する。`# model-api:` は本文側なので内容ハッシュの対象になり、承認時に人が確認する。`model` 段階はこの行（と `LAWS.bend` の `Model.*` 参照）だけを入力とし、レポートや `task/` の一時ファイルには依存しない。`LAWS.draft.bend` にも FR-006 の静的チェックを適用する。`PROOF.bend` は第 1 弾 FR-005 の import 許可形式（`import ./LAWS.bend as Laws` と `import Base`）だけを使う | 必須 | Q4・第 1 弾 FR-005 |
 | FR-009 | スキルは `# approved:` 行・`laws-status: approved` / `proven` を書かない。承認が必要な時点では、`--print-laws-hash` で得た現在のハッシュと、承認行の書式（`# approved: YYYY-MM-DD <承認者> sha256:<12 桁>`）を案内する | 必須 | 第 1 弾の決定（承認行は AI が書かない） |
 | FR-010 | `bend` が PATH に無い環境でも `draft` と静的チェックは動作する。`model` 段階で作った `PROOF.bend` の検査は `/run-checklist` に委ね、`bend` 不在は第 1 弾の TOOL_NOT_FOUND として扱う。本スキルが `bend` を直接呼ぶことはない | 必須 | 第 1 弾 NFR-001 |
 | FR-011 | spec の変更時に法則の見直しを非ブロッキングで促す。既存の `.bend` 編集時・`# model-of:` 編集時の促し（第 1 弾 FR-009）に加え、`laws:` を持つ spec の編集時に「`# source:` の節ハッシュが現在の spec と一致しない法則がある場合は `draft`（再抽出）を検討する」旨を促す。節ハッシュの計算は、フックから import できる共有モジュールに置く（A-002）。stale-doc-detection_spec / front-matter-validation_spec の追従は実装チケットで扱う | 必須 | ADR 2026-10-19（Q5）・第 1 弾 FR-009 |
 | FR-012 | 抽出レポート（`${SDD_ROOT}/task/{ticket}/laws-draft-report.md` または標準出力）は、採用した法則、モデル API（FR-008）、未採用の候補、法則化しない理由、静的チェックの結果を `SDD_LANG` に従い en / ja で出力する | 必須 | 原則 B-002 |
-| FR-013 | proof ゲート（`CHK-205`）は、`# source:` を持つ法則について節ハッシュと現在の spec の該当節のずれを検出し、**warning** として結果に併記する。承認は失効させず、PASS も止めない（非ブロッキング）。`# source:` を持たない法則（第 1 弾の手書き法則）は対象外。判定表（第 1 弾 3.1.1）の判定・集約は変えない | 必須 | オーナー判断（2026-10-19）・Q5 |
+| FR-013 | proof ゲート（`CHK-205`）は、`# source:` を持つ法則について節ハッシュと現在の spec の該当節のずれを検出し、**warning** として結果に併記する。承認は失効させず、PASS も止めない（非ブロッキング）。`# source:` を持たない法則（第 1 弾の手書き法則）は対象外。判定表（第 1 弾 3.1.1）の判定・集約は変えない。条件: 有効な承認行を持つディレクトリ（#5 を通過したもの）のみで評価する（`drafted` で SKIPPED のものは対象外。生成直後の不一致は静的チェック #1 の error）。出力: `run-verification.py proof` の各ディレクトリの結果に任意の `warnings` 配列（要素は `{"code": "source_drift", "law": <法則名>, "source": <節>}`）を加える追加フィールド（既存フィールドは不変）。`CHK-205` の結果欄に件数と該当法則を `SDD_LANG` の文言で併記する | 必須 | オーナー判断（2026-10-19）・Q5 |
 
 ### 3.1.0. 状態別の挙動（FR-001・FR-007・FR-008）
 
@@ -135,6 +135,7 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 |:--|:--|:--|
 | スキル | `draft-laws`（仮称） | `draft` / `model` の 2 サブコマンド（承認と昇格は人の作業でサブコマンドを持たない）。抽出（LLM の判断を要する部分）とファイル書き出し |
 | スクリプト | `skills/draft-laws/scripts/`（名称は実装で確定） | 節ハッシュ計算（フックと共有する共有モジュール）、静的チェック（3.1.3）、承認有効性の判定（`laws_header.py` を再利用）、候補一覧の決定的な整列 |
+| 既存スクリプト | `run-verification.py`（`proof`） | FR-013 の `warnings` 追加（出力は加算のみ。判定・集約は不変） |
 | フック | `post-tool-use.py` | FR-011 の見直し促し（`laws:` を持つ spec の編集時） |
 | テンプレート | `skills/draft-laws/templates/{en,ja}/` | `LAWS.bend` 案の先頭コメント、`main.bend` / `PROOF.bend` の雛形、抽出レポート |
 
@@ -152,6 +153,8 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 
 import Base
 import ./main.bend as Model
+
+# model-api: Model.judge(approved: Bool, exit_ok: Bool, marker: Bool) -> Nat  # ranks: PASS=0 SKIPPED=1 FAIL=4
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:<節ハッシュ>
 law unapproved_never_pass:
@@ -245,7 +248,7 @@ sequenceDiagram
 
 ## 7.2. 法則の状態遷移（第 1 弾 §7.2 との対応）
 
-`none → drafted`（`draft`、AI）、`drafted → approved`（承認行の追記、人）、`approved → proven`（検査 PASS 後に人）。
+`none → drafted`（`draft` が案を作り、`laws:` / `drafted` は AI が提案して人が適用）、`drafted → approved`（承認行の追記、人）、`approved → proven`（検査 PASS 後に人）。
 法則本文を変えると内容ハッシュが変わり承認は失効する（`approved → drafted`）。第 1 弾の遷移図を変更しない。
 
 # 8. 制約事項
@@ -283,13 +286,14 @@ sequenceDiagram
 | FR_004 | 人による承認ゲート | FR-007, FR-009 |
 | FR_003 | spec からの一方向参照 | FR-002（`laws:` は提案に留める） |
 | FR_005 | 法則の見直し促し | FR-011, FR-013 |
+| FR_006（追加） | spec 変更時のずれの可視化 | FR-013 |
 | DC_003 | スコープ付きの呼び出し | NFR-003 |
 
 PRD の変更提案（人の判断。PRD は本 PR で変更しない）: FR_006 は「制約事項・機能要件表から生成」「境界のみ定義し実装は別チケット」と書かれている。本 spec で境界が確定したため、(1) 本文に「承認の有効性がモデル・証明の作成の前提である」旨、(2) 検証方法に静的チェックを加えること、(3) 抽出元を構造化された節（FR 表の散文のみは対象外）に改めることを提案する。
 
 # 11. 第 1 弾の法則 5 件との対応（検収基準）
 
-第 1 弾の `.sdd/laws/task-implementation/proof-gate/LAWS.bend` の 5 法則が、3.1.1 の抽出ルールで再現できることを、実装時の検収基準とする。第 1 弾の法則は `# source:` を持たず承認済みで変更できないため、合格条件は「第 1 弾の 5 法則のすべての命題が一致すること」とする。一致の判定は、双方から `# source:` 行を除去し空白を正規化した後の `law` 宣言の比較で行い、モデル関数名は第 1 弾の `main.bend` の名前（`Model.aggregate` / `Model.judge`）に固定する。LLM の抽出は再現を保証しない（NFR-005）ため、検収は固定のプロンプト・入力で 1 回以上の再現を確認することで行う（既存ファイルは変更しない）。集約の 3 法則は、spec が明記する「最悪判定を採る」規則から導出した性質であり、spec が個別の文として述べているわけではない。
+第 1 弾の `.sdd/laws/task-implementation/proof-gate/LAWS.bend` の 5 法則が、3.1.1 の抽出ルールで再現できることを、実装時の検収基準とする。第 1 弾の法則は `# source:` を持たず承認済みで変更できないため、検収の入力は、proof-gate_spec 全文と、モデル API（既存 `main.bend` の関数シグネチャ `Model.aggregate` / `Model.judge` と順位の数値符号化 PASS=0・SKIPPED=1・FAIL=4 など）である。数値の符号化は spec に書かれていないため入力として与える。合格条件は「第 1 弾の 5 法則のすべてについて、生成結果に一致する法則が含まれること」とする（片方向。余分な法則は不合格にせず、レポートで確認する）。一致の判定は、双方から `# source:` と `# model-api:` の行を除去し空白を正規化した後の `law` 宣言本体の比較で行い、モデル関数名は第 1 弾の `main.bend` の名前（`Model.aggregate` / `Model.judge`）に固定する。LLM の抽出は再現を保証しない（NFR-005）ため、検収は固定のプロンプト・入力で 1 回以上の再現を確認することで行う（既存ファイルは変更しない）。集約の 3 法則は、spec が明記する「最悪判定を採る」規則から導出した性質であり、spec が個別の文として述べているわけではない。
 
 | 法則 | 導出元（proof-gate_spec） | 抽出ルール |
 |:--|:--|:--|

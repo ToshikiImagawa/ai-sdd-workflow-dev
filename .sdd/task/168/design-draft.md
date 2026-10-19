@@ -53,8 +53,8 @@ clarify Q1〜Q6 として提示し、2026-10-19 にオーナーが承認した�
 | 2 | スキル `draft-laws`（SKILL.md、テンプレート en/ja、`laws.max_laws` の config 読み込み） |
 | 3 | post-tool-use: `laws:` を持つ spec 編集時の促し（FR-011） |
 | 4 | README / CHANGELOG の追従（利用者向け説明）、stale-doc-detection_spec / front-matter-validation_spec の追従 |
-| 6 | run-verification.py の proof に節ハッシュのずれの warning を併記（FR-013）。共有モジュールの節ハッシュをフックと共用 |
-| 5 | 検収: proof-gate の spec から 5 法則を再現（`.sdd/laws/` の既存ファイルは変更しない） |
+| 5 | run-verification.py の proof に節ハッシュのずれの `warnings` を追加（FR-013。第 1 弾 §4.1 の出力契約への加算）。共有モジュールの節ハッシュをフックと共用 |
+| 6 | 検収: proof-gate の spec から 5 法則を再現（`.sdd/laws/` の既存ファイルは変更しない） |
 
 ## 他 spec への適用（別チケット提案）
 

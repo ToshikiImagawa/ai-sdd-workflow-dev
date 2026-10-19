@@ -159,6 +159,6 @@ category: "task-implementation"
 
 ## 2026-10-19 第 2 弾の追加決定: 節ハッシュのずれをゲートに warning で出す・第 1 弾 spec の文言整合
 
-- **Decision**: (1) `# source:` に記録した節ハッシュと現在の spec 節のずれを、proof ゲート（`CHK-205`）の結果に **warning** として併記する（laws-drafting_spec FR-013）。承認は失効させず PASS も止めない。(2) 第 1 弾 [proof-gate_spec.md](../../specification/task-implementation/proof-gate_spec.md) の `drafted` に関する 4 か所（FR-008、§4 のスキル行、§4.1 の `laws-status` 表、§7.2 の遷移図）を「生成スキルが提案し人が適用」に揃える。判定表・挙動は変えない。(3) 承認行の無い既存 `LAWS.bend` も既定では温存し、再生成案は `LAWS.draft.bend` に出す（`--overwrite` で上書き。承認行ありは拒否）。
+- **Decision**: (1) `# source:` に記録した節ハッシュと現在の spec 節のずれを、proof ゲート（`CHK-205`）の結果に **warning** として併記する（laws-drafting_spec FR-013）。承認は失効させず PASS も止めない。(2) 第 1 弾 [proof-gate_spec.md](../../specification/task-implementation/proof-gate_spec.md) の `drafted` に関する 4 か所（FR-008、§4 のスキル行、§4.1 の `laws-status` 表、§7.2 の遷移図）を「生成スキルが提案し人が適用」に揃える。判定表・挙動は変えない。なお FR-013 の `warnings` は、第 1 弾 spec §4.1 の出力契約への**加算のみの追加**（既存フィールドと判定は不変）として実装チケットで同 §4.1 に追記する。(3) 承認行の無い既存 `LAWS.bend` も既定では温存し、再生成案は `LAWS.draft.bend` に出す（`--overwrite` で上書き。承認行ありは拒否）。
 - **Rationale**: オーナーが 2026-10-19 に承認した。spec だけが変わったときに法則とのずれを見逃さないため、フックの促しに加えてゲートでも可視化する。warning に留めれば、承認の意味と PASS の意味（第 1 弾）を変えない。(2) は、第 1 弾の「付与してよい」が第 2 弾の「提案に留める」（PRD DC_002 を優先）と食い違っていたための文言整合であり、**第 1 弾 spec を変更しない方針に対する例外**（挙動は変えない）として記録する。
 - **Rejected alternatives**: 承認ハッシュに節ハッシュを含めて spec 変更で承認を自動失効させる — 意味が変わらない spec 修正（誤字・表現の整理）でも再承認を強いてしまい、承認の手間が過大になるため却下。ずれをゲートに出さず促しだけにする — bend を持つ環境でもゲートの結果からずれが見えないため却下。第 1 弾 spec を変更せず差を ADR の記録だけに留める — 同じ遷移の主体が 2 文書で食い違ったまま残るため却下。
