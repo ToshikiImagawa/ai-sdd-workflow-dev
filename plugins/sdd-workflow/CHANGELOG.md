@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scope via the new `hook_common.is_within_project()` / `is_external_sdd_root()` helpers (the single
   place to change if external roots are supported later), and `init-structure.py` skips the
   meaningless `{root}/.cache/` `.gitignore` entry with a warning.
+- **`session-start.py` / `sdd_index.py` wrote into the external directory for an absolute `root`** (#155) -
+  After warning, `session-start.py` still created `.cache/`, `AI-SDD-PRINCIPLES.md`, `UPDATE_REQUIRED.md`
+  and `MIGRATION_PENDING.md` outside the project, and `sdd_index.py` could hit `ValueError` in
+  `relative_to`. Consistent with #151 (absolute roots unsupported), both now skip: `session-start.py`
+  warns (the message states that writes were skipped), exports `SDD_*` and returns, which also skips the sync of
+  in-project AI-SDD settings (`.claude/rules/` etc.), the CLAUDE.md check and the migration check; `sdd_index.py`
+  skips indexing when the root is external.
 
 ## [5.1.0] - 2026-09-16
 

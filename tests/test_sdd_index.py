@@ -637,3 +637,42 @@ class TestPostToolUseExtractPaths:
         ptu = self._load_post_tool_use()
         payload = {"tool_input": {}}
         assert ptu._extract_file_paths(payload) == []
+
+
+class TestExternalRootSkipped:
+    """Issue #155: external / absolute roots are unsupported; skip, don't raise."""
+
+    def _project(self, tmp_path):
+        import json
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        external = tmp_path / "ext"
+        (external / "requirement").mkdir(parents=True)
+        (external / "requirement" / "a.md").write_text("# a\n", encoding="utf-8")
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external)}), encoding="utf-8")
+        return proj, external
+
+    def test_rebuild_all_skips_without_error(self, tmp_path):
+        proj, external = self._project(tmp_path)
+        si.rebuild_all(str(proj))
+        assert not (external / ".cache").exists()
+
+    def test_update_one_does_not_touch_existing_external_db(self, tmp_path):
+        # update_one returns early when no DB exists, so pre-create one: only
+        # the external-root guard keeps it from being updated.
+        proj, external = self._project(tmp_path)
+        db_file = Path(si.db_path(str(proj), str(external)))
+        db_file.parent.mkdir(parents=True)
+        conn = si.connect(str(db_file))
+        si.init_schema(conn)
+        conn.commit()
+        conn.close()
+
+        si.update_one(str(proj), "requirement/a.md")
+
+        conn = sqlite3.connect(str(db_file))
+        try:
+            assert conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 0
+        finally:
+            conn.close()

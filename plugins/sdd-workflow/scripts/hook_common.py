@@ -268,5 +268,7 @@ EXTERNAL_ROOT_WARNING = (
     "so naming validation, CONSTITUTION injection and the document index will "
     "not apply to that directory. Use a relative path inside the project "
     "(e.g. \".sdd\" or \"docs/sdd\"), or add the external directory as a git "
-    "submodule inside the project."
+    "submodule inside the project. Writes to that directory (.cache/, "
+    "AI-SDD-PRINCIPLES.md, UPDATE_REQUIRED.md) and the sync of in-project "
+    "AI-SDD settings (.claude/rules/ etc.) were skipped."
 )
