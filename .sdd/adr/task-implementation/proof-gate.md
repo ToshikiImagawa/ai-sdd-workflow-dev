@@ -5,9 +5,9 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-10-17"
-updated: "2026-10-18"
+updated: "2026-10-19"
 sdd-version: "5.1.0"
-depends-on: ["spec-task-implementation-proof-gate"]
+depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-laws-drafting"]
 ticket: "149"
 tags: ["checklist", "verification", "proof", "bend", "laws"]
 category: "task-implementation"
@@ -142,3 +142,29 @@ category: "task-implementation"
 - **Decision**: PRD（`requirement/task-implementation/proof-gate.md`）の FR_005「法則の見直し促し」の優先度を Should から Must に変更し、第 1 弾の要求 FR_001〜FR_005 をすべて Must とする。spec FR-009 は変更しない。
 - **Rationale**: spec FR-009 と実装（PR #154 の `post-tool-use.py` 拡張）は見直し促しを必須として扱っており、PRD だけが Should のまま残って優先度が食い違っていた（issue #157）。参照モデルと実装の乖離は証明では検知できず、編集直後の促しが唯一の緩和策であるため、PRD を実態に合わせて必須に引き上げる。issue #157 でオーナーが選択肢 A（PRD を Must に上げる）を決定した。
 - **Rejected alternatives**: spec FR-009 を推奨（任意）に下げる — 実装済みの必須挙動との整合が崩れ、spec → 実装の一方向派生に反するため却下。
+
+## 2026-10-19 第 2 弾（法則案の生成）を新 spec と 3 段階スキルで設計する
+
+- **Decision**: 法則案の生成と承認フローを新 spec [laws-drafting_spec.md](../../specification/task-implementation/laws-drafting_spec.md) に定義する（第 2 弾の実装は別チケット）。要点は次の 6 つ。
+  1. 抽出元は判定表・状態遷移・集約規則と、制約事項・NFR の数値目標のうち機械的に等式化できるものだけ（FR 表の散文のみは対象外）とし、法則化しない理由を抽出レポートに残す。
+  2. 新規スキル `/draft-laws`（仮称）とし、`/generate-spec` や `/checklist` は拡張しない。
+  3. 法則数の既定上限は 10（`.sdd-config.json` の `laws.max_laws`）。優先順は判定表の単調性・順序 > 集約 > 不変条件 > 数値境界で、超過分は「未採用の候補」として残す。
+  4. 1 スキルに 3 段階（draft → 人の承認 → model/proof）を持たせ、`laws-status` と 1 対 1 に対応させる。承認行が有効（内容ハッシュ一致）でなければ model/proof 段階を拒否する（`laws-status` は warning 併記に留める）。承認行は AI が書かず、ハッシュと書式を案内するだけとする。
+  5. spec 変更への追従は post-tool-use の促し、法則本文側の `# source: <spec id> §<節> sha256:<節ハッシュ>` 出典コメント、`bend` 不要の静的チェック（出典の実在・欠落・重複・自明法則・import 許可形式）で行う。
+  6. 検収は第 1 弾の手書き法則 5 件を再現できるかで行い、他 spec への適用は別チケットで提案する。`bend` が無い環境でも法則案の生成はでき、証明段階だけ TOOL_NOT_FOUND になる。
+- **Rationale**: clarify Q1〜Q6 として提示し 2026-10-19 にオーナーが承認した。spec が正典（D-001）で、法則は下流の opt-in 派生物なので、spec 生成スキルを拡張せず責務を分ける（A-001 / A-002）。承認の主体を人に固定したまま、承認後の工程だけを AI に任せる。
+  出典コメントを法則本文側に置くのは、出典を内容ハッシュの対象に含めるためである。ただし内容ハッシュは `LAWS.bend` の本文だけを対象にするので、**spec だけが変わっても承認は自動では失効しない**。節ハッシュ不一致は静的チェックと促しで検出し、再抽出と再承認は人が判断する。出典コメントを更新するたびに本文が変わり再承認が要るため、承認の手間は増える。この手間を、法則が spec とずれたまま PASS を出し続けるリスクと引き換えに受け入れた。
+  第 1 弾 spec の FR-008 は「`drafted` は法則案生成スキルが付与してよい」と許可しているが、これは許可であり義務ではない。第 2 弾のスキルは PRD DC_002（spec の front matter を書き換えない）を優先し、この許可を行使せず `laws:` / `laws-status: drafted` を提案に留める。第 1 弾 spec は変更しない。
+- **Rejected alternatives**: `/generate-spec` の拡張 — spec 生成と派生物の生成が混ざり、`bend` 任意の方針と責務がぼやけるため却下。`/checklist` への組み込み — チェックリスト生成の責務を超えるため却下。出典コメントを先頭コメント部に置く — ハッシュ対象外になり、出典の改変を承認が検知できないため却下。承認後の工程を段階ごとの別スキルにする — `laws-status` との対応が分散し、承認確認の実装が重複するため却下。
+
+## 2026-10-19 第 2 弾の追加決定: 節ハッシュのずれをゲートに warning で出す・第 1 弾 spec の文言整合
+
+- **Decision**: (1) `# source:` に記録した節ハッシュと現在の spec 節のずれを、proof ゲート（`CHK-205`）の結果に **warning** として併記する（laws-drafting_spec FR-013）。承認は失効させず PASS も止めない。(2) 第 1 弾 [proof-gate_spec.md](../../specification/task-implementation/proof-gate_spec.md) の `drafted` に関する 4 か所（FR-008、§4 のスキル行、§4.1 の `laws-status` 表、§7.2 の遷移図）を「生成スキルが提案し人が適用」に揃える。判定表・挙動は変えない。なお FR-013 の `warnings` は、第 1 弾 spec §4.1 の出力契約への**加算のみの追加**（既存フィールドと判定は不変）として実装チケットで同 §4.1 に追記する。(3) 承認行の無い既存 `LAWS.bend` も既定では温存し、再生成案は `LAWS.draft.bend` に出す（`--overwrite` で上書き。承認行ありは拒否）。
+- **Rationale**: オーナーが 2026-10-19 に承認した。spec だけが変わったときに法則とのずれを見逃さないため、フックの促しに加えてゲートでも可視化する。warning に留めれば、承認の意味と PASS の意味（第 1 弾）を変えない。(2) は、第 1 弾の「付与してよい」が第 2 弾の「提案に留める」（PRD DC_002 を優先）と食い違っていたための文言整合であり、**第 1 弾 spec を変更しない方針に対する例外**（挙動は変えない）として記録する。
+- **Rejected alternatives**: 承認ハッシュに節ハッシュを含めて spec 変更で承認を自動失効させる — 意味が変わらない spec 修正（誤字・表現の整理）でも再承認を強いてしまい、承認の手間が過大になるため却下。ずれをゲートに出さず促しだけにする — bend を持つ環境でもゲートの結果からずれが見えないため却下。第 1 弾 spec を変更せず差を ADR の記録だけに留める — 同じ遷移の主体が 2 文書で食い違ったまま残るため却下。
+
+## 2026-10-19 モデル API を `LAWS.bend` 本文の `# model-api:` 行に置く
+
+- **Decision**: 法則が参照する `Model.*` の関数名・型・数値の符号化を、`draft` が `LAWS.bend` の本文（先頭コメント部の外）に `# model-api:` コメント行として書く。`model` 段階はこの行と `Model.*` の参照だけを入力にする。
+- **Rationale**: 抽出レポートは `--ticket` 無指定なら標準出力で、`task/` は一時領域のため、`model` 段階の入力として残らない。本文側に置けば内容ハッシュの対象になり、承認時に人がモデルの形も確認できる。
+- **Rejected alternatives**: 抽出レポートを `model` の入力にする — 保存されず、承認の対象にもならないため却下。`task/{ticket}/` に置く — 一時領域で承認から `model` までの間に消えうるため却下。`model` 段階が `Model.*` 参照から毎回推測する — 数値の符号化など法則から読み取れない情報があり、LLM の推測が揺れるため却下。
