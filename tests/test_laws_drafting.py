@@ -303,6 +303,20 @@ def test_static_check_model_api(tmp_path):
     assert ld.static_check(_write(tmp_path / "d" / "LAWS.bend", plain), spec) == []
 
 
+def test_model_api_check_ignores_comment_lines_in_law(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    p = _write(tmp_path / "LAWS.bend", _laws(h).replace(
+        "  for a: Bool\n", "  # see Model.ghost for background\n  for a: Bool\n"))
+    assert ld.static_check(p, _write(tmp_path / "spec.md", SPEC)) == []
+    assert "ghost" not in ld.parse_laws(p)[0].body
+
+
+def test_public_header_helpers(tmp_path):
+    p = _write(tmp_path / "LAWS.bend", "# a\n\nimport Base\n")
+    lines = lh.read_lines(p)
+    assert lh.header_end(lines) == 2 and lines[2] == "import Base"
+
+
 def test_static_check_applies_to_draft_file_name_too(tmp_path):
     spec = _write(tmp_path / "spec.md", SPEC)
     p = _write(tmp_path / "LAWS.draft.bend", _laws("f" * 12))

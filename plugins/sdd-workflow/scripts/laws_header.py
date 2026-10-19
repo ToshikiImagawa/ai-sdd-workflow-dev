@@ -55,6 +55,16 @@ def _header_end(lines: List[str]) -> int:
     return i
 
 
+def read_lines(path: Path) -> List[str]:
+    """Public alias of the BOM-stripping line reader (for sibling modules)."""
+    return _read_lines(path)
+
+
+def header_end(lines: List[str]) -> int:
+    """Public alias of :func:`_header_end` (index of the first code line)."""
+    return _header_end(lines)
+
+
 def read_header(path: Path) -> Dict[str, List[str]]:
     """Parse leading ``# key: value`` comment lines; stop at the first code line.
 

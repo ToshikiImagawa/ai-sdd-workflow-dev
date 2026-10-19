@@ -22,11 +22,11 @@ from laws_header import (
     HEADER_RE,
     LAW_DECL_RE,
     MODEL_FILE,
-    _header_end,
-    _read_lines,
     file_disallowed_imports,
+    header_end,
     law_body_hash,
     read_header,
+    read_lines,
     valid_approval,
 )
 
@@ -105,7 +105,12 @@ def normalize_section(text: str) -> str:
 
 def _headings(spec_text: str) -> List[Tuple[int, int, str, str]]:
     """``(line_index, level, number, title)`` for every heading outside the front
-    matter and fenced code blocks. ``number`` is "" for an unnumbered heading."""
+    matter and fenced code blocks. ``number`` is "" for an unnumbered heading.
+
+    Only ATX headings (``# title``) are recognised: Setext (underlined) headings
+    are not, and neither are HTML comments or indented code blocks, so a
+    ``# `` line inside those would be read as a heading.
+    """
     _, body = split_front_matter(spec_text)
     lines = body.replace("\r\n", "\n").splitlines()
     result: List[Tuple[int, int, str, str]] = []
@@ -189,14 +194,16 @@ def parse_source(value: str) -> Optional[SourceRef]:
 def _law_body(lines: List[str], start: int) -> str:
     """Text of the law at ``lines[start]`` (without its name), whitespace-normalised.
 
-    The law ends at the next non-blank line that starts in column 0.
+    The law ends at the next non-blank line that starts in column 0. Comment
+    lines are dropped so a ``# ... Model.x ...`` remark is never read as code.
     """
     first = LAW_NAME_RE.match(lines[start])
     parts = [lines[start][first.end():] if first else lines[start]]
     for line in lines[start + 1:]:
         if line.strip() and not line[0].isspace():
             break
-        parts.append(line)
+        if not line.lstrip().startswith("#"):
+            parts.append(line)
     return " ".join(" ".join(parts).split())
 
 
@@ -206,7 +213,7 @@ def parse_laws(path: Path) -> List[LawDecl]:
     The source comment is looked up through the blank and comment lines directly
     above the declaration; any code line stops the search.
     """
-    lines = _read_lines(path)
+    lines = read_lines(path)
     laws: List[LawDecl] = []
     for i, line in enumerate(lines):
         if not LAW_DECL_RE.match(line):
@@ -236,9 +243,9 @@ def model_api_functions(path: Path) -> Optional[List[str]]:
 
     None when the body has no ``# model-api:`` line at all.
     """
-    lines = _read_lines(path)
+    lines = read_lines(path)
     found: Optional[List[str]] = None
-    for raw in lines[_header_end(lines):]:
+    for raw in lines[header_end(lines):]:
         m = HEADER_RE.match(raw.strip())
         if m is None or m.group(1) != "model-api":
             continue
