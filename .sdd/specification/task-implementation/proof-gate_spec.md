@@ -14,7 +14,7 @@ category: "task-implementation"
 priority: "low"
 risk: "medium"
 laws: ["laws/task-implementation/proof-gate"]
-laws-status: "drafted"
+laws-status: "approved"
 ---
 
 # Bend 証明ゲート
