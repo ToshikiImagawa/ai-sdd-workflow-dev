@@ -607,14 +607,14 @@ this line; review it in the PR. Moving `laws-status` to `approved` / `proven` is
 `/run-checklist {feature} {ticket}` verifies `CHK-205` (generated only for specs with `laws:`); `--category proof` verifies just that item.
 It calls `run-verification.py proof --laws-dir ...` once for all directories and records the worst status
 (FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS). `bend` always runs with `BEND_NO_TELEMETRY=1`, and only
-`import Base` and relative imports of `.bend` files inside the laws directory are allowed (anything else fails before `bend` starts).
+`import Base` and aliased relative imports of `.bend` files inside the laws directory (`import ./main.bend as Model`, the form Bend requires) are allowed; anything else, including a local import without `as <Name>`, fails before `bend` starts.
 Options: `--verdict` (extra Lean re-check, falls back with `verdict: "unavailable"`), `--timeout`; `.sdd-config.json` keys: `directories.laws`, `proof.timeout_seconds`, `proof.verdict`.
 macOS / Linux only (Windows via WSL). Verified against Bend v2.0.37; the Lean re-check needs Lean v4.34.0.
 
 ### Writing the model
 
 - Keep the model small: only constraints, invariants and postconditions. IO, external boundaries and performance are out of scope
-- A law `X` is proven by a `def X` in `PROOF.bend`. The model's functions must not call a law, and a proof must not reach itself through the law it proves; keep function names and law names distinct (function `sort`, law `sort_preserves_length`)
+- Bend requires every local import to carry an alias (`import ./LAWS.bend as Laws`); a law `X` is then proven by `def Laws.X` in `PROOF.bend`. The model's functions must not call a law, and a proof must not reach itself through the law it proves; keep function names and law names distinct (function `sort`, law `sort_preserves_length`)
 - Revising a law means re-approving it
 
 ## Known Limitations

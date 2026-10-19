@@ -273,8 +273,9 @@ def precheck(bend_found: bool, dir_exists: bool, has_laws: bool, orphan: Optiona
         return {"status": "FAIL", "reason": f"{PROOF_FILE} does not import {LAWS_FILE}"}
     if len(bad_imports) > 0:
         return {"status": "FAIL",
-                "reason": "disallowed import (only 'import Base' and relative imports of "
-                          ".bend files inside the laws directory are allowed): "
+                "reason": "disallowed import (only 'import Base' and "
+                          "'import ./<file>.bend as <Name>' of a .bend file inside the "
+                          "laws directory are allowed): "
                           + "; ".join(bad_imports)}
     return None
 

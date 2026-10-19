@@ -24,15 +24,19 @@ APPROVED_RE = re.compile(
     r"^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<approver>\S+)\s+sha256:(?P<digest>[0-9a-f]{12})$"
 )
 IMPORT_LINE_RE = re.compile(r"^\s*(?:import|from)\b")
-# Whole-line match: a trailing comment, an alias or a `from` form never matches
-# and therefore fails the allowlist.
+# Bend 2.0.37 only accepts `import Base` and `import <path>.bend as <Name>`; a local
+# import without `as <Name>`, without the `.bend` extension or with a digit-leading
+# <Name> is a syntax error there.
+# Whole-line match: a trailing comment, a `from` form, a non-.bend path or a missing
+# alias never matches and therefore fails the allowlist. Path segments exclude `.`,
+# so `..` can never match (parent directories are not allowed).
 LOCAL_IMPORT_RE = re.compile(
-    r"^import\s+(?P<target>(?:\./)?(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+(?:\.bend)?)$"
+    r"^import\s+(?P<target>(?:\./)?(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+\.bend)"
+    r"\s+as\s+(?P<alias>[A-Za-z_][A-Za-z0-9_]*)$"
 )
-LAWS_IMPORT_RE = re.compile(r"^import\s+(?:\./)?LAWS(?:\.bend)?$")
-# Bend's bundled standard library: importable by bare name without a file in
-# the laws directory.
-STDLIB_IMPORTS = frozenset({"Base"})
+LAWS_IMPORT_RE = re.compile(r"^import\s+(?:\./)?LAWS\.bend\s+as\s+[A-Za-z_][A-Za-z0-9_]*$")
+# Bend's bundled standard library: imported by bare name, never aliased, no file needed.
+STDLIB_IMPORT_RE = re.compile(r"^import\s+Base$")
 LAW_DECL_RE = re.compile(r"^\s*law\s+[A-Za-z_]")
 
 
@@ -112,21 +116,18 @@ def _local_import_exists(bend_file: Path, root: Path, target: str) -> bool:
     resolved = (bend_file.parent / target).resolve()
     if resolved != root and root not in resolved.parents:
         return False
-    if resolved.suffix == ".bend":
-        candidates = [resolved]
-    else:
-        candidates = [resolved.with_name(resolved.name + ".bend"), resolved]
-    return any(c.is_file() for c in candidates)
+    return resolved.is_file()
 
 
 def disallowed_imports(laws_dir: Path) -> List[str]:
     """Import lines that fail the allowlist, as ``"<relative file>: <line>"``.
 
     Allowed: the bundled standard library (``import Base``) and a relative
-    ``import`` of a ``.bend`` file that exists inside ``laws_dir``. Everything
-    else fails: unknown forms (``from``, aliases, trailing comments), absolute
-    paths, Hub namespaces, URLs, paths escaping the directory, and bare names
-    with no matching file (which is how a Hub package import would look).
+    ``import <path>.bend as <Name>`` of a file that exists inside ``laws_dir``
+    (the form Bend 2.0.37 requires). Everything else fails: unknown forms
+    (``from``, trailing comments), a local import without ``as <Name>``,
+    absolute paths, Hub imports (``0x<hash>/...``, ``<name>@<ver>/...``), URLs,
+    ``..`` paths, and files that do not exist in the directory.
     """
     if not laws_dir.is_dir():
         return []
@@ -138,13 +139,9 @@ def disallowed_imports(laws_dir: Path) -> List[str]:
             if not IMPORT_LINE_RE.match(raw):
                 continue
             line = raw.strip()
+            if STDLIB_IMPORT_RE.match(line):
+                continue
             m = LOCAL_IMPORT_RE.match(line)
-            if m is None:
-                bad.append(f"{rel}: {line}")
-                continue
-            target = m.group("target")
-            if target in STDLIB_IMPORTS:
-                continue
-            if not _local_import_exists(bend_file, root, target):
+            if m is None or not _local_import_exists(bend_file, root, m.group("target")):
                 bad.append(f"{rel}: {line}")
     return bad

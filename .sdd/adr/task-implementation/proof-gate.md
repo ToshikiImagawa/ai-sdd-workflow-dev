@@ -111,6 +111,32 @@ category: "task-implementation"
 - **Rationale**: CI に本物の `bend` を入れない方針（NFR-001 / DC_001）のため、実装 PR の検証はダミー `bend` による subprocess テストに限られた。観察に依存しない設計なので、再確認の結果が変わってもゲートの判定表は影響を受けない。未実施を事実どおり記録し、spec の要求に対する受け皿を残す。
 - **Rejected alternatives**: 実機再確認が済むまで `impl-status: implemented` を保留する — ゲートの判定が観察に依存しないため、保留する実益がなく却下。再確認を省略して記録も残さない — spec §4.1 の「結果を決定ログに記録する」との不整合が残るため却下。
 
+## 2026-10-18 Bend 側の観察を実機で再確認した
+
+- **Decision**: spec §4.1 が求める 4 点を、実機（Bend 2.0.37、bendlang/bend e5527d5 を bun で起動）で再確認した。上の「実機再確認は未実施」エントリは本エントリで置き換える。設計時の観察と一致したのは 1〜3、食い違ったのは 4 とローカル import の構文（次のエントリ）である。
+  1. **先頭コメント部の読み飛ばし**: 一致。`# spec:` / `# approved:` / 空行を `import Base` より前に置いても `bend PROOF.bend` は `ALL PROOFS CHECK`（終了コード 0）を返す。
+  2. **`LAWS.bend` 未 import の拒否**: 一致。ただし固定名でのみ働く。`PROOF.bend` が LAWS を import していないと `Error: PROOF.bend must import ./LAWS.bend`（終了コード 1）で拒否するが、同じ内容を別名（`P2.bend`）で検査すると `ALL PROOFS CHECK` になる。ゲートが検査器へ渡すのは常に `PROOF.bend` だが、静的検査（`imports_laws`）はこの固定名依存に頼らず自前で課す方針を維持する。
+  3. **Hub import の構文**: 一致。`import 0x<hash>/main.bend as P`（内容ハッシュ）と `import <name>@<version>/main.bend as P`（名前とバージョン）で、`bend` は `https://hub.bend-lang.com` へ取得に行く（オフラインでは `SOME PROOFS FAIL`、終了コード 1）。ゲートの allowlist は `.` と `@` を含む形、実在しない `0x…/` ディレクトリを拒否し、検査器の起動前に FAIL にする。
+  4. **`bend --version`**: **食い違い**。`bend --version` は `bend: unknown option --version`（終了コード 1）で、版は `bend version`（標準出力 `bend 2.0.37`）で得る。ゲートの実装は版の取得にどちらも使っていないため判定表への影響はない。版の表示が必要になった場合は `bend version` を使う。
+  加えて、`--verdict` は Lean 不在で `Error: BendTT infrastructure: the kernel did not build (lean: Executable not found ...)`（終了コード 1）となり、判定表 #11 の目印 `BendTT infrastructure` と一致した。ゲートは通常検査にフォールバックして `PASS` と `verdict: "unavailable"` を返す。
+- **Supersedes**: [2026-10-18 Bend 側の観察の実機再確認は未実施とし自前の静的検査で代替する](#2026-10-18-bend-側の観察の実機再確認は未実施とし自前の静的検査で代替する)。再確認を実施したため、「未実施」の記録は現行の決定ではなくなった。
+- **Rationale**: spec §4.1 が「実装時に Bend で再確認して結果を決定ログに記録する」と求めていたこと、および issue #162 の dogfooding で初めて本物の `bend` を実行できたことによる。1〜3 と `--verdict` は設計時の観察どおりで判定表の変更は不要。4 は版取得コマンドの記録の訂正に留まる。ローカル import の構文は影響が大きかったため独立したエントリで扱う。
+- **Rejected alternatives**: 再確認を別 issue に残す — dogfooding の受け入れ基準が本物の `bend` での実機確認であり、先送りする理由がなく却下。ゲートに `bend --version` での版検査を足す — 判定が版に依存しない設計（NFR-007 は前提の明記に留める）であり、今回の食い違いは実装に影響しないため却下。
+
+## 2026-10-18 ローカル import は別名付きのみ許可する（2026-10-17「hub import を静的 allowlist で禁止する」を改訂）
+
+- **Decision**: 法則ファイルで許可する import を `import Base` と `import <相対パス>.bend as <Name>` の 2 形式にする。`<Name>` は英字または `_` で始まる英数字と `_`、パスは同じ法則ディレクトリ内に実在する `.bend` ファイル（`./` は任意、サブディレクトリ可）。別名のないローカル import、拡張子のない指定、`from` 形式、hub import（`0x<hash>/…`、`<name>@<version>/…`）、URL、絶対パス、親ディレクトリ（`..`）、末尾コメント付きの行は、従来どおり検査器の起動前に FAIL とする。`PROOF.bend` の LAWS import は `import ./LAWS.bend as <Name>`（`./` 任意）だけを有効とする。2026-10-17 のエントリの「別名付きを含む」を FAIL とする部分だけを改め、hub import 禁止・親ディレクトリ禁止・固定ファイル名という設計意図は変えない。
+- **Supersedes**: [2026-10-17 hub import を静的 allowlist で禁止する](#2026-10-17-hub-import-を静的-allowlist-で禁止する) のうち、別名付きの import を FAIL とする部分のみ。それ以外の決定は現行のまま。
+- **Rationale**: 実機（Bend 2.0.37）はローカル import に必ず別名を要求し、別名のない形を構文エラーにする。`import ./LAWS.bend` を検査すると次の出力で終了コード 1 になった。
+  ```
+  SOME PROOFS FAIL
+  Error:
+  - expected : an import ('import Base', or 'import <path> as <Name>')
+  - observed : 'import ./LAWS.bend'
+  ```
+  一方、公式 demo と同じ `import ./LAWS.bend as Laws`（証明は `def Laws.<law名>`）は `ALL PROOFS CHECK` になる。旧 allowlist は別名付きを拒否し別名なしを許可していたため、実機で通る法則ファイルがすべて規約違反の FAIL になり、PASS を得る経路が存在しなかった。許可を広げるのは別名付きの相対 import だけで、外部取得に至る形（hub・URL）は引き続き静的に拒否するため、オフライン再現性（NFR-003）と PRD NFR_002 は保たれる。実機の許容範囲（`.bend` 拡張子が必須、`./` は任意、別名は英字または `_` で始まる英数字と `_`（`1A` は構文エラー）、`..` はファイル不在で失敗）に合わせて正規表現を定めた。
+- **Rejected alternatives**: 別名なしのみ許可する旧決定を維持する — 実機の bend が構文エラーにする形だけを許すことになり、dogfooding を含む全ての実利用で PASS が取れないため却下。ゲートを変えず別 issue に分離する — #162 の受け入れ基準（実機で PASS を確認する）を満たせず、不具合を抱えたまま法則ファイルを置くことになるため却下。別名の有無を問わず許可する — 別名なしは実機で構文エラーとなり、ゲートが通した後に bend が失敗する二重の経路が残るため却下。
+
 ## 2026-10-18 PRD FR_005 の優先度を Must に揃える
 
 - **Decision**: PRD（`requirement/task-implementation/proof-gate.md`）の FR_005「法則の見直し促し」の優先度を Should から Must に変更し、第 1 弾の要求 FR_001〜FR_005 をすべて Must とする。spec FR-009 は変更しない。

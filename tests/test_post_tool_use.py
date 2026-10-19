@@ -223,7 +223,7 @@ class TestLawsReminders:
     def test_bend_edit_without_laws_header_still_reminds(self, tmp_path, capsys):
         d = tmp_path / ".sdd" / "laws" / "x"
         d.mkdir(parents=True)
-        (d / "PROOF.bend").write_text("import ./LAWS\n", encoding="utf-8")
+        (d / "PROOF.bend").write_text("import ./LAWS.bend as Laws\n", encoding="utf-8")
         _process(os.path.join(".sdd", "laws", "x", "PROOF.bend"), tmp_path)
         assert "--category proof" in capsys.readouterr().out
 
