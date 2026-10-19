@@ -2,6 +2,7 @@
 #
 # Laws derived from proof-gate_spec 3.1.1 (decision table and aggregation).
 # The approval line is added by a human reviewer, never by AI.
+# approved: 2026-10-19 @ToshikiImagawa sha256:33cefef841bf
 
 import Base
 import ./main.bend as Model
