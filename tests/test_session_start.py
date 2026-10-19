@@ -775,3 +775,45 @@ class TestWarnExternalRoot:
         assert ss.warn_if_external_root(".sdd", str(tmp_path)) is False
         assert ss.warn_if_external_root("docs/sdd", str(tmp_path)) is False
         assert capsys.readouterr().err == ""
+
+
+class TestExternalRootNoWrites:
+    """Issue #155: an absolute root must not cause writes outside the project."""
+
+    def test_main_writes_nothing_to_external_root(self, tmp_path, monkeypatch, capsys):
+        project_root = tmp_path / "proj"
+        project_root.mkdir()
+        env_file = tmp_path / "env.sh"
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.setenv("CLAUDE_ENV_FILE", str(env_file))
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(ss.Path(ss.__file__).resolve().parent.parent))
+        external = tmp_path / "external-sdd"
+        external.mkdir()
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external), "lang": "en", "index": True}),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()
+
+        assert list(external.iterdir()) == []
+        assert not (tmp_path / "external-sdd" / ".cache").exists()
+        assert "skipped" in capsys.readouterr().err
+        assert f'export SDD_ROOT="{external}"' in env_file.read_text(encoding="utf-8")
+
+    def test_main_does_not_create_missing_external_root(self, tmp_path, monkeypatch):
+        project_root = tmp_path / "proj"
+        project_root.mkdir()
+        monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project_root))
+        monkeypatch.delenv("CLAUDE_ENV_FILE", raising=False)
+        monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", str(ss.Path(ss.__file__).resolve().parent.parent))
+        external = tmp_path / "never-created"
+        (project_root / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external)}), encoding="utf-8",
+        )
+        monkeypatch.setattr(sys, "argv", ["session-start.py"])
+
+        ss.main()
+
+        assert not external.exists()

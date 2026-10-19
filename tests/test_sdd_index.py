@@ -637,3 +637,28 @@ class TestPostToolUseExtractPaths:
         ptu = self._load_post_tool_use()
         payload = {"tool_input": {}}
         assert ptu._extract_file_paths(payload) == []
+
+
+class TestExternalRootSkipped:
+    """Issue #155: external / absolute roots are unsupported; skip, don't raise."""
+
+    def _project(self, tmp_path):
+        import json
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        external = tmp_path / "ext"
+        (external / "requirement").mkdir(parents=True)
+        (external / "requirement" / "a.md").write_text("# a\n", encoding="utf-8")
+        (proj / ".sdd-config.json").write_text(
+            json.dumps({"root": str(external)}), encoding="utf-8")
+        return proj, external
+
+    def test_rebuild_all_skips_without_error(self, tmp_path):
+        proj, external = self._project(tmp_path)
+        si.rebuild_all(str(proj))
+        assert not (external / ".cache").exists()
+
+    def test_update_one_skips_without_error(self, tmp_path):
+        proj, external = self._project(tmp_path)
+        si.update_one(str(proj), "requirement/a.md")
+        assert not (external / ".cache").exists()

@@ -36,6 +36,11 @@
   `hook_common.is_within_project()` / `is_external_sdd_root()` ヘルパー（将来外部 root を対応する際の
   差し替え点）でプロジェクト外パスを「対象外」として扱い、`init-structure.py` は無意味になる
   `{root}/.cache/` の `.gitignore` 追記をスキップして警告する。
+- **絶対パス `root` で `session-start.py` / `sdd_index.py` が外部ディレクトリへ書き込む** (#155) -
+  警告後も `session-start.py` がプロジェクト外へ `.cache/`・`AI-SDD-PRINCIPLES.md`・`UPDATE_REQUIRED.md`・
+  `MIGRATION_PENDING.md` を生成し、`sdd_index.py` は `relative_to` で `ValueError` になり得た。#151 の
+  「絶対パス root は未対応」に揃え、`session-start.py` は警告（書き込みをスキップした旨を明記）と
+  `SDD_*` のエクスポートのみ行って終了し、`sdd_index.py` は外部 root では索引生成をスキップする。
 
 ## [5.1.0] - 2026-09-16
 

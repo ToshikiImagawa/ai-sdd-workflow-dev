@@ -401,7 +401,11 @@ def main() -> None:
     raw_config = load_or_create_config(config_path, args.default_lang)
     cfg = build_sdd_config(raw_config, args.default_lang)
 
-    warn_if_external_root(cfg.root, project_root)
+    if warn_if_external_root(cfg.root, project_root):
+        # Unsupported root (issue #155): export env vars only, write nothing there.
+        write_env_vars(cfg)
+        return
+
     sdd_dir = str(Path(project_root) / cfg.root)
     ensure_sdd_directory(sdd_dir, cfg.root)
 
