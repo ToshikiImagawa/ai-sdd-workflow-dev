@@ -41,6 +41,10 @@ clarify Q1〜Q6 として提示し、2026-10-19 にオーナーが承認した�
 5. **spec の front matter**: `laws:` / `laws-status: drafted` は提案に留め、適用は人が行う（PRD DC_002）。
 6. **bend 不在**: 生成・静的チェックは動く。検査は run-checklist に委ね TOOL_NOT_FOUND になる。スキルは `bend` を呼ばない。
 
+7. **ゲートでの warning（FR-013）**: 節ハッシュのずれは `CHK-205` に warning として併記する。承認も PASS も変えない。
+8. **既存 `LAWS.bend` がある場合**: 既定は温存し、再生成案は `LAWS.draft.bend` に出す。承認行ありは上書き不可。
+9. **第 1 弾 spec の最小修正**: `drafted` の主体の文言のみ「提案／人が適用」に揃えた（ADR に例外として記録）。
+
 ## 実装チケットへの分割案
 
 | # | 内容 |
@@ -48,7 +52,8 @@ clarify Q1〜Q6 として提示し、2026-10-19 にオーナーが承認した�
 | 1 | スクリプト: 節ハッシュ・静的チェック・承認有効性判定（`laws_header.py` 再利用）とユニットテスト |
 | 2 | スキル `draft-laws`（SKILL.md、テンプレート en/ja、`laws.max_laws` の config 読み込み） |
 | 3 | post-tool-use: `laws:` を持つ spec 編集時の促し（FR-011） |
-| 4 | README / CHANGELOG の追従（利用者向け説明） |
+| 4 | README / CHANGELOG の追従（利用者向け説明）、stale-doc-detection_spec / front-matter-validation_spec の追従 |
+| 6 | run-verification.py の proof に節ハッシュのずれの warning を併記（FR-013）。共有モジュールの節ハッシュをフックと共用 |
 | 5 | 検収: proof-gate の spec から 5 法則を再現（`.sdd/laws/` の既存ファイルは変更しない） |
 
 ## 他 spec への適用（別チケット提案）

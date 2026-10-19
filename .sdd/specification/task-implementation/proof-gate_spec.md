@@ -72,7 +72,7 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
 | FR-005 | 検査器の子プロセスには常に `BEND_NO_TELEMETRY=1` を付与する。法則ディレクトリ内の全 `.bend` ファイルの import 文を静的に検査し、「同じ法則ディレクトリ内に実在する `.bend` ファイルを相対パスで指す別名付き import（`import ./<file>.bend as <Name>`。`./` は任意、サブディレクトリ可、`.bend` 拡張子は必須。`<Name>` は英字または `_` で始まる英数字と `_`。Bend 2.0.37 は別名のないローカル import を構文エラーにする）」と「Bend 同梱の標準ライブラリ（`import Base`）」以外の import 文（hub import、URL、絶対パス、親ディレクトリ、ディレクトリ内に実在しないファイル名、別名のないローカル import、`.bend` 拡張子のない指定、末尾コメント付きの行、`from` 形式等の未知の形式）が 1 行でもあれば検査器を実行せず FAIL（規約違反）とする | 必須  | 子 PRD NFR_002                           |
 | FR-006 | Lean 形式化カーネルによる再検査（`--verdict`）は opt-in とする。再検査基盤の不備を検査器が示した場合は通常検査にフォールバックして判定を返し、再検査が未実施であること（`verdict: "unavailable"`）を結果に併記する | 任意  | 子 PRD FR_001（`--verdict` の opt-in）    |
 | FR-007 | 判定を仕様レビューカテゴリの固定項目 `CHK-205`（P2）としてチェックリストと検証レポートに記録し、PASS の意味（参照モデルが法則を満たす保証であり実装の正しさではない）を結果に併記する。`CHK-205` は `laws:` を持つ spec でのみ生成・検証する。`/run-checklist` の `--category` は CHK のカテゴリ名を取るため、`--category specification`（2xx）と無指定で `CHK-205` を検証し、加えて `--category proof` を「`CHK-205` のみを検証する別名」として受理する | 必須  | 子 PRD IR_001・NFR_003                   |
-| FR-008 | spec の front matter に `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト。例: `laws/task-implementation/proof-gate`）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を定義する。法則は下流であり `depends-on` に含めない（`laws:` は依存関係ではなく探索用ポインタ）。`laws-status` のうち `approved` / `proven` への遷移は人が行い（`drafted` は法則案生成スキルが付与してよい）、ゲートは PASS 時に `proven` への遷移を**推奨**するに留める | 必須  | 子 PRD FR_003 / DC_002                   |
+| FR-008 | spec の front matter に `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト。例: `laws/task-implementation/proof-gate`）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を定義する。法則は下流であり `depends-on` に含めない（`laws:` は依存関係ではなく探索用ポインタ）。`laws-status` のうち `approved` / `proven` への遷移は人が行い（`drafted` は法則案生成スキルが提案し、人が適用する）、ゲートは PASS 時に `proven` への遷移を**推奨**するに留める | 必須  | 子 PRD FR_003 / DC_002                   |
 | FR-009 | 法則ファイル（`.bend`）編集後は proof ゲートの再実行を、`# model-of:` に記録された実装ファイルの編集後は参照モデルと法則の見直しを、非ブロッキングで促す | 必須  | 子 PRD FR_005                            |
 | FR-010 | spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` 案を生成し、人の承認後に参照モデルと証明を書く承認フローの境界（入力・出力・状態遷移）を定義する。境界の詳細は [laws-drafting_spec.md](laws-drafting_spec.md) に定義した。生成スキルの実装は別チケット | 任意  | 子 PRD FR_006 / DC_002                   |
 
@@ -141,7 +141,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 | agent    | `agents/front-matter-reviewer.md`                                 | front-matter-reviewer（拡張） | `laws:` / `laws-status:` の検証（FR-008。仕様は front-matter-validation_spec）                        |
 | reference | `shared/references/front_matter_reference.md`                    | front_matter_reference（拡張） | spec の `laws:` / `laws-status:` フィールド定義と状態遷移                                              |
 | doc      | `README.md` / `README.ja.md`                                      | 利用者向けドキュメント（拡張）        | 「Bend 証明ゲート（opt-in）」節: PASS の意味、法則ディレクトリの作り方、承認行の書き方（子 PRD NFR_003）                      |
-| skill    | （第 2 弾・別チケット）                                                   | 法則案生成スキル（名称未定）        | spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` 案を生成し `laws-status: drafted` を付与する（FR-010。本 spec では境界のみ） |
+| skill    | （第 2 弾・別チケット）                                                   | 法則案生成スキル（名称未定）        | spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` 案を生成し `laws-status: drafted` を提案する（適用は人。FR-010。詳細は [laws-drafting_spec.md](laws-drafting_spec.md)） |
 
 ## 4.1. 入出力定義
 
@@ -235,7 +235,7 @@ laws-status: "approved"                          # none / drafted / approved / p
 | 値          | 意味                                            | 遷移させる主体                         |
 |:-----------|:----------------------------------------------|:--------------------------------|
 | `none`     | 法則を持たない（省略時の既定）                            | -                               |
-| `drafted`  | `LAWS.bend` 案が存在する（未承認）                       | 法則案生成スキル（第 2 弾）または人            |
+| `drafted`  | `LAWS.bend` 案が存在する（未承認）                       | 法則案生成スキル（第 2 弾）が提案し人が適用、または人 |
 | `approved` | 人が `LAWS.bend` をレビューし有効な承認行を追記した               | 人                               |
 | `proven`   | 承認済み法則の証明が検査に合格した                           | 人（ゲートは PASS 時に遷移を推奨するに留める）    |
 
@@ -326,7 +326,7 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> none
-    none --> drafted: LAWS.bend 案を作成（AI の生成スキル、または人の手書き）
+    none --> drafted: LAWS.bend 案を作成（AI の生成スキルが提案し人が適用、または人の手書き）
     none --> approved: 人が LAWS.bend を書き、承認行を追記
     drafted --> approved: 人がレビューし承認行を追記
     approved --> proven: proof ゲート PASS を受けて人が遷移
