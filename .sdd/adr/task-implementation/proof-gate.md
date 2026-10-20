@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-10-17"
-updated: "2026-10-19"
+updated: "2026-10-20"
 sdd-version: "5.1.0"
 depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-laws-drafting"]
 ticket: "149"
@@ -168,3 +168,9 @@ category: "task-implementation"
 - **Decision**: 法則が参照する `Model.*` の関数名・型・数値の符号化を、`draft` が `LAWS.bend` の本文（先頭コメント部の外）に `# model-api:` コメント行として書く。`model` 段階はこの行と `Model.*` の参照だけを入力にする。
 - **Rationale**: 抽出レポートは `--ticket` 無指定なら標準出力で、`task/` は一時領域のため、`model` 段階の入力として残らない。本文側に置けば内容ハッシュの対象になり、承認時に人がモデルの形も確認できる。
 - **Rejected alternatives**: 抽出レポートを `model` の入力にする — 保存されず、承認の対象にもならないため却下。`task/{ticket}/` に置く — 一時領域で承認から `model` までの間に消えうるため却下。`model` 段階が `Model.*` 参照から毎回推測する — 数値の符号化など法則から読み取れない情報があり、LLM の推測が揺れるため却下。
+
+## 2026-10-20 第 2 弾の実装を完了とし、独立再現の合格を #180 に引き継ぐ
+
+- **Decision**: 第 2 弾（#168）の実装（共有モジュール・`draft-laws` スキル・フックの促し・ゲートの `warnings`・利用者向け説明と関連 spec の追従）を完了とし、laws-drafting_spec の `impl-status` は `in-progress` に留める。再生成案は既定で `LAWS.draft.bend` に出し、承認行を持つ `LAWS.bend` は `--overwrite` でも上書きしない。`LAWS.draft.bend` は孤児検査と `# spec:` 照合の対象にしない。検収（第 1 弾 5 法則の再現）は 2 段階判定（機械的一致 → 人による `equivalent` / `weak` / `none`）とし、未完の「独立再現での合格」は #180 で扱う。 設計ドラフトにあった PRD FR_006 の変更提案（承認の有効性が前提である旨・静的チェックの追加・抽出元を構造化された節へ改める、の 3 点）は PRD を変更しておらず、オーナーの判断待ちである。
+- **Rationale**: 独立再現は 1・2 回目で機械一致が 5 件中 2 件にとどまり、抽出件数も 7 件 → 10 件とぶれた（NFR-005 のとおり抽出は再現を保証しない）。`aggregate_fail_absorbs` は Nat 全域（a>4）で偽になり、`model` 段階で必ず落ちた。このため、順位を表す定数関数をモデル API に固定して法則側は数値リテラルを書かない、静的チェックに `unbounded_nat_literal` の警告を加えて承認前に人へ見せる、という 2 点を決め、検収を 2 段階判定にした。5 回目の独立再現では 4 件は機械的に一致したが、集約の交換則だけが `aggregate([a, b]) == aggregate([b, a])` ではなく二項演算 `worse` の側で書かれ `weak` になった。基準は下げず、抽出ルール（集約関数がある場合は代数的性質を集約関数の側で書く）の追加で解くため、#180 に分離した。`LAWS.draft.bend` は採用前の提案で正本ではなく、孤児検査の対象にすると採用前の案が FAIL を起こす。
+- **Rejected alternatives**: 機械一致のみで判定する — 変数名や定数関数の呼び出し形が違うだけの同値な法則を不合格にし、LLM の抽出のぶれに検収が左右されるため却下。`impl-status: implemented` にして検収を後回しにする — 受け入れ基準が未達のまま完了と表示することになるため却下。`weak` を合格に含める — 命題が別物であり、検収の意味が薄れるため却下。`LAWS.draft.bend` も孤児検査の対象にする — 採用前の案が常に FAIL するため却下。

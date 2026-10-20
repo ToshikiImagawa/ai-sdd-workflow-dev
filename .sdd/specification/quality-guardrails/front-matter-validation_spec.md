@@ -4,8 +4,10 @@ title: "front matter 検証"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "implemented"
 created: "2026-07-08"
 updated: "2026-10-20"
+sdd-version: "5.1.0"
 depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
