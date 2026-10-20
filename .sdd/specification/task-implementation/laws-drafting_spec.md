@@ -4,7 +4,7 @@ title: "法則案の生成と承認フロー"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
-impl-status: "in-progress"
+impl-status: "implemented"
 created: "2026-10-19"
 updated: "2026-10-20"
 sdd-version: "5.1.0"
@@ -334,7 +334,7 @@ PRD の変更提案（人の判断。PRD は本 PR で変更しない）: FR_006
 検収の入力は、proof-gate_spec 全文と、モデル API（既存 `main.bend` の関数シグネチャと順位の数値符号化 PASS=0・SKIPPED=1・FAIL=4 など）である。第 1 弾の法則は `# source:` を持たず承認済みで変更できない。数値の符号化は spec に書かれていないため入力として与える。
 LLM の抽出は再現を保証しない（NFR-005）ため、検収は固定のプロンプト・入力で 1 回以上の再現を確認することで行う（既存ファイルは変更しない）。集約の 3 法則は、spec が明記する「最悪判定を採る」規則から導出した性質であり、spec が個別の文として述べているわけではない。
 
-**現状**: 独立再現での合格は未完で、[#180](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/180) で扱う（ADR 2026-10-20 の決定）。
+**現状**: [#180](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/180) で合格（6 回目の独立再現。10 法則・内容ハッシュ 97d5dbf04b24。5 法則すべてが段 1 で一致し、段 2 の判定は不要）。
 
 | 法則 | 導出元（proof-gate_spec） | 抽出ルール |
 |:--|:--|:--|

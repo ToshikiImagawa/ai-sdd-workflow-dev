@@ -166,36 +166,21 @@ def _acceptance():
 
 
 def test_acceptance_independent_reproduction_correspondence():
-    """laws-drafting_spec §11 (fifth independent re-run, head 0d531a2: 10 laws, content hash 4b14b5b093c5).
+    """laws-drafting_spec §11 (sixth independent re-run, head 158e5f7: 10 laws, content hash 97d5dbf04b24).
 
     Stage 1 (mechanical, ``compare`` with alpha equivalence and ``rank_*`` constants read from
-    main.bend): 4 of the 5 first-wave laws match (1 exact, 3 proposition). ``agg_pair_commutes``
-    has no counterpart: the run wrote the commutativity of ``worse``, not of ``aggregate``.
-    The owner-approved stage 2 judgement is ``weak``, so the acceptance criterion stays unmet.
+    main.bend): all 5 first-wave laws match, ``agg_pair_commutes`` included because the run wrote
+    the commutativity on ``aggregate`` (aggregate-first rule, #180). No stage 2 judgement is needed.
     """
     gen, rows, result = _acceptance()
     assert len(dl.parse_laws(gen)) == 10
     assert {k: v["match"] for k, v in rows.items()} == {
         "agg_empty_skipped": "proposition", "agg_single_identity": "proposition",
-        "agg_pair_commutes": "none", "unapproved_never_pass": "exact",
+        "agg_pair_commutes": "proposition", "unapproved_never_pass": "proposition",
         "pass_requires_marker": "proposition"}
-    assert rows["agg_empty_skipped"]["generated_name"] == "aggregate_empty_skipped"
-    assert rows["agg_single_identity"]["generated_name"] == "aggregate_singleton"
-    assert rows["pass_requires_marker"]["generated_name"] == "approved_no_marker_is_fail"
-    assert result["passed_mechanical"] is False and result["passed"] is False
-    assert result["pending_judgement"] == ["agg_pair_commutes"]
-
-
-def test_acceptance_stage_two_judgement_fixture():
-    """The recorded stage 2 judgement (weak) keeps ``passed`` False; judgements on the four
-    mechanically matched laws are not needed (and would be ignored)."""
-    gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
-    result = dl.cmd_compare(_ns(gen, REFERENCE, FIXTURES / "proof-gate-acceptance.judgement.json"))
-    assert result["passed_mechanical"] is False and result["passed"] is False
-    assert result["pending_judgement"] == [] and result["ignored_judgements"] == []
-    row = [r for r in result["results"] if r["law"] == "agg_pair_commutes"][0]
-    assert row["human_judgement"] == "weak" and row["judged_generated_name"] == "worse_commutative"
-    assert sum(r["match"] != "none" for r in result["results"]) == 4
+    assert rows["agg_pair_commutes"]["generated_name"] == "aggregate_commutative"
+    assert result["passed_mechanical"] is True and result["passed"] is True
+    assert result["pending_judgement"] == []
 
 
 def test_acceptance_draft_hash_is_stable():
@@ -205,7 +190,7 @@ def test_acceptance_draft_hash_is_stable():
     sys.path.insert(0, str(ROOT / "plugins/sdd-workflow/scripts"))
     from laws_header import law_body_hash
     gen, _, _ = _acceptance()
-    assert law_body_hash(gen) == "4b14b5b093c5"
+    assert law_body_hash(gen) == "97d5dbf04b24"
 
 
 def test_compare_detects_missing_law(tmp_path):
@@ -218,9 +203,14 @@ def test_compare_detects_missing_law(tmp_path):
 
 
 def _judge(tmp_path, judgements):
+    """Compare the acceptance fixture minus its ``aggregate_commutative`` law (a stage 1 miss)."""
+    text = (FIXTURES / "proof-gate-acceptance.LAWS.draft.bend").read_text()
+    start = text.rindex("# source:", 0, text.index("law aggregate_commutative:"))
+    end = text.index("# source:", text.index("law aggregate_commutative:"))
+    gen = tmp_path / "g.bend"
+    gen.write_text(text[:start] + text[end:])
     f = tmp_path / "j.json"
     f.write_text(json.dumps(judgements))
-    gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
     return dl.cmd_compare(_ns(gen, REFERENCE, f))
 
 
@@ -239,7 +229,7 @@ def test_compare_rejects_unknown_judgement(tmp_path):
 
 
 def test_acceptance_fixture_check_against_fixed_api():
-    """The 5th run uses only functions of the fixed API (main.bend beside the reference laws):
+    """The 6th run uses only functions of the fixed API (main.bend beside the reference laws):
     no error and no warning."""
     import shutil
     import tempfile
