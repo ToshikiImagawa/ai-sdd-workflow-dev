@@ -155,7 +155,7 @@ def test_hash_and_check(tmp_path):
 
 
 def _ns(gen, ref, judgement="", check_result=""):
-    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement),
+    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement), "model": "",
                           "check_result": str(check_result)})
 
 
@@ -381,3 +381,74 @@ def test_check_feature_resolves_fixed_api_for_file_outside_laws_dir(tmp_path):
     assert "notes" not in out
     assert "model_api_not_fixed" in {f["code"] for f in out["findings"]}
     assert out["propose_drafted"] is False
+
+
+def test_rank_takes_basic_properties_first_within_a_priority():
+    cands = [
+        {"name": "a_narrow", "section": "3.1.1", "priority": 2, "body": "1"},
+        {"name": "b_commutes", "section": "3.1.1", "priority": 2, "kind": "commutative", "body": "2"},
+        {"name": "c_empty", "section": "3.1.1", "priority": 2, "kind": "empty", "body": "3"},
+        {"name": "z_first_prio", "section": "9", "priority": 1, "body": "4"},
+    ]
+    out = dl.rank_candidates(cands, 3)
+    assert [c["name"] for c in out["adopted"]] == ["z_first_prio", "b_commutes", "c_empty"]
+    assert [c["name"] for c in out["not_adopted"]] == ["a_narrow"]
+
+
+def test_normalise_proposition_alpha_constants_and_nil():
+    consts = {"rank_fail": "4n", "rank_pass": "0n"}
+    n = dl.normalise_proposition
+    # alpha equivalence: only the declared variables are renamed (not Model.x, not other words)
+    assert n("for x: Nat {Model.aggregate([x]) == x : Nat}", consts) == \
+        n("for a: Nat {Model.aggregate([a]) == a : Nat}", consts)
+    assert n("for a: Nat for b: Nat {Model.f(a, b) == a : Nat}", consts) != \
+        n("for a: Nat for b: Nat {Model.f(a, b) == b : Nat}", consts)
+    assert n("for a, b: Nat {Model.f(a) == b : Nat}", consts) == n("for p, q: Nat {Model.f(p) == q : Nat}", consts)
+    # constants and empty list
+    assert n("{Model.judge(True{}) == Model.rank_fail() : Nat}", consts) == n("{Model.judge(True{}) == 4n : Nat}", consts)
+    assert n("{Model.aggregate([]) == 1n : Nat}", consts) == n("{Model.aggregate(Nil{}) == 1n : Nat}", consts)
+    # a different constant is not equal
+    assert n("{Model.f() == Model.rank_pass() : Nat}", consts) != n("{Model.f() == Model.rank_fail() : Nat}", consts)
+
+
+def test_compare_alpha_and_rank_constants(tmp_path):
+    (tmp_path / "main.bend").write_text("def rank_fail() -> Nat:\n  4n\n\ndef main() -> Nat:\n  0n\n")
+    gen = tmp_path / "g.bend"
+    gen.write_text("law g1:\n  for e: Bool\n  {Model.judge(True{}, e, False{}) == Model.rank_fail() : Nat}\n")
+    ref = tmp_path / "r.bend"
+    ref.write_text("law r1:\n  for m: Bool\n  {Model.judge(True{}, m, False{}) == 4n : Nat}\n")
+    out = dl.cmd_compare(_ns(gen, ref))
+    assert out["passed"] is True and out["passed_mechanical"] is True
+    assert out["results"][0]["match"] == "proposition"
+    # without the model the constant stays a call: no match
+    (tmp_path / "main.bend").unlink()
+    assert dl.cmd_compare(_ns(gen, ref))["passed"] is False
+
+
+def test_fourth_reproduction_stage_two_judgement_fails(tmp_path):
+    """Owner decision: 4 of the 5 first-wave laws are equivalent / matched, agg_pair_commutes
+    has no counterpart (none) -> not passed. Uses a trimmed copy of the 4th run's laws."""
+    gen = tmp_path / "g.bend"
+    gen.write_text(
+        "law unapproved_never_pass:\n  for e: Bool\n  for m: Bool\n"
+        "  {Model.judge(False{}, e, m) == Model.rank_skipped() : Nat}\n\n"
+        "law aggregate_empty_skipped:\n  {Model.aggregate([]) == Model.rank_skipped() : Nat}\n\n"
+        "law aggregate_singleton:\n  for a: Nat\n  {Model.aggregate([a]) == a : Nat}\n\n"
+        "law missing_marker_is_fail:\n  for e: Bool\n  {Model.judge(True{}, e, False{}) == Model.rank_fail() : Nat}\n")
+    out = dl.cmd_compare(_ns(gen, REFERENCE))
+    rows = {r["law"]: r["match"] for r in out["results"]}
+    assert rows == {"agg_empty_skipped": "proposition", "agg_single_identity": "proposition",
+                    "agg_pair_commutes": "none", "unapproved_never_pass": "exact",
+                    "pass_requires_marker": "proposition"}
+    assert out["pending_judgement"] == ["agg_pair_commutes"] and out["passed"] is False
+    j = _json(tmp_path, "j.json", {"agg_pair_commutes": "none"})
+    final = dl.cmd_compare(_ns(gen, REFERENCE, j))
+    assert final["passed"] is False and final["pending_judgement"] == []
+
+
+def test_model_constants(tmp_path):
+    ld = dl  # draft_laws imports model_constants from laws_drafting
+    main = tmp_path / "main.bend"
+    main.write_text("def rank_pass() -> Nat:\n  0n\n\ndef rank_x() -> Nat:\n  return 7n\n\n"
+                    "def f(a: Nat) -> Nat:\n  1n\n")
+    assert ld.model_constants(main) == {"rank_pass": "0n", "rank_x": "7n"}

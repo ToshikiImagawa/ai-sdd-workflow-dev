@@ -47,7 +47,7 @@ All deterministic work goes through one script (JSON on stdout):
 | section hash | `hash <spec-path> <section>` |
 | order and cut off | `rank --max <n> <candidates.json>` |
 | static check | `check <laws-file> --spec <spec-path> [--feature <feature> [--project-root <dir>]] [--require-model]` |
-| acceptance (maintainers) | `compare <generated> <reference> [--judgement <json>] [--check-result <check-output.json>]` |
+| acceptance (maintainers) | `compare <generated> <reference> [--model <main.bend>] [--judgement <json>] [--check-result <check-output.json>]` |
 
 ## `draft <feature>`
 
@@ -58,8 +58,9 @@ All deterministic work goes through one script (JSON on stdout):
    - Never from IO, network, filesystem, clock, performance measurements, output formatting.
    - A section without a leading number cannot be a source: list it under "Sections not turned into laws".
    - Write each law as an equation over the model API (`{lhs == rhs : T}`); copy the fixed signatures into `# model-api:` lines (when `unfixed`: decide the functions, argument types and numeric encodings and document them; a human approves them).
+   - When the fixed API has constant rank functions (`Model.rank_*()`), write ranks with them, not with number literals; use literals only when the API has none. Never mix both in one law.
    - Do not write an equation that holds only for some values of a `for x: Nat` variable (absorption or fixed-value laws such as `worse(4n, a) == 4n`, false for `a > 4`). Do not adopt it: flag the candidate `unbounded: true` in step 4 so `rank` lists it under "Rejected candidates" with reason `unbounded_nat`; `check` warns with `unbounded_nat_literal` on the rest and a human reviews that before approving.
-4. For each candidate get the section hash with `hash`. Put candidates in a JSON array `{name, section, priority, body, trivial, unbounded}` (`body` = the law text, `trivial` = true for tautologies, restatements of a model definition, or type-only properties, `unbounded` = true for equations that hold only for part of a `for x: Nat` range) and run `rank --max <max_laws>`. Adopt exactly `adopted`; everything in `not_adopted` goes to "Rejected candidates" with its `reason`.
+4. For each candidate get the section hash with `hash`. Put candidates in a JSON array `{name, section, priority, kind, body, trivial, unbounded}` (`kind` = `commutative` / `associative` / `identity` / `empty` / `singleton` for the basic properties of an aggregation or merge rule, else omit; `rank` takes those first inside one priority before the cut-off; `body` = the law text, `trivial` = true for tautologies, restatements of a model definition, or type-only properties, `unbounded` = true for equations that hold only for part of a `for x: Nat` range) and run `rank --max <max_laws>`. Adopt exactly `adopted`; everything in `not_adopted` goes to "Rejected candidates" with its `reason`.
 5. If nothing is adopted and nothing can be a law: write no `LAWS.bend` / `LAWS.draft.bend`, report "Sections not turned into laws" per section and finish successfully (not a failure; existing files untouched).
 6. Write the law file from `templates/${SDD_LANG}/laws_draft.md`. Every `law` is preceded by `# source: <spec id> §<section> sha256:<hash>` placed **after** the imports (inside the hashed body). No approval line.
 7. `check <file> --spec <spec> --feature <feature>`. If the result has `notes` (model API not fixed, so check 6 did not run), put them in the report. Put the findings in the report. If `propose_drafted` is false, do not propose `drafted`; fix generation errors first when possible.

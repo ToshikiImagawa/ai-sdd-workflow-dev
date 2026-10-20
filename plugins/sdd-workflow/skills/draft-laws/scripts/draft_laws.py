@@ -36,6 +36,7 @@ from laws_drafting import (  # noqa: E402
     Finding,
     approval_status,
     fixed_model_api,
+    model_constants,
     has_errors,
     parse_laws,
     section_hash_of_file,
@@ -47,6 +48,9 @@ from laws_header import LAWS_FILE, MODEL_FILE, PROOF_FILE  # noqa: E402
 
 DRAFT_FILE = "LAWS.draft.bend"
 MAX_LAWS_DEFAULT = 10
+# Candidate ``kind`` values taken first inside one priority (spec 3.1.2): the basic algebraic
+# properties of an aggregation / merge rule.
+BASIC_KINDS = ("commutative", "associative", "identity", "empty", "singleton")
 
 
 def load_max_laws(raw: dict) -> Tuple[int, Optional[str]]:
@@ -73,7 +77,9 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
     Candidate keys: ``name``, ``section``, ``priority`` (1-4, the extraction-rule
     row), ``body`` (proposition text, used for duplicate detection), and the
     optional ``trivial`` flag set by the extractor. Order: priority, section
-    number, name. Trivial candidates and repeated bodies are not adopted; the
+    number, name; within one priority a candidate whose ``kind`` is a basic property
+    (``BASIC_KINDS``) comes first, so a cut-off never drops commutativity / associativity /
+    identity / empty-input / single-element laws before narrower ones. Trivial candidates and repeated bodies are not adopted; the
     rest is adopted up to ``max_laws`` and the overflow is listed with a reason.
     """
     def norm(body: Any) -> str:
@@ -81,8 +87,8 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
 
     ordered = sorted(
         candidates,
-        key=lambda c: (int(c.get("priority", 9)), section_key(c.get("section", "")),
-                       str(c.get("name", ""))))
+        key=lambda c: (int(c.get("priority", 9)), 0 if c.get("kind") in BASIC_KINDS else 1,
+                       section_key(c.get("section", "")), str(c.get("name", ""))))
     adopted: List[Dict[str, Any]] = []
     not_adopted: List[Dict[str, Any]] = []
     seen: Dict[str, str] = {}
@@ -275,10 +281,33 @@ def cmd_check(ns: argparse.Namespace) -> Dict[str, Any]:
     return out
 
 
-def _propositions(path: Path) -> Dict[str, str]:
+FOR_DECL_RE = re.compile(r"\bfor\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*:")
+
+
+def normalise_proposition(body: str, constants: Dict[str, str]) -> str:
+    """Comparison form of a law body (spec section 11 stage 1): the ``for`` variables are renamed
+    by order of declaration (alpha equivalence), ``Model.<fn>()`` of a constant ``def`` of
+    ``main.bend`` is replaced by its literal (``Model.rank_fail()`` and ``4n`` agree) and the
+    empty-list sugar ``[]`` reads as ``Nil{}``."""
+    names: List[str] = []
+    for m in FOR_DECL_RE.finditer(body):
+        names.extend(n.strip() for n in m.group(1).split(","))
+    renames = {n: f"_v{i}" for i, n in enumerate(dict.fromkeys(names))}
+    if renames:
+        body = re.sub(r"(?<![\w.])(" + "|".join(map(re.escape, renames)) + r")(?!\w)",
+                      lambda m: renames[m.group(1)], body)
+    for fn, lit in constants.items():
+        body = re.sub(rf"\bModel\.{re.escape(fn)}\(\s*\)", lit, body)
+    return " ".join(body.replace("[]", "Nil{}").split())
+
+
+def _propositions(path: Path, constants: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """law name -> comment-free whitespace-normalised body (``# source:`` and
-    ``# model-api:`` lines are comments and never part of a body)."""
-    return {law.name: law.body for law in parse_laws(path)}
+    ``# model-api:`` lines are comments and never part of a body). With ``constants`` the body
+    is the comparison form (``normalise_proposition``)."""
+    if constants is None:
+        return {law.name: law.body for law in parse_laws(path)}
+    return {law.name: normalise_proposition(law.body, constants) for law in parse_laws(path)}
 
 
 JUDGEMENTS = ("equivalent", "weak", "none")
@@ -310,14 +339,18 @@ def _normalise_judgements(raw: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
 
 def cmd_compare(ns: argparse.Namespace) -> Dict[str, Any]:
     """Two-stage acceptance (spec section 11). Stage 1 is mechanical: every reference law
-    must appear (same name and body, or the same body under another name). Stage 2 covers
+    must appear (same name and body, or the same body under another name) in the comparison
+    form of ``normalise_proposition`` (variable names, constant ``Model.rank_*()`` calls and
+    ``[]`` / ``Nil{}`` do not matter). Stage 2 covers
     the mechanical misses only: a human records ``equivalent`` / ``weak`` / ``none`` per law
     in the ``--judgement`` JSON (a judgement on a mechanically matched law is ignored and
     listed in ``ignored_judgements``). ``passed`` needs every law matched or ``equivalent``;
     ``weak`` and ``none`` fail. A reference with no laws, or a ``--check-result`` (the JSON
     printed by ``check``) with errors, never passes."""
-    generated = _propositions(Path(ns.generated))
-    reference = _propositions(Path(ns.reference))
+    model = Path(getattr(ns, "model", "") or Path(ns.reference).parent / MODEL_FILE)
+    constants = model_constants(model)
+    generated = _propositions(Path(ns.generated), constants)
+    reference = _propositions(Path(ns.reference), constants)
     judgements = _normalise_judgements(_load_json_object(ns.judgement, "--judgement")) \
         if ns.judgement else {}
     check_errors = 0
@@ -388,6 +421,8 @@ def build_parser() -> argparse.ArgumentParser:
     k = sub.add_parser("compare")
     k.add_argument("generated")
     k.add_argument("reference")
+    k.add_argument("--model", default="",
+                   help="main.bend whose constant defs (rank_*) read as literals; default: beside the reference")
     k.add_argument("--check-result", default="",
                    help="JSON printed by `check` for the generated file; errors > 0 forces passed=false")
     k.add_argument("--judgement", default="",

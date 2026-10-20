@@ -340,6 +340,26 @@ def model_api_from_main(main_path: Path) -> Dict[str, str]:
     return out
 
 
+def model_constants(main_path: Path) -> Dict[str, str]:
+    """``{fn: literal}`` for the zero-argument ``def`` of ``main.bend`` whose body is a single
+    Nat literal (``def rank_fail() -> Nat:`` / ``4n``, optionally ``return 4n``). Used to read
+    ``Model.rank_fail()`` and ``4n`` as the same value."""
+    out: Dict[str, str] = {}
+    if not main_path.is_file():
+        return out
+    lines = read_lines(main_path)
+    for i, line in enumerate(lines):
+        m = MAIN_DEF_RE.match(line)
+        if m is None or not m.group("rest").lstrip().startswith(")"):
+            continue
+        body = [ln.strip() for ln in lines[i + 1:] if ln.strip() and not ln.strip().startswith("#")][:1]
+        lit = re.fullmatch(r"(?:return\s+)?(\d+n)", body[0]) if body else None
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if lit is not None and nxt[:1].isspace():
+            out[m.group("fn")] = lit.group(1)
+    return out
+
+
 def fixed_model_api(spec_text: Optional[str], laws_dir: Path) -> Tuple[str, Dict[str, str]]:
     """``(source, {fn: signature})``. ``spec`` when the spec declares the API (``main.bend`` is
     then not consulted and not merged); else ``main.bend`` when it has ``def`` lines; else
