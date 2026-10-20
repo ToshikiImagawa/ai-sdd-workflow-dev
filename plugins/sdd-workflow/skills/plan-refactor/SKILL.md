@@ -101,8 +101,8 @@ See `references/front_matter_spec_design.md` for full schema definition, depende
 **No PRD found**: This skill never writes to `requirement/**` (see "PRD is read-only context" above). When
 `depends-on` is left empty because no PRD exists for `feature-name`, do not stop at the empty field — include a
 proposal in the refactoring plan output recommending a human-approved, reverse-engineered draft PRD
-(`status: "draft"`, `tags` including `"reverse-engineered"`), per AI-SDD-PRINCIPLES.md § Workflow Management
-Guidelines ("Never Automated" governs rewriting, not drafting a new PRD from scratch). The proposal is a
+(`status: "draft"`, `tags` including `"reverse-engineered"`), per AI-SDD-PRINCIPLES.md § Document Update
+Triggers ("Never Automated" governs rewriting, not drafting a new PRD from scratch). The proposal is a
 recommendation only — never draft or write the PRD file itself.
 
 ### Reverse-Engineered Design Draft Rules

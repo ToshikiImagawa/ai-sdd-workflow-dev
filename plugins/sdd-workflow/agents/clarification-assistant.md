@@ -162,7 +162,7 @@ AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
-Understand AI-SDD principles, document structure, persistence rules, and Vibe Coding prevention details.
+Apply the rules in the sections above; open another section only when a rule is in question.
 
 This agent performs specification clarification support based on AI-SDD principles.
 
