@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-10-21
+
 ### 追加
 
 - `/draft-laws` の抽出ルール: 固定 API に集約関数（例: `Model.aggregate`）があり、その下位に二項演算（例: `Model.worse`）がある場合、交換則・単位元・空入力・単一要素の法則はまず集約関数の側で書く。二項演算側は上限に余裕があるときだけ追加する。候補に `level: "binary"` を付けられ、`rank` は同一優先内でそれを最後に並べる
@@ -30,7 +32,6 @@
 
 ### 修正
 
-- **`/draft-laws` が Bend として不正な法則案を出していた** (#184) - `check` は 1 つの `for` に複数の変数を書いた法則（`for a b: T`、`for a, b: T`）を error `multi_var_for` にし、`propose_drafted` は false になる。SKILL.md とレポートテンプレート（en / ja）に、`for` は 1 行 1 変数で書くこと、API 未固定時の `# model-api:` の型は Bend の記法（リストは `List<&2, T>`）で書くことを明記。spec `laws-drafting_spec` 3.1.3 に検査 8 を追加
 - **`.sdd-config.json` の `root` に絶対パスを指定するとフックが無音で壊れる** (#151) -
   プロジェクト外を指す `root` では、`pre-tool-use.py` が外部ドキュメントを警告なく素通りし
   （命名規則検証・CONSTITUTION 注入が効かない）、`post-tool-use.py` はソース編集が外部 spec に
