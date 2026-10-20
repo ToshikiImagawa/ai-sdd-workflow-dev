@@ -105,7 +105,7 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 （[front-matter-validation_spec.md](../quality-guardrails/front-matter-validation_spec.md) FR-009 の逆方向検査と同じ規則）に
 従い、ゲートは `${SDD_SPECIFICATION_PATH}` 配下の spec を読んで解決する。検査の向きは相補的で、ゲートは spec 側を全走査して `# spec:` の id を解決し、front-matter-reviewer は laws 側（`${SDD_LAWS_PATH}` 配下）を走査して ID レジストリと照合する。
 
-複数ディレクトリの集約判定は FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS の順で最も悪いものとし、個別判定を併記する。
+複数ディレクトリの集約判定は FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS の順で最も悪いものとし、個別判定を併記する。集約対象のディレクトリが 0 件のときの結果は SKIPPED とする。
 集約の `verdict` は、いずれかが `unavailable` なら `unavailable`、`--verdict` 指定時はそれ以外 `checked`、未指定なら `not-requested`。
 `--laws-dir` を省略した場合は `${SDD_LAWS_PATH}` 配下を再帰的に走査し、`LAWS.bend` または `PROOF.bend` を直接含むディレクトリだけを
 対象にする（階層の中間ディレクトリを SKIPPED として数えない）。
