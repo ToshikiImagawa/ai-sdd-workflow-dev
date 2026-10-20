@@ -389,6 +389,18 @@ def test_rank_takes_basic_properties_first_within_a_priority():
     assert [c["name"] for c in out["not_adopted"]] == ["a_narrow"]
 
 
+def test_rank_puts_binary_level_properties_after_aggregate_ones():
+    cands = [
+        {"name": "a_worse_commutes", "section": "3.1.1", "priority": 2, "kind": "commutative", "level": "binary", "body": "1"},
+        {"name": "b_narrow", "section": "3.1.1", "priority": 2, "body": "2"},
+        {"name": "c_agg_pair_commutes", "section": "3.1.1", "priority": 2, "kind": "commutative", "body": "3"},
+    ]
+    out = dl.rank_candidates(cands, 2)
+    assert [c["name"] for c in out["adopted"]] == ["c_agg_pair_commutes", "b_narrow"]
+    assert [(c["name"], c["reason"]) for c in out["not_adopted"]] == [("a_worse_commutes", "limit")]
+    assert [c["name"] for c in dl.rank_candidates(cands, 3)["adopted"]][-1] == "a_worse_commutes"
+
+
 def test_normalise_proposition_alpha_constants_and_nil():
     consts = {"rank_fail": "4n", "rank_pass": "0n"}
     n = dl.normalise_proposition

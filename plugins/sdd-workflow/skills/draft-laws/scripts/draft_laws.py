@@ -76,7 +76,8 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
 
     Candidate keys: ``name``, ``section``, ``priority`` (1-4, the extraction-rule
     row), ``body`` (proposition text, used for duplicate detection), and the
-    optional ``trivial`` flag set by the extractor. Order: priority, section
+    optional ``trivial`` flag set by the extractor and ``level`` (``binary`` = a property written
+    on a binary operation although an aggregate function exists; ranked last in its priority). Order: priority, section
     number, name; within one priority a candidate whose ``kind`` is a basic property
     (``BASIC_KINDS``) comes first, so a cut-off never drops commutativity / associativity /
     identity / empty-input / single-element laws before narrower ones. Trivial candidates and repeated bodies are not adopted; the
@@ -87,7 +88,8 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
 
     ordered = sorted(
         candidates,
-        key=lambda c: (int(c.get("priority", 9)), 0 if c.get("kind") in BASIC_KINDS else 1,
+        key=lambda c: (int(c.get("priority", 9)),
+                       2 if c.get("level") == "binary" else (0 if c.get("kind") in BASIC_KINDS else 1),
                        section_key(c.get("section", "")), str(c.get("name", ""))))
     adopted: List[Dict[str, Any]] = []
     not_adopted: List[Dict[str, Any]] = []
