@@ -11,6 +11,7 @@
 
 ### 追加
 
+- `/draft-laws` の抽出ルール: 固定 API に集約関数（例: `Model.aggregate`）があり、その下位に二項演算（例: `Model.worse`）がある場合、交換則・単位元・空入力・単一要素の法則はまず集約関数の側で書く。二項演算側は上限に余裕があるときだけ追加する。候補に `level: "binary"` を付けられ、`rank` は同一優先内でそれを最後に並べる
 - **`/draft-laws` スキル** - `draft <feature>` は spec（判定表・集約規則・不変条件・数値目標）から法則候補を抽出し、`# source:` 節ハッシュ・`# model-api:` 行・静的チェック・抽出レポート（`--ticket <n>` で `laws-draft-report.md`）付きで `LAWS.bend`（既存の `LAWS.bend` があれば `LAWS.draft.bend`）に出力する。`model <feature>` は承認行が有効なときだけ `main.bend` / `PROOF.bend` を作成する。`# approved:`・`laws-status`・`laws:` は書かず（提案のみ）、承認行を持つ `LAWS.bend` には触れず、`bend` も呼ばない。`.sdd-config.json` の `laws.max_laws`（1 以上の整数、既定 10）で採用数を制限し、候補の整列と打ち切りは `draft_laws.py` が決定的に行う
 - proof ゲートの出典ずれ warning と spec 編集時の促しを追加: `run-verification.py proof` は、承認済みの法則ディレクトリで `# source:` の節ハッシュが現在の spec と一致しない場合、任意の `warnings` 配列（`{"code": "source_drift" | "source_invalid", "law", "source"}`）を加える（加算のみ。判定・集約・既存キーは不変。`bend` 不在では出さない）。`post-tool-use` は `laws:` を持つ spec の編集後に、ずれた法則を挙げて `/draft-laws` での再抽出を促す。`CHK-205` に併記
 - 今後の `/draft-laws` スキルと proof ゲートの warning が使う共有モジュール `laws_drafting.py` を追加: `# source:` が指す spec 節の節ハッシュ、`bend` 不要の法則案の静的チェック（出典の実在・欠落、重複、自明法則、import 許可形式、`# model-api:` の整合）、出典ずれ検出、承認の有効性判定（`laws_header.py` を再利用）。既存の法則・proof ゲートの挙動は変わらない

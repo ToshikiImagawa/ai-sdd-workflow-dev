@@ -401,6 +401,32 @@ def test_rank_puts_binary_level_properties_after_aggregate_ones():
     assert [c["name"] for c in dl.rank_candidates(cands, 3)["adopted"]][-1] == "a_worse_commutes"
 
 
+def test_rank_level_without_kind_goes_last_and_other_level_values_are_ignored():
+    cands = [
+        {"name": "a_bin", "section": "1", "priority": 2, "level": "binary", "body": "1"},
+        {"name": "b_plain", "section": "1", "priority": 2, "body": "2"},
+        {"name": "c_other_level", "section": "1", "priority": 2, "level": "aggregate", "body": "3"},
+    ]
+    assert [c["name"] for c in dl.rank_candidates(cands, 3)["adopted"]] == ["b_plain", "c_other_level", "a_bin"]
+
+
+def test_rank_level_does_not_override_priority():
+    cands = [
+        {"name": "agg", "section": "1", "priority": 2, "kind": "commutative", "body": "1"},
+        {"name": "bin_p1", "section": "1", "priority": 1, "level": "binary", "body": "2"},
+    ]
+    assert [c["name"] for c in dl.rank_candidates(cands, 2)["adopted"]] == ["bin_p1", "agg"]
+
+
+def test_rank_without_aggregate_function_is_unchanged_by_level_absence():
+    cands = [
+        {"name": "b", "section": "2", "priority": 2, "kind": "empty", "body": "1"},
+        {"name": "a", "section": "1", "priority": 2, "kind": "commutative", "body": "2"},
+        {"name": "z", "section": "0", "priority": 2, "body": "3"},
+    ]
+    assert [c["name"] for c in dl.rank_candidates(cands, 3)["adopted"]] == ["a", "b", "z"]
+
+
 def test_normalise_proposition_alpha_constants_and_nil():
     consts = {"rank_fail": "4n", "rank_pass": "0n"}
     n = dl.normalise_proposition

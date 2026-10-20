@@ -76,12 +76,17 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
 
     Candidate keys: ``name``, ``section``, ``priority`` (1-4, the extraction-rule
     row), ``body`` (proposition text, used for duplicate detection), and the
-    optional ``trivial`` flag set by the extractor and ``level`` (``binary`` = a property written
-    on a binary operation although an aggregate function exists; ranked last in its priority). Order: priority, section
-    number, name; within one priority a candidate whose ``kind`` is a basic property
-    (``BASIC_KINDS``) comes first, so a cut-off never drops commutativity / associativity /
-    identity / empty-input / single-element laws before narrower ones. Trivial candidates and repeated bodies are not adopted; the
-    rest is adopted up to ``max_laws`` and the overflow is listed with a reason.
+    optional ``trivial`` flag set by the extractor. ``level == "binary"`` marks a
+    property written on a binary operation although the fixed API has an aggregate
+    function; any other value is ignored. ``rank`` does not read the API, so a
+    missing ``level`` is not detected here.
+
+    Order: priority first, then within one priority (1) a candidate whose ``kind``
+    is a basic property (``BASIC_KINDS``), so a cut-off never drops commutativity /
+    associativity / identity / empty-input / single-element laws before narrower
+    ones, (2) the other candidates, (3) ``level == "binary"`` candidates last; then
+    section number and name. Trivial candidates and repeated bodies are not adopted;
+    the rest is adopted up to ``max_laws`` and the overflow is listed with a reason.
     """
     def norm(body: Any) -> str:
         return " ".join(str(body or "").split())
