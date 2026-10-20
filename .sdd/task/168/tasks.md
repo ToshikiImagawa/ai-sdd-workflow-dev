@@ -35,7 +35,7 @@ category: "task-implementation"
 |:--|:--|:--|:--|
 | B1-1 | `skills/draft-laws/scripts/draft_laws.py`（status / hash / rank / check / compare。`laws.max_laws` 読み込み、候補の決定的な整列と打ち切り） | FR-004, FR-006, FR-007, NFR-005 | 完了 |
 | B1-2 | `SKILL.md`（draft / model）と templates/{en,ja}（法則案・main/PROOF 雛形・抽出レポート） | FR-001〜003, FR-005, FR-007〜010, FR-012 | 完了 |
-| B1-3 | 検収（§11）: 独立再現（別セッション。再現元 HEAD d1ce670、§3.1.1 sha256:fa3ebed3050e、内容ハッシュ 2843fb9c5644）で 7 法則を生成。第 1 弾 5 件との対応: 一致 2（`agg_single_identity`=`aggregate_singleton`、`unapproved_never_pass`。後者は spec §4.1 に例があり独立性は弱い）、形違い 1（`agg_pair_commutes` ≒ `worse_commutative`）、2 法則の合算で同範囲 1（`pass_requires_marker` = `approved_exit_failure_fails` + `approved_missing_marker_fails`）、**再現されず 1（`agg_empty_skipped`。spec に空入力の結果の記述が無い）**。片方向の合格条件は未達。対応表を `tests/test_draft_laws_script.py` で固定 | §11 | 実施済み（合格条件は未達。証明段階は bend 無しで未確認） |
+| B1-3 | 検収（§11）: 独立再現を 2 回実施（別セッション）。2 回目（head b3e2523、§3.1.1 sha256:f90b56b320d1、内容ハッシュ c2fb81217cae）は 14 候補→10 法則採用・4 不採用（limit / duplicate / trivial 2）、`check` は error 0・warning 0。機械的な比較（`compare`。コメント除去・空白正規化後の本体一致、モデル関数名固定）は **5 件中 2 件のみ一致**（`pass_requires_marker` = `approved_without_marker_fails`、`unapproved_never_pass`。後者は spec §4.1 に例があり独立性が弱い）で、`passed` は False。意味の対応（オーケストレーター判定）は 5 件すべてにあるが強さが異なる: `agg_pair_commutes` = `aggregate_commutative`（`Model.worse` の形）、`agg_empty_skipped` = `aggregate_empty_is_skipped`（モデル関数が `Model.aggregate_empty()` で `aggregate(Nil)` ではない）、`agg_single_identity` は `aggregate_idempotent`（`worse(a,a)==a` で別命題・弱い対応）。既知の問題: `aggregate_fail_absorbs` は Nat 全体（a>4）で偽のため model 段階で必ず落ちる。実行ごとに結果がぶれる（1 回目 7 件、2 回目 10 件）。合格とするかは人の判断 | §11 | 実施済み（機械的基準は未達・意味的対応は 5/5。証明段階は bend 無しで未確認） |
 | B1-4 | README / CHANGELOG（en/ja） | — | 完了 |
 
 ## 実装 B-2（issue #172）: 促しと warning

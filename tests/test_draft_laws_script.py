@@ -161,34 +161,36 @@ def _acceptance():
 
 
 def test_acceptance_independent_reproduction_correspondence():
-    """laws-drafting_spec §11 (independent re-run, 7 laws drafted from proof-gate_spec).
+    """laws-drafting_spec §11 (second independent re-run: 10 laws, sha256:f90b56b320d1).
 
-    Pinned correspondence with the first-wave laws: 4 of 5 are covered, 1 is not
-    reproduced. The overall ``passed`` is therefore False by design: the spec's
-    one-way criterion is NOT met, and this test records that result.
+    Mechanical criterion (``compare``: same law body after dropping comments and
+    normalising whitespace, model function names fixed): 2 of 5 first-wave laws
+    match, so ``passed`` is False. The semantic correspondence (judged by the
+    orchestrator, not by ``compare``) covers all 5 with different strengths and is
+    pinned below so a change to either side is noticed.
     """
     gen, rows, result = _acceptance()
     drafted = {law.name: law.body for law in dl.parse_laws(gen)}
-    assert len(drafted) == 7
+    assert len(drafted) == 10
 
-    # exact proposition match
+    # mechanical matches
+    assert rows["pass_requires_marker"]["match"] == "proposition"
+    assert rows["pass_requires_marker"]["generated_name"] == "approved_without_marker_fails"
     assert rows["unapproved_never_pass"]["match"] == "exact"  # weak independence: spec 4.1 has an example
-    assert rows["agg_single_identity"]["match"] == "proposition"
-    assert rows["agg_single_identity"]["generated_name"] == "aggregate_singleton"
-
-    # same meaning, different form: Model.worse instead of Model.aggregate on a pair
-    assert rows["agg_pair_commutes"]["match"] == "none"
-    assert "Model.worse(a, b) == Model.worse(b, a)" in drafted["worse_commutative"]
-
-    # judge(True, e, False) == 4n is covered by two narrower laws together
-    assert rows["pass_requires_marker"]["match"] == "none"
-    assert "Model.judge(True{}, False{}, m) == 4n" in drafted["approved_exit_failure_fails"]
-    assert "Model.judge(True{}, True{}, False{}) == 4n" in drafted["approved_missing_marker_fails"]
-
-    # not reproduced: the spec never states the result for empty input
-    assert rows["agg_empty_skipped"]["match"] == "none"
-    assert not any("Nil" in body for body in drafted.values())
     assert result["passed"] is False
+
+    # same meaning, different model function / form (no mechanical match)
+    assert rows["agg_pair_commutes"]["match"] == "none"
+    assert "Model.worse(a, b) == Model.worse(b, a)" in drafted["aggregate_commutative"]
+    assert rows["agg_empty_skipped"]["match"] == "none"
+    assert "Model.aggregate_empty() == 1n" in drafted["aggregate_empty_is_skipped"]
+
+    # weak: worse(a, a) == a is not aggregate([x]) == x
+    assert rows["agg_single_identity"]["match"] == "none"
+    assert "Model.worse(a, a) == a" in drafted["aggregate_idempotent"]
+
+    # known problem: false for Nat above 4, so the model stage cannot prove it
+    assert "Model.worse(4n, a) == 4n" in drafted["aggregate_fail_absorbs"]
 
 
 def test_acceptance_draft_hash_is_stable():
@@ -198,7 +200,7 @@ def test_acceptance_draft_hash_is_stable():
     sys.path.insert(0, str(ROOT / "plugins/sdd-workflow/scripts"))
     from laws_header import law_body_hash
     gen, _, _ = _acceptance()
-    assert law_body_hash(gen) == "2843fb9c5644"
+    assert law_body_hash(gen) == "c2fb81217cae"
 
 
 def test_compare_detects_missing_law(tmp_path):
