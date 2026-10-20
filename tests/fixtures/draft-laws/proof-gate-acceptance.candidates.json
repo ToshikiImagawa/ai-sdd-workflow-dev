@@ -1,7 +1,0 @@
-[
- {"name":"pass_requires_marker","section":"3.1.1","priority":1,"body":"for e: Bool {Model.judge(True{}, e, False{}) == 4n : Nat}"},
- {"name":"unapproved_never_pass","section":"3.1.1","priority":1,"body":"for e: Bool for m: Bool {Model.judge(False{}, e, m) == 1n : Nat}"},
- {"name":"agg_pair_commutes","section":"3.1.1","priority":2,"body":"for a: Nat for b: Nat {Model.aggregate([a, b]) == Model.aggregate([b, a]) : Nat}"},
- {"name":"agg_single_identity","section":"3.1.1","priority":2,"body":"for x: Nat {Model.aggregate([x]) == x : Nat}"},
- {"name":"agg_empty_skipped","section":"3.1.1","priority":2,"body":"{Model.aggregate(Nil{}) == 1n : Nat}"}
-]

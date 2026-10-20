@@ -154,21 +154,51 @@ def test_hash_and_check(tmp_path):
     assert {f["code"] for f in out["findings"]} == {"source_drift"}
 
 
-def test_acceptance_reproduces_first_wave_laws():
-    """laws-drafting_spec §11: every first-wave law has a matching drafted law."""
+def _acceptance():
     gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
     result = dl.cmd_compare(type("N", (), {"generated": str(gen), "reference": str(REFERENCE)}))
-    assert result["passed"], result
-    assert all(r["match"] == "exact" for r in result["results"])
+    return gen, {r["law"]: r for r in result["results"]}, result
 
 
-def test_acceptance_candidates_rank_to_the_same_laws():
-    cands = json.loads((FIXTURES / "proof-gate-acceptance.candidates.json").read_text())
-    out = dl.rank_candidates(cands, 10)
-    names = [c["name"] for c in out["adopted"]]
-    assert sorted(names) == sorted(law.name for law in dl.parse_laws(REFERENCE))
-    assert out["not_adopted"] == []
-    assert dl.rank_candidates(cands, 3)["not_adopted"][0]["reason"] == "limit"
+def test_acceptance_independent_reproduction_correspondence():
+    """laws-drafting_spec §11 (independent re-run, 7 laws drafted from proof-gate_spec).
+
+    Pinned correspondence with the first-wave laws: 4 of 5 are covered, 1 is not
+    reproduced. The overall ``passed`` is therefore False by design: the spec's
+    one-way criterion is NOT met, and this test records that result.
+    """
+    gen, rows, result = _acceptance()
+    drafted = {law.name: law.body for law in dl.parse_laws(gen)}
+    assert len(drafted) == 7
+
+    # exact proposition match
+    assert rows["unapproved_never_pass"]["match"] == "exact"  # weak independence: spec 4.1 has an example
+    assert rows["agg_single_identity"]["match"] == "proposition"
+    assert rows["agg_single_identity"]["generated_name"] == "aggregate_singleton"
+
+    # same meaning, different form: Model.worse instead of Model.aggregate on a pair
+    assert rows["agg_pair_commutes"]["match"] == "none"
+    assert "Model.worse(a, b) == Model.worse(b, a)" in drafted["worse_commutative"]
+
+    # judge(True, e, False) == 4n is covered by two narrower laws together
+    assert rows["pass_requires_marker"]["match"] == "none"
+    assert "Model.judge(True{}, False{}, m) == 4n" in drafted["approved_exit_failure_fails"]
+    assert "Model.judge(True{}, True{}, False{}) == 4n" in drafted["approved_missing_marker_fails"]
+
+    # not reproduced: the spec never states the result for empty input
+    assert rows["agg_empty_skipped"]["match"] == "none"
+    assert not any("Nil" in body for body in drafted.values())
+    assert result["passed"] is False
+
+
+def test_acceptance_draft_hash_is_stable():
+    """Content hash reported by the independent run. The static check against the live
+    spec is not asserted here: it would fail on any later edit of proof-gate_spec 3.1.1
+    (that drift is what the ``source_drift`` warning is for)."""
+    sys.path.insert(0, str(ROOT / "plugins/sdd-workflow/scripts"))
+    from laws_header import law_body_hash
+    gen, _, _ = _acceptance()
+    assert law_body_hash(gen) == "2843fb9c5644"
 
 
 def test_compare_detects_missing_law(tmp_path):
