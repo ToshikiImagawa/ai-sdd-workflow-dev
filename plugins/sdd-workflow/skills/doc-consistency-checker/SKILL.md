@@ -20,7 +20,7 @@ When reading templates, use the path: `templates/${SDD_LANG:-en}/`
 
 ## Prerequisites
 
-**Before execution, read the AI-SDD principles document.**
+**Before execution, read only the AI-SDD principles sections below (not the whole file): § Document Dependencies, § Consistency Checking, § Document Update Triggers, § Document Link Convention.**
 
 AI-SDD principles document path: `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 

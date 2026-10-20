@@ -33,7 +33,7 @@ traceability check results, fix proposal summary)
 
 ## Prerequisites
 
-**Before execution, you must read the AI-SDD principles document.**
+**Before execution, you must read only the AI-SDD principles sections below (not the whole file): § Role of Each Document and Abstraction Level, § Document Dependencies, § Consistency Checking, § Vibe Coding Prevention.**
 
 AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 

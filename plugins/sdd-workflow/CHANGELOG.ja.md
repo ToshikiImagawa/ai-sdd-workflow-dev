@@ -9,6 +9,12 @@
 
 ## [Unreleased]
 
+### 変更
+
+- スキル・エージェントが `AI-SDD-PRINCIPLES.md`（約43KB）の全文 Read を指示しないようにした。`prerequisites_principles.md` は
+  `grep -n` で見出しを探し、各スキル/エージェントが指定する節（`§ <見出し>`）だけを読む手順に変更。各参照元
+  （スキル18・エージェント5）が必要な節を個別に列挙する。`AI-SDD-PRINCIPLES.source.md` 本文は変更なし (Refs #7)
+
 ## [5.2.0] - 2026-10-21
 
 ### 追加

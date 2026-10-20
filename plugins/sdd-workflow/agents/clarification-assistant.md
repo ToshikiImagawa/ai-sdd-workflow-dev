@@ -156,7 +156,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/shared/templates/${SDD_LANG:-en}/clarification_analy
 
 ## Prerequisites
 
-**Before execution, you must read the AI-SDD principles document.**
+**Before execution, you must read only the AI-SDD principles sections below (not the whole file): § Vibe Coding Prevention, § Role of Each Document and Abstraction Level.**
 
 AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 

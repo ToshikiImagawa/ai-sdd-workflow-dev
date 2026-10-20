@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Skills and agents no longer instruct a full read of `AI-SDD-PRINCIPLES.md` (~43KB). `prerequisites_principles.md` now tells the
+  reader to look up headings with `grep -n` and read only the sections each skill / agent names (`§ <heading>`); every
+  consumer (18 skills, 5 agents) lists its own sections. `AI-SDD-PRINCIPLES.source.md` itself is unchanged (Refs #7)
+
 ## [5.2.0] - 2026-10-21
 
 ### Added

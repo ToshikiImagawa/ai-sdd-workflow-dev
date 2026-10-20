@@ -56,7 +56,7 @@ exclude the following directories: `node_modules`, `.git`, `dist`, `build`, `.ne
 
 ## Prerequisites
 
-**Before execution, you must read the AI-SDD principles document.**
+**Before execution, you must read only the AI-SDD principles sections below (not the whole file): § Project Configuration File, § Role of Each Document and Abstraction Level.**
 
 AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
@@ -279,7 +279,7 @@ Default directory structure:
 - Root directory: `.sdd`
 - Requirement directory: `requirement`
 
-For configuration file details, refer to the AI-SDD principles document (`${SDD_ROOT}/AI-SDD-PRINCIPLES.md`).
+For configuration file details, read `${SDD_ROOT}/AI-SDD-PRINCIPLES.md` § Project Configuration File.
 
 ### Directory Structure
 

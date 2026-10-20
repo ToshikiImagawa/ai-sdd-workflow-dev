@@ -29,7 +29,7 @@ a write target.
 **Read the following prerequisite references before execution:**
 
 - `references/prerequisites_plugin_update.md` - Check for plugin updates
-- `references/prerequisites_principles.md` - Read AI-SDD principles document
+- `references/prerequisites_principles.md` - Read only these sections of the AI-SDD principles document (not the whole file): § Role of Each Document and Abstraction Level, § Task Type Determination, § Knowledge Asset Persistence Management, § Document Update Triggers
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
 **PRD is read-only context**: Although `allowed-tools` grants `Edit(.sdd/**)`, this skill only writes to

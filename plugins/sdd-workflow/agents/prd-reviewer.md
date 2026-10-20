@@ -31,7 +31,7 @@ PRD review result report (evaluation summary, items requiring fixes, recommended
 
 ## Prerequisites
 
-**Before execution, you must read the AI-SDD principles document.**
+**Before execution, you must read only the AI-SDD principles sections below (not the whole file): § Role of Each Document and Abstraction Level, § Vibe Coding Prevention, § Document Update Triggers.**
 
 AI-SDD principles document path: `${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 

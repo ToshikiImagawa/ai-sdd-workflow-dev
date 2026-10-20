@@ -17,7 +17,7 @@ Turns the machine-checkable properties of a spec into Bend laws, and after a hum
 **Read the following prerequisite references before execution:**
 
 - `references/prerequisites_plugin_update.md` - Check for plugin updates
-- `references/prerequisites_principles.md` - Read AI-SDD principles document
+- `references/prerequisites_principles.md` - Read only these sections of the AI-SDD principles document (not the whole file): § Role of Each Document and Abstraction Level, § Document Persistence Rules
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
 Templates are under `templates/${SDD_LANG:-en}/`. Write the whole output (report, comments) in that one language.
