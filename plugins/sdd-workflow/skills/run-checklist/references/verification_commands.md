@@ -97,6 +97,8 @@ Without `--laws-dir` the script scans `${SDD_LAWS_PATH}`. Defaults come from `.s
 | `--verdict` and Lean kernel unavailable                               | re-run without it, `verdict: "unavailable"` |
 | Anything else                                                         | `FAIL`           |
 
+Approved directories may also carry a `warnings` array (`source_drift` / `source_invalid`, FR-013) when a `# source:` section hash no longer matches the spec. It is additive: status and aggregation are unchanged, and it is omitted when `bend` is absent.
+
 Multiple directories aggregate as FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS. `BEND_NO_TELEMETRY=1` is always set.
 **PASS means the reference model satisfies the approved laws; it does not prove the implementation.**
 

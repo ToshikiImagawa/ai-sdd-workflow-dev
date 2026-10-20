@@ -608,6 +608,7 @@ this line; review it in the PR. Moving `laws-status` to `approved` / `proven` is
 It calls `run-verification.py proof --laws-dir ...` once for all directories and records the worst status
 (FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS). `bend` always runs with `BEND_NO_TELEMETRY=1`, and only
 `import Base` and aliased relative imports of `.bend` files inside the laws directory (`import ./main.bend as Model`, the form Bend requires) are allowed; anything else, including a local import without `as <Name>`, fails before `bend` starts.
+Approved directories can carry a non-blocking `warnings` array (`source_drift` / `source_invalid`) when a law's `# source:` section hash no longer matches the spec; it is shown on `CHK-205` and never changes the status. The `post-tool-use` hook also suggests re-drafting after you edit a spec that has `laws:`.
 Options: `--verdict` (extra Lean re-check, falls back with `verdict: "unavailable"`), `--timeout`; `.sdd-config.json` keys: `directories.laws`, `proof.timeout_seconds`, `proof.verdict`.
 macOS / Linux only (Windows via WSL). Verified against Bend v2.0.37; the Lean re-check needs Lean v4.34.0.
 

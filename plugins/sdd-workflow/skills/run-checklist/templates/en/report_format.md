@@ -49,6 +49,7 @@
 |:---------|:---------|:--------|:-----------------------------------------------------------------|
 | CHK-205  | P2       | ✅ PASS | 1 of 1 laws directories PASS (verdict: not-requested)            |
 
+> Source drift warnings (non-blocking) append to the Details column, e.g. `1 source drift: sort_len (§3.1.1)`.
 > PASS means the reference model (`main.bend`) satisfies the approved laws. It does not prove the project's
 > implementation. SKIPPED / TOOL_NOT_FOUND are not failures. Moving `laws-status` to `proven` is a human step.
 

@@ -80,6 +80,7 @@ Add after each CHK section that was verified:
 - Status: PASSED
 - Laws directories: 1 checked (verdict: not-requested)
 - Note: PASS means the reference model (main.bend) satisfies the approved laws. It does not prove the project's implementation.
+- Warnings: 1 source drift (non-blocking): `sort_len` (§3.1.1) - consider re-running `/draft-laws`
 - Recommendation: a human may move `laws-status` to `proven` (this skill never edits the spec)
 - Executed: 2024-01-15 10:33:00
 ```
