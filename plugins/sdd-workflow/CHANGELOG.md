@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `/draft-laws` no longer emits Bend-invalid laws: `check` now reports error `multi_var_for` for several variables in one `for` (`for a b: T`, `for a, b: T`), so `propose_drafted` is false. SKILL.md and the report templates (en / ja) require one variable per `for` line and Bend notation for types in `# model-api:` when the API is unfixed (lists are `List<&2, T>`). Spec `laws-drafting_spec` 3.1.3 gains check 8
+- **`/draft-laws` emitted Bend-invalid laws** (#184) - `check` now reports error `multi_var_for` for several variables in one `for` (`for a b: T`, `for a, b: T`), so `propose_drafted` is false. SKILL.md and the report templates (en / ja) require one variable per `for` line and Bend notation for types in `# model-api:` when the API is unfixed (lists are `List<&2, T>`). Spec `laws-drafting_spec` 3.1.3 gains check 8
 - **Hooks broke silently when `.sdd-config.json` `root` was an absolute path** (#151) -
   With a `root` pointing outside the project, `pre-tool-use.py` skipped external documents without
   a word (no naming validation / CONSTITUTION injection), `post-tool-use.py` crashed with a

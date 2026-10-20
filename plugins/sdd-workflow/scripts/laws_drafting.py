@@ -48,9 +48,11 @@ SPEC_MODEL_API_RE = re.compile(r"^\s*(?:[-*]\s+)?model-api:\s*Model\.(?P<fn>[A-Z
 MAIN_DEF_RE = re.compile(r"^\s*def\s+(?P<fn>[A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*\((?P<rest>.*)$")
 # ``for a: Nat`` and the comma form ``for a, b: Nat``.
 NAT_VAR_RE = re.compile(r"\bfor\s+(?P<vars>[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*:\s*Nat\b")
-# Bend takes one variable per ``for``: ``for a b: T`` / ``for a, b: T`` is a syntax error.
+# Bend takes one variable per ``for``: ``for a b: T``, ``for a, b: T`` and ``for a: T, b: T``
+# are syntax errors. The type of the typed form may hold commas inside ``<...>``.
 MULTI_FOR_RE = re.compile(
-    r"\bfor\s+(?P<vars>[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*|\s+[A-Za-z_]\w*)+)\s*:")
+    r"\bfor\s+(?P<vars>[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*|\s+[A-Za-z_]\w*)+)\s*:"
+    r"|\bfor\s+(?P<typed>[A-Za-z_]\w*\s*:\s*(?:[^,{}<]|<[^>]*>)+?\s*,\s*[A-Za-z_]\w*)\s*:")
 # A constant Nat expression (after whitespace removal): literals joined by + / *, parenthesised.
 NAT_CONST_RE = re.compile(r"[()+*]*\d+n(?:[()+*]+\d+n)*[()]*")
 MODEL_CALL_RE = re.compile(r"\bModel\.[A-Za-z_]\w*\(")
@@ -488,8 +490,9 @@ def static_check(
     absent / section hash differs from the spec / source naming another spec
     id / malformed source; 5 disallowed import; ``# model-api:`` missing or
     out of step with the ``Model.*`` references. Warnings: 3 duplicate bodies;
-    4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Error ``multi_var_for``: several variables in one ``for``. Without
-    ``spec_path`` the source checks (1) are skipped. ``fixed_api`` (default: the
+    4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Error ``multi_var_for``:
+    several variables in one ``for``. Without ``spec_path`` the source checks (1) are skipped.
+    ``fixed_api`` (default: the
     spec's ``model-api:`` lines, else ``main.bend`` beside the law file) turns a
     ``Model.*`` name outside it into an error. ``model_dir`` is where ``main.bend`` is looked
     up (default: the law file's directory; pass the feature's laws directory when the file
@@ -569,7 +572,7 @@ def _multi_var_for_findings(laws: List[LawDecl]) -> List[Finding]:
             out.append(Finding(
                 "multi_var_for", ERROR, law.name,
                 f"law '{law.name}' declares several variables in one 'for' "
-                f"('for {' '.join(m.group('vars').replace(',', ' ').split())}: ...'): "
+                f"('for {' '.join((m.group('vars') or m.group('typed')).replace(',', ' ').split())} ...'): "
                 "Bend takes one variable per 'for'; write one 'for x: T' per line"))
     return out
 

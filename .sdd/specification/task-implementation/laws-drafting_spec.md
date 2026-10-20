@@ -128,7 +128,9 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 | 5 | import 許可形式 | error | 第 1 弾 FR-005 の許可形式以外の import が無い（`bend` 実行前の静的検査を再利用）。ただし `draft` 時点では `main.bend` が未作成なので、`import ./main.bend as Model` に限り存在しなくても許容する（`model` 段階で作る。ゲートは `PROOF.bend` 作成後にのみ #8 で評価する） |
 | 6 | 固定 API 外のモデル参照 | error | 3.1.4 で固定された API（spec の宣言、無ければ既存 `main.bend`）がある場合、法則本文の `Model.*` 参照と `# model-api:` 行が固定済みの関数だけであること。固定が無い（`unfixed`）ときは検査しない。固定元が壊れている場合（`main.bend` があるのに `def` を 1 件も読めない = `main.bend-unreadable`）は、検査 6 を行えないため warning `model_api_source_unreadable` を出す。`# model-api:` 行の引数の個数・型が固定済みシグネチャと違うときは warning `model_api_signature_mismatch` |
 | 7 | 値域の前提のない Nat 等式 | warning | `for n: Nat` の変数を引数に含むモデル呼び出しと Nat リテラル（`4n` など）の等式。Nat 全域で偽になりうる。`bend` が無いため偽の判定はできず、ヒューリスティックとして警告し、承認前の人のレビューに回す（`drafted` 付与の提案は止めない）。定数側はリテラルを `+` / `*` と括弧でつないだ式（`4n`・`(4n)`・`3n + 1n`）。素の `0n` は対象外。変数宣言は `for a: Nat`（`for a, b: Nat` の形も変数として読む。書き方自体は検査 8 の error）。限界: Model 以外の関数を挟んだ変数、2 つのモデル呼び出しの比較、Nat 以外の型は見ない |
-| 8 | 複数変数の `for` | error | `for a b: T` / `for a, b: T` のように 1 つの `for` に複数の変数を書いている。Bend は 1 つの `for` に 1 変数しか受け付けない（構文エラー）ため、`for` は 1 行に 1 変数で書く（第 1 弾の法則と同じ形）。検出時は error `multi_var_for`（`drafted` 付与の提案は止まる）。あわせて、`unfixed` のときの `# model-api:` の型は Bend の記法（リストは `List<&2, T>`）で書く |
+| 8 | 複数変数の `for` | error | `for a b: T` / `for a, b: T` / `for a: T, b: T` のように 1 つの `for` に複数の変数を書いている。Bend は 1 つの `for` に 1 変数しか受け付けない（構文エラー）ため、`for` は 1 行に 1 変数で書く（第 1 弾の法則と同じ形）。検出時は error `multi_var_for`（`drafted` 付与の提案は止まる） |
+
+**書き方の決まり**（検査項目ではなく `draft` の出力規範）: `for` は 1 行に 1 変数で書く。固定 API が無い（`unfixed`）ときの `# model-api:` の型は Bend の記法で書く（リストは `List<&2, T>`。`List(T)` ではない）。守られないと model 後の check が `model_api_signature_mismatch`（warning）を出す。
 
 ### 3.1.4. モデル API の固定（FR-008）
 
