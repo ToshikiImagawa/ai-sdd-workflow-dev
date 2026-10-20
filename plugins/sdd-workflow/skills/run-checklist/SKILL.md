@@ -156,6 +156,13 @@ the same condition). Do not call `proof` for a spec without `laws:`.
 | `TOOL_NOT_FOUND` | `bend` is not installed. A missing Lean kernel is **not** this status: it appears as `verdict: "unavailable"` | Not a failure |
 | `TIMEOUT`        | A directory exceeded the time limit                                                                   | Needs manual review |
 
+**Source drift warnings (`warnings[]`, non-blocking)**: for an approved laws directory, a result may carry
+`warnings` (`{"code": "source_drift" | "source_invalid", "law", "source"}`) for laws whose `# source:` section hash no
+longer matches the spec (or whose `# source:` is malformed). Append the count and the law names to the `CHK-205` result
+(e.g. `1 source drift: sort_len (§3.1.1)`) and suggest re-running `/draft-laws` and having a human re-approve. A warning
+never changes the status, expires the approval or blocks a PASS. Laws without `# source:` are exempt, and nothing is
+reported when `bend` is absent.
+
 Never write an `# approved:` line and never change the spec's `laws-status`: both are human steps.
 
 ### 4. Record Results

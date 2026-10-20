@@ -34,6 +34,7 @@ from typing import Dict, List, Optional
 # tree, so loading them cannot fail independently of this script, and the proof functions
 # below are called directly by tests (a lazy import would need threading through each).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from laws_drafting import source_drift  # noqa: E402
 from doc_walker import iter_specification_docs  # noqa: E402
 from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
 from hook_common import load_proof_config, load_sdd_paths  # noqa: E402
@@ -324,7 +325,42 @@ def _sdd_relative(laws_dir: Path, sdd_root: Path) -> str:
 def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int, sdd_root: Path,
                   registry: Dict[str, Dict[str, object]],
                   bend_found: Optional[bool] = None) -> Dict[str, object]:
-    """Full decision for one laws directory (rows #1-#12)."""
+    """Decision for one laws directory (rows #1-#12) plus the additive FR-013 warnings."""
+    if bend_found is None:
+        bend_found = shutil.which("bend") is not None
+    result = _decide_proof_dir(laws_dir, verdict, timeout, sdd_root, registry, bend_found)
+    warnings = drift_warnings(laws_dir, sdd_root, registry, bend_found)
+    if warnings:
+        result["warnings"] = warnings
+    return result
+
+
+def drift_warnings(laws_dir: Path, sdd_root: Path, registry: Dict[str, Dict[str, object]],
+                   bend_found: bool) -> List[Dict[str, str]]:
+    """FR-013: source_drift / source_invalid for an approved, bound laws directory.
+
+    Never changes the status: only directories with a valid approval line that
+    passed the orphan check (row #4) are evaluated, and nothing is reported
+    when bend is absent (the static check and the hook cover that case).
+    """
+    laws = laws_dir / LAWS_FILE
+    if not bend_found or not laws.is_file():
+        return []
+    if valid_approval(read_header(laws), law_body_hash(laws)) is None:
+        return []
+    spec_values = read_header(laws).get("spec", [])
+    spec_id = spec_values[0] if spec_values else None
+    if orphan_reason(spec_id, _sdd_relative(laws_dir, sdd_root), registry) is not None:
+        return []
+    try:
+        return source_drift(laws, Path(str(registry[str(spec_id)]["path"])))
+    except OSError:
+        return []
+
+
+def _decide_proof_dir(laws_dir: Path, verdict: bool, timeout: int, sdd_root: Path,
+                      registry: Dict[str, Dict[str, object]],
+                      bend_found: bool) -> Dict[str, object]:
     laws = laws_dir / LAWS_FILE
     proof = laws_dir / PROOF_FILE
     model = laws_dir / MODEL_FILE
@@ -341,8 +377,6 @@ def run_proof_dir(laws_dir: Path, verdict: bool, timeout: int, sdd_root: Path,
         "model_of": model_header.get("model-of", []),
         "verdict": "checked" if verdict else "not-requested",
     }
-    if bend_found is None:
-        bend_found = shutil.which("bend") is not None
     early = precheck(
         bend_found=bend_found,
         dir_exists=laws_dir.is_dir(),

@@ -316,3 +316,66 @@ class TestModelOfOutsideProject:
         ptu._process_model_of(Path("src/auth/user_login.py"), "src/auth/user_login.py",
                               str(project), paths)
         assert capsys.readouterr().out == ""
+
+
+# --- spec edit -> laws re-draft reminder (laws-drafting_spec FR-011) -----------
+
+
+def _spec_with_laws(tmp_path, source_hash):
+    spec = tmp_path / ".sdd" / "specification" / "auth" / "user-login_spec.md"
+    spec.parent.mkdir(parents=True)
+    spec.write_text('---\nid: "spec-auth-user-login"\nlaws: ["laws/auth/user-login"]\n---\n'
+                    "# 3. 要求\n\n## 3.1. 機能\n\n本文\n", encoding="utf-8")
+    d = tmp_path / ".sdd" / "laws" / "auth" / "user-login"
+    d.mkdir(parents=True)
+    (d / "LAWS.bend").write_text(
+        f"# spec: spec-auth-user-login\nimport Base\n\n# source: spec-auth-user-login "
+        f"§3.1 sha256:{source_hash}\nlaw a:\n  for x: Nat\n  {{x == x : Nat}}\n",
+        encoding="utf-8")
+    return spec
+
+
+class TestSpecLawsReminder:
+    REL = os.path.join(".sdd", "specification", "auth", "user-login_spec.md")
+
+    def test_drifted_law_is_named(self, tmp_path, capsys):
+        _spec_with_laws(tmp_path, "0" * 12)
+        _process(self.REL, tmp_path)
+        out = capsys.readouterr().out
+        assert "/draft-laws" in out and "a (§3.1, source_drift)" in out
+
+    def test_in_sync_still_suggests_without_naming(self, tmp_path, capsys):
+        import laws_drafting as ld
+        spec = _spec_with_laws(tmp_path, "0" * 12)
+        h = ld.section_hash(spec.read_text(encoding="utf-8"), "3.1")
+        laws = tmp_path / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
+        laws.write_text(laws.read_text(encoding="utf-8").replace("0" * 12, h), encoding="utf-8")
+        _process(self.REL, tmp_path)
+        out = capsys.readouterr().out
+        assert "/draft-laws" in out and "source_drift" not in out
+
+    def test_spec_without_laws_has_no_laws_reminder(self, tmp_path, capsys):
+        spec = tmp_path / ".sdd" / "specification" / "a_spec.md"
+        spec.parent.mkdir(parents=True)
+        spec.write_text('---\nid: "x"\n---\n# a\n', encoding="utf-8")
+        _process(os.path.join(".sdd", "specification", "a_spec.md"), tmp_path)
+        assert "/draft-laws" not in capsys.readouterr().out
+
+    def test_spec_sync_and_laws_reminder_are_one_json(self, tmp_path, capsys):
+        import json
+        _spec_with_laws(tmp_path, "0" * 12)
+        _process(self.REL, tmp_path)
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+        assert len(lines) == 1
+        ctx = json.loads(lines[0])["hookSpecificOutput"]["additionalContext"]
+        assert "PRD <-> spec <-> adr" in ctx and "/draft-laws" in ctx
+
+    def test_model_of_and_sync_are_one_json(self, tmp_path, capsys):
+        import json
+        _laws_project(tmp_path)
+        (tmp_path / ".sdd" / "specification").mkdir(parents=True)
+        (tmp_path / ".sdd" / "specification" / "user_login_spec.md").write_text("x", encoding="utf-8")
+        (tmp_path / "src" / "auth").mkdir(parents=True)
+        _process(os.path.join("src", "auth", "user_login.py"), tmp_path)
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+        assert len(lines) == 1 and "# model-of:" in json.loads(lines[0])["hookSpecificOutput"]["additionalContext"]
