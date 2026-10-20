@@ -11,6 +11,7 @@
 
 ### 追加
 
+- proof ゲートの出典ずれ warning と spec 編集時の促しを追加: `run-verification.py proof` は、承認済みの法則ディレクトリで `# source:` の節ハッシュが現在の spec と一致しない場合、任意の `warnings` 配列（`{"code": "source_drift" | "source_invalid", "law", "source"}`）を加える（加算のみ。判定・集約・既存キーは不変。`bend` 不在では出さない）。`post-tool-use` は `laws:` を持つ spec の編集後に、ずれた法則を挙げて `/draft-laws` での再抽出を促す。`CHK-205` に併記
 - 今後の `/draft-laws` スキルと proof ゲートの warning が使う共有モジュール `laws_drafting.py` を追加: `# source:` が指す spec 節の節ハッシュ、`bend` 不要の法則案の静的チェック（出典の実在・欠落、重複、自明法則、import 許可形式、`# model-api:` の整合）、出典ずれ検出、承認の有効性判定（`laws_header.py` を再利用）。既存の法則・proof ゲートの挙動は変わらない
 - **Bend 証明ゲート（opt-in）** - `/run-checklist` に検証カテゴリ `proof` を追加し、spec の制約を Bend の法則
   （`${SDD_LAWS_PATH}/{feature}/` の `LAWS.bend` / `PROOF.bend` / `main.bend`）として検査する。任意機能であり、

@@ -509,3 +509,60 @@ class TestLegacyCategoriesUnchanged:
         assert _cli(tmp_path, "test", "--extra").returncode == 2
         assert _cli(tmp_path, "bogus").returncode == 2
         assert "proof" in _cli(tmp_path).stderr
+
+
+# --- FR-013 warnings (laws-drafting_spec) -------------------------------------
+
+DRIFT_SPEC_BODY = "# 3. 要求\n\n## 3.1. 機能\n\n本文\n"
+
+
+def _drift_project(tmp_path: Path, *, source_hash=None, approved=True, source_line=True):
+    """Project whose spec has section 3.1 and whose LAWS.bend cites it."""
+    root = _project(tmp_path, approved=False)
+    spec = root / ".sdd" / "specification" / "auth" / "user-login_spec.md"
+    spec.write_text(spec.read_text(encoding="utf-8") + DRIFT_SPEC_BODY, encoding="utf-8")
+    import laws_drafting as ld
+    digest = source_hash or ld.section_hash(spec.read_text(encoding="utf-8"), "3.1")
+    laws = root / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
+    src = f"# source: {SPEC_ID} §3.1 sha256:{digest}\n" if source_line else ""
+    body = f"# spec: {SPEC_ID}\n@@A@@import Base\nimport ./main.bend as Model\n\n{src}law a:\n  for xs: Nat\n  {{xs == xs : Nat}}\n"
+    laws.write_text(body.replace("@@A@@", ""), encoding="utf-8")
+    if approved:
+        h = rv.law_body_hash(laws)
+        laws.write_text(body.replace("@@A@@", f"# approved: 2026-10-17 @r sha256:{h}\n"),
+                        encoding="utf-8")
+    return root
+
+
+class TestDriftWarnings:
+    _run = TestRunProofDir._run
+
+    def test_no_warnings_key_when_in_sync(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        r = self._run(_drift_project(tmp_path))
+        assert r["status"] == "PASS" and "warnings" not in r
+
+    def test_drift_adds_warning_without_changing_status(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        r = self._run(_drift_project(tmp_path, source_hash="0" * 12))
+        assert r["status"] == "PASS"
+        assert r["warnings"] == [{"code": "source_drift", "law": "a", "source": "3.1"}]
+
+    def test_warning_on_fail_keeps_fail(self, tmp_path, fake_bend):
+        fake_bend("fail")
+        r = self._run(_drift_project(tmp_path, source_hash="0" * 12))
+        assert r["status"] == "FAIL" and len(r["warnings"]) == 1
+
+    def test_unapproved_directory_has_no_warnings(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        r = self._run(_drift_project(tmp_path, source_hash="0" * 12, approved=False))
+        assert r["status"] == "SKIPPED" and "warnings" not in r
+
+    def test_hand_written_laws_without_source_are_exempt(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        r = self._run(_drift_project(tmp_path, source_line=False))
+        assert "warnings" not in r
+
+    def test_no_bend_no_warnings(self, tmp_path):
+        r = self._run(_drift_project(tmp_path, source_hash="0" * 12), bend_found=False)
+        assert r["status"] == "TOOL_NOT_FOUND" and "warnings" not in r

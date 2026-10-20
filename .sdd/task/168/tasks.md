@@ -29,6 +29,15 @@ category: "task-implementation"
 | A-6 | 承認有効性判定 `approval_status`（`laws_header` を再利用） | FR-007 | 完了 |
 | A-7 | ユニットテスト `tests/test_laws_drafting.py`、CHANGELOG（en/ja） | NFR-002 | 完了 |
 
+## 実装 B-2（issue #172）: 促しと warning
+
+| ID | タスク | 対応 FR | 状態 |
+|:--|:--|:--|:--|
+| B2-1 | `post-tool-use.py`: `laws:` を持つ spec の編集時に `source_drift` を使って再抽出を促す（外部 root はスキップ） | FR-011 | 完了 |
+| B2-2 | `run-verification.py proof`: 承認有効・孤児でない・`bend` ありの法則ディレクトリに `warnings[]` を加算 | FR-013 | 完了 |
+| B2-3 | run-checklist の SKILL.md / テンプレート（en・ja）/ references に `CHK-205` の warning 表示を追記 | FR-013 | 完了 |
+| B2-4 | テスト（warning の条件・判定不変・フックの促し）、README / CHANGELOG（en/ja） | NFR-002 | 完了 |
+
 ## 後続
 
 - 実装 B-1（#171）: スキル `draft-laws`、`laws.max_laws` の config 読み込み、候補の決定的な整列と上限での打ち切り（NFR-005）

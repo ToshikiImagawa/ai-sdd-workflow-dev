@@ -13,6 +13,9 @@ Detects potential document update omissions after a file edit:
   message, since the design doc is not a spec sync target).
 - Bend law file (.bend) edited under the laws directory: reminds to re-run the
   proof gate (and, for LAWS.bend, to get the laws re-approved).
+- spec with a ``laws:`` front matter list edited: suggests re-running
+  ``/draft-laws`` when a law's ``# source:`` section hash no longer matches
+  (non-blocking; names the drifted laws when they can be determined cheaply).
 - source file edited that a laws/**/main.bend names in a ``# model-of:`` line:
   reminds to review the reference model and the laws. Independent of the spec
   sync reminder, so both may be injected for one edit.
@@ -33,6 +36,7 @@ from hook_common import (  # noqa: E402
     relative_to_project,
 )
 from doc_walker import find_spec_or_legacy_design_doc  # noqa: E402
+from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
 from laws_header import LAWS_FILE, MODEL_FILE, read_header  # noqa: E402
 
 
@@ -127,6 +131,8 @@ def _process_sdd_doc(rel: Path, rel_path: str, project_root: str,
             emit_additional_context(
                 "PostToolUse", message.format(rel_path=rel_path),
             )
+            if prefix_attr == "specification_prefix":
+                _process_spec_laws(rel, rel_path, project_root, paths)
             return True
     # Any other .sdd/ file (CONSTITUTION.md, task/, templates): no reminder.
     return True
@@ -153,6 +159,43 @@ def _process_laws_file(rel: Path, rel_path: str, project_root: str,
             "existing '# approved:' line no longer applies (a human appends a new one; "
             "get the hash with run-verification.py proof --print-laws-hash)."
         )
+    emit_additional_context("PostToolUse", message)
+
+
+def _process_spec_laws(rel: Path, rel_path: str, project_root: str,
+                       paths: SddPaths) -> None:
+    """Suggest re-drafting laws after a spec with ``laws:`` changed (FR-011)."""
+    spec_file = Path(project_root) / rel
+    try:
+        text = spec_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    fm_text, _ = split_front_matter(text)
+    laws = parse_front_matter(fm_text).get("laws") if fm_text else None
+    if isinstance(laws, str):
+        laws = [laws]
+    if not laws:
+        return
+    drifted = []
+    for entry in laws:
+        laws_file = Path(project_root) / paths.root / str(entry).strip().strip("/") / LAWS_FILE
+        # An absolute .sdd-config.json root puts the laws outside the project (#151).
+        if not relative_to_project(str(laws_file), project_root) or not laws_file.is_file():
+            continue
+        try:
+            import laws_drafting
+            for w in laws_drafting.source_drift(laws_file, spec_file):
+                drifted.append(f"{w['law']} (§{w['source']}, {w['code']})")
+        except Exception:  # noqa: BLE001 - a reminder must never fail the hook
+            continue
+    message = (
+        f"[AI-SDD] '{rel_path}' declares laws ({', '.join(str(x) for x in laws)}). "
+        "If the spec sections the laws were drafted from changed, consider re-running "
+        "/draft-laws to re-extract them, then have a human re-approve."
+    )
+    if drifted:
+        message += (" Laws whose '# source:' no longer matches the spec: "
+                    + "; ".join(drifted) + ".")
     emit_additional_context("PostToolUse", message)
 
 

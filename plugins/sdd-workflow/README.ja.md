@@ -598,6 +598,7 @@ laws-status: "approved"          # none | drafted | approved | proven
 （FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS）を記録します。`bend` は常に `BEND_NO_TELEMETRY=1` で起動し、
 `import Base` と法則ディレクトリ内の `.bend` への別名付き相対 import（Bend が要求する `import ./main.bend as Model` の形）だけを許可します（別名のないローカル import を含むそれ以外は `bend` 起動前に FAIL）。
 オプション: `--verdict`（Lean での再検査。使えなければ `verdict: "unavailable"` でフォールバック）、`--timeout`。
+承認済みのディレクトリでは、法則の `# source:` の節ハッシュが現在の spec と一致しないとき、非ブロッキングの `warnings` 配列（`source_drift` / `source_invalid`）が付き、`CHK-205` に併記されます（判定は変わりません）。`laws:` を持つ spec を編集すると `post-tool-use` フックが再抽出を促します。
 `.sdd-config.json` のキー: `directories.laws`、`proof.timeout_seconds`、`proof.verdict`。
 macOS / Linux のみ（Windows は WSL 経由）。Bend v2.0.37 で検証済み、Lean での再検査には Lean v4.34.0 が必要です。
 
