@@ -88,6 +88,8 @@ def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str
         body = norm(c.get("body"))
         if c.get("trivial"):
             not_adopted.append({**c, "reason": "trivial"})
+        elif c.get("unbounded"):
+            not_adopted.append({**c, "reason": "unbounded_nat"})
         elif body and body in seen:
             not_adopted.append({**c, "reason": "duplicate", "duplicate_of": seen[body]})
         elif len(adopted) >= max_laws:
@@ -203,8 +205,12 @@ def cmd_model_api(ns: argparse.Namespace) -> Dict[str, Any]:
     spec = find_spec(root, paths.specification_prefix, feature)
     text = spec.read_text(encoding="utf-8", errors="replace") if spec else None
     source, api = fixed_model_api(text, root / paths.laws_prefix / feature)
-    out: Dict[str, Any] = {"feature": feature, "source": source, "fixed": source != "unfixed",
+    out: Dict[str, Any] = {"feature": feature, "source": source, "fixed": source in ("spec", "main.bend"),
                            "functions": [{"name": f"Model.{k}", "signature": v} for k, v in api.items()]}
+    if source == "main.bend-unreadable":
+        out["warning"] = ("main.bend exists but no 'def' could be read from it: the model API is "
+                          "not fixed and the fixed-API check is off; fix main.bend or declare "
+                          "'model-api:' in the spec")
     if source == "unfixed":
         out["note"] = ("no spec declaration and no main.bend: propose the API yourself and mark it "
                        "'unfixed - needs confirmation' in the report")
@@ -245,37 +251,75 @@ def _propositions(path: Path) -> Dict[str, str]:
 JUDGEMENTS = ("equivalent", "weak", "none")
 
 
+def _load_json_object(path: str, what: str) -> Dict[str, Any]:
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"{what}: cannot read {path} as JSON ({exc})")
+    if not isinstance(data, dict):
+        raise SystemExit(f"{what}: {path} must contain a JSON object")
+    return data
+
+
+def _normalise_judgements(raw: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """``{law: "equivalent"}`` or ``{law: {"verdict": ..., "generated_name": ..., "note": ...}}``
+    -> ``{law: {"verdict", "generated_name", "note"}}``; anything else exits with a message."""
+    out: Dict[str, Dict[str, Any]] = {}
+    for law, value in raw.items():
+        entry = value if isinstance(value, dict) else {"verdict": value}
+        verdict = entry.get("verdict")
+        if verdict not in JUDGEMENTS:
+            raise SystemExit(f"judgement for '{law}': verdict must be one of {JUDGEMENTS}, got {verdict!r}")
+        out[law] = {"verdict": verdict, "generated_name": entry.get("generated_name"),
+                    "note": entry.get("note")}
+    return out
+
+
 def cmd_compare(ns: argparse.Namespace) -> Dict[str, Any]:
     """Two-stage acceptance (spec section 11). Stage 1 is mechanical: every reference law
     must appear (same name and body, or the same body under another name). Stage 2 covers
     the mechanical misses only: a human records ``equivalent`` / ``weak`` / ``none`` per law
-    in the ``--judgement`` JSON object. ``passed`` needs every law matched or ``equivalent``;
-    ``weak`` and ``none`` fail."""
+    in the ``--judgement`` JSON (a judgement on a mechanically matched law is ignored and
+    listed in ``ignored_judgements``). ``passed`` needs every law matched or ``equivalent``;
+    ``weak`` and ``none`` fail. A reference with no laws, or a ``--check-result`` (the JSON
+    printed by ``check``) with errors, never passes."""
     generated = _propositions(Path(ns.generated))
-    judgements: Dict[str, str] = {}
-    if ns.judgement:
-        judgements = json.loads(Path(ns.judgement).read_text(encoding="utf-8"))
-        bad = {k: v for k, v in judgements.items() if v not in JUDGEMENTS}
-        if bad:
-            raise SystemExit(f"judgement must be one of {JUDGEMENTS}: {bad}")
+    reference = _propositions(Path(ns.reference))
+    judgements = _normalise_judgements(_load_json_object(ns.judgement, "--judgement")) \
+        if ns.judgement else {}
+    check_errors = 0
+    if getattr(ns, "check_result", ""):
+        check_errors = int(_load_json_object(ns.check_result, "--check-result").get("errors", 0))
     by_body = {body: name for name, body in generated.items()}
     rows = []
-    for name, body in _propositions(Path(ns.reference)).items():
+    for name, body in reference.items():
         if generated.get(name) == body:
             row = {"law": name, "match": "exact", "generated_name": name}
         elif body in by_body:
             row = {"law": name, "match": "proposition", "generated_name": by_body[body]}
         else:
+            j = judgements.get(name)
             row = {"law": name, "match": "none", "reference_body": body,
                    "same_name_body": generated.get(name),
-                   "human_judgement": judgements.get(name)}
+                   "human_judgement": j["verdict"] if j else None}
+            if j:
+                row.update(judged_generated_name=j["generated_name"], judgement_note=j["note"])
         rows.append(row)
     extra = sorted(set(generated) - {r["generated_name"] for r in rows if r["match"] != "none"})
-    mechanical = all(r["match"] != "none" for r in rows)
-    pending = [r["law"] for r in rows if r["match"] == "none" and r["human_judgement"] is None]
-    passed = all(r["match"] != "none" or r["human_judgement"] == "equivalent" for r in rows)
-    return {"results": rows, "extra_generated": extra, "passed_mechanical": mechanical,
-            "pending_judgement": pending, "passed": passed}
+    mechanical = bool(rows) and all(r["match"] != "none" for r in rows)
+    matched = {r["law"] for r in rows if r["match"] != "none"}
+    out: Dict[str, Any] = {
+        "results": rows, "extra_generated": extra, "passed_mechanical": mechanical,
+        "pending_judgement": [r["law"] for r in rows if r["match"] == "none" and r["human_judgement"] is None],
+        "ignored_judgements": sorted(matched & set(judgements)),
+        "unknown_judgements": sorted(set(judgements) - set(reference)),
+        "check_errors": check_errors,
+    }
+    out["passed"] = bool(rows) and check_errors == 0 and all(
+        r["match"] != "none" or r["human_judgement"] == "equivalent" for r in rows)
+    if not rows:
+        out["error"] = f"reference has no laws: {ns.reference}"
+    return out
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -308,6 +352,8 @@ def build_parser() -> argparse.ArgumentParser:
     k = sub.add_parser("compare")
     k.add_argument("generated")
     k.add_argument("reference")
+    k.add_argument("--check-result", default="",
+                   help="JSON printed by `check` for the generated file; errors > 0 forces passed=false")
     k.add_argument("--judgement", default="",
                    help="JSON {law: equivalent|weak|none}: human judgement of the mechanical misses")
     k.set_defaults(fn=cmd_compare)
@@ -318,7 +364,7 @@ def main() -> None:
     ns = build_parser().parse_args()
     result = ns.fn(ns)
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    if ns.cmd == "status" and not result.get("ok"):
+    if (ns.cmd == "status" and not result.get("ok")) or (ns.cmd == "compare" and "error" in result):
         sys.exit(1)
 
 

@@ -104,7 +104,7 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 
 **値域の前提**: 法則は `for x: Nat` のように Nat 全域を量化する。順位などの有限な値だけで成り立つ吸収律・固定値の等式
 （例: `worse(4n, a) == 4n` は `a > 4` で偽）を、値域の制限なしに立てない。値域を型や引数の形で閉じられない性質は法則化せず、
-「法則化しない理由」に残す（3.1.3 の検査 7 が残りを警告する）。
+抽出レポートの「未採用の候補」に理由（`unbounded_nat`）つきで残す（3.1.3 の検査 7 が残りを警告する）。
 
 ### 3.1.2. 上限と優先順位（FR-004）
 
@@ -122,8 +122,8 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 | 3 | 重複 | warning | 空白を正規化した本体が同一の法則が複数ある |
 | 4 | 自明法則 | warning | 等式の両辺が構文的に同一（恒真。例: `x == x`）。定義の言い換えは `draft` 時点でモデルが無いため判定せず、抽出時の LLM 判断と `model` 段階の指摘に委ねる |
 | 5 | import 許可形式 | error | 第 1 弾 FR-005 の許可形式以外の import が無い（`bend` 実行前の静的検査を再利用）。ただし `draft` 時点では `main.bend` が未作成なので、`import ./main.bend as Model` に限り存在しなくても許容する（`model` 段階で作る。ゲートは `PROOF.bend` 作成後にのみ #8 で評価する） |
-| 6 | 固定 API 外のモデル参照 | error | 3.1.4 で固定された API（spec の宣言、無ければ既存 `main.bend`）がある場合、法則本文の `Model.*` 参照と `# model-api:` 行が固定済みの関数だけであること。固定が無い（`unfixed`）ときは検査しない |
-| 7 | 値域の前提のない Nat 等式 | warning | `for n: Nat` の変数を引数に含むモデル呼び出しと Nat リテラル（`4n` など）の等式。Nat 全域で偽になりうる。`bend` が無いため偽の判定はできず、ヒューリスティックとして警告し、承認前の人のレビューに回す（`drafted` 付与の提案は止めない） |
+| 6 | 固定 API 外のモデル参照 | error | 3.1.4 で固定された API（spec の宣言、無ければ既存 `main.bend`）がある場合、法則本文の `Model.*` 参照と `# model-api:` 行が固定済みの関数だけであること。固定が無い（`unfixed`）ときは検査しない。固定元が壊れている場合（`main.bend` があるのに `def` を 1 件も読めない = `main.bend-unreadable`）は、検査 6 を行えないため warning `model_api_source_unreadable` を出す。`# model-api:` 行の引数の個数・型が固定済みシグネチャと違うときは warning `model_api_signature_mismatch` |
+| 7 | 値域の前提のない Nat 等式 | warning | `for n: Nat` の変数を引数に含むモデル呼び出しと Nat リテラル（`4n` など）の等式。Nat 全域で偽になりうる。`bend` が無いため偽の判定はできず、ヒューリスティックとして警告し、承認前の人のレビューに回す（`drafted` 付与の提案は止めない）。定数側はリテラルを `+` / `*` と括弧でつないだ式（`4n`・`(4n)`・`3n + 1n`）。素の `0n` は対象外。変数宣言は `for a: Nat` と `for a, b: Nat`。限界: Model 以外の関数を挟んだ変数、2 つのモデル呼び出しの比較、Nat 以外の型は見ない |
 
 ### 3.1.4. モデル API の固定（FR-008）
 
@@ -138,6 +138,10 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 `draft_laws.py model-api <feature>` が固定元・関数・シグネチャを返す（書き込みなし）。`draft` は固定済みの関数だけを使い、
 固定済みの API に無い関数（別のモデル関数や空入力用の関数を新設した案）は静的チェックの検査 6 で error になる。
 固定済み API を広げる場合は spec の宣言または `main.bend` を人が更新する。
+
+- spec が 1 関数でも宣言していれば、`main.bend` は参照せず、両者をマージしない（spec の宣言が API の全体になる）。宣言していない関数を使いたいときは spec に追記する
+- 同じ関数を spec が複数行で宣言した場合は最初の行を採用し、検査で warning `model_api_duplicate` を出す
+- `main.bend` の `def` は、インデント付き・型引数付き（`def f<T>(...)`）・複数行にわたるシグネチャも読む。読めない場合は上記の `main.bend-unreadable`（「固定元が無い」とは区別する）
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -317,7 +321,7 @@ PRD の変更提案（人の判断。PRD は本 PR で変更しない）: FR_006
 第 1 弾の `.sdd/laws/task-implementation/proof-gate/LAWS.bend` の 5 法則が、3.1.1 の抽出ルールで再現できることを、実装時の検収基準とする。合格条件は 2 段階で判定する（片方向。余分な法則は不合格にせず、レポートで確認する）。
 
 1. **段 1（機械的な一致）**: 双方から `# source:` と `# model-api:` の行を除去し空白を正規化した後の `law` 宣言本体を比較する。モデル関数名は 3.1.4 で固定した API（第 1 弾の `main.bend` の `Model.aggregate` / `Model.judge`）に揃える。一致した法則は合格とする。
-2. **段 2（意味の対応）**: 段 1 で一致しなかった法則だけ、人が `equivalent`（同じ命題）/ `weak`（関係はあるが別の命題）/ `none`（対応なし）を判定して記録する。`draft_laws.py compare --judgement <json>` はその判定を受け取る。**`weak` と `none` は不合格**とする（基準は下げない）。
+2. **段 2（意味の対応）**: 段 1 で一致しなかった法則だけ、人が `equivalent`（同じ命題）/ `weak`（関係はあるが別の命題）/ `none`（対応なし）を判定して記録する。`draft_laws.py compare --judgement <json>` はその判定（`{"法則名": "equivalent"}`、または `{"verdict": ..., "generated_name": ..., "note": ...}` の形）を受け取る。機械的に一致した法則への判定は無視し（`ignored_judgements`）、reference に無い名前は `unknown_judgements` に出す。`--check-result <json>`（生成物への `check` の出力）に error があれば `passed` は偽になる。reference に法則が 0 件のときは error（`passed` は偽）。**`weak` と `none` は不合格**とする（基準は下げない）。
 
 `passed_mechanical` は段 1 のみ（全件一致）、`passed` は「全件が段 1 で一致、または段 2 で `equivalent`」を表す。判定が未記録の法則は `pending_judgement` に残り、`passed` は偽になる。
 加えて、承認前に Nat 全域で偽になる法則が残らないこと（生成結果に無い、または検査 7 の警告に出ている）を確認する。

@@ -154,8 +154,9 @@ def test_hash_and_check(tmp_path):
     assert {f["code"] for f in out["findings"]} == {"source_drift"}
 
 
-def _ns(gen, ref, judgement=""):
-    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement)})
+def _ns(gen, ref, judgement="", check_result=""):
+    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement),
+                          "check_result": str(check_result)})
 
 
 def _acceptance():
@@ -271,3 +272,86 @@ def test_model_api_subcommand_priority(tmp_path):
     (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT + "\nmodel-api: Model.rank(x: Nat) -> Nat\n")
     out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
     assert out["source"] == "spec" and [f["name"] for f in out["functions"]] == ["Model.rank"]
+
+
+GEN = "law a:\n  {1n == 1n : Nat}\n\nlaw b:\n  {Model.f(True{}) == 2n : Nat}\n"
+REF = "law a:\n  {1n == 1n : Nat}\n\nlaw c:\n  {Model.g(True{}) == 3n : Nat}\n"
+
+
+def _files(tmp_path, gen=GEN, ref=REF):
+    (tmp_path / "g.bend").write_text(gen)
+    (tmp_path / "r.bend").write_text(ref)
+    return tmp_path / "g.bend", tmp_path / "r.bend"
+
+
+def _json(tmp_path, name, data):
+    f = tmp_path / name
+    f.write_text(data if isinstance(data, str) else json.dumps(data))
+    return f
+
+
+def test_compare_empty_reference_never_passes(tmp_path):
+    gen, ref = _files(tmp_path, ref="# no laws\n")
+    result = dl.cmd_compare(_ns(gen, ref))
+    assert result["passed"] is False and result["passed_mechanical"] is False and "error" in result
+    r = subprocess.run([sys.executable, str(SCRIPT), "compare", str(gen), str(ref)],
+                       capture_output=True, text=True)
+    assert r.returncode == 1 and json.loads(r.stdout)["passed"] is False
+
+
+def test_compare_judgement_cases(tmp_path):
+    gen, ref = _files(tmp_path)
+    # none -> fail; unjudged -> pending; partial judgement on a matched law is ignored
+    none = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "j.json", {"c": "none"})))
+    assert none["passed"] is False and none["pending_judgement"] == []
+    pending = dl.cmd_compare(_ns(gen, ref))
+    assert pending["passed"] is False and pending["pending_judgement"] == ["c"]
+    ok = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "k.json", {"c": "equivalent", "a": "none", "zzz": "weak"})))
+    assert ok["passed"] is True and ok["ignored_judgements"] == ["a"] and ok["unknown_judgements"] == ["zzz"]
+    # object form (R7)
+    obj = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "o.json", {
+        "c": {"verdict": "equivalent", "generated_name": "b", "note": "same meaning"}})))
+    row = [r for r in obj["results"] if r["law"] == "c"][0]
+    assert obj["passed"] is True and row["judged_generated_name"] == "b" and row["judgement_note"] == "same meaning"
+
+
+@pytest.mark.parametrize("content", ["{not json", "[1, 2]", '{"c": "maybe"}', '{"c": {"note": "x"}}'])
+def test_compare_judgement_input_is_validated(tmp_path, content):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "bad.json", content)
+    r = subprocess.run([sys.executable, str(SCRIPT), "compare", str(gen), str(ref), "--judgement", str(j)],
+                       capture_output=True, text=True)
+    assert r.returncode != 0 and "Traceback" not in r.stderr
+
+
+def test_compare_check_errors_block_pass(tmp_path):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "j.json", {"c": "equivalent"})
+    clean = _json(tmp_path, "c0.json", {"errors": 0})
+    dirty = _json(tmp_path, "c1.json", {"errors": 2})
+    assert dl.cmd_compare(_ns(gen, ref, j, clean))["passed"] is True
+    out = dl.cmd_compare(_ns(gen, ref, j, dirty))
+    assert out["passed"] is False and out["check_errors"] == 2
+
+
+def test_compare_cli_with_judgement_and_check_result(tmp_path):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "j.json", {"c": "equivalent"})
+    c = _json(tmp_path, "c.json", {"errors": 0})
+    code, out = run("compare", str(gen), str(ref), "--judgement", str(j), "--check-result", str(c))
+    assert code == 0 and out["passed"] is True and out["passed_mechanical"] is False
+
+
+def test_rank_unbounded_flag():
+    out = dl.rank_candidates([{"name": "x", "section": "1", "priority": 1, "body": "b", "unbounded": True}], 5)
+    assert out["adopted"] == [] and out["not_adopted"][0]["reason"] == "unbounded_nat"
+
+
+def test_model_api_unreadable_main_bend(tmp_path):
+    (tmp_path / ".sdd/specification").mkdir(parents=True)
+    (tmp_path / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    laws = tmp_path / ".sdd/laws/demo"
+    laws.mkdir(parents=True)
+    (laws / "main.bend").write_text("# a model with no recognisable def\nsome garbage\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(tmp_path)}))
+    assert out["source"] == "main.bend-unreadable" and out["fixed"] is False and "warning" in out
