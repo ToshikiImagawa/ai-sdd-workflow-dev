@@ -43,23 +43,27 @@ All deterministic work goes through one script (JSON on stdout):
 | Subcommand | Command (prefix: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/draft-laws/scripts/draft_laws.py"`) |
 |:--|:--|
 | state | `status <feature> [--overwrite]` |
+| fixed model API | `model-api <feature>` |
 | section hash | `hash <spec-path> <section>` |
 | order and cut off | `rank --max <n> <candidates.json>` |
 | static check | `check <laws-file> --spec <spec-path> [--require-model]` |
+| acceptance (maintainers) | `compare <generated> <reference> [--judgement <json>]` |
 
 ## `draft <feature>`
 
 1. `status <feature>`. If `ok` is false (spec missing, or no front matter `id`), stop with that error. Show `warnings` (including an invalid `laws.max_laws`, which falls back to 10). The script decides the target: write only `write_target` (`LAWS.bend` or `LAWS.draft.bend`). Pass `--overwrite` to `status` only when the user gave it; with an approval line the script refuses it (`overwrite_refused`: report it) and the proposal goes to `LAWS.draft.bend`. Without `--overwrite`, an unapproved existing `LAWS.bend` is kept and the new proposal goes to `LAWS.draft.bend`. Show a diff against the kept file.
-2. Read the spec and extract candidates by priority (1 = decision tables / state transitions, 2 = aggregation rules, 3 = constraints and invariants, 4 = numeric targets of NFRs/constraints). Rules:
+2. `model-api <feature>` and use the returned API as is: `source` is `spec` (a `model-api:` line in the spec), `main.bend` (existing model) or `unfixed`. Laws may reference only the returned `Model.*` functions; never add a function of your own (no extra helper or empty-input function) when `fixed` is true. When `unfixed`, propose the API yourself and write "unfixed - needs confirmation" in the report's model-API section.
+3. Read the spec and extract candidates by priority (1 = decision tables / state transitions, 2 = aggregation rules, 3 = constraints and invariants, 4 = numeric targets of NFRs/constraints). Rules:
    - Only from structured sections. Never derive a law from FR-table prose alone.
    - Never from IO, network, filesystem, clock, performance measurements, output formatting.
    - A section without a leading number cannot be a source: list it under "Sections not turned into laws".
-   - Write each law as an equation over the model API (`{lhs == rhs : T}`); state the model functions, argument types and numeric encodings in `# model-api:` lines (the spec does not state encodings: decide and document them, a human approves them).
-3. For each candidate get the section hash with `hash`. Put candidates in a JSON array `{name, section, priority, body, trivial}` (`body` = the law text, `trivial` = true for tautologies, restatements of a model definition, or type-only properties) and run `rank --max <max_laws>`. Adopt exactly `adopted`; everything in `not_adopted` goes to "Rejected candidates" with its `reason`.
-4. If nothing is adopted and nothing can be a law: write no `LAWS.bend` / `LAWS.draft.bend`, report "Sections not turned into laws" per section and finish successfully (not a failure; existing files untouched).
-5. Write the law file from `templates/${SDD_LANG}/laws_draft.md`. Every `law` is preceded by `# source: <spec id> §<section> sha256:<hash>` placed **after** the imports (inside the hashed body). No approval line.
-6. `check <file> --spec <spec>`. Put the findings in the report. If `propose_drafted` is false, do not propose `drafted`; fix generation errors first when possible.
-7. Report from `templates/${SDD_LANG}/laws_draft_report.md`: with `--ticket <n>` write `${SDD_TASK_PATH}/<n>/laws-draft-report.md`, else print it. Include the current content hash and the approval-line format for the human. Mention that until the spec lists `laws:`, the gate reports orphan laws (FAIL, row #4) before the unapproved SKIPPED (row #5).
+   - Write each law as an equation over the model API (`{lhs == rhs : T}`); copy the fixed signatures into `# model-api:` lines (when `unfixed`: decide the functions, argument types and numeric encodings and document them; a human approves them).
+   - Do not write an equation that holds only for some values of a `for x: Nat` variable (absorption or fixed-value laws such as `worse(4n, a) == 4n`, false for `a > 4`). Skip it and list it under "Sections not turned into laws"; `check` warns with `unbounded_nat_literal` on the rest and a human reviews that before approving.
+4. For each candidate get the section hash with `hash`. Put candidates in a JSON array `{name, section, priority, body, trivial}` (`body` = the law text, `trivial` = true for tautologies, restatements of a model definition, or type-only properties) and run `rank --max <max_laws>`. Adopt exactly `adopted`; everything in `not_adopted` goes to "Rejected candidates" with its `reason`.
+5. If nothing is adopted and nothing can be a law: write no `LAWS.bend` / `LAWS.draft.bend`, report "Sections not turned into laws" per section and finish successfully (not a failure; existing files untouched).
+6. Write the law file from `templates/${SDD_LANG}/laws_draft.md`. Every `law` is preceded by `# source: <spec id> §<section> sha256:<hash>` placed **after** the imports (inside the hashed body). No approval line.
+7. `check <file> --spec <spec>`. Put the findings in the report. If `propose_drafted` is false, do not propose `drafted`; fix generation errors first when possible.
+8. Report from `templates/${SDD_LANG}/laws_draft_report.md`: with `--ticket <n>` write `${SDD_TASK_PATH}/<n>/laws-draft-report.md`, else print it. Include the current content hash and the approval-line format for the human. Mention that until the spec lists `laws:`, the gate reports orphan laws (FAIL, row #4) before the unapproved SKIPPED (row #5).
 
 ## `model <feature>`
 

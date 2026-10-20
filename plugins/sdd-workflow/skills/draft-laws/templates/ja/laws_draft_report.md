@@ -15,6 +15,8 @@
 
 参照モデルが実装すべき関数（法則ファイルの `# model-api:` 行の写し。`model` 段階はこれに従う）。
 
+固定元: `{{MODEL_API_SOURCE}}`（`spec` / `main.bend` / `unfixed`。`unfixed` は「未固定・要確認」: 承認時に人が API を確認する）。
+
 | 関数 | 引数 | 戻り値 | 符号化の注記 |
 |:--|:--|:--|:--|
 | Model.{{FN}} | {{ARGS}} | {{RETURNS}} | {{ENCODING}} |

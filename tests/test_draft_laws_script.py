@@ -154,9 +154,13 @@ def test_hash_and_check(tmp_path):
     assert {f["code"] for f in out["findings"]} == {"source_drift"}
 
 
+def _ns(gen, ref, judgement=""):
+    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement)})
+
+
 def _acceptance():
     gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
-    result = dl.cmd_compare(type("N", (), {"generated": str(gen), "reference": str(REFERENCE)}))
+    result = dl.cmd_compare(_ns(gen, REFERENCE))
     return gen, {r["law"]: r for r in result["results"]}, result
 
 
@@ -177,7 +181,8 @@ def test_acceptance_independent_reproduction_correspondence():
     assert rows["pass_requires_marker"]["match"] == "proposition"
     assert rows["pass_requires_marker"]["generated_name"] == "approved_without_marker_fails"
     assert rows["unapproved_never_pass"]["match"] == "exact"  # weak independence: spec 4.1 has an example
-    assert result["passed"] is False
+    assert result["passed"] is False and result["passed_mechanical"] is False
+    assert sorted(result["pending_judgement"]) == sorted(["agg_empty_skipped", "agg_pair_commutes", "agg_single_identity"])
 
     # same meaning, different model function / form (no mechanical match)
     assert rows["agg_pair_commutes"]["match"] == "none"
@@ -208,5 +213,61 @@ def test_compare_detects_missing_law(tmp_path):
     gen.write_text("law only:\n  {1n == 1n : Nat}\n")
     ref = tmp_path / "r.bend"
     ref.write_text("law other:\n  {2n == 2n : Nat}\n")
-    result = dl.cmd_compare(type("N", (), {"generated": str(gen), "reference": str(ref)}))
+    result = dl.cmd_compare(_ns(gen, ref))
     assert result["passed"] is False and result["results"][0]["match"] == "none"
+
+
+def _judge(tmp_path, judgements):
+    f = tmp_path / "j.json"
+    f.write_text(json.dumps(judgements))
+    gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
+    return dl.cmd_compare(_ns(gen, REFERENCE, f))
+
+
+def test_compare_second_stage_human_judgement(tmp_path):
+    """spec §11 stage 2: ``weak`` fails, all ``equivalent`` passes; stage 1 stays False."""
+    weak = _judge(tmp_path, {"agg_empty_skipped": "equivalent", "agg_pair_commutes": "equivalent",
+                             "agg_single_identity": "weak"})
+    assert weak["passed"] is False and weak["passed_mechanical"] is False
+    assert weak["pending_judgement"] == []
+    ok = _judge(tmp_path, {"agg_empty_skipped": "equivalent", "agg_pair_commutes": "equivalent",
+                           "agg_single_identity": "equivalent"})
+    assert ok["passed"] is True and ok["passed_mechanical"] is False
+
+
+def test_compare_rejects_unknown_judgement(tmp_path):
+    with pytest.raises(SystemExit):
+        _judge(tmp_path, {"agg_empty_skipped": "maybe"})
+
+
+def test_acceptance_fixture_check_against_fixed_api():
+    """The fixed API (main.bend beside the reference laws) rejects the reproduction's
+    extra model functions, and the absorption law draws the unbounded-Nat warning."""
+    import shutil
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        shutil.copy(FIXTURES / "proof-gate-acceptance.LAWS.draft.bend", Path(d) / "LAWS.draft.bend")
+        shutil.copy(REFERENCE.parent / "main.bend", Path(d) / "main.bend")
+        out = dl.cmd_check(type("N", (), {"laws_file": str(Path(d) / "LAWS.draft.bend"), "spec": "",
+                                          "require_model": False}))
+    codes = {(f["code"], f["law"]) for f in out["findings"]}
+    assert ("unbounded_nat_literal", "aggregate_fail_absorbs") in codes
+    msgs = " ".join(f["message"] for f in out["findings"] if f["code"] == "model_api_not_fixed")
+    assert "Model.aggregate_empty" in msgs and "Model.worse is not" not in msgs  # worse is a def of main.bend
+    assert out["propose_drafted"] is False
+
+
+def test_model_api_subcommand_priority(tmp_path):
+    root = tmp_path
+    (root / ".sdd/specification").mkdir(parents=True)
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "unfixed" and out["fixed"] is False
+    laws = root / ".sdd/laws/demo"
+    laws.mkdir(parents=True)
+    (laws / "main.bend").write_text("def judge(a: Bool) -> Nat:\n  return 1n\n\ndef main() -> Nat:\n  return 0n\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "main.bend" and [f["name"] for f in out["functions"]] == ["Model.judge"]
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT + "\nmodel-api: Model.rank(x: Nat) -> Nat\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "spec" and [f["name"] for f in out["functions"]] == ["Model.rank"]

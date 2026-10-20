@@ -13,7 +13,8 @@ Subcommands:
   hash <spec> <section>            section hash for a ``# source:`` comment
   rank --max N [FILE|-]            deterministic order + cut-off of law candidates (NFR-005)
   check <laws-file> [--spec SPEC]  static checks (FR-006); ``propose_drafted`` is false on errors
-  compare <generated> <reference>  acceptance comparison of law propositions (spec section 11)
+  model-api <feature>              fixed model API and its source (spec > main.bend > unfixed)
+  compare <generated> <reference> [--judgement FILE]  two-stage acceptance (spec section 11)
 """
 
 import argparse
@@ -33,6 +34,7 @@ from hook_common import (  # noqa: E402
 )
 from laws_drafting import (  # noqa: E402
     approval_status,
+    fixed_model_api,
     has_errors,
     parse_laws,
     section_hash_of_file,
@@ -193,6 +195,22 @@ def cmd_status(ns: argparse.Namespace) -> Dict[str, Any]:
     return out
 
 
+def cmd_model_api(ns: argparse.Namespace) -> Dict[str, Any]:
+    """Which model API ``draft`` must use: the spec declaration, else ``main.bend``, else none."""
+    root = Path(resolve_project_root(ns.project_root))
+    paths = load_sdd_paths(str(root), read_sdd_config_json(str(root)))
+    feature = ns.feature.strip("/")
+    spec = find_spec(root, paths.specification_prefix, feature)
+    text = spec.read_text(encoding="utf-8", errors="replace") if spec else None
+    source, api = fixed_model_api(text, root / paths.laws_prefix / feature)
+    out: Dict[str, Any] = {"feature": feature, "source": source, "fixed": source != "unfixed",
+                           "functions": [{"name": f"Model.{k}", "signature": v} for k, v in api.items()]}
+    if source == "unfixed":
+        out["note"] = ("no spec declaration and no main.bend: propose the API yourself and mark it "
+                       "'unfixed - needs confirmation' in the report")
+    return out
+
+
 def cmd_hash(ns: argparse.Namespace) -> Dict[str, Any]:
     digest = section_hash_of_file(Path(ns.spec), ns.section)
     return {"spec": ns.spec, "section": ns.section.lstrip("§"), "hash": digest,
@@ -224,22 +242,40 @@ def _propositions(path: Path) -> Dict[str, str]:
     return {law.name: law.body for law in parse_laws(path)}
 
 
+JUDGEMENTS = ("equivalent", "weak", "none")
+
+
 def cmd_compare(ns: argparse.Namespace) -> Dict[str, Any]:
-    """One-way acceptance: every law of ``reference`` must appear in ``generated``."""
+    """Two-stage acceptance (spec section 11). Stage 1 is mechanical: every reference law
+    must appear (same name and body, or the same body under another name). Stage 2 covers
+    the mechanical misses only: a human records ``equivalent`` / ``weak`` / ``none`` per law
+    in the ``--judgement`` JSON object. ``passed`` needs every law matched or ``equivalent``;
+    ``weak`` and ``none`` fail."""
     generated = _propositions(Path(ns.generated))
+    judgements: Dict[str, str] = {}
+    if ns.judgement:
+        judgements = json.loads(Path(ns.judgement).read_text(encoding="utf-8"))
+        bad = {k: v for k, v in judgements.items() if v not in JUDGEMENTS}
+        if bad:
+            raise SystemExit(f"judgement must be one of {JUDGEMENTS}: {bad}")
     by_body = {body: name for name, body in generated.items()}
     rows = []
     for name, body in _propositions(Path(ns.reference)).items():
         if generated.get(name) == body:
-            rows.append({"law": name, "match": "exact", "generated_name": name})
+            row = {"law": name, "match": "exact", "generated_name": name}
         elif body in by_body:
-            rows.append({"law": name, "match": "proposition", "generated_name": by_body[body]})
+            row = {"law": name, "match": "proposition", "generated_name": by_body[body]}
         else:
-            rows.append({"law": name, "match": "none", "reference_body": body,
-                         "same_name_body": generated.get(name)})
+            row = {"law": name, "match": "none", "reference_body": body,
+                   "same_name_body": generated.get(name),
+                   "human_judgement": judgements.get(name)}
+        rows.append(row)
     extra = sorted(set(generated) - {r["generated_name"] for r in rows if r["match"] != "none"})
-    return {"results": rows, "extra_generated": extra,
-            "passed": all(r["match"] != "none" for r in rows)}
+    mechanical = all(r["match"] != "none" for r in rows)
+    pending = [r["law"] for r in rows if r["match"] == "none" and r["human_judgement"] is None]
+    passed = all(r["match"] != "none" or r["human_judgement"] == "equivalent" for r in rows)
+    return {"results": rows, "extra_generated": extra, "passed_mechanical": mechanical,
+            "pending_judgement": pending, "passed": passed}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -251,6 +287,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--overwrite", action="store_true",
                    help="allow replacing an unapproved LAWS.bend (never one with an approval line)")
     s.set_defaults(fn=cmd_status)
+    m = sub.add_parser("model-api")
+    m.add_argument("feature")
+    m.add_argument("--project-root", default="")
+    m.set_defaults(fn=cmd_model_api)
     h = sub.add_parser("hash")
     h.add_argument("spec")
     h.add_argument("section")
@@ -268,6 +308,8 @@ def build_parser() -> argparse.ArgumentParser:
     k = sub.add_parser("compare")
     k.add_argument("generated")
     k.add_argument("reference")
+    k.add_argument("--judgement", default="",
+                   help="JSON {law: equivalent|weak|none}: human judgement of the mechanical misses")
     k.set_defaults(fn=cmd_compare)
     return p
 

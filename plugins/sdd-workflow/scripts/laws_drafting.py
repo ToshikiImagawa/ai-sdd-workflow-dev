@@ -41,6 +41,13 @@ SOURCE_RE = re.compile(
 LAW_NAME_RE = re.compile(r"^\s*law\s+(?P<name>[A-Za-z_][\w]*)\s*:?")
 MODEL_API_RE = re.compile(r"^Model\.(?P<fn>[A-Za-z_]\w*)\s*\(")
 MODEL_REF_RE = re.compile(r"\bModel\.([A-Za-z_]\w*)")
+# A spec declares the model API with plain ``model-api: Model.<fn>(...) -> T`` lines
+# (no leading ``#``, so the ``# model-api:`` examples of a law file are not picked up).
+SPEC_MODEL_API_RE = re.compile(r"^\s*(?:[-*]\s+)?model-api:\s*Model\.(?P<fn>[A-Za-z_]\w*)\s*\((?P<rest>.*)$")
+MAIN_DEF_RE = re.compile(r"^def\s+(?P<fn>[A-Za-z_]\w*)\s*\((?P<rest>.*)$")
+NAT_VAR_RE = re.compile(r"\bfor\s+(?P<var>[A-Za-z_]\w*)\s*:\s*Nat\b")
+NAT_LITERAL_RE = re.compile(r"^\d+n$")
+MODEL_CALL_RE = re.compile(r"\bModel\.[A-Za-z_]\w*\(")
 
 # Severities / finding codes (stable: consumed by the skill, the gate and the hook).
 ERROR = "error"
@@ -256,6 +263,44 @@ def model_api_functions(path: Path) -> Optional[List[str]]:
     return found
 
 
+# --- fixed model API (spec 3.1.4: spec declaration > main.bend > LLM proposal) ---
+
+def model_api_from_spec(spec_text: str) -> Dict[str, str]:
+    """``{fn: signature}`` from ``model-api: Model.<fn>(...)`` lines of a spec (anywhere,
+    fenced or not). Empty when the spec declares none."""
+    out: Dict[str, str] = {}
+    for line in spec_text.splitlines():
+        m = SPEC_MODEL_API_RE.match(line)
+        if m is not None:
+            out.setdefault(m.group("fn"), f"Model.{m.group('fn')}({m.group('rest').strip()}")
+    return out
+
+
+def model_api_from_main(main_path: Path) -> Dict[str, str]:
+    """``{fn: signature}`` of the top-level ``def`` lines of an existing ``main.bend``
+    (the entry point ``main`` is not part of the model API)."""
+    out: Dict[str, str] = {}
+    if not main_path.is_file():
+        return out
+    for line in read_lines(main_path):
+        m = MAIN_DEF_RE.match(line)
+        if m is not None and m.group("fn") != "main":
+            out[m.group("fn")] = f"Model.{m.group('fn')}({m.group('rest').rstrip(':').strip()}"
+    return out
+
+
+def fixed_model_api(spec_text: Optional[str], laws_dir: Path) -> Tuple[str, Dict[str, str]]:
+    """``(source, {fn: signature})``: ``spec`` when the spec declares the API, else
+    ``main.bend`` when it exists, else ``("unfixed", {})`` (the LLM proposes; a human confirms)."""
+    declared = model_api_from_spec(spec_text) if spec_text else {}
+    if declared:
+        return "spec", declared
+    from_main = model_api_from_main(laws_dir / MODEL_FILE)
+    if from_main:
+        return "main.bend", from_main
+    return "unfixed", {}
+
+
 # --- source drift (gate FR-013 / hook FR-011 / draft check #1) -------------
 
 
@@ -353,6 +398,7 @@ def static_check(
     spec_path: Optional[Path] = None,
     *,
     tolerate_missing_model: bool = True,
+    fixed_api: Optional[Dict[str, str]] = None,
 ) -> List[Finding]:
     """Static checks of a ``draft`` output (``LAWS.bend`` / ``LAWS.draft.bend``).
 
@@ -361,8 +407,10 @@ def static_check(
     absent / section hash differs from the spec / source naming another spec
     id / malformed source; 5 disallowed import; ``# model-api:`` missing or
     out of step with the ``Model.*`` references. Warnings: 3 duplicate bodies;
-    4 trivial (both sides identical) laws. Without ``spec_path`` the source
-    checks (1) are skipped.
+    4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Without
+    ``spec_path`` the source checks (1) are skipped. ``fixed_api`` (default: the
+    spec's ``model-api:`` lines, else ``main.bend`` beside the law file) turns a
+    ``Model.*`` name outside it into an error.
     """
     findings: List[Finding] = []
     laws = parse_laws(laws_path)
@@ -409,7 +457,47 @@ def static_check(
         findings.append(Finding("import_disallowed", ERROR, "", f"import not allowed: {line}"))
 
     findings.extend(_model_api_findings(laws_path, laws))
+    findings.extend(_unbounded_nat_findings(laws))
+    if fixed_api is None:
+        _, fixed_api = fixed_model_api(spec_text, laws_path.parent)
+    if fixed_api:
+        findings.extend(_fixed_api_findings(laws_path, laws, fixed_api))
     return findings
+
+
+def _unbounded_nat_findings(laws: List[LawDecl]) -> List[Finding]:
+    """Warn on ``{Model.f(.. n ..) == <Nat literal>}`` (either side) where ``n`` is a
+    ``for n: Nat`` variable: without a value-range premise such an equation (e.g. an
+    absorption law ``worse(4n, a) == 4n``) is typically false for large ``n``. A heuristic:
+    ``bend`` cannot run at draft time, so a human reviews the warning before approving."""
+    out: List[Finding] = []
+    for law in laws:
+        nat_vars = set(NAT_VAR_RE.findall(law.body))
+        if not nat_vars:
+            continue
+        for lhs, rhs in _top_level_equations(law.body):
+            for lit, call in ((lhs, rhs), (rhs, lhs)):
+                if not NAT_LITERAL_RE.match(lit) or not MODEL_CALL_RE.search(call):
+                    continue
+                used = sorted(v for v in nat_vars if re.search(rf"\b{re.escape(v)}\b", call))
+                if used:
+                    out.append(Finding(
+                        "unbounded_nat_literal", WARNING, law.name,
+                        f"law '{law.name}' equates a Model call over unbounded Nat "
+                        f"({', '.join(used)}) with the literal {lit}: false for large values unless "
+                        "the range is restricted; review before approval"))
+                    break
+    return out
+
+
+def _fixed_api_findings(laws_path: Path, laws: List[LawDecl], fixed: Dict[str, str]) -> List[Finding]:
+    declared = set(model_api_functions(laws_path) or [])
+    referenced = {fn for law in laws for fn in MODEL_REF_RE.findall(law.body)}
+    return [Finding(
+        "model_api_not_fixed", ERROR, "",
+        f"Model.{fn} is not in the fixed model API ({', '.join(sorted(fixed))}); "
+        "use a fixed function or have the owner extend the API")
+        for fn in sorted((referenced | declared) - set(fixed))]
 
 
 def _model_api_findings(laws_path: Path, laws: List[LawDecl]) -> List[Finding]:
