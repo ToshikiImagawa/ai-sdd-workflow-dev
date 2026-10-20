@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Shared `laws_drafting.py` module for the upcoming `/draft-laws` skill and proof-gate warnings: spec section hash behind `# source:` comments, bend-free static checks of drafted laws (source existence/absence, duplicates, trivial laws, import allowlist, `# model-api:` consistency), source-drift detection and approval validity (reuses `laws_header.py`). No behavior change to existing laws or the proof gate
 - **Bend proof gate (opt-in)** - `/run-checklist` gains a `proof` verification category that checks a spec's
   constraints as Bend laws (`${SDD_LAWS_PATH}/{feature}/` with `LAWS.bend` / `PROOF.bend` / `main.bend`). It is
   optional: without `bend`, a law file or an approved law it reads `TOOL_NOT_FOUND` / `SKIPPED` and never fails the
