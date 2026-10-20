@@ -95,7 +95,7 @@ def _project(tmp_path, laws_text=None, config=None):
 def test_status_none_and_missing_spec(tmp_path):
     _project(tmp_path)
     rc, out = run("status", "demo", "--project-root", str(tmp_path))
-    assert rc == 0 and out["laws_state"] == "none" and out["draft_target"] == "LAWS.bend"
+    assert rc == 0 and out["laws_state"] == "none" and out["write_target"] == "LAWS.bend"
     assert out["model_allowed"] is False
     rc, out = run("status", "nope", "--project-root", str(tmp_path))
     assert rc == 1 and "spec not found" in out["error"]
@@ -106,19 +106,28 @@ def test_status_drafted_then_valid_then_mismatch(tmp_path):
     laws = "# spec: spec-demo\n#\n" + body
     _project(tmp_path, laws, {"laws": {"max_laws": 0}})
     rc, out = run("status", "demo", "--project-root", str(tmp_path))
-    assert out["laws_state"] == "drafted" and out["draft_target"] == "LAWS.bend"
+    assert out["laws_state"] == "drafted" and out["write_target"] == "LAWS.draft.bend"
     assert out["model_refusal"] == "LAWS.bend has no approval line"
+    assert out["approval_format"].startswith("# approved: YYYY-MM-DD <approver> sha256:")
+    assert out["current_hash"] in out["approval_format"]
+    rc, ow = run("status", "demo", "--project-root", str(tmp_path), "--overwrite")
+    assert ow["write_target"] == "LAWS.bend" and "overwrite_refused" not in ow
     assert any("max_laws" in w for w in out["warnings"]) and out["max_laws"] == 10
     h = out["current_hash"]
     path = tmp_path / ".sdd/laws/demo/LAWS.bend"
     path.write_text(f"# spec: spec-demo\n# approved: 2026-01-01 @me sha256:{h}\n" + body)
     rc, out = run("status", "demo", "--project-root", str(tmp_path))
     assert out["laws_state"] == "approved" and out["model_allowed"] is True
-    assert out["draft_target"] == "LAWS.draft.bend"
+    rc, ow = run("status", "demo", "--project-root", str(tmp_path), "--overwrite")
+    assert ow["write_target"] == "LAWS.draft.bend" and "approval line" in ow["overwrite_refused"]
+    assert out["write_target"] == "LAWS.draft.bend"
     path.write_text(f"# spec: spec-demo\n# approved: 2026-01-01 @me sha256:{h}\n" + body + "# x\nlaw y:\n  {2n == 2n : Nat}\n")
     rc, out = run("status", "demo", "--project-root", str(tmp_path))
     assert out["laws_state"] == "mismatch" and out["model_allowed"] is False
-    assert out["draft_target"] == "LAWS.draft.bend" and out["current_hash"] != h
+    assert out["write_target"] == "LAWS.draft.bend" and out["current_hash"] != h
+    assert h not in out["approval_format"] and out["current_hash"] in out["approval_format"]
+    rc, ow = run("status", "demo", "--project-root", str(tmp_path), "--overwrite")
+    assert ow["write_target"] == "LAWS.draft.bend" and "overwrite_refused" in ow
 
 
 def test_status_orphan_warning(tmp_path):

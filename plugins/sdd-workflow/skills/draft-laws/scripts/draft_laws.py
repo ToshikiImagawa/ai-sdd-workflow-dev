@@ -9,7 +9,7 @@ results do not depend on the model (NFR-002 / NFR-003). The script never calls
 ``bend`` and never writes a file; it prints JSON on stdout.
 
 Subcommands:
-  status <feature>                 spec / laws-dir state, approval verdict, max_laws
+  status <feature> [--overwrite]   spec / laws-dir state, approval verdict, write_target, max_laws
   hash <spec> <section>            section hash for a ``# source:`` comment
   rank --max N [FILE|-]            deterministic order + cut-off of law candidates (NFR-005)
   check <laws-file> [--spec SPEC]  static checks (FR-006); ``propose_drafted`` is false on errors
@@ -106,6 +106,24 @@ def find_spec(project_root: Path, spec_dir: str, feature: str) -> Optional[Path]
     return None
 
 
+def draft_write_target(approval_state: str, overwrite: bool) -> Tuple[str, Optional[str]]:
+    """``(file to write, refusal reason)`` for ``draft`` (spec 3.1.0, FR-008).
+
+    ``LAWS.bend`` is written only when it does not exist, or exists without any
+    approval line and ``--overwrite`` was given. A ``LAWS.bend`` with an approval
+    line (valid, expired or malformed) is never written, even with ``--overwrite``
+    (the refusal reason says so); the proposal then goes to ``LAWS.draft.bend``,
+    which is always replaceable.
+    """
+    if approval_state == "no_file":
+        return LAWS_FILE, None
+    if approval_state == "missing":
+        return (LAWS_FILE, None) if overwrite else (DRAFT_FILE, None)
+    reason = ("--overwrite refused: LAWS.bend has an approval line and is never overwritten "
+              "(proposal goes to LAWS.draft.bend)") if overwrite else None
+    return DRAFT_FILE, reason
+
+
 def cmd_status(ns: argparse.Namespace) -> Dict[str, Any]:
     root = Path(resolve_project_root(ns.project_root))
     raw = read_sdd_config_json(str(root))
@@ -156,10 +174,12 @@ def cmd_status(ns: argparse.Namespace) -> Dict[str, Any]:
         has_draft_file=(laws_dir / DRAFT_FILE).is_file(),
         has_model=(laws_dir / MODEL_FILE).is_file(),
         has_proof=(laws_dir / PROOF_FILE).is_file(),
-        # draft: LAWS.bend is touched only while it has no approval line (FR-008).
-        draft_target=(LAWS_FILE if state in ("none", "drafted") else DRAFT_FILE),
         model_allowed=(status.state == "valid"),
     )
+    target, refusal = draft_write_target(status.state, ns.overwrite)
+    out["write_target"] = target
+    if refusal:
+        out["overwrite_refused"] = refusal
     if status.state != "valid":
         out["model_refusal"] = {
             "no_file": "LAWS.bend does not exist",
@@ -167,6 +187,9 @@ def cmd_status(ns: argparse.Namespace) -> Dict[str, Any]:
             "malformed": "the approval line is malformed",
             "mismatch": "the approval line does not match the current law text (approval expired)",
         }[status.state]
+        # FR-009: how a human approves (the skill never writes this line itself).
+        out["approval_format"] = ("# approved: YYYY-MM-DD <approver> "
+                                  f"sha256:{status.current_hash}") if status.current_hash else None
     return out
 
 
@@ -225,6 +248,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("status")
     s.add_argument("feature")
     s.add_argument("--project-root", default="")
+    s.add_argument("--overwrite", action="store_true",
+                   help="allow replacing an unapproved LAWS.bend (never one with an approval line)")
     s.set_defaults(fn=cmd_status)
     h = sub.add_parser("hash")
     h.add_argument("spec")

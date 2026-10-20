@@ -5,7 +5,7 @@ argument-hint: "<draft|model> <feature-name> [--ticket <number>] [--overwrite]"
 arguments: [subcommand, feature-name]
 license: MIT
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Edit(.sdd/**), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/draft-laws/scripts/draft_laws.py" *)
+allowed-tools: Read, Glob, Grep, Edit(.sdd/laws/**), Edit(.sdd/task/*/laws-draft-report.md), Bash(python3 "${CLAUDE_PLUGIN_ROOT}/skills/draft-laws/scripts/draft_laws.py" *)
 ---
 
 # Draft Laws - Spec to Bend Law Drafts
@@ -42,14 +42,14 @@ All deterministic work goes through one script (JSON on stdout):
 
 | Subcommand | Command (prefix: `python3 "${CLAUDE_PLUGIN_ROOT}/skills/draft-laws/scripts/draft_laws.py"`) |
 |:--|:--|
-| state | `status <feature>` |
+| state | `status <feature> [--overwrite]` |
 | section hash | `hash <spec-path> <section>` |
 | order and cut off | `rank --max <n> <candidates.json>` |
 | static check | `check <laws-file> --spec <spec-path> [--require-model]` |
 
 ## `draft <feature>`
 
-1. `status <feature>`. If `ok` is false (spec missing, or no front matter `id`), stop with that error. Show `warnings` (including an invalid `laws.max_laws`, which falls back to 10). The state table decides the target: `draft_target` is `LAWS.bend` for `none`/`drafted`, otherwise `LAWS.draft.bend`. `--overwrite` makes `LAWS.bend` the target only when the state is `drafted` (no approval line); with an approval line (valid, expired or malformed approval) refuse `--overwrite` and use `LAWS.draft.bend`. An existing `LAWS.bend` or `LAWS.draft.bend` is never replaced without `--overwrite`; show a diff instead.
+1. `status <feature>`. If `ok` is false (spec missing, or no front matter `id`), stop with that error. Show `warnings` (including an invalid `laws.max_laws`, which falls back to 10). The script decides the target: write only `write_target` (`LAWS.bend` or `LAWS.draft.bend`). Pass `--overwrite` to `status` only when the user gave it; with an approval line the script refuses it (`overwrite_refused`: report it) and the proposal goes to `LAWS.draft.bend`. Without `--overwrite`, an unapproved existing `LAWS.bend` is kept and the new proposal goes to `LAWS.draft.bend`. Show a diff against the kept file.
 2. Read the spec and extract candidates by priority (1 = decision tables / state transitions, 2 = aggregation rules, 3 = constraints and invariants, 4 = numeric targets of NFRs/constraints). Rules:
    - Only from structured sections. Never derive a law from FR-table prose alone.
    - Never from IO, network, filesystem, clock, performance measurements, output formatting.
@@ -63,7 +63,7 @@ All deterministic work goes through one script (JSON on stdout):
 
 ## `model <feature>`
 
-1. `status <feature>`. If `model_allowed` is false, **refuse** with `model_refusal` and, for an expired approval, the `current_hash`. Create nothing. (The spec's `laws-status` and `laws:` only produce warnings.)
+1. `status <feature>`. If `model_allowed` is false, **refuse** with `model_refusal` together with `approval_format` (the approval-line format with the `current_hash`; a human writes the line). Create nothing. (The spec's `laws-status` and `laws:` only produce warnings.)
 2. Read `LAWS.bend`'s `# model-api:` lines and `Model.*` references only. Write `main.bend` (with `# spec:` and `# model-of: <implementation file>`) and `PROOF.bend` from `templates/${SDD_LANG}/main_model.md` and `proof_model.md` (the file bodies are the Bend text; the `.md` extension only satisfies the support-file rule). `PROOF.bend` may only use `import Base`, `import ./main.bend as Model` and `import ./LAWS.bend as Laws`.
 3. Existing `main.bend` / `PROOF.bend` are not overwritten: show the diff instead.
 4. If a law looks wrong, report it; do not edit `LAWS.bend` (a human revises it and re-approves).

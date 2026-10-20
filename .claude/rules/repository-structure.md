@@ -35,6 +35,9 @@ ai-sdd-workflow/
 │       │   ├── constitution/               # プロジェクト原則管理
 │       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
+│       │   ├── draft-laws/                 # spec から Bend 法則案を生成（Bend 証明ゲートの承認フロー）
+│       │   │   ├── scripts/
+│       │   │   └── templates/{en,ja}/
 │       │   ├── doc-consistency-checker/    # ドキュメント整合性チェッカー
 │       │   │   └── templates/{en,ja}/
 │       │   ├── finalize-prd/               # PRD統合・完成
