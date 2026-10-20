@@ -18,7 +18,7 @@ and verify that all specifications and design documents comply with them.
 **Read the following prerequisite references before execution:**
 
 - `references/prerequisites_plugin_update.md` - Check for plugin updates
-- `references/prerequisites_principles.md` - Read AI-SDD principles document
+- `references/prerequisites_principles.md` - Read only these sections of the AI-SDD principles document (not the whole file): § Recommended Directory Structure, § Importance of CONSTITUTION.md Compliance Check
 - `references/prerequisites_directory_paths.md` - Resolve directory paths using `SDD_*` environment variables
 
 ### Language Configuration

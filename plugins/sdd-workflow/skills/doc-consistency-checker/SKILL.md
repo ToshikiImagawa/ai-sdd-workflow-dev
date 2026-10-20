@@ -20,13 +20,13 @@ When reading templates, use the path: `templates/${SDD_LANG:-en}/`
 
 ## Prerequisites
 
-**Before execution, read the AI-SDD principles document.**
+**Before execution, read only the AI-SDD principles sections below (not the whole file): § Document Dependencies, § Consistency Checking, § Document Update Triggers, § Document Link Convention, § Architecture Decision Record.**
 
 AI-SDD principles document path: `${CLAUDE_PROJECT_DIR}/${SDD_ROOT}/AI-SDD-PRINCIPLES.md`
 
 **Note**: This file is automatically updated at the start of each session.
 
-Understand AI-SDD principles, document structure, persistence rules, and Vibe Coding prevention details.
+Apply the rules in the sections above; open another section only when a rule is in question.
 
 See `references/prerequisites_directory_paths.md` for directory path resolution using `SDD_*` environment variables.
 
