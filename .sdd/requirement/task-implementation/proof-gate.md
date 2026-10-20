@@ -4,7 +4,7 @@ title: "Bend 証明ゲート"
 type: "prd"
 status: "draft"
 created: "2026-10-17"
-updated: "2026-10-18"
+updated: "2026-10-21"
 sdd-version: "5.1.0"
 depends-on: ["prd-task-implementation"]
 tags: ["checklist", "verification", "proof", "bend", "laws"]
@@ -44,7 +44,7 @@ SysML 要求図の記法（要求タイプ・リスクレベル・検証方法�
 flowchart LR
     Developer((開発者))
     Approver((承認者))
-    ClaudeCode((Claude Code))
+    HookRuntime((フックランタイム))
 
     subgraph ProofGate["Bend 証明ゲート"]
         DraftLaws([spec から法則案を生成する])
@@ -58,12 +58,15 @@ flowchart LR
     Approver ---|"承認する"| ApproveLaws
     Developer ---|"作成を依頼する"| WriteModel
     Developer ---|"検査を起動する"| RunProof
-    ClaudeCode ---|"促す"| RemindReview
+    HookRuntime ---|"促す"| RemindReview
     DraftLaws --> ApproveLaws
     ApproveLaws --> WriteModel
     WriteModel --> RunProof
     RemindReview -.->|"<<拡張>>実装・法則編集時"| RunProof
 ```
+
+アクターとユースケースを結ぶ関連線にラベル（操作の内容）を付けるのは、本 PRD に限った書き方である。承認者・開発者・フックランタイムの
+役割を一目で区別するために付けており、他の PRD の関連線には広げない（PRD 全体の方針ではない）。
 
 ## 1.2. 機能一覧（テキスト形式）
 
@@ -320,13 +323,14 @@ AI が生成した法則を AI 自身が証明して PASS を得る「自己採�
 
 ### FR_006: spec から法則案を生成する承認フロー（第 2 弾）
 
-AI が spec の制約事項・機能要件表から `LAWS.bend` の案を生成し（`laws-status: drafted`）、人が内容を承認して
-`# approved:` 行を追記し（`approved`）、そのうえで AI が参照モデル（`main.bend`）と証明（`PROOF.bend`）を書く
-（検査合格後、人が `proven` に更新する）。生成は spec → 法則の一方向のみで、法則から spec・PRD を書き換えない（DC_002）。
+AI が spec の判定表・集約規則・制約事項など構造化された節から `LAWS.bend` の案を生成し（`laws-status: drafted`）、
+人が内容を承認して `# approved:` 行を追記し（`approved`）、そのうえで AI が参照モデル（`main.bend`）と証明（`PROOF.bend`）を書く
+（検査合格後、人が `proven` に更新する）。機能要件表（FR 表）の散文だけを根拠に法則を作らない。
+参照モデルと証明は、承認が有効であること（`# approved:` 行があり、内容ハッシュが現在の法則本文と一致すること）を前提に作る。生成は spec → 法則の一方向のみで、法則から spec・PRD を書き換えない（DC_002）。
 
 本 PRD では境界（入力・出力・状態遷移）のみ定義し、生成スキルの実装は別チケットで扱う。
 
-**検証方法:** デモンストレーションによる検証
+**検証方法:** デモンストレーションによる検証、および `bend` を使わない静的チェック（出典の実在・重複・import 許可形式など）
 
 ## 3.2. 非機能要求
 
@@ -458,6 +462,7 @@ TOOL_NOT_FOUND で素通りし、プラットフォーム固有の分岐を設�
 | 証明（proof）    | `law` と同名の定義として与える証明。証明検査器が検査する                                                  |
 | 参照モデル        | 法則が述べる対象として Bend で書いた型・関数（`main.bend`）。対象プロジェクトの実装を写したものであり実装そのものではない          |
 | 証明検査器        | `bend` CLI。全法則が証明済みなら成功、それ以外（証明失敗・構文エラー）は失敗を返す                               |
+| 承認者          | 法則の内容ハッシュを確かめたうえで、`# approved:` 行を手で書く人。AI は承認者にならない |
 | 承認（approved） | 人が `LAWS.bend` の内容をレビューし、承認日・承認者・内容ハッシュを含む `# approved:` 行を追記すること。未承認・承認失効の法則は PASS にしない |
 | `--verdict`   | Lean 形式化カーネルで証明を再検査する bend CLI のオプション。Lean 不在時は通常検査の判定を返し、再検査未実施を併記する（検査器不在の TOOL_NOT_FOUND とは区別する） |
 | hub import    | 法則ディレクトリ外を指す import（Bend Hub 名前空間・URL・親ディレクトリや絶対パス、ディレクトリ内に実在しないファイル名を含む）。Bend 同梱の標準ライブラリ（`Base`）は除く。ゲートでは規約違反（FAIL）として扱う |
