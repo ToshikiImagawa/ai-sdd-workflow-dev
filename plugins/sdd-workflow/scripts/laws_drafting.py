@@ -48,6 +48,9 @@ SPEC_MODEL_API_RE = re.compile(r"^\s*(?:[-*]\s+)?model-api:\s*Model\.(?P<fn>[A-Z
 MAIN_DEF_RE = re.compile(r"^\s*def\s+(?P<fn>[A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*\((?P<rest>.*)$")
 # ``for a: Nat`` and the comma form ``for a, b: Nat``.
 NAT_VAR_RE = re.compile(r"\bfor\s+(?P<vars>[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*:\s*Nat\b")
+# Bend takes one variable per ``for``: ``for a b: T`` / ``for a, b: T`` is a syntax error.
+MULTI_FOR_RE = re.compile(
+    r"\bfor\s+(?P<vars>[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*|\s+[A-Za-z_]\w*)+)\s*:")
 # A constant Nat expression (after whitespace removal): literals joined by + / *, parenthesised.
 NAT_CONST_RE = re.compile(r"[()+*]*\d+n(?:[()+*]+\d+n)*[()]*")
 MODEL_CALL_RE = re.compile(r"\bModel\.[A-Za-z_]\w*\(")
@@ -485,7 +488,7 @@ def static_check(
     absent / section hash differs from the spec / source naming another spec
     id / malformed source; 5 disallowed import; ``# model-api:`` missing or
     out of step with the ``Model.*`` references. Warnings: 3 duplicate bodies;
-    4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Without
+    4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Error ``multi_var_for``: several variables in one ``for``. Without
     ``spec_path`` the source checks (1) are skipped. ``fixed_api`` (default: the
     spec's ``model-api:`` lines, else ``main.bend`` beside the law file) turns a
     ``Model.*`` name outside it into an error. ``model_dir`` is where ``main.bend`` is looked
@@ -537,6 +540,7 @@ def static_check(
         findings.append(Finding("import_disallowed", ERROR, "", f"import not allowed: {line}"))
 
     findings.extend(_model_api_findings(laws_path, laws))
+    findings.extend(_multi_var_for_findings(laws))
     findings.extend(_unbounded_nat_findings(laws))
     if fixed_api is None:
         source, fixed_api = fixed_model_api(spec_text, model_dir or laws_path.parent)
@@ -552,6 +556,22 @@ def static_check(
     if fixed_api:
         findings.extend(_fixed_api_findings(laws_path, laws, fixed_api))
     return findings
+
+
+def _multi_var_for_findings(laws: List[LawDecl]) -> List[Finding]:
+    """Error on a ``for`` declaring several variables (``for a b: T``, ``for a, b: T``): Bend
+    accepts one variable per ``for`` (check 8). ``NAT_VAR_RE`` keeps reading the comma form so
+    ``unbounded_nat_literal`` still sees every variable of such a law."""
+    out: List[Finding] = []
+    for law in laws:
+        m = MULTI_FOR_RE.search(law.body)
+        if m is not None:
+            out.append(Finding(
+                "multi_var_for", ERROR, law.name,
+                f"law '{law.name}' declares several variables in one 'for' "
+                f"('for {' '.join(m.group('vars').replace(',', ' ').split())}: ...'): "
+                "Bend takes one variable per 'for'; write one 'for x: T' per line"))
+    return out
 
 
 def _nat_vars(body: str) -> set:

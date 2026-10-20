@@ -423,7 +423,23 @@ def test_unbounded_nat_literal_expressions(tmp_path):
     assert codes(0, "  for a: Nat\n  {Model.f(a) == (4n) : Nat}\n") == ["unbounded_nat_literal"]
     assert codes(1, "  for a: Nat\n  {Model.f(a) == 3n + 1n : Nat}\n") == ["unbounded_nat_literal"]
     assert codes(2, "  for a: Nat\n  {Model.f(a) == 0n : Nat}\n") == []   # 0n is exempt
-    assert codes(3, "  for a, b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["unbounded_nat_literal"]
+    # the comma form is still read for the Nat check, but is itself an error
+    assert codes(3, "  for a, b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["multi_var_for", "unbounded_nat_literal"]
+    assert codes(4, "  for a: Nat\n  for b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["unbounded_nat_literal"]
+
+
+def test_multi_var_for_is_error(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec = _write(tmp_path / "spec.md", SPEC)
+    api = "# model-api: Model.f(a: Nat, b: Nat) -> Nat\n"
+
+    def run(i, body):
+        return ld.static_check(_write(tmp_path / str(i) / "LAWS.bend", _api_laws(h, body, api)), spec)
+    for i, decl in enumerate(["for a b: Nat", "for a, b: Nat", "for a b c: Nat"]):
+        fs = run(i, f"  {decl}\n  {{Model.f(a, b) == Model.f(b, a) : Nat}}\n")
+        assert [(f.code, f.severity) for f in fs] == [("multi_var_for", "error")], decl
+    ok = run(9, "  for a: Nat\n  for b: Nat\n  {Model.f(a, b) == Model.f(b, a) : Nat}\n")
+    assert ok == []
 
 
 def test_main_bend_defs_indented_generic_multiline(tmp_path):

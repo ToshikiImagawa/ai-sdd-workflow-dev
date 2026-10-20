@@ -13,7 +13,7 @@
 
 ## モデル API
 
-参照モデルが実装すべき関数（法則ファイルの `# model-api:` 行の写し。`model` 段階はこれに従う）。
+参照モデルが実装すべき関数（法則ファイルの `# model-api:` 行の写し。`model` 段階はこれに従う）。型は Bend の記法で書く（リストは `List<&2, T>`）。`for` の変数は 1 行に 1 つ宣言する。
 
 固定元: `{{MODEL_API_SOURCE}}`（`spec` / `main.bend` / `unfixed`。`unfixed` は「未固定・要確認」: 承認時に人が API を確認する）。
 
