@@ -11,6 +11,7 @@
 
 ### 追加
 
+- **`/draft-laws` スキル** - `draft <feature>` は spec（判定表・集約規則・不変条件・数値目標）から法則候補を抽出し、`# source:` 節ハッシュ・`# model-api:` 行・静的チェック・抽出レポート（`--ticket <n>` で `laws-draft-report.md`）付きで `LAWS.bend`（既存の `LAWS.bend` があれば `LAWS.draft.bend`）に出力する。`model <feature>` は承認行が有効なときだけ `main.bend` / `PROOF.bend` を作成する。`# approved:`・`laws-status`・`laws:` は書かず（提案のみ）、承認行を持つ `LAWS.bend` には触れず、`bend` も呼ばない。`.sdd-config.json` の `laws.max_laws`（1 以上の整数、既定 10）で採用数を制限し、候補の整列と打ち切りは `draft_laws.py` が決定的に行う
 - 今後の `/draft-laws` スキルと proof ゲートの warning が使う共有モジュール `laws_drafting.py` を追加: `# source:` が指す spec 節の節ハッシュ、`bend` 不要の法則案の静的チェック（出典の実在・欠落、重複、自明法則、import 許可形式、`# model-api:` の整合）、出典ずれ検出、承認の有効性判定（`laws_header.py` を再利用）。既存の法則・proof ゲートの挙動は変わらない
 - **Bend 証明ゲート（opt-in）** - `/run-checklist` に検証カテゴリ `proof` を追加し、spec の制約を Bend の法則
   （`${SDD_LAWS_PATH}/{feature}/` の `LAWS.bend` / `PROOF.bend` / `main.bend`）として検査する。任意機能であり、

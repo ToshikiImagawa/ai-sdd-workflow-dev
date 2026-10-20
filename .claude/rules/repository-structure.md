@@ -23,7 +23,7 @@ ai-sdd-workflow/
 │       │   ├── clarification-assistant.md  # 仕様明確化アシスタント
 │       │   ├── front-matter-reviewer.md  # front matter検証エージェント
 │       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
-│       ├── skills/                # 21スキル
+│       ├── skills/                # 22スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
 │       │   ├── check-spec/                 # 実装とspecの整合性チェック
 │       │   │   ├── scripts/
@@ -113,8 +113,8 @@ ai-sdd-workflow/
 ## 補足
 
 - **スキルのサポートディレクトリ**: 上のツリーは `templates/` と `scripts/` のみを示している。多くのスキルは
-  `references/`（全21スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは18スキル、
-  `scripts/` を持つのは9スキル（check-spec / constitution / generate-prd / generate-spec /
+  `references/`（全22スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは19スキル、
+  `scripts/` を持つのは10スキル（check-spec / constitution / draft-laws / generate-prd / generate-spec /
   migrate-design-to-adr / plan-refactor / recommend-front-matter / run-checklist / sdd-init）
 - **上の件数の数え方**: ツリーとこの節の件数は `ls -1 plugins/sdd-workflow/skills/ | wc -l` と
   `for d in plugins/sdd-workflow/skills/*/; do [ -d "$d/<sub>" ] && basename "$d"; done`（`<sub>` は

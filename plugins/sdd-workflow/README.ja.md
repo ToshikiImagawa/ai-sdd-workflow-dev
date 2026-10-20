@@ -139,6 +139,7 @@ Claude Code で `/plugin` コマンドを実行し、`sdd-workflow` が表示さ
 | `/implement`                     | TDD ベースの5フェーズ実装。TaskList で進捗を追跡し、tasks.md に自動マーク             |
 | `/checklist`                     | 仕様書と計画から9カテゴリの品質チェックリストを構造化IDつきで自動生成                         |
 | `/run-checklist`                 | チェックリスト項目をテスト、リンター、セキュリティスキャンで自動検証                           |
+| `/draft-laws`                    | spec から Bend 法則案（`LAWS.bend`）を生成して人の承認に回し、承認後に参照モデルと証明を作成（opt-in の proof ゲート） |
 | `/constitution`                  | プロジェクトの非交渉可能な原則（constitution）を定義・管理                          |
 | `/recommend-front-matter`        | 既存の AI-SDD ドキュメント（ADR決定ログを含む）をスキャンし、構造化メタデータのための YAML front matter 追加を推奨 |
 | `/plan-refactor`                 | 既存機能のリファクタリング計画。実装を分析し、計画をチケット単位の設計ドラフトに記録                    |

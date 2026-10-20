@@ -29,7 +29,16 @@ category: "task-implementation"
 | A-6 | 承認有効性判定 `approval_status`（`laws_header` を再利用） | FR-007 | 完了 |
 | A-7 | ユニットテスト `tests/test_laws_drafting.py`、CHANGELOG（en/ja） | NFR-002 | 完了 |
 
+## 実装 B-1（issue #171）: スキル `draft-laws`
+
+| ID | タスク | 対応 FR | 状態 |
+|:--|:--|:--|:--|
+| B1-1 | `skills/draft-laws/scripts/draft_laws.py`（status / hash / rank / check / compare。`laws.max_laws` 読み込み、候補の決定的な整列と打ち切り） | FR-004, FR-006, FR-007, NFR-005 | 完了 |
+| B1-2 | `SKILL.md`（draft / model）と templates/{en,ja}（法則案・main/PROOF 雛形・抽出レポート） | FR-001〜003, FR-005, FR-007〜010, FR-012 | 完了 |
+| B1-3 | 検収（§11）: proof-gate spec から 5 法則の命題一致を `compare` で確認。回帰テスト `tests/test_draft_laws_script.py` | §11 | 完了（証明段階は bend 無しのため未確認） |
+| B1-4 | README / CHANGELOG（en/ja） | — | 完了 |
+
 ## 後続
 
-- 実装 B-1（#171）: スキル `draft-laws`、`laws.max_laws` の config 読み込み、候補の決定的な整列と上限での打ち切り（NFR-005）
+- 実装 B-1（#171・上表）: スキル `draft-laws`、`laws.max_laws` の config 読み込み、候補の決定的な整列と上限での打ち切り（NFR-005）
 - 実装 B-2（#172）: post-tool-use の促し（FR-011）、`run-verification.py proof` の `warnings`（FR-013）

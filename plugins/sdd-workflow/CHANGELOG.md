@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`/draft-laws` skill** - `draft <feature>` extracts law candidates from a spec (decision tables, aggregation rules, invariants, numeric targets) into `LAWS.bend` (or `LAWS.draft.bend` when a `LAWS.bend` already exists) with `# source:` section hashes, `# model-api:` lines, a static check and an extraction report (`--ticket <n>` writes `laws-draft-report.md`); `model <feature>` writes `main.bend` / `PROOF.bend` only when the approval line is valid. It never writes `# approved:` or `laws-status` / `laws:` (proposals only), never touches a `LAWS.bend` with an approval line, never calls `bend`. `.sdd-config.json` `laws.max_laws` (integer >= 1, default 10) caps adopted laws; candidates are ordered and cut off deterministically by `draft_laws.py`
 - Shared `laws_drafting.py` module for the upcoming `/draft-laws` skill and proof-gate warnings: spec section hash behind `# source:` comments, bend-free static checks of drafted laws (source existence/absence, duplicates, trivial laws, import allowlist, `# model-api:` consistency), source-drift detection and approval validity (reuses `laws_header.py`). No behavior change to existing laws or the proof gate
 - **Bend proof gate (opt-in)** - `/run-checklist` gains a `proof` verification category that checks a spec's
   constraints as Bend laws (`${SDD_LAWS_PATH}/{feature}/` with `LAWS.bend` / `PROOF.bend` / `main.bend`). It is

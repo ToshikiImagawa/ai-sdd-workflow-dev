@@ -141,6 +141,7 @@ customized to your project instead of copied from a generic template.
 | `/implement`                     | TDD-based 5-phase implementation. Tracks progress with TaskList and auto-marks in tasks.md                   |
 | `/checklist`                     | Auto-generates 9-category quality checklists from specifications and plans, with structured IDs              |
 | `/run-checklist`                 | Automatically verifies checklist items by running tests, linters, and security scans                         |
+| `/draft-laws`                    | Drafts Bend laws (`LAWS.bend`) from a spec for human approval, then writes the reference model and proofs once approved (opt-in proof gate) |
 | `/constitution`                  | Defines and manages non-negotiable project principles (constitution)                                         |
 | `/recommend-front-matter`        | Scans existing AI-SDD documents (including ADR decision logs) and recommends adding YAML front matter for structured metadata |
 | `/plan-refactor`                 | Plans refactoring for existing features. Analyzes the implementation and records the plan in the ticket-scoped design draft |

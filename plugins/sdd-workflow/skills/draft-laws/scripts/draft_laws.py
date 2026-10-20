@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""
+draft_laws.py
+Deterministic helper for the /draft-laws skill (laws-drafting_spec.md).
+
+The LLM only extracts law candidates; everything checkable lives here so the
+skill's ``allowed-tools`` can pre-approve one scoped Bash invocation and the
+results do not depend on the model (NFR-002 / NFR-003). The script never calls
+``bend`` and never writes a file; it prints JSON on stdout.
+
+Subcommands:
+  status <feature>                 spec / laws-dir state, approval verdict, max_laws
+  hash <spec> <section>            section hash for a ``# source:`` comment
+  rank --max N [FILE|-]            deterministic order + cut-off of law candidates (NFR-005)
+  check <laws-file> [--spec SPEC]  static checks (FR-006); ``propose_drafted`` is false on errors
+  compare <generated> <reference>  acceptance comparison of law propositions (spec section 11)
+"""
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+# skills/draft-laws/scripts/ -> plugins/sdd-workflow/scripts/ (shared modules)
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
+from hook_common import (  # noqa: E402
+    load_sdd_paths,
+    read_sdd_config_json,
+    resolve_project_root,
+)
+from laws_drafting import (  # noqa: E402
+    approval_status,
+    has_errors,
+    parse_laws,
+    section_hash_of_file,
+    spec_id_of,
+    static_check,
+)
+from laws_header import LAWS_FILE, MODEL_FILE, PROOF_FILE  # noqa: E402
+
+DRAFT_FILE = "LAWS.draft.bend"
+MAX_LAWS_DEFAULT = 10
+
+
+def load_max_laws(raw: dict) -> Tuple[int, Optional[str]]:
+    """``laws.max_laws`` from .sdd-config.json: an int >= 1, else 10 plus a warning."""
+    section = raw.get("laws")
+    if not isinstance(section, dict) or "max_laws" not in section:
+        return MAX_LAWS_DEFAULT, None
+    value = section["max_laws"]
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return MAX_LAWS_DEFAULT, (
+            f"laws.max_laws={value!r} is invalid (need an integer >= 1); "
+            f"using the default {MAX_LAWS_DEFAULT}")
+    return value, None
+
+
+def section_key(section: str) -> Tuple[int, ...]:
+    """Numeric sort key of a section number ("3.1.10" sorts after "3.1.2")."""
+    return tuple(int(p) for p in re.findall(r"\d+", str(section))) or (10 ** 9,)
+
+
+def rank_candidates(candidates: List[Dict[str, Any]], max_laws: int) -> Dict[str, Any]:
+    """Order candidates and cut them off at ``max_laws`` (spec 3.1.2, NFR-005).
+
+    Candidate keys: ``name``, ``section``, ``priority`` (1-4, the extraction-rule
+    row), ``body`` (proposition text, used for duplicate detection), and the
+    optional ``trivial`` flag set by the extractor. Order: priority, section
+    number, name. Trivial candidates and repeated bodies are not adopted; the
+    rest is adopted up to ``max_laws`` and the overflow is listed with a reason.
+    """
+    def norm(body: Any) -> str:
+        return " ".join(str(body or "").split())
+
+    ordered = sorted(
+        candidates,
+        key=lambda c: (int(c.get("priority", 9)), section_key(c.get("section", "")),
+                       str(c.get("name", ""))))
+    adopted: List[Dict[str, Any]] = []
+    not_adopted: List[Dict[str, Any]] = []
+    seen: Dict[str, str] = {}
+    for c in ordered:
+        body = norm(c.get("body"))
+        if c.get("trivial"):
+            not_adopted.append({**c, "reason": "trivial"})
+        elif body and body in seen:
+            not_adopted.append({**c, "reason": "duplicate", "duplicate_of": seen[body]})
+        elif len(adopted) >= max_laws:
+            not_adopted.append({**c, "reason": "limit"})
+        else:
+            adopted.append(c)
+            if body:
+                seen[body] = str(c.get("name", ""))
+    return {"max_laws": max_laws, "adopted": adopted, "not_adopted": not_adopted}
+
+
+def find_spec(project_root: Path, spec_dir: str, feature: str) -> Optional[Path]:
+    base = project_root / spec_dir
+    for candidate in (base / f"{feature}_spec.md", base / f"{feature}.md",
+                      base / feature / "index_spec.md", base / feature / "index.md"):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def cmd_status(ns: argparse.Namespace) -> Dict[str, Any]:
+    root = Path(resolve_project_root(ns.project_root))
+    raw = read_sdd_config_json(str(root))
+    paths = load_sdd_paths(str(root), raw)
+    max_laws, max_warning = load_max_laws(raw)
+    warnings = [max_warning] if max_warning else []
+    feature = ns.feature.strip("/")
+    out: Dict[str, Any] = {"feature": feature, "max_laws": max_laws, "warnings": warnings,
+                           "spec": None, "spec_id": "", "ok": False}
+
+    spec = find_spec(root, paths.specification_prefix, feature)
+    if spec is None:
+        out["error"] = f"spec not found for feature '{feature}' under {paths.specification_prefix}"
+        return out
+    text = spec.read_text(encoding="utf-8", errors="replace")
+    spec_id = spec_id_of(text)
+    fm_text, _ = split_front_matter(text)
+    fm = parse_front_matter(fm_text) if fm_text else {}
+    out.update(spec=str(spec.relative_to(root)), spec_id=spec_id)
+    if not spec_id:
+        out["error"] = "spec has no front matter 'id': '# spec:' cannot be written"
+        return out
+    out["ok"] = True
+
+    laws_rel = f"{paths.laws_dir}/{feature}"
+    laws_dir = root / paths.laws_prefix / feature
+    laws_file = laws_dir / LAWS_FILE
+    status = approval_status(laws_file)
+    state = {"no_file": "none", "missing": "drafted", "valid": "approved"}.get(
+        status.state, status.state)  # malformed / mismatch keep their names
+    listed = fm.get("laws", [])
+    listed = [listed] if isinstance(listed, str) else list(listed or [])
+    laws_status = str(fm.get("laws-status", "") or "")
+    if status.state == "valid" and laws_status not in ("approved", "proven"):
+        warnings.append(f"approval line is valid but spec laws-status is '{laws_status or 'unset'}' "
+                        "(a human updates it to approved)")
+    if status.state != "no_file" and laws_rel not in [x.strip("/") for x in listed]:
+        warnings.append(f"spec 'laws:' does not list '{laws_rel}': the proof gate reports orphan "
+                        "laws (FAIL, table row #4) until a human adds it")
+    out.update(
+        laws_dir=str(laws_dir.relative_to(root)),
+        laws_dir_sdd_relative=laws_rel,
+        laws_state=state,
+        approval_state=status.state,
+        current_hash=status.current_hash,
+        approval=status.approval,
+        laws_status=laws_status,
+        has_draft_file=(laws_dir / DRAFT_FILE).is_file(),
+        has_model=(laws_dir / MODEL_FILE).is_file(),
+        has_proof=(laws_dir / PROOF_FILE).is_file(),
+        # draft: LAWS.bend is touched only while it has no approval line (FR-008).
+        draft_target=(LAWS_FILE if state in ("none", "drafted") else DRAFT_FILE),
+        model_allowed=(status.state == "valid"),
+    )
+    if status.state != "valid":
+        out["model_refusal"] = {
+            "no_file": "LAWS.bend does not exist",
+            "missing": "LAWS.bend has no approval line",
+            "malformed": "the approval line is malformed",
+            "mismatch": "the approval line does not match the current law text (approval expired)",
+        }[status.state]
+    return out
+
+
+def cmd_hash(ns: argparse.Namespace) -> Dict[str, Any]:
+    digest = section_hash_of_file(Path(ns.spec), ns.section)
+    return {"spec": ns.spec, "section": ns.section.lstrip("§"), "hash": digest,
+            "ok": digest is not None}
+
+
+def cmd_rank(ns: argparse.Namespace) -> Dict[str, Any]:
+    data = json.load(sys.stdin if ns.file in (None, "-") else open(ns.file, encoding="utf-8"))
+    if isinstance(data, dict):
+        data = data.get("candidates", [])
+    if not isinstance(data, list):
+        raise SystemExit("candidates must be a JSON array")
+    return rank_candidates(data, ns.max)
+
+
+def cmd_check(ns: argparse.Namespace) -> Dict[str, Any]:
+    laws = Path(ns.laws_file)
+    findings = static_check(laws, Path(ns.spec) if ns.spec else None,
+                            tolerate_missing_model=not ns.require_model)
+    errs = [f for f in findings if f.severity == "error"]
+    return {"laws_file": ns.laws_file, "findings": [f._asdict() for f in findings],
+            "errors": len(errs), "warnings": len(findings) - len(errs),
+            "propose_drafted": not has_errors(findings)}
+
+
+def _propositions(path: Path) -> Dict[str, str]:
+    """law name -> comment-free whitespace-normalised body (``# source:`` and
+    ``# model-api:`` lines are comments and never part of a body)."""
+    return {law.name: law.body for law in parse_laws(path)}
+
+
+def cmd_compare(ns: argparse.Namespace) -> Dict[str, Any]:
+    """One-way acceptance: every law of ``reference`` must appear in ``generated``."""
+    generated = _propositions(Path(ns.generated))
+    by_body = {body: name for name, body in generated.items()}
+    rows = []
+    for name, body in _propositions(Path(ns.reference)).items():
+        if generated.get(name) == body:
+            rows.append({"law": name, "match": "exact", "generated_name": name})
+        elif body in by_body:
+            rows.append({"law": name, "match": "proposition", "generated_name": by_body[body]})
+        else:
+            rows.append({"law": name, "match": "none", "reference_body": body,
+                         "same_name_body": generated.get(name)})
+    extra = sorted(set(generated) - {r["generated_name"] for r in rows if r["match"] != "none"})
+    return {"results": rows, "extra_generated": extra,
+            "passed": all(r["match"] != "none" for r in rows)}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="draft_laws.py")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("status")
+    s.add_argument("feature")
+    s.add_argument("--project-root", default="")
+    s.set_defaults(fn=cmd_status)
+    h = sub.add_parser("hash")
+    h.add_argument("spec")
+    h.add_argument("section")
+    h.set_defaults(fn=cmd_hash)
+    r = sub.add_parser("rank")
+    r.add_argument("--max", type=int, default=MAX_LAWS_DEFAULT)
+    r.add_argument("file", nargs="?")
+    r.set_defaults(fn=cmd_rank)
+    c = sub.add_parser("check")
+    c.add_argument("laws_file")
+    c.add_argument("--spec", default="")
+    c.add_argument("--require-model", action="store_true",
+                   help="main.bend must exist (use after the model stage)")
+    c.set_defaults(fn=cmd_check)
+    k = sub.add_parser("compare")
+    k.add_argument("generated")
+    k.add_argument("reference")
+    k.set_defaults(fn=cmd_compare)
+    return p
+
+
+def main() -> None:
+    ns = build_parser().parse_args()
+    result = ns.fn(ns)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if ns.cmd == "status" and not result.get("ok"):
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
