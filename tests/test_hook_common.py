@@ -229,3 +229,78 @@ class TestSourceExtensions:
     def test_common_extensions_present(self):
         for ext in (".py", ".ts", ".go", ".rs", ".java"):
             assert ext in hc.SOURCE_EXTENSIONS
+
+
+# --- laws directory / proof config (proof-gate_spec FR-003, §4.1) ----------
+
+
+class TestLawsPaths:
+    def test_default_laws_dir(self):
+        p = hc.SddPaths()
+        assert p.laws_dir == "laws"
+        assert p.laws_prefix == os.path.join(".sdd", "laws")
+
+    def test_directories_laws_override(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"root": ".docs", "directories": {"laws": "proofs"}}), encoding="utf-8")
+        p = hc.load_sdd_paths(str(tmp_path))
+        assert p.laws_dir == "proofs"
+        assert p.laws_prefix == os.path.join(".docs", "proofs")
+
+
+class TestLoadProofConfig:
+    def test_defaults_without_config(self, tmp_path):
+        assert hc.load_proof_config(str(tmp_path)) == {"timeout_seconds": 300, "verdict": False}
+
+    def test_overrides(self, tmp_path):
+        (tmp_path / ".sdd-config.json").write_text(
+            json.dumps({"proof": {"timeout_seconds": 45, "verdict": True}}), encoding="utf-8")
+        assert hc.load_proof_config(str(tmp_path)) == {"timeout_seconds": 45, "verdict": True}
+
+    def test_invalid_timeout_falls_back(self, tmp_path):
+        for bad in (0, -5, "60", 12.5, True, None):
+            cfg = hc.load_proof_config(str(tmp_path), raw={"proof": {"timeout_seconds": bad}})
+            assert cfg["timeout_seconds"] == 300, bad
+
+    def test_non_dict_proof_section_ignored(self, tmp_path):
+        assert hc.load_proof_config(str(tmp_path), raw={"proof": "yes"}) == {
+            "timeout_seconds": 300, "verdict": False}
+
+
+# --- is_within_project / is_external_sdd_root (issue #151) -----------------
+
+
+class TestIsWithinProject:
+    def test_inside_project(self, tmp_path):
+        assert hc.is_within_project(str(tmp_path / "a" / "b.md"), str(tmp_path))
+
+    def test_project_root_itself_is_inside(self, tmp_path):
+        assert hc.is_within_project(str(tmp_path), str(tmp_path))
+
+    def test_outside_project(self, tmp_path):
+        outside = tmp_path.parent / "elsewhere" / "b.md"
+        assert not hc.is_within_project(str(outside), str(tmp_path / "proj"))
+
+    def test_parent_traversal_is_outside(self, tmp_path):
+        proj = tmp_path / "proj"
+        assert not hc.is_within_project(str(proj / ".." / "x.md"), str(proj))
+
+
+class TestIsExternalSddRoot:
+    def test_default_relative_root_is_internal(self, tmp_path):
+        assert not hc.is_external_sdd_root(".sdd", str(tmp_path))
+
+    def test_nested_relative_root_is_internal(self, tmp_path):
+        assert not hc.is_external_sdd_root("docs/sdd", str(tmp_path))
+
+    def test_absolute_outside_root_is_external(self, tmp_path):
+        external = tmp_path.parent / "external-sdd"
+        assert hc.is_external_sdd_root(str(external), str(tmp_path / "proj"))
+
+    def test_absolute_inside_root_is_external_too(self, tmp_path):
+        # Absolute roots are unsupported even when they point inside the project:
+        # the hooks build project-relative prefixes from the configured string.
+        assert hc.is_external_sdd_root(str(tmp_path / ".sdd"), str(tmp_path))
+
+    def test_parent_traversal_root_is_external(self, tmp_path):
+        assert hc.is_external_sdd_root("../shared-sdd", str(tmp_path / "proj"))

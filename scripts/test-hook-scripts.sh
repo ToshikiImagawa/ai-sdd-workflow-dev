@@ -49,6 +49,9 @@ touch "$TMP_DIR/.sdd/specification/auth/user-login_spec.md"
 touch "$TMP_DIR/.sdd/specification/auth/user-logout.md"
 # Only a leftover v4.x design doc exists for this stem, so no reminder is due.
 touch "$TMP_DIR/.sdd/specification/auth/legacy-only_design.md"
+mkdir -p "$TMP_DIR/.sdd/laws/auth/user-login"
+printf '%s\n' "# spec: spec-auth-user-login" "" "law a: 1" > "$TMP_DIR/.sdd/laws/auth/user-login/LAWS.bend"
+printf '%s\n' "# spec: spec-auth-user-login" "# model-of: src/modeled.py" "" "import Base" > "$TMP_DIR/.sdd/laws/auth/user-login/main.bend"
 
 # run_hook <test-name> <script> <stdin-json> <expected-exit> <expected-output-substring>
 # expected-output-substring empty means stdout must be empty
@@ -219,6 +222,14 @@ run_hook "post: adr migration reminder names an openable README path" "post-tool
 run_hook "post: source edit without spec is silent" "post-tool-use.py" \
     "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/main.py\"}}" \
     0 ""
+
+run_hook "post: LAWS.bend edit reminds proof re-run and re-approval" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/.sdd/laws/auth/user-login/LAWS.bend\"}}" \
+    0 "--category proof"
+
+run_hook "post: source edit named by # model-of: reminds model review" "post-tool-use.py" \
+    "{\"cwd\": \"$TMP_DIR\", \"tool_input\": {\"file_path\": \"$TMP_DIR/src/modeled.py\"}}" \
+    0 "reference model"
 
 echo "=== user-prompt-submit.py ==="
 

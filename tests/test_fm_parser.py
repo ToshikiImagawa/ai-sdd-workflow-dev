@@ -91,3 +91,23 @@ class TestParseFrontMatter:
 
     def test_non_list_key_single_value(self):
         assert fp.parse_front_matter("status: draft") == {"status": "draft"}
+
+
+# --- laws (proof-gate_spec FR-008) -----------------------------------------
+
+
+class TestLawsListKey:
+    def test_laws_is_a_list_key(self):
+        assert "laws" in fp.LIST_KEYS
+
+    def test_laws_inline_list(self):
+        r = fp.parse_front_matter('id: "spec-x"\nlaws: ["laws/a/b", "laws/c"]\nlaws-status: "approved"')
+        assert r["laws"] == ["laws/a/b", "laws/c"]
+        assert r["laws-status"] == "approved"
+
+    def test_laws_block_list(self):
+        r = fp.parse_front_matter('laws:\n  - "laws/a/b"\n  - laws/c\n')
+        assert r["laws"] == ["laws/a/b", "laws/c"]
+
+    def test_laws_single_scalar_becomes_list(self):
+        assert fp.parse_front_matter('laws: "laws/a"')["laws"] == ["laws/a"]

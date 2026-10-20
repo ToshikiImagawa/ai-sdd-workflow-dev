@@ -23,7 +23,7 @@ ai-sdd-workflow/
 │       │   ├── clarification-assistant.md  # 仕様明確化アシスタント
 │       │   ├── front-matter-reviewer.md  # front matter検証エージェント
 │       │   └── cross-prd-reviewer.md  # PRD横断整合レビューエージェント
-│       ├── skills/                # 21スキル
+│       ├── skills/                # 22スキル
 │       │   ├── analyze-requirements/       # 要求分析（UR/FR/NFR抽出）
 │       │   ├── check-spec/                 # 実装とspecの整合性チェック
 │       │   │   ├── scripts/
@@ -33,6 +33,9 @@ ai-sdd-workflow/
 │       │   ├── clarify/                    # 仕様明確化
 │       │   │   └── templates/{en,ja}/
 │       │   ├── constitution/               # プロジェクト原則管理
+│       │   │   ├── scripts/
+│       │   │   └── templates/{en,ja}/
+│       │   ├── draft-laws/                 # spec から Bend 法則案を生成（Bend 証明ゲートの承認フロー）
 │       │   │   ├── scripts/
 │       │   │   └── templates/{en,ja}/
 │       │   ├── doc-consistency-checker/    # ドキュメント整合性チェッカー
@@ -87,6 +90,7 @@ ai-sdd-workflow/
 │       │   ├── hook_common.py     # 共通ヘルパー（stdin/stdout・パス解決・.sdd-config読込）
 │       │   ├── principles_sync.py # 共有: AI-SDD-PRINCIPLES.md / ai-sdd-instructions.md 再生成
 │       │   ├── fm_parser.py       # 共有: front matter 検出・パース
+│       │   ├── laws_header.py     # 共有: Bend 法則ファイル規約（先頭コメント・内容ハッシュ・import allowlist）
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
 │       │   └── env_export.py      # 共有: CLAUDE_ENV_FILE への export 書き出し
@@ -97,7 +101,7 @@ ai-sdd-workflow/
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
 ├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 6本）
-├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む）
+├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
 ├── dist/
 │   └── README.md                   # 配布リポジトリ用README
 ├── CLAUDE.md                       # 共通プロジェクト指示（正本）
@@ -112,8 +116,8 @@ ai-sdd-workflow/
 ## 補足
 
 - **スキルのサポートディレクトリ**: 上のツリーは `templates/` と `scripts/` のみを示している。多くのスキルは
-  `references/`（全21スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは18スキル、
-  `scripts/` を持つのは9スキル（check-spec / constitution / generate-prd / generate-spec /
+  `references/`（全22スキル）と `examples/`（9スキル）も持つ。`templates/` を持つのは19スキル、
+  `scripts/` を持つのは10スキル（check-spec / constitution / draft-laws / generate-prd / generate-spec /
   migrate-design-to-adr / plan-refactor / recommend-front-matter / run-checklist / sdd-init）
 - **上の件数の数え方**: ツリーとこの節の件数は `ls -1 plugins/sdd-workflow/skills/ | wc -l` と
   `for d in plugins/sdd-workflow/skills/*/; do [ -d "$d/<sub>" ] && basename "$d"; done`（`<sub>` は
