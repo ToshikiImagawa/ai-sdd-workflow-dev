@@ -603,6 +603,14 @@ The hash covers everything after the leading comment block, so adding the approv
 change to the law text (even spacing inside a line) does, and the gate then reports `SKIPPED` with the new hash. AI never writes
 this line; review it in the PR. Moving `laws-status` to `approved` / `proven` is also a human step.
 
+### Drafting laws with `/draft-laws`
+
+Instead of writing `LAWS.bend` by hand, `/draft-laws` drafts it from the spec in two stages. It never calls `bend` and never writes an approval line.
+
+1. `/draft-laws draft {feature}` extracts laws from structured spec sections (decision tables, aggregation rules, constraints, numeric NFR targets; at most `laws.max_laws`, default 10) and writes `LAWS.bend`. Each law carries `# source: <spec id> §<section> sha256:<section hash>`, and the model functions the laws rely on are listed in `# model-api:` lines. If an unapproved `LAWS.bend` already exists, or an approved one does, the new proposal goes to `LAWS.draft.bend` (adopt or delete it yourself; `--overwrite` replaces only an unapproved `LAWS.bend`). A report (`task/{ticket}/laws-draft-report.md` with `--ticket`) lists adopted laws, the model API, rejected candidates and the static-check result. Adding `laws:` / `laws-status: drafted` to the spec is only proposed.
+2. Review the laws, then approve them yourself (see Approval).
+3. `/draft-laws model {feature}` is refused unless `LAWS.bend` has a valid approval line; otherwise it writes `main.bend` and `PROOF.bend` from the `# model-api:` lines. It does not modify `LAWS.bend`.
+
 ### Running it
 
 `/run-checklist {feature} {ticket}` verifies `CHK-205` (generated only for specs with `laws:`); `--category proof` verifies just that item.

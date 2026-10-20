@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-10-17"
+updated: "2026-10-20"
 depends-on: ["prd-quality-guardrails-stale-doc-detection"]
 tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -61,10 +61,11 @@ risk: "medium"
 | FR-004 | 更新漏れの検知はブロックせず、非ブロッキングで確認・同期を促すコンテキストを注入する                    | 必須  | 子 PRD（スコープ外＝自動修正しない）/ 親 PRD DC_001 |
 | FR-005 | 更新漏れの可能性がない編集（対応 spec のないソース編集・対象外の `.sdd/` 編集）には何も出力しない       | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生   |
 | FR-006 | `.sdd/` 決定ログディレクトリ（`adr/`）の編集後に、追記専用の原則と決定の spec への反映確認を促す        | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
-| FR-007 | 法則ディレクトリ（`${SDD_LAWS_PATH}`、既定 `laws/`）配下の `.bend` ファイル編集後に、`# spec:` が指す spec を示して proof ゲート（`/run-checklist {feature} {ticket} --category proof`）の再実行と、`LAWS.bend` 編集時は再承認の必要を促す | 必須  | 子 PRD FR_001（法則ファイル編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
+| FR-007 | 法則ディレクトリ（`${SDD_LAWS_PATH}`、既定 `laws/`）配下の `.bend` ファイル（`LAWS.bend` / `LAWS.draft.bend` / `PROOF.bend` / `main.bend`）編集後に、`# spec:` が指す spec を示して proof ゲート（`/run-checklist {feature} {ticket} --category proof`）の再実行と、`LAWS.bend` 編集時は再承認の必要を促す | 必須  | 子 PRD FR_001（法則ファイル編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
 | FR-008 | ソースコード編集後に、いずれかの `${SDD_LAWS_PATH}/**/main.bend` の `# model-of:` が当該ファイルを指す場合、参照モデルと法則の見直しを促す（spec 同期の促し FR-003 とは独立に、両方を注入しうる） | 必須  | 子 PRD FR_001（参照モデル対象の実装編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
+| FR-009 | `laws:` を front matter に持つ spec の編集後に、法則の再抽出（`/draft-laws`）と再承認の検討を促す。`laws:` が指す `LAWS.bend` の各 `# source:` の節ハッシュが現在の spec と一致しない法則（`source_drift`）・書式不正（`source_invalid`）を、安価に判定できる範囲で名前を挙げて示す。節ハッシュの計算は共有モジュール `laws_drafting.py` に置く（A-002）。ずれの判定ロジックは proof ゲートの `source_drift` warning（laws-drafting_spec FR-013）と同一で、`laws_drafting.source_drift` を共用する。`laws:` の無い spec では FR-001 の促しのみで、本促しは出さない（FR-001 と併せて注入しうる） | 必須  | [laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) FR-011 / 親 PRD UR_003 |
 
-FR-001〜FR-003・FR-006〜FR-008 は編集されたファイルの種別（仕様書 / 要求仕様 / 決定ログ / 法則ファイル / ソースコード）に応じて
+FR-001〜FR-003・FR-006〜FR-009 は編集されたファイルの種別（仕様書 / 要求仕様 / 決定ログ / 法則ファイル / ソースコード）に応じて
 促す内容を切り替える。FR-007・FR-008 は Bend 証明ゲート（[proof-gate_spec.md](../task-implementation/proof-gate_spec.md) FR-009）の
 見直し促しを本機能が提供するもので、法則ディレクトリが存在しないプロジェクトでは何も出力しない（FR-005）。
 本機能はリマインドまでを責務とし、整合性の実際の検証は doc-consistency-checker スキル等の検証機能に委ねる
@@ -85,7 +86,7 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 
 | 種別   | 配置場所                                        | 名前                | 概要                                                                                     |
 |------|---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|
-| hook | `scripts/post-tool-use.py` + `hooks/hooks.json` | PostToolUse フック | ファイル編集（Write / Edit）後にファイル種別を判定し、更新漏れの可能性に応じて確認・同期を促す `additionalContext` を注入する（FR-001〜008） |
+| hook | `scripts/post-tool-use.py` + `hooks/hooks.json` | PostToolUse フック | ファイル編集（Write / Edit）後にファイル種別を判定し、更新漏れの可能性に応じて確認・同期を促す `additionalContext` を注入する（FR-001〜009） |
 
 ## 4.1. 入出力定義
 
@@ -117,7 +118,8 @@ doc-consistency-checker スキル等の検証手段への誘導文を含む。
 | 非ブロッキング        | 編集やツール実行を拒否せず、警告・促しに留める動作                                            |
 | spec 同期          | ソースコードの公開 API・データモデル・振る舞いが変わった際に、対応する抽象仕様書（`{stem}.md` / `{stem}_spec.md`）を真実の源として更新すること |
 | 決定ログ（adr）      | `adr/` 配下の追記専用の決定記録。過去のエントリを書き換えず追記のみを行う                              |
-| 法則ファイル         | `${SDD_LAWS_PATH}/{feature}/`（既定 `laws/`）配下の `LAWS.bend` / `PROOF.bend` / `main.bend`。spec から一方向に派生した Bend の法則・証明・参照モデル（proof-gate_spec） |
+| 法則ファイル         | `${SDD_LAWS_PATH}/{feature}/`（既定 `laws/`）配下の `LAWS.bend` / `LAWS.draft.bend` / `PROOF.bend` / `main.bend`。spec から一方向に派生した Bend の法則・証明・参照モデル（proof-gate_spec） |
+| `# source:`       | 法則宣言の直前の行（`# source: <spec id> §<節> sha256:<節ハッシュ>`）。法則の出典節と節ハッシュを記録し、spec 編集時のずれ（`source_drift`）の判定に使う（laws-drafting_spec FR-003） |
 | `# model-of:`     | `main.bend` 先頭のコメント行。参照モデルが写す実装ファイルのプロジェクト相対パス。ここに挙がった実装の編集が法則見直しの促しの契機になる |
 
 # 6. 使用例
@@ -154,6 +156,11 @@ Edit: src/auth/user_login.py（.sdd/laws/auth/user-login/main.bend に # model-o
   → [AI-SDD] '...user_login.py' is modeled by '...main.bend'. If the behavior changed,
     review the reference model and LAWS.bend ...
 
+# laws: を持つ spec を編集 → 法則の再抽出を促す
+Edit: .sdd/specification/auth/user-login_spec.md（front matter に laws: ["laws/auth/user-login"]）
+  → [AI-SDD] '...user-login_spec.md' declares laws (laws/auth/user-login). ... consider re-running
+    /draft-laws ... Laws whose '# source:' no longer matches the spec: ...
+
 # 対応 spec のないソースを編集 → 何も出力しない
 Edit: src/util/logger.py（対応 spec なし）
   → （出力なし）
@@ -172,6 +179,9 @@ sequenceDiagram
     Runtime ->> Hook: file_path を JSON で渡す
     alt .sdd/specification 配下
         Hook -->> Runtime: PRD <-> spec <-> adr 整合性確認を注入
+        opt front matter に laws: あり
+            Hook -->> Runtime: 法則の再抽出（/draft-laws）の促しを追加注入
+        end
     else .sdd/requirement 配下（PRD）
         Hook -->> Runtime: 下流 spec 伝播確認を注入
     else .sdd/adr 配下（決定ログ）
@@ -216,7 +226,7 @@ sequenceDiagram
 
 | 確認項目          | 結果                                                                                       |
 |-----------------|--------------------------------------------------------------------------------------------|
-| 要求カバレッジ     | 子 PRD FR_001 の 3 つのトリガー（.sdd 仕様書・要求仕様編集 / adr 編集 / ソース編集）を FR-001〜FR-003・FR-006 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求）。FR-007・FR-008 は task-implementation の proof-gate PRD FR_005（法則の見直し促し）を本機能のフックで提供するもの |
+| 要求カバレッジ     | 子 PRD FR_001 の 3 つのトリガー（.sdd 仕様書・要求仕様編集 / adr 編集 / ソース編集）を FR-001〜FR-003・FR-006 でカバー（FR-004・FR-005 は親 PRD DC_001 から派生した spec 固有要求）。FR-007〜FR-009 は task-implementation の proof-gate PRD FR_005（法則の見直し促し）を本機能のフックで提供するもの（FR-009 は laws-drafting_spec FR-011） |
 | 要求 ID 参照      | 各 FR に対応する子 PRD / 親 PRD（UR_003・FR_004・DC_001・NFR_001・IR_001）の要求 ID を「根拠」列に明記 |
 | 非機能要求の反映   | 親 PRD NFR_001・IR_001・DC_001・DC_004 を NFR-001〜003 および制約事項に反映                       |
 | 用語整合性        | 親 PRD 用語集の「フック」「additionalContext」定義に整合。本機能固有の「更新漏れ」「spec 同期」「法則ファイル」「`# model-of:`」を追加定義 |
