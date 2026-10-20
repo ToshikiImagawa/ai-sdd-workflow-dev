@@ -154,43 +154,48 @@ def test_hash_and_check(tmp_path):
     assert {f["code"] for f in out["findings"]} == {"source_drift"}
 
 
+def _ns(gen, ref, judgement="", check_result=""):
+    return type("N", (), {"generated": str(gen), "reference": str(ref), "judgement": str(judgement), "model": "",
+                          "check_result": str(check_result)})
+
+
 def _acceptance():
     gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
-    result = dl.cmd_compare(type("N", (), {"generated": str(gen), "reference": str(REFERENCE)}))
+    result = dl.cmd_compare(_ns(gen, REFERENCE))
     return gen, {r["law"]: r for r in result["results"]}, result
 
 
 def test_acceptance_independent_reproduction_correspondence():
-    """laws-drafting_spec §11 (second independent re-run: 10 laws, sha256:f90b56b320d1).
+    """laws-drafting_spec §11 (fifth independent re-run, head 0d531a2: 10 laws, content hash 4b14b5b093c5).
 
-    Mechanical criterion (``compare``: same law body after dropping comments and
-    normalising whitespace, model function names fixed): 2 of 5 first-wave laws
-    match, so ``passed`` is False. The semantic correspondence (judged by the
-    orchestrator, not by ``compare``) covers all 5 with different strengths and is
-    pinned below so a change to either side is noticed.
+    Stage 1 (mechanical, ``compare`` with alpha equivalence and ``rank_*`` constants read from
+    main.bend): 4 of the 5 first-wave laws match (1 exact, 3 proposition). ``agg_pair_commutes``
+    has no counterpart: the run wrote the commutativity of ``worse``, not of ``aggregate``.
+    The owner-approved stage 2 judgement is ``weak``, so the acceptance criterion stays unmet.
     """
     gen, rows, result = _acceptance()
-    drafted = {law.name: law.body for law in dl.parse_laws(gen)}
-    assert len(drafted) == 10
+    assert len(dl.parse_laws(gen)) == 10
+    assert {k: v["match"] for k, v in rows.items()} == {
+        "agg_empty_skipped": "proposition", "agg_single_identity": "proposition",
+        "agg_pair_commutes": "none", "unapproved_never_pass": "exact",
+        "pass_requires_marker": "proposition"}
+    assert rows["agg_empty_skipped"]["generated_name"] == "aggregate_empty_skipped"
+    assert rows["agg_single_identity"]["generated_name"] == "aggregate_singleton"
+    assert rows["pass_requires_marker"]["generated_name"] == "approved_no_marker_is_fail"
+    assert result["passed_mechanical"] is False and result["passed"] is False
+    assert result["pending_judgement"] == ["agg_pair_commutes"]
 
-    # mechanical matches
-    assert rows["pass_requires_marker"]["match"] == "proposition"
-    assert rows["pass_requires_marker"]["generated_name"] == "approved_without_marker_fails"
-    assert rows["unapproved_never_pass"]["match"] == "exact"  # weak independence: spec 4.1 has an example
-    assert result["passed"] is False
 
-    # same meaning, different model function / form (no mechanical match)
-    assert rows["agg_pair_commutes"]["match"] == "none"
-    assert "Model.worse(a, b) == Model.worse(b, a)" in drafted["aggregate_commutative"]
-    assert rows["agg_empty_skipped"]["match"] == "none"
-    assert "Model.aggregate_empty() == 1n" in drafted["aggregate_empty_is_skipped"]
-
-    # weak: worse(a, a) == a is not aggregate([x]) == x
-    assert rows["agg_single_identity"]["match"] == "none"
-    assert "Model.worse(a, a) == a" in drafted["aggregate_idempotent"]
-
-    # known problem: false for Nat above 4, so the model stage cannot prove it
-    assert "Model.worse(4n, a) == 4n" in drafted["aggregate_fail_absorbs"]
+def test_acceptance_stage_two_judgement_fixture():
+    """The recorded stage 2 judgement (weak) keeps ``passed`` False; judgements on the four
+    mechanically matched laws are not needed (and would be ignored)."""
+    gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
+    result = dl.cmd_compare(_ns(gen, REFERENCE, FIXTURES / "proof-gate-acceptance.judgement.json"))
+    assert result["passed_mechanical"] is False and result["passed"] is False
+    assert result["pending_judgement"] == [] and result["ignored_judgements"] == []
+    row = [r for r in result["results"] if r["law"] == "agg_pair_commutes"][0]
+    assert row["human_judgement"] == "weak" and row["judged_generated_name"] == "worse_commutative"
+    assert sum(r["match"] != "none" for r in result["results"]) == 4
 
 
 def test_acceptance_draft_hash_is_stable():
@@ -200,7 +205,7 @@ def test_acceptance_draft_hash_is_stable():
     sys.path.insert(0, str(ROOT / "plugins/sdd-workflow/scripts"))
     from laws_header import law_body_hash
     gen, _, _ = _acceptance()
-    assert law_body_hash(gen) == "c2fb81217cae"
+    assert law_body_hash(gen) == "4b14b5b093c5"
 
 
 def test_compare_detects_missing_law(tmp_path):
@@ -208,5 +213,236 @@ def test_compare_detects_missing_law(tmp_path):
     gen.write_text("law only:\n  {1n == 1n : Nat}\n")
     ref = tmp_path / "r.bend"
     ref.write_text("law other:\n  {2n == 2n : Nat}\n")
-    result = dl.cmd_compare(type("N", (), {"generated": str(gen), "reference": str(ref)}))
+    result = dl.cmd_compare(_ns(gen, ref))
     assert result["passed"] is False and result["results"][0]["match"] == "none"
+
+
+def _judge(tmp_path, judgements):
+    f = tmp_path / "j.json"
+    f.write_text(json.dumps(judgements))
+    gen = FIXTURES / "proof-gate-acceptance.LAWS.draft.bend"
+    return dl.cmd_compare(_ns(gen, REFERENCE, f))
+
+
+def test_compare_second_stage_human_judgement(tmp_path):
+    """spec §11 stage 2: ``weak`` fails, ``equivalent`` passes; stage 1 stays False."""
+    weak = _judge(tmp_path, {"agg_pair_commutes": "weak"})
+    assert weak["passed"] is False and weak["passed_mechanical"] is False
+    assert weak["pending_judgement"] == []
+    ok = _judge(tmp_path, {"agg_pair_commutes": "equivalent"})
+    assert ok["passed"] is True and ok["passed_mechanical"] is False
+
+
+def test_compare_rejects_unknown_judgement(tmp_path):
+    with pytest.raises(SystemExit):
+        _judge(tmp_path, {"agg_empty_skipped": "maybe"})
+
+
+def test_acceptance_fixture_check_against_fixed_api():
+    """The 5th run uses only functions of the fixed API (main.bend beside the reference laws):
+    no error and no warning."""
+    import shutil
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        shutil.copy(FIXTURES / "proof-gate-acceptance.LAWS.draft.bend", Path(d) / "LAWS.draft.bend")
+        shutil.copy(REFERENCE.parent / "main.bend", Path(d) / "main.bend")
+        out = dl.cmd_check(type("N", (), {"laws_file": str(Path(d) / "LAWS.draft.bend"), "spec": "",
+                                          "require_model": False, "feature": "", "project_root": ""}))
+    assert out["findings"] == [] and out["propose_drafted"] is True
+    assert out["model_api"]["fixed"] is True
+
+
+def test_model_api_subcommand_priority(tmp_path):
+    root = tmp_path
+    (root / ".sdd/specification").mkdir(parents=True)
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "unfixed" and out["fixed"] is False
+    laws = root / ".sdd/laws/demo"
+    laws.mkdir(parents=True)
+    (laws / "main.bend").write_text("def judge(a: Bool) -> Nat:\n  return 1n\n\ndef main() -> Nat:\n  return 0n\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "main.bend" and [f["name"] for f in out["functions"]] == ["Model.judge"]
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT + "\nmodel-api: Model.rank(x: Nat) -> Nat\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(root)}))
+    assert out["source"] == "spec" and [f["name"] for f in out["functions"]] == ["Model.rank"]
+
+
+GEN = "law a:\n  {1n == 1n : Nat}\n\nlaw b:\n  {Model.f(True{}) == 2n : Nat}\n"
+REF = "law a:\n  {1n == 1n : Nat}\n\nlaw c:\n  {Model.g(True{}) == 3n : Nat}\n"
+
+
+def _files(tmp_path, gen=GEN, ref=REF):
+    (tmp_path / "g.bend").write_text(gen)
+    (tmp_path / "r.bend").write_text(ref)
+    return tmp_path / "g.bend", tmp_path / "r.bend"
+
+
+def _json(tmp_path, name, data):
+    f = tmp_path / name
+    f.write_text(data if isinstance(data, str) else json.dumps(data))
+    return f
+
+
+def test_compare_empty_reference_never_passes(tmp_path):
+    gen, ref = _files(tmp_path, ref="# no laws\n")
+    result = dl.cmd_compare(_ns(gen, ref))
+    assert result["passed"] is False and result["passed_mechanical"] is False and "error" in result
+    r = subprocess.run([sys.executable, str(SCRIPT), "compare", str(gen), str(ref)],
+                       capture_output=True, text=True)
+    assert r.returncode == 1 and json.loads(r.stdout)["passed"] is False
+
+
+def test_compare_judgement_cases(tmp_path):
+    gen, ref = _files(tmp_path)
+    # none -> fail; unjudged -> pending; partial judgement on a matched law is ignored
+    none = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "j.json", {"c": "none"})))
+    assert none["passed"] is False and none["pending_judgement"] == []
+    pending = dl.cmd_compare(_ns(gen, ref))
+    assert pending["passed"] is False and pending["pending_judgement"] == ["c"]
+    ok = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "k.json", {"c": "equivalent", "a": "none", "zzz": "weak"})))
+    assert ok["passed"] is True and ok["ignored_judgements"] == ["a"] and ok["unknown_judgements"] == ["zzz"]
+    # object form (R7)
+    obj = dl.cmd_compare(_ns(gen, ref, _json(tmp_path, "o.json", {
+        "c": {"verdict": "equivalent", "generated_name": "b", "note": "same meaning"}})))
+    row = [r for r in obj["results"] if r["law"] == "c"][0]
+    assert obj["passed"] is True and row["judged_generated_name"] == "b" and row["judgement_note"] == "same meaning"
+
+
+@pytest.mark.parametrize("content", ["{not json", "[1, 2]", '{"c": "maybe"}', '{"c": {"note": "x"}}'])
+def test_compare_judgement_input_is_validated(tmp_path, content):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "bad.json", content)
+    r = subprocess.run([sys.executable, str(SCRIPT), "compare", str(gen), str(ref), "--judgement", str(j)],
+                       capture_output=True, text=True)
+    assert r.returncode != 0 and "Traceback" not in r.stderr
+
+
+def test_compare_check_errors_block_pass(tmp_path):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "j.json", {"c": "equivalent"})
+    clean = _json(tmp_path, "c0.json", {"errors": 0})
+    dirty = _json(tmp_path, "c1.json", {"errors": 2})
+    assert dl.cmd_compare(_ns(gen, ref, j, clean))["passed"] is True
+    out = dl.cmd_compare(_ns(gen, ref, j, dirty))
+    assert out["passed"] is False and out["check_errors"] == 2
+
+
+def test_compare_cli_with_judgement_and_check_result(tmp_path):
+    gen, ref = _files(tmp_path)
+    j = _json(tmp_path, "j.json", {"c": "equivalent"})
+    c = _json(tmp_path, "c.json", {"errors": 0})
+    code, out = run("compare", str(gen), str(ref), "--judgement", str(j), "--check-result", str(c))
+    assert code == 0 and out["passed"] is True and out["passed_mechanical"] is False
+
+
+def test_rank_unbounded_flag():
+    out = dl.rank_candidates([{"name": "x", "section": "1", "priority": 1, "body": "b", "unbounded": True}], 5)
+    assert out["adopted"] == [] and out["not_adopted"][0]["reason"] == "unbounded_nat"
+
+
+def test_model_api_unreadable_main_bend(tmp_path):
+    (tmp_path / ".sdd/specification").mkdir(parents=True)
+    (tmp_path / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    laws = tmp_path / ".sdd/laws/demo"
+    laws.mkdir(parents=True)
+    (laws / "main.bend").write_text("# a model with no recognisable def\nsome garbage\n")
+    out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(tmp_path)}))
+    assert out["source"] == "main.bend-unreadable" and out["fixed"] is False and "warning" in out
+
+
+def test_check_feature_resolves_fixed_api_for_file_outside_laws_dir(tmp_path):
+    root = tmp_path / "proj"
+    (root / ".sdd/specification").mkdir(parents=True)
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    laws_dir = root / ".sdd/laws/demo"
+    laws_dir.mkdir(parents=True)
+    (laws_dir / "main.bend").write_text("def judge(a: Bool) -> Nat:\n  return 1n\n")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    draft = scratch / "LAWS.draft.bend"
+    draft.write_text("# spec: spec-demo\n\nimport Base\nimport ./main.bend as Model\n\n"
+                     "# model-api: Model.extra(a: Bool) -> Nat\n"
+                     "# source: spec-demo §2.1 sha256:000000000000\n"
+                     "law l:\n  for a: Bool\n  {Model.extra(a) == 1n : Nat}\n")
+    # without --feature the API is unfixed and the check is silent, but the result says so
+    code, plain = run("check", str(draft))
+    assert plain["model_api"]["source"] == "unfixed" and "notes" in plain
+    assert "model_api_not_fixed" not in {f["code"] for f in plain["findings"]}
+    # with --feature the fixed API (main.bend of the feature) is applied
+    code, out = run("check", str(draft), "--feature", "demo", "--project-root", str(root))
+    assert out["model_api"] == {"source": "main.bend", "fixed": True, "functions": ["judge"]}
+    assert "notes" not in out
+    assert "model_api_not_fixed" in {f["code"] for f in out["findings"]}
+    assert out["propose_drafted"] is False
+
+
+def test_rank_takes_basic_properties_first_within_a_priority():
+    cands = [
+        {"name": "a_narrow", "section": "3.1.1", "priority": 2, "body": "1"},
+        {"name": "b_commutes", "section": "3.1.1", "priority": 2, "kind": "commutative", "body": "2"},
+        {"name": "c_empty", "section": "3.1.1", "priority": 2, "kind": "empty", "body": "3"},
+        {"name": "z_first_prio", "section": "9", "priority": 1, "body": "4"},
+    ]
+    out = dl.rank_candidates(cands, 3)
+    assert [c["name"] for c in out["adopted"]] == ["z_first_prio", "b_commutes", "c_empty"]
+    assert [c["name"] for c in out["not_adopted"]] == ["a_narrow"]
+
+
+def test_normalise_proposition_alpha_constants_and_nil():
+    consts = {"rank_fail": "4n", "rank_pass": "0n"}
+    n = dl.normalise_proposition
+    # alpha equivalence: only the declared variables are renamed (not Model.x, not other words)
+    assert n("for x: Nat {Model.aggregate([x]) == x : Nat}", consts) == \
+        n("for a: Nat {Model.aggregate([a]) == a : Nat}", consts)
+    assert n("for a: Nat for b: Nat {Model.f(a, b) == a : Nat}", consts) != \
+        n("for a: Nat for b: Nat {Model.f(a, b) == b : Nat}", consts)
+    assert n("for a, b: Nat {Model.f(a) == b : Nat}", consts) == n("for p, q: Nat {Model.f(p) == q : Nat}", consts)
+    # constants and empty list
+    assert n("{Model.judge(True{}) == Model.rank_fail() : Nat}", consts) == n("{Model.judge(True{}) == 4n : Nat}", consts)
+    assert n("{Model.aggregate([]) == 1n : Nat}", consts) == n("{Model.aggregate(Nil{}) == 1n : Nat}", consts)
+    # a different constant is not equal
+    assert n("{Model.f() == Model.rank_pass() : Nat}", consts) != n("{Model.f() == Model.rank_fail() : Nat}", consts)
+
+
+def test_compare_alpha_and_rank_constants(tmp_path):
+    (tmp_path / "main.bend").write_text("def rank_fail() -> Nat:\n  4n\n\ndef main() -> Nat:\n  0n\n")
+    gen = tmp_path / "g.bend"
+    gen.write_text("law g1:\n  for e: Bool\n  {Model.judge(True{}, e, False{}) == Model.rank_fail() : Nat}\n")
+    ref = tmp_path / "r.bend"
+    ref.write_text("law r1:\n  for m: Bool\n  {Model.judge(True{}, m, False{}) == 4n : Nat}\n")
+    out = dl.cmd_compare(_ns(gen, ref))
+    assert out["passed"] is True and out["passed_mechanical"] is True
+    assert out["results"][0]["match"] == "proposition"
+    # without the model the constant stays a call: no match
+    (tmp_path / "main.bend").unlink()
+    assert dl.cmd_compare(_ns(gen, ref))["passed"] is False
+
+
+def test_fourth_reproduction_stage_two_judgement_fails(tmp_path):
+    """Owner decision: 4 of the 5 first-wave laws are equivalent / matched, agg_pair_commutes
+    has no counterpart (none) -> not passed. Uses a trimmed copy of the 4th run's laws."""
+    gen = tmp_path / "g.bend"
+    gen.write_text(
+        "law unapproved_never_pass:\n  for e: Bool\n  for m: Bool\n"
+        "  {Model.judge(False{}, e, m) == Model.rank_skipped() : Nat}\n\n"
+        "law aggregate_empty_skipped:\n  {Model.aggregate([]) == Model.rank_skipped() : Nat}\n\n"
+        "law aggregate_singleton:\n  for a: Nat\n  {Model.aggregate([a]) == a : Nat}\n\n"
+        "law missing_marker_is_fail:\n  for e: Bool\n  {Model.judge(True{}, e, False{}) == Model.rank_fail() : Nat}\n")
+    out = dl.cmd_compare(_ns(gen, REFERENCE))
+    rows = {r["law"]: r["match"] for r in out["results"]}
+    assert rows == {"agg_empty_skipped": "proposition", "agg_single_identity": "proposition",
+                    "agg_pair_commutes": "none", "unapproved_never_pass": "exact",
+                    "pass_requires_marker": "proposition"}
+    assert out["pending_judgement"] == ["agg_pair_commutes"] and out["passed"] is False
+    j = _json(tmp_path, "j.json", {"agg_pair_commutes": "none"})
+    final = dl.cmd_compare(_ns(gen, REFERENCE, j))
+    assert final["passed"] is False and final["pending_judgement"] == []
+
+
+def test_model_constants(tmp_path):
+    ld = dl  # draft_laws imports model_constants from laws_drafting
+    main = tmp_path / "main.bend"
+    main.write_text("def rank_pass() -> Nat:\n  0n\n\ndef rank_x() -> Nat:\n  return 7n\n\n"
+                    "def f(a: Nat) -> Nat:\n  1n\n")
+    assert ld.model_constants(main) == {"rank_pass": "0n", "rank_x": "7n"}

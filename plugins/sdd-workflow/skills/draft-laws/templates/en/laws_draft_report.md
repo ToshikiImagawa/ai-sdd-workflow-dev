@@ -15,6 +15,8 @@
 
 Functions the reference model must implement (copied from the `# model-api:` lines of the law file; the `model` stage follows these).
 
+Fixed by: `{{MODEL_API_SOURCE}}` (`spec` / `main.bend` / `unfixed`; `unfixed` means "unfixed - needs confirmation": a human confirms the API at approval).
+
 | Function | Arguments | Returns | Encoding notes |
 |:--|:--|:--|:--|
 | Model.{{FN}} | {{ARGS}} | {{RETURNS}} | {{ENCODING}} |

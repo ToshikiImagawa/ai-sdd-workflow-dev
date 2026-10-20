@@ -1,63 +1,65 @@
 # spec: spec-task-implementation-proof-gate
 #
-# Laws drafted from the spec. NOT approved: a human adds the approval line
-# (# approved: YYYY-MM-DD <approver> sha256:<hash>) after review.
+# spec から起こした法則案。未承認: レビュー後に人が承認行
+# (# approved: YYYY-MM-DD <承認者> sha256:<hash>) を追記する。
 
 import Base
 import ./main.bend as Model
 
-# model-api: Model.judge(approved: Bool, exit_ok: Bool, marker: Bool) -> Nat  # rows 5/10/12 of the table, assuming rows 1-4 did not match; ranks: PASS=0 SKIPPED=1 TOOL_NOT_FOUND=2 TIMEOUT=3 FAIL=4
-# model-api: Model.worse(a: Nat, b: Nat) -> Nat  # aggregation of two ranks (FAIL > TIMEOUT > TOOL_NOT_FOUND > SKIPPED > PASS); same rank encoding as judge
-# model-api: Model.aggregate_empty() -> Nat  # aggregate over zero directories, same rank encoding
+# model-api: Model.rank_pass() -> Nat
+# model-api: Model.rank_skipped() -> Nat
+# model-api: Model.rank_fail() -> Nat
+# model-api: Model.worse(a: Nat, b: Nat) -> Nat
+# model-api: Model.aggregate(xs: List<&2, Nat>) -> Nat
+# model-api: Model.judge(approved: Bool, exit_ok: Bool, marker: Bool) -> Nat
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law approved_exit_failure_fails:
+law approved_exit_fail_is_fail:
   for m: Bool
-  {Model.judge(True{}, False{}, m) == 4n : Nat}
+  {Model.judge(True{}, False{}, m) == Model.rank_fail() : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law approved_marker_ok_passes:
-  {Model.judge(True{}, True{}, True{}) == 0n : Nat}
-
-# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law approved_without_marker_fails:
+law approved_no_marker_is_fail:
   for e: Bool
-  {Model.judge(True{}, e, False{}) == 4n : Nat}
+  {Model.judge(True{}, e, False{}) == Model.rank_fail() : Nat}
+
+# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
+law approved_ok_marker_pass:
+  {Model.judge(True{}, True{}, True{}) == Model.rank_pass() : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
 law unapproved_never_pass:
   for e: Bool
   for m: Bool
-  {Model.judge(False{}, e, m) == 1n : Nat}
+  {Model.judge(False{}, e, m) == Model.rank_skipped() : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_associative:
+law aggregate_empty_skipped:
+  {Model.aggregate([]) == Model.rank_skipped() : Nat}
+
+# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
+law aggregate_singleton:
+  for a: Nat
+  {Model.aggregate([a]) == a : Nat}
+
+# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
+law worse_associative:
   for a: Nat
   for b: Nat
   for c: Nat
   {Model.worse(Model.worse(a, b), c) == Model.worse(a, Model.worse(b, c)) : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_commutative:
+law worse_commutative:
   for a: Nat
   for b: Nat
   {Model.worse(a, b) == Model.worse(b, a) : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_empty_is_skipped:
-  {Model.aggregate_empty() == 1n : Nat}
+law worse_pass_identity:
+  for a: Nat
+  {Model.worse(Model.rank_pass(), a) == a : Nat}
 
 # source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_fail_absorbs:
-  for a: Nat
-  {Model.worse(4n, a) == 4n : Nat}
-
-# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_idempotent:
-  for a: Nat
-  {Model.worse(a, a) == a : Nat}
-
-# source: spec-task-implementation-proof-gate §3.1.1 sha256:f90b56b320d1
-law aggregate_pass_identity:
-  for a: Nat
-  {Model.worse(0n, a) == a : Nat}
+law fail_worse_than_skipped:
+  {Model.worse(Model.rank_skipped(), Model.rank_fail()) == Model.rank_fail() : Nat}

@@ -370,3 +370,91 @@ def test_laws_header_file_disallowed_imports_matches_directory_scan(tmp_path):
         tmp_path / "LAWS.bend", tmp_path.resolve(), ["./gone.bend"]) == ["from a import b"]
     assert lh.disallowed_imports(tmp_path) == [
         "LAWS.bend: import ./gone.bend as G", "LAWS.bend: from a import b"]
+
+
+def test_unbounded_nat_literal_warning(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec = _write(tmp_path / "spec.md", SPEC)
+
+    def laws(body):
+        return ("# spec: spec-demo\n\nimport Base\nimport ./main.bend as Model\n\n"
+                "# model-api: Model.f(a: Nat) -> Nat\n"
+                f"# source: spec-demo §3.1.2 sha256:{h}\nlaw l:\n{body}")
+    bad = _write(tmp_path / "a" / "LAWS.bend", laws("  for a: Nat\n  {Model.f(a) == 4n : Nat}\n"))
+    assert [(f.code, f.severity) for f in ld.static_check(bad, spec)] == [("unbounded_nat_literal", "warning")]
+    # literal on the left, and a literal argument with a Nat variable
+    bad2 = _write(tmp_path / "b" / "LAWS.bend", laws("  for a: Nat\n  {4n == Model.f(4n, a) : Nat}\n"))
+    assert [f.code for f in ld.static_check(bad2, spec)] == ["unbounded_nat_literal"]
+    # no Nat variable in the call (Bool only) or no literal side: no warning
+    ok = _write(tmp_path / "c" / "LAWS.bend", laws("  for a: Nat\n  {Model.f(a) == Model.f(a + 0n) : Nat}\n"))
+    assert ld.static_check(ok, spec) == []
+    ok2 = _write(tmp_path / "d" / "LAWS.bend", laws("  for e: Bool\n  {Model.f(e) == 4n : Nat}\n"))
+    assert ld.static_check(ok2, spec) == []
+
+
+def test_fixed_model_api_priority_and_check(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec_text = SPEC + "\nmodel-api: Model.judge(a: Bool) -> Nat\n"
+    spec = _write(tmp_path / "spec.md", spec_text)
+    d = tmp_path / "laws"
+    assert ld.fixed_model_api(SPEC, d)[0] == "unfixed"
+    _write(d / "main.bend", "def other(x: Nat) -> Nat:\n  return x\n\ndef main() -> Nat:\n  return 0n\n")
+    assert ld.fixed_model_api(SPEC, d) == ("main.bend", {"other": "Model.other(x: Nat) -> Nat"})
+    assert ld.fixed_model_api(spec_text, d)[0] == "spec"  # spec declaration wins
+    # `# model-api:` in a law file is not a spec declaration
+    assert ld.model_api_from_spec("# model-api: Model.x() -> Nat\n") == {}
+    f = ld.static_check(_write(d / "LAWS.bend", _laws(h)), spec)
+    assert f == []  # Model.judge is in the spec-fixed API
+    f = ld.static_check(_write(d / "LAWS.bend", _laws(h)), _write(tmp_path / "s2.md", SPEC))
+    assert {x.code for x in f} == {"model_api_not_fixed"}  # main.bend fixes only `other`
+
+
+def _api_laws(h, body, api="# model-api: Model.f(a: Nat) -> Nat\n"):
+    return ("# spec: spec-demo\n\nimport Base\nimport ./main.bend as Model\n\n" + api
+            + f"# source: spec-demo §3.1.2 sha256:{h}\nlaw l:\n{body}")
+
+
+def test_unbounded_nat_literal_expressions(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec = _write(tmp_path / "spec.md", SPEC)
+
+    def codes(i, body):
+        return [f.code for f in ld.static_check(_write(tmp_path / str(i) / "LAWS.bend", _api_laws(h, body)), spec)]
+    assert codes(0, "  for a: Nat\n  {Model.f(a) == (4n) : Nat}\n") == ["unbounded_nat_literal"]
+    assert codes(1, "  for a: Nat\n  {Model.f(a) == 3n + 1n : Nat}\n") == ["unbounded_nat_literal"]
+    assert codes(2, "  for a: Nat\n  {Model.f(a) == 0n : Nat}\n") == []   # 0n is exempt
+    assert codes(3, "  for a, b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["unbounded_nat_literal"]
+
+
+def test_main_bend_defs_indented_generic_multiline(tmp_path):
+    main = _write(tmp_path / "main.bend", (
+        "  def indented(x: Nat) -> Nat:\n    return x\n"
+        "def gen<T>(xs: List<T>) -> Nat:\n  return 0n\n"
+        "def multi(a: Nat,\n          b: Nat) -> Nat:\n  return a\n"
+        "def main() -> Nat:\n  return 0n\n"))
+    api = ld.model_api_from_main(main)
+    assert set(api) == {"indented", "gen", "multi"}
+    assert ld._split_signature(api["multi"]) == (["Nat", "Nat"], "Nat")
+
+
+def test_unreadable_main_bend_is_distinct_from_missing(tmp_path):
+    d = tmp_path / "laws"
+    assert ld.fixed_model_api(None, d)[0] == "unfixed"
+    _write(d / "main.bend", "nothing recognisable\n")
+    assert ld.fixed_model_api(None, d) == ("main.bend-unreadable", {})
+    h = ld.section_hash(SPEC, "3.1.2")
+    f = ld.static_check(_write(d / "LAWS.bend", _laws(h)), _write(tmp_path / "s.md", SPEC))
+    assert "model_api_source_unreadable" in [x.code for x in f]
+
+
+def test_signature_mismatch_and_spec_duplicates(tmp_path):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec_text = SPEC + "\nmodel-api: Model.judge(a: Bool, b: Bool) -> Nat\nmodel-api: Model.judge(a: Nat) -> Nat\n"
+    spec = _write(tmp_path / "spec.md", spec_text)
+    f = ld.static_check(_write(tmp_path / "LAWS.bend", _laws(h)), spec)  # declares judge(a: Bool) -> Nat
+    codes = [x.code for x in f]
+    assert "model_api_signature_mismatch" in codes and "model_api_duplicate" in codes
+    # the spec declaration is used alone: a main.bend with other defs is not merged in
+    _write(tmp_path / "main.bend", "def other(x: Nat) -> Nat:\n  return x\n")
+    assert ld.fixed_model_api(spec_text, tmp_path)[0] == "spec"
+    assert set(ld.fixed_model_api(spec_text, tmp_path)[1]) == {"judge"}

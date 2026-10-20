@@ -1,0 +1,7 @@
+{
+  "agg_pair_commutes": {
+    "verdict": "weak",
+    "generated_name": "worse_commutative",
+    "note": "aggregate ではなく worse の可換律。命題が別"
+  }
+}
