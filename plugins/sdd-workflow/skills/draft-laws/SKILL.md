@@ -46,7 +46,7 @@ All deterministic work goes through one script (JSON on stdout):
 | fixed model API | `model-api <feature>` |
 | section hash | `hash <spec-path> <section>` |
 | order and cut off | `rank --max <n> <candidates.json>` |
-| static check | `check <laws-file> --spec <spec-path> [--require-model]` |
+| static check | `check <laws-file> --spec <spec-path> [--feature <feature> [--project-root <dir>]] [--require-model]` |
 | acceptance (maintainers) | `compare <generated> <reference> [--judgement <json>] [--check-result <check-output.json>]` |
 
 ## `draft <feature>`
@@ -62,7 +62,7 @@ All deterministic work goes through one script (JSON on stdout):
 4. For each candidate get the section hash with `hash`. Put candidates in a JSON array `{name, section, priority, body, trivial, unbounded}` (`body` = the law text, `trivial` = true for tautologies, restatements of a model definition, or type-only properties, `unbounded` = true for equations that hold only for part of a `for x: Nat` range) and run `rank --max <max_laws>`. Adopt exactly `adopted`; everything in `not_adopted` goes to "Rejected candidates" with its `reason`.
 5. If nothing is adopted and nothing can be a law: write no `LAWS.bend` / `LAWS.draft.bend`, report "Sections not turned into laws" per section and finish successfully (not a failure; existing files untouched).
 6. Write the law file from `templates/${SDD_LANG}/laws_draft.md`. Every `law` is preceded by `# source: <spec id> §<section> sha256:<hash>` placed **after** the imports (inside the hashed body). No approval line.
-7. `check <file> --spec <spec>`. Put the findings in the report. If `propose_drafted` is false, do not propose `drafted`; fix generation errors first when possible.
+7. `check <file> --spec <spec> --feature <feature>`. If the result has `notes` (model API not fixed, so check 6 did not run), put them in the report. Put the findings in the report. If `propose_drafted` is false, do not propose `drafted`; fix generation errors first when possible.
 8. Report from `templates/${SDD_LANG}/laws_draft_report.md`: with `--ticket <n>` write `${SDD_TASK_PATH}/<n>/laws-draft-report.md`, else print it. Include the current content hash and the approval-line format for the human. Mention that until the spec lists `laws:`, the gate reports orphan laws (FAIL, row #4) before the unapproved SKIPPED (row #5).
 
 ## `model <feature>`

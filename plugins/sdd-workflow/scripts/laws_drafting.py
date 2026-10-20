@@ -456,6 +456,7 @@ def static_check(
     *,
     tolerate_missing_model: bool = True,
     fixed_api: Optional[Dict[str, str]] = None,
+    model_dir: Optional[Path] = None,
 ) -> List[Finding]:
     """Static checks of a ``draft`` output (``LAWS.bend`` / ``LAWS.draft.bend``).
 
@@ -467,7 +468,9 @@ def static_check(
     4 trivial (both sides identical) laws; ``unbounded_nat_literal``. Without
     ``spec_path`` the source checks (1) are skipped. ``fixed_api`` (default: the
     spec's ``model-api:`` lines, else ``main.bend`` beside the law file) turns a
-    ``Model.*`` name outside it into an error.
+    ``Model.*`` name outside it into an error. ``model_dir`` is where ``main.bend`` is looked
+    up (default: the law file's directory; pass the feature's laws directory when the file
+    lives elsewhere).
     """
     findings: List[Finding] = []
     laws = parse_laws(laws_path)
@@ -516,7 +519,7 @@ def static_check(
     findings.extend(_model_api_findings(laws_path, laws))
     findings.extend(_unbounded_nat_findings(laws))
     if fixed_api is None:
-        source, fixed_api = fixed_model_api(spec_text, laws_path.parent)
+        source, fixed_api = fixed_model_api(spec_text, model_dir or laws_path.parent)
         if source == "main.bend-unreadable":
             findings.append(Finding(
                 "model_api_source_unreadable", WARNING, "",

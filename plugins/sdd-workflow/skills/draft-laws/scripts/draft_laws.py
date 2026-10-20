@@ -33,12 +33,14 @@ from hook_common import (  # noqa: E402
     resolve_project_root,
 )
 from laws_drafting import (  # noqa: E402
+    Finding,
     approval_status,
     fixed_model_api,
     has_errors,
     parse_laws,
     section_hash_of_file,
     spec_id_of,
+    spec_model_api_duplicates,
     static_check,
 )
 from laws_header import LAWS_FILE, MODEL_FILE, PROOF_FILE  # noqa: E402
@@ -233,13 +235,44 @@ def cmd_rank(ns: argparse.Namespace) -> Dict[str, Any]:
 
 
 def cmd_check(ns: argparse.Namespace) -> Dict[str, Any]:
+    """Static checks. ``--feature`` (with ``--project-root``) resolves the fixed model API the
+    way ``model-api`` does (the spec found for the feature, ``main.bend`` of its laws
+    directory), so a file kept outside the laws directory is still checked against it. The
+    result states the API source; when it is not fixed, ``notes`` says check 6 did not run."""
     laws = Path(ns.laws_file)
-    findings = static_check(laws, Path(ns.spec) if ns.spec else None,
-                            tolerate_missing_model=not ns.require_model)
+    spec_path = Path(ns.spec) if ns.spec else None
+    model_dir: Optional[Path] = None
+    if ns.feature:
+        root = Path(resolve_project_root(ns.project_root))
+        paths = load_sdd_paths(str(root), read_sdd_config_json(str(root)))
+        feature = ns.feature.strip("/")
+        model_dir = root / paths.laws_prefix / feature
+        if spec_path is None:
+            spec_path = find_spec(root, paths.specification_prefix, feature)
+    spec_text = spec_path.read_text(encoding="utf-8", errors="replace") if spec_path else None
+    source, api = fixed_model_api(spec_text, model_dir or laws.parent)
+    findings = static_check(laws, spec_path, tolerate_missing_model=not ns.require_model,
+                            fixed_api=api, model_dir=model_dir)
+    if source == "main.bend-unreadable":
+        findings.append(Finding(
+            "model_api_source_unreadable", "warning", "",
+            "main.bend exists but no 'def' could be read from it: check 6 did not run"))
+    for fn in spec_model_api_duplicates(spec_text or ""):
+        findings.append(Finding(
+            "model_api_duplicate", "warning", "",
+            f"the spec declares Model.{fn} in more than one 'model-api:' line; the first is used"))
     errs = [f for f in findings if f.severity == "error"]
-    return {"laws_file": ns.laws_file, "findings": [f._asdict() for f in findings],
-            "errors": len(errs), "warnings": len(findings) - len(errs),
-            "propose_drafted": not has_errors(findings)}
+    out: Dict[str, Any] = {
+        "laws_file": ns.laws_file, "findings": [f._asdict() for f in findings],
+        "errors": len(errs), "warnings": len(findings) - len(errs),
+        "propose_drafted": not has_errors(findings),
+        "model_api": {"source": source, "fixed": source in ("spec", "main.bend"),
+                      "functions": sorted(api)}}
+    if not out["model_api"]["fixed"]:
+        out["notes"] = ["the model API is not fixed (no spec 'model-api:' line and no readable "
+                        "main.bend): check 6 (fixed-API names) did not run; pass --feature "
+                        "[--project-root] when the file is outside the laws directory"]
+    return out
 
 
 def _propositions(path: Path) -> Dict[str, str]:
@@ -346,6 +379,9 @@ def build_parser() -> argparse.ArgumentParser:
     c = sub.add_parser("check")
     c.add_argument("laws_file")
     c.add_argument("--spec", default="")
+    c.add_argument("--feature", default="",
+                   help="resolve the fixed model API from this feature's spec / laws dir")
+    c.add_argument("--project-root", default="")
     c.add_argument("--require-model", action="store_true",
                    help="main.bend must exist (use after the model stage)")
     c.set_defaults(fn=cmd_check)

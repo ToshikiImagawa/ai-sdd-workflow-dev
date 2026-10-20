@@ -139,6 +139,8 @@ FR 表の文言のみを根拠に法則を作らない（等式にできず、�
 固定済みの API に無い関数（別のモデル関数や空入力用の関数を新設した案）は静的チェックの検査 6 で error になる。
 固定済み API を広げる場合は spec の宣言または `main.bend` を人が更新する。
 
+`draft_laws.py check` は、`--feature <feature> [--project-root <dir>]` を渡すと、`status` / `model-api` と同じ方法（feature の spec と laws ディレクトリの `main.bend`）で固定 API を解決する。法則案をリポジトリ外に置いて検査するときは必ず渡す。渡さない場合は法則ファイルの隣の `main.bend` と `--spec` の宣言だけを見る。固定 API が得られない（`unfixed`）ときは、結果の `model_api.source` と `notes` で検査 6 が動かなかったことを明示する。
+
 - spec が 1 関数でも宣言していれば、`main.bend` は参照せず、両者をマージしない（spec の宣言が API の全体になる）。宣言していない関数を使いたいときは spec に追記する
 - 同じ関数を spec が複数行で宣言した場合は最初の行を採用し、検査で warning `model_api_duplicate` を出す
 - `main.bend` の `def` は、インデント付き・型引数付き（`def f<T>(...)`）・複数行にわたるシグネチャも読む。読めない場合は上記の `main.bend-unreadable`（「固定元が無い」とは区別する）

@@ -250,7 +250,7 @@ def test_acceptance_fixture_check_against_fixed_api():
         shutil.copy(FIXTURES / "proof-gate-acceptance.LAWS.draft.bend", Path(d) / "LAWS.draft.bend")
         shutil.copy(REFERENCE.parent / "main.bend", Path(d) / "main.bend")
         out = dl.cmd_check(type("N", (), {"laws_file": str(Path(d) / "LAWS.draft.bend"), "spec": "",
-                                          "require_model": False}))
+                                          "require_model": False, "feature": "", "project_root": ""}))
     codes = {(f["code"], f["law"]) for f in out["findings"]}
     assert ("unbounded_nat_literal", "aggregate_fail_absorbs") in codes
     msgs = " ".join(f["message"] for f in out["findings"] if f["code"] == "model_api_not_fixed")
@@ -355,3 +355,29 @@ def test_model_api_unreadable_main_bend(tmp_path):
     (laws / "main.bend").write_text("# a model with no recognisable def\nsome garbage\n")
     out = dl.cmd_model_api(type("N", (), {"feature": "demo", "project_root": str(tmp_path)}))
     assert out["source"] == "main.bend-unreadable" and out["fixed"] is False and "warning" in out
+
+
+def test_check_feature_resolves_fixed_api_for_file_outside_laws_dir(tmp_path):
+    root = tmp_path / "proj"
+    (root / ".sdd/specification").mkdir(parents=True)
+    (root / ".sdd/specification/demo_spec.md").write_text(SPEC_TEXT)
+    laws_dir = root / ".sdd/laws/demo"
+    laws_dir.mkdir(parents=True)
+    (laws_dir / "main.bend").write_text("def judge(a: Bool) -> Nat:\n  return 1n\n")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    draft = scratch / "LAWS.draft.bend"
+    draft.write_text("# spec: spec-demo\n\nimport Base\nimport ./main.bend as Model\n\n"
+                     "# model-api: Model.extra(a: Bool) -> Nat\n"
+                     "# source: spec-demo §2.1 sha256:000000000000\n"
+                     "law l:\n  for a: Bool\n  {Model.extra(a) == 1n : Nat}\n")
+    # without --feature the API is unfixed and the check is silent, but the result says so
+    code, plain = run("check", str(draft))
+    assert plain["model_api"]["source"] == "unfixed" and "notes" in plain
+    assert "model_api_not_fixed" not in {f["code"] for f in plain["findings"]}
+    # with --feature the fixed API (main.bend of the feature) is applied
+    code, out = run("check", str(draft), "--feature", "demo", "--project-root", str(root))
+    assert out["model_api"] == {"source": "main.bend", "fixed": True, "functions": ["judge"]}
+    assert "notes" not in out
+    assert "model_api_not_fixed" in {f["code"] for f in out["findings"]}
+    assert out["propose_drafted"] is False
