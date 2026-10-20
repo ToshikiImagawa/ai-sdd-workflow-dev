@@ -592,6 +592,14 @@ laws-status: "approved"          # none | drafted | approved | proven
 ゲートは新しいハッシュ付きで `SKIPPED` を返します。AI は承認行を書きません（PR レビューで確認してください）。
 `laws-status` を `approved` / `proven` に進めるのも人の作業です。
 
+### `/draft-laws` による法則案の生成
+
+`LAWS.bend` を手書きする代わりに、`/draft-laws` が spec から 2 段階で生成します。`bend` は呼ばず、承認行も書きません。
+
+1. `/draft-laws draft {feature}` は spec の構造化された節（決定表・集約規則・制約・数値目標の NFR。上限は `laws.max_laws`、既定 10）から法則を抽出し、`LAWS.bend` に書きます。各法則には `# source: <spec の id> §<節> sha256:<節ハッシュ>` が付き、法則が前提とするモデル関数は `# model-api:` 行に列挙されます。未承認の `LAWS.bend` または承認済みの `LAWS.bend` が既にある場合、再生成案は `LAWS.draft.bend` に出力されます（採用・削除は人が判断。`--overwrite` で置き換えられるのは未承認の `LAWS.bend` だけ）。`--ticket` を付けると `task/{ticket}/laws-draft-report.md` に、採用した法則・モデル API・未採用の候補・静的チェック結果を出力します。spec への `laws:` / `laws-status: drafted` の追加は提案に留まります。
+2. 法則をレビューし、人が承認します（「承認」の節を参照）。
+3. `/draft-laws model {feature}` は `LAWS.bend` に有効な承認行が無いと拒否され、有効なら `# model-api:` 行に従って `main.bend` と `PROOF.bend` を書きます。`LAWS.bend` は変更しません。
+
 ### 実行
 
 `/run-checklist {feature} {ticket}` が `CHK-205`（`laws:` を持つ spec でのみ生成）を検証し、`--category proof` はその項目だけを検証します。
