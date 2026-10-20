@@ -13,7 +13,7 @@
 
 ## Model API
 
-Functions the reference model must implement (copied from the `# model-api:` lines of the law file; the `model` stage follows these).
+Functions the reference model must implement (copied from the `# model-api:` lines of the law file; the `model` stage follows these). Write types in Bend's notation (a list is `List<&2, T>`); declare `for` variables one per line.
 
 Fixed by: `{{MODEL_API_SOURCE}}` (`spec` / `main.bend` / `unfixed`; `unfixed` means "unfixed - needs confirmation": a human confirms the API at approval).
 

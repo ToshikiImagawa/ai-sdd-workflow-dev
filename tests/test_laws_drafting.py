@@ -9,6 +9,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPTS = Path(__file__).resolve().parent.parent / "plugins" / "sdd-workflow" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
@@ -423,7 +425,33 @@ def test_unbounded_nat_literal_expressions(tmp_path):
     assert codes(0, "  for a: Nat\n  {Model.f(a) == (4n) : Nat}\n") == ["unbounded_nat_literal"]
     assert codes(1, "  for a: Nat\n  {Model.f(a) == 3n + 1n : Nat}\n") == ["unbounded_nat_literal"]
     assert codes(2, "  for a: Nat\n  {Model.f(a) == 0n : Nat}\n") == []   # 0n is exempt
-    assert codes(3, "  for a, b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["unbounded_nat_literal"]
+    # the comma form is still read for the Nat check, but is itself an error
+    assert codes(3, "  for a, b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["multi_var_for", "unbounded_nat_literal"]
+    assert codes(4, "  for a: Nat\n  for b: Nat\n  {Model.f(b) == 2n : Nat}\n") == ["unbounded_nat_literal"]
+
+
+@pytest.mark.parametrize("decl", [
+    "for a b: Nat", "for a, b: Nat", "for a,b: Nat", "for a  b: Nat", "for a\tb: Nat",
+    "for a b c: Nat", "for a: Nat, b: Nat", "for a: List<&2, Nat>, b: Nat", "for a\n  b: Nat"])
+def test_multi_var_for_is_error(tmp_path, decl):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec = _write(tmp_path / "spec.md", SPEC)
+    api = "# model-api: Model.f(a: Nat, b: Nat) -> Nat\n"
+    laws = _api_laws(h, f"  {decl}\n  {{Model.f(a, b) == Model.f(b, a) : Nat}}\n", api)
+    fs = ld.static_check(_write(tmp_path / "LAWS.bend", laws), spec)
+    assert [(f.code, f.severity) for f in fs] == [("multi_var_for", "error")]
+
+
+@pytest.mark.parametrize("body", [
+    "  for a: Nat\n  for b: Nat\n  {Model.f(a, b) == Model.f(b, a) : Nat}\n",
+    "  # not: for a b: Nat\n  for a: Nat\n  for b: Nat\n  {Model.f(a, b) == Model.f(b, a) : Nat}\n",
+    "  for a: List<&2, Nat>\n  for b: Nat\n  {Model.f(a, b) == Model.f(a, b) : Nat}\n"])
+def test_one_var_per_for_passes(tmp_path, body):
+    h = ld.section_hash(SPEC, "3.1.2")
+    spec = _write(tmp_path / "spec.md", SPEC)
+    api = "# model-api: Model.f(a: Nat, b: Nat) -> Nat\n"
+    fs = ld.static_check(_write(tmp_path / "LAWS.bend", _api_laws(h, body, api)), spec)
+    assert "multi_var_for" not in [f.code for f in fs]
 
 
 def test_main_bend_defs_indented_generic_multiline(tmp_path):
