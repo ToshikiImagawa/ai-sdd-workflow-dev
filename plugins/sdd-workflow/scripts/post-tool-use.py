@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hook_common import (  # noqa: E402
     SOURCE_EXTENSIONS,
     SddPaths,
-    emit_additional_context,
+    emit_additional_context as _emit_json,
     get_project_root,
     load_sdd_paths,
     read_stdin_json,
@@ -38,6 +38,27 @@ from hook_common import (  # noqa: E402
 from doc_walker import find_spec_or_legacy_design_doc  # noqa: E402
 from fm_parser import parse_front_matter, split_front_matter  # noqa: E402
 from laws_header import LAWS_FILE, MODEL_FILE, read_header  # noqa: E402
+
+
+_MESSAGES: list = []
+
+
+def emit_additional_context(event_name: str, text: str) -> None:
+    """Queue a reminder; flush_messages() prints them as ONE additionalContext JSON.
+
+    Several reminders can apply to one edit (e.g. spec sync + laws re-draft), and
+    a hook is expected to print a single JSON object on stdout.
+    """
+    _MESSAGES.append((event_name, text))
+
+
+def flush_messages() -> None:
+    if not _MESSAGES:
+        return
+    event_name = _MESSAGES[0][0]
+    text = "\n\n".join(t for _, t in _MESSAGES)
+    _MESSAGES.clear()
+    _emit_json(event_name, text)
 
 
 def readme_pointer() -> str:
@@ -283,13 +304,17 @@ def _process_source_file(rel: Path, rel_path: str, project_root: str,
 
 
 def _process_single_file(rel_path: str, project_root: str,
-                         paths: SddPaths) -> None:
-    rel = Path(rel_path)
-    if _process_sdd_doc(rel, rel_path, project_root, paths):
-        return
-    _process_source_file(rel, rel_path, project_root, paths)
-    if rel.suffix in SOURCE_EXTENSIONS:
-        _process_model_of(rel, rel_path, project_root, paths)
+                         paths: SddPaths, flush: bool = True) -> None:
+    try:
+        rel = Path(rel_path)
+        if _process_sdd_doc(rel, rel_path, project_root, paths):
+            return
+        _process_source_file(rel, rel_path, project_root, paths)
+        if rel.suffix in SOURCE_EXTENSIONS:
+            _process_model_of(rel, rel_path, project_root, paths)
+    finally:
+        if flush:
+            flush_messages()
 
 
 def main() -> None:
@@ -306,7 +331,8 @@ def main() -> None:
         rel_path = relative_to_project(file_path, project_root)
         if not rel_path:
             continue
-        _process_single_file(rel_path, project_root, paths)
+        _process_single_file(rel_path, project_root, paths, flush=False)
+    flush_messages()
 
 
 if __name__ == "__main__":

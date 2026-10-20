@@ -360,3 +360,22 @@ class TestSpecLawsReminder:
         spec.write_text('---\nid: "x"\n---\n# a\n', encoding="utf-8")
         _process(os.path.join(".sdd", "specification", "a_spec.md"), tmp_path)
         assert "/draft-laws" not in capsys.readouterr().out
+
+    def test_spec_sync_and_laws_reminder_are_one_json(self, tmp_path, capsys):
+        import json
+        _spec_with_laws(tmp_path, "0" * 12)
+        _process(self.REL, tmp_path)
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+        assert len(lines) == 1
+        ctx = json.loads(lines[0])["hookSpecificOutput"]["additionalContext"]
+        assert "PRD <-> spec <-> adr" in ctx and "/draft-laws" in ctx
+
+    def test_model_of_and_sync_are_one_json(self, tmp_path, capsys):
+        import json
+        _laws_project(tmp_path)
+        (tmp_path / ".sdd" / "specification").mkdir(parents=True)
+        (tmp_path / ".sdd" / "specification" / "user_login_spec.md").write_text("x", encoding="utf-8")
+        (tmp_path / "src" / "auth").mkdir(parents=True)
+        _process(os.path.join("src", "auth", "user_login.py"), tmp_path)
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip()]
+        assert len(lines) == 1 and "# model-of:" in json.loads(lines[0])["hookSpecificOutput"]["additionalContext"]

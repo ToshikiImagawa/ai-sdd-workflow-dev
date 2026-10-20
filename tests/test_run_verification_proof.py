@@ -566,3 +566,27 @@ class TestDriftWarnings:
     def test_no_bend_no_warnings(self, tmp_path):
         r = self._run(_drift_project(tmp_path, source_hash="0" * 12), bend_found=False)
         assert r["status"] == "TOOL_NOT_FOUND" and "warnings" not in r
+
+    def test_expired_approval_has_no_warnings(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        root = _drift_project(tmp_path, source_hash="0" * 12)
+        laws = root / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
+        laws.write_text(laws.read_text(encoding="utf-8") + "\n# edited\nlaw b:\n  for x: Nat\n  {x == x : Nat}\n",
+                        encoding="utf-8")
+        r = self._run(root)
+        assert r["status"] == "SKIPPED" and "warnings" not in r
+
+    def test_malformed_source_reports_source_invalid(self, tmp_path, fake_bend):
+        fake_bend("pass")
+        root = _drift_project(tmp_path, approved=False)
+        laws = root / ".sdd" / "laws" / "auth" / "user-login" / "LAWS.bend"
+        text = laws.read_text(encoding="utf-8")
+        import re
+        text = re.sub(r"# source: .*", "# source: not-a-valid-source", text)
+        laws.write_text(text, encoding="utf-8")
+        h = rv.law_body_hash(laws)
+        laws.write_text(text.replace("import Base", f"# approved: 2026-10-17 @r sha256:{h}\nimport Base", 1),
+                        encoding="utf-8")
+        r = self._run(root)
+        assert r["status"] == "PASS"
+        assert [w["code"] for w in r["warnings"]] == ["source_invalid"]
