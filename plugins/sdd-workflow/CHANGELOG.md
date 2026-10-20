@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-10-21
+
 ### Added
 
 - `/draft-laws` extraction rule: when the fixed API has an aggregate function (e.g. `Model.aggregate`) over a binary operation (e.g. `Model.worse`), write commutativity / identity / empty-input / single-element laws on the aggregate first; binary-operation versions are added only when the cap has room. Candidates may carry `level: "binary"`, which `rank` orders last inside one priority
