@@ -41,9 +41,17 @@ question, classify the category as **Clear** and cite the implementation as the 
 re-asking something the codebase has already settled. Only when neither the spec nor the implementation
 fixes the value does it remain genuinely ambiguous.
 
+## Clarity Score Formula
+
+**Clarity score** = Clear items ÷ (all items − N/A items). Counting is per item (the unit used in `clarify_spec.md`), not per category. Partial and Missing stay in the denominator but never enter the numerator. An item that does not apply to the feature is classified **N/A** and removed from the denominator; the 9-category summary below still records every category (a category whose items are all N/A is recorded as N/A with its basis).
+
+Example: 20 items, 2 N/A, 9 Clear, 6 Partial, 3 Missing → 9 ÷ (20 − 2) = 50%.
+
+This is the canonical definition; other files summarize in one line and link here.
+
 ## Category Analysis Summary (Required Output)
 
-Record the Clear / Partial / Missing classification for **all 9 categories**, not only the ones that
+Record the Clear / Partial / Missing / N/A classification for **all 9 categories**, not only the ones that
 become questions. A category that turns into no question still needs its classification and a one-line
 basis (the specific statement, or its absence, that the classification rests on) recorded in the output.
 Without this, the analysis's actual coverage — which categories were checked and how thoroughly — is
@@ -54,7 +62,7 @@ invisible to the reader, and detection granularity becomes unverifiable run to r
 
 | # | Category               | Classification | Basis                                    |
 |:--|:------------------------|:----------------|:------------------------------------------|
-| 1 | Functional Scope        | Clear/Partial/Missing | {statement, or "not mentioned"}     |
+| 1 | Functional Scope        | Clear/Partial/Missing/N/A | {statement, or "not mentioned"}     |
 | ... (all 9 rows) |
 ```
 

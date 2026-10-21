@@ -19,6 +19,8 @@ Rules:
 - Judge only items that apply to the requirement; mark an item N/A explicitly rather than counting it as missing
 - When unsure between two marks, choose the lower one and list the missing item as a clarification question
 - For an NFR, take the mark from Section 3
+- When a spec weakens the verification method or strength its PRD states (e.g., PRD: test; spec: manual check), mark △
+- When a requirement is delegated by link to a canonical document, mark ○ if the link target exists and satisfies the requirement; otherwise judge as usual
 
 ### Reading the Distribution (when a PRD or spec exists)
 
@@ -47,9 +49,11 @@ For the request (and the specs, if any), mark each as ○ / △ / ×:
 | V3 | Error handling | Abnormal-case behavior is stated |
 | V4 | Boundary conditions | Limits and edge cases are stated |
 | V5 | Completion criteria | "Done" can be verified |
-| V6 | Non-functional targets | The NFR mark from Section 3. N/A when no NFR category is affected |
+| V6 | Non-functional targets | The NFR mark from Section 3. N/A when no NFR category is affected (requirement wording that fits none of the seven categories is outside V6; see "Mapping Requirements to the Seven Categories" in `nfr_checklist.md`) |
 
 ### Decision
+
+V1–V5 are also N/A when the spec explicitly states that the viewpoint does not apply (e.g., "no inputs: takes no arguments"). V3 and V4 marks: △ = some abnormal cases or boundaries are stated; × = none is stated at all.
 
 Every input falls in exactly one row. Only applicable viewpoints count (N/A is ignored).
 
@@ -64,13 +68,13 @@ This extends the 3-row risk table in `vibe-detector` (High / Medium / Low) so th
 
 ## 3. NFR: Using `nfr_checklist.md`
 
-Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklist.md` and map it to a mark:
+Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklist.md` (which also maps requirement wording to the seven categories) and map it to a mark:
 
 | NFR level | Mark |
 |:----------|:-----|
 | 0 Not stated | × |
 | 1 Mention only | △ |
-| 2 Target value, 3 Target + condition + measurement | ○ |
+| 2 Target value, 3 Target + condition + verification | ○ |
 
 The "Mapping to Risk Tiers" in `nfr_checklist.md` is a guideline for a single category. After aggregation below, the tier is fixed through V6 in Section 2.
 
@@ -83,6 +87,8 @@ The seven categories are Performance, Security, Reliability, Scalability, Usabil
 3. The **NFR mark** (the V6 value) is the lowest mark among affected categories (any × → ×; else any △ → △; else ○)
 4. If no category is affected, V6 is N/A
 5. Categories that are not affected are only noted in the report; they do not enter any mark
+
+If the PRD has no NFR of its own and refers to a parent PRD, judge the categories from the parent PRD's NFRs.
 
 Report the per-category marks with the NFR mark, so one weak category stays visible. The NFR mark also counts as one requirement-level mark in Section 1.
 

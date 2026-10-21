@@ -6,7 +6,7 @@
 2. Load existing specification (*_spec.md) if exists
 3. Systematically analyze across nine categories
 4. Evaluate clarity (Clear/Partial/Missing)
-5. Calculate clarity score (Total score = Clear items / All items)
+5. Calculate clarity score (Clear items ÷ (all items − N/A items); see `skills/clarify/references/nine_category_analysis.md`)
 6. Generate up to 5 high-impact questions
 7. Present questions to user
 
