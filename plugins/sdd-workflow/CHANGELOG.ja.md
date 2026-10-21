@@ -12,6 +12,7 @@
 ### 追加
 
 - `shared/references/nfr_checklist.md`: NFR 参照資料（7 カテゴリ、「定量化されている」の定義と 4 段階（未記述 / 言及のみ / 目標値あり / 目標値＋条件＋測定方法）、良い例・悪い例、目安の範囲）。`ambiguity_patterns.md` からリンク。参照資料のみで、スキル・エージェントの挙動は変更なし (Refs #8)
+- `shared/references/ambiguity_criteria.md`: 曖昧さ判定基準の唯一の置き場。要求ごとの ○/△/× 判定と割合の目安（固定しきい値ではない）、`vibe-detector` 用の High/Medium/Low 観点チェック（PRD/spec がない入力でも使える）、`nfr_checklist.md` の段階を引く NFR の扱いと 7 カテゴリの集約規則（対象カテゴリの最低の印）。`vibe-detector` と `ambiguity_patterns.md` から参照。`vibe-detector` と `generate-spec` のリスク表に「spec なし＋明確な依頼 → Medium」の行を追加（従来の 3 行表の拡張。High / Low の行の文言は変更なし） (Refs #9)
 
 ### 変更
 
