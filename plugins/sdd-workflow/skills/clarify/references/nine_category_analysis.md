@@ -43,9 +43,11 @@ fixes the value does it remain genuinely ambiguous.
 
 ## Clarity Score Formula
 
-**Clarity score** = Clear ÷ (all categories − N/A). Partial and Missing stay in the denominator but never enter the numerator. A category the feature does not apply to is recorded as **N/A** (still one of the 9 rows, with its basis) and removed from the denominator.
+**Clarity score** = Clear items ÷ (all items − N/A items). Counting is per item (the unit used in `clarify_spec.md`), not per category. Partial and Missing stay in the denominator but never enter the numerator. An item that does not apply to the feature is classified **N/A** and removed from the denominator; the 9-category summary below still records every category (a category whose items are all N/A is recorded as N/A with its basis).
 
-Example: 9 categories, 1 N/A, 5 Clear, 2 Partial, 1 Missing → 5 ÷ (9 − 1) = 62.5%. This is the canonical definition; other files summarize and link here.
+Example: 20 items, 2 N/A, 9 Clear, 6 Partial, 3 Missing → 9 ÷ (20 − 2) = 50%.
+
+This is the canonical definition; other files summarize in one line and link here.
 
 ## Category Analysis Summary (Required Output)
 

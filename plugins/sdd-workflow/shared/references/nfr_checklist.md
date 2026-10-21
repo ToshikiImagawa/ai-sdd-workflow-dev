@@ -15,15 +15,15 @@ Use these levels as the vocabulary for judging an NFR statement.
 | 0 | Not stated | The category is not mentioned | (no performance requirement) |
 | 1 | Mention only | Named, but no target value | "Must be fast" |
 | 2 | Target value | Number with unit, standard with version/level, or a **checkable binary condition** (see below) | "p95 response time under 500 ms"; "does not depend on an external network" |
-| 3 | Target + condition + measurement | Level 2 plus the load/environment conditions and how it is measured | "p95 under 500 ms at 1,000 concurrent users, verified by load test on staging" |
+| 3 | Target + condition + verification | Level 2 plus the load/environment conditions and how it is verified (measured, tested, or checked in CI) | "p95 under 500 ms at 1,000 concurrent users, verified by load test on staging" |
 
 Level 2 means the target is written in a form a third party can judge (the definition above).
 
-**Checkable binary condition**: a statement a third party can answer yes/no from the text and an inspection, with no number needed. Typical forms: an enumerated list of allowed or forbidden items, a state-transition table, or an explicit prohibition. Examples (Level 2): "does not depend on an external network" (Reliability), "an unapproved item is never reported as PASS" (Reliability), "only the listed 5 libraries may be imported" (Maintainability). A bare adjective ("minimal dependencies", "works offline well") stays Level 1.
+**Checkable binary condition**: a statement a third party can answer yes/no from the text and an inspection, with no number needed. Typical forms: an enumerated list of allowed or forbidden items, a state-transition table, or an explicit prohibition. Examples (Level 2): "does not depend on an external network" (Reliability), "running the same input twice gives the same output" (Reliability, reproducibility), "only the listed 5 libraries may be imported" (Maintainability). A bare adjective ("minimal dependencies", "works offline well") stays Level 1.
 
-**Compatibility with OS names only**: naming just the OS or runner (e.g., "Linux and macOS", "ubuntu-latest") is **Level 2**: the supported set is a closed, checkable list. Adding versions or a support window (e.g., "Ubuntu 22.04 and 24.04", "latest 2 majors") is not a different level; it is an element of Level 3 only when it comes together with a stated verification (condition + measurement, e.g., "verified by CI on each"). Versions without verification stay Level 2.
+**Compatibility with OS names only**: naming just the OS or runner (e.g., "Linux and macOS", "ubuntu-latest") is **Level 2**: the supported set is a closed, checkable list. Adding versions or a support window (e.g., "Ubuntu 22.04 and 24.04", "latest 2 majors") is not a different level; it is an element of Level 3 only when it comes together with a stated verification (condition + verification, e.g., "verified by CI on each"). Versions without verification stay Level 2. An OS name **plus continuous verification in CI, with no version** (e.g., "Linux and macOS, verified by CI on every merge") is **Level 3**.
 
-Level 3 goes further: conditions and measurement method are given, so the result can be verified reproducibly. Level 2 targets (e.g., a percentile without a load condition) are judgeable but may be measured differently by different people; that gap is what Level 3 closes.
+Level 3 goes further: conditions and the verification method are given, so the result can be verified reproducibly. Level 2 targets (e.g., a percentile without a load condition) are judgeable but may be measured differently by different people; that gap is what Level 3 closes.
 
 ### Mapping to Risk Tiers (for #9)
 
@@ -31,7 +31,7 @@ Guideline only: Level 0 maps to High risk, Level 1 to Medium, Level 2 or higher 
 
 ## Mapping Requirements to the Seven Categories
 
-Assign each requirement to exactly one category with this table. When a statement fits two rows, use the row listed here.
+Assign each requirement to exactly one category with this table. This table is not an exhaustive list of requirement types; it covers the boundary cases that were hard to place. When a statement fits two rows, the **upper row takes priority; do not reorder the rows**.
 
 | Requirement wording | Category |
 |:--------------------|:---------|

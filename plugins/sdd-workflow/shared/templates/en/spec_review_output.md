@@ -103,7 +103,7 @@ The following sections need to be added:
 
 **Coverage (reference): {X}% ({Covered+Partially Covered}/{Total Requirements}) / Covered only: {Y}% ({Covered}/{Total Requirements}) / Partially Covered: {n} items / Not Covered: {n} items**
 
-Warning: Coverage is below 80%, or Not Covered / Partially Covered items exist (displayed only in those cases)
+Warning: Coverage is below 80%, or Not Covered is 1 or more (displayed only in those cases; the Partially Covered count never triggers it)
 
 **Criteria**:
 Judged with `ambiguity_criteria.md` (Section 1; NFR: Section 3 / `nfr_checklist.md` Level):
@@ -196,7 +196,7 @@ decision log is the normal state for a feature whose decisions have not been rec
 
 | Check Target        | Result                      | Details                                      |
 |:--------------------|:----------------------------|:---------------------------------------------|
-| PRD - spec          | 🟢 Consistent / 🔴 Inconsistent | Coverage: {X}% (Covered only: {Y}%), Partially Covered: {n} items, Not Covered: {n} items       |
+| PRD - spec          | 🟢 Consistent (coverage ≥ 80% and Not Covered = 0) / 🔴 Inconsistent | Coverage: {X}% (Covered only: {Y}%), Partially Covered: {n} items, Not Covered: {n} items       |
 | spec - design       | 🟢 Consistent / 🔴 Inconsistent | Inconsistencies: {n} items                   |
 | spec - adr          | 🟢 Consistent / 🔴 Inconsistent / ⚪ Not applicable | Contradictions: {n} items, Unrecorded decisions: {n} items, or no decision log |
 | CONSTITUTION - docs | 🟢 Compliant / 🔴 Violation / No Principles | Violations: {n} items, Partial Violations: {n} items |
@@ -241,7 +241,7 @@ decision log is the normal state for a feature whose decisions have not been rec
 
 **Coverage (reference): {X}% ({Covered+Partially Covered}/{Total Requirements}) / Covered only: {Y}% ({Covered}/{Total Requirements}) / Partially Covered: {n} items / Not Covered: {n} items**
 
-Warning: Coverage is below 80%, or Not Covered / Partially Covered items exist (displayed only in those cases)
+Warning: Coverage is below 80%, or Not Covered is 1 or more (displayed only in those cases; the Partially Covered count never triggers it)
 
 ##### spec - design Consistency (design files only)
 

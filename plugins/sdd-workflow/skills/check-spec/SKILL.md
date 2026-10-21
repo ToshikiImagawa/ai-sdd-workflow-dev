@@ -404,7 +404,7 @@ Invoke `spec-reviewer` per target spec with:
 
 | Check Item                      | Description                                                              |
 |:--------------------------------|:-------------------------------------------------------------------------|
-| **PRD <-> spec Traceability**   | Verify PRD requirements are covered in spec (80% coverage threshold; Covered/Partially/Not per `ambiguity_criteria.md`, NFR quantification per `nfr_checklist.md`) |
+| **PRD <-> spec Traceability**   | Verify PRD requirements are covered in spec (warn when coverage < 80% or Not Covered ≥ 1; Partially count shown only; Covered/Partially/Not per `ambiguity_criteria.md`, NFR quantification per `nfr_checklist.md`) |
 | **spec <-> adr Consistency**    | Verify the decision log's current (latest, non-superseded) decisions agree with the spec, that the spec does not rely on a superseded decision, and that spec-driving decisions are recorded at all. Document level only — adr <-> implementation drift stays out of scope, see Known Limitations |
 | **CONSTITUTION.md Compliance**  | Verify compliance with project principles                                |
 | **Completeness**                | Verify required sections (purpose, API, constraints, etc.) are present   |

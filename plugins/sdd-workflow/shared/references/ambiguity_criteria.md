@@ -19,6 +19,8 @@ Rules:
 - Judge only items that apply to the requirement; mark an item N/A explicitly rather than counting it as missing
 - When unsure between two marks, choose the lower one and list the missing item as a clarification question
 - For an NFR, take the mark from Section 3
+- When a spec weakens the verification method or strength its PRD states (e.g., PRD: test; spec: manual check), mark △
+- When a requirement is delegated by link to a canonical document, mark ○ if the link target exists and satisfies the requirement; otherwise judge as usual
 
 ### Reading the Distribution (when a PRD or spec exists)
 
@@ -72,7 +74,7 @@ Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklis
 |:----------|:-----|
 | 0 Not stated | × |
 | 1 Mention only | △ |
-| 2 Target value, 3 Target + condition + measurement | ○ |
+| 2 Target value, 3 Target + condition + verification | ○ |
 
 The "Mapping to Risk Tiers" in `nfr_checklist.md` is a guideline for a single category. After aggregation below, the tier is fixed through V6 in Section 2.
 
@@ -80,12 +82,13 @@ The "Mapping to Risk Tiers" in `nfr_checklist.md` is a guideline for a single ca
 
 The seven categories are Performance, Security, Reliability, Scalability, Usability, Maintainability, Compatibility.
 
-0. When the PRD has no NFR of its own and refers to a parent PRD, V6 is judged from the parent PRD's NFRs
 1. Select the **affected categories**: those the request or the spec affects. An affected category that is not mentioned is Level 0 (×)
 2. Mark each affected category
 3. The **NFR mark** (the V6 value) is the lowest mark among affected categories (any × → ×; else any △ → △; else ○)
 4. If no category is affected, V6 is N/A
 5. Categories that are not affected are only noted in the report; they do not enter any mark
+
+If the PRD has no NFR of its own and refers to a parent PRD, judge the categories from the parent PRD's NFRs.
 
 Report the per-category marks with the NFR mark, so one weak category stays visible. The NFR mark also counts as one requirement-level mark in Section 1.
 

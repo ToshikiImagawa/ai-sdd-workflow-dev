@@ -185,7 +185,7 @@ Use `--detail` with one of the following values:
 The following verifications are automatically performed during clarification:
 
 - [x] **Nine Category Scan**: Comprehensively detect ambiguities across functional scope, data model, flow, etc.
-- [x] **Clarity Score Calculation**: Classify items as Clear/Partial/Missing/N/A and calculate overall score = Clear ÷ (all categories − N/A); Partial is not counted in the numerator (see `references/nine_category_analysis.md`)
+- [x] **Clarity Score Calculation**: Classify items as Clear/Partial/Missing/N/A and calculate overall score (Clear items ÷ (all items − N/A items); see `references/nine_category_analysis.md`)
 - [x] **Question Prioritization**: Select questions based on impact, risk, and blocker status
 
 ### Verification Commands

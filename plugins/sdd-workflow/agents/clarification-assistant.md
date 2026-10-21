@@ -287,7 +287,7 @@ You are successful when:
 
 ## Clarity Score Evaluation Criteria
 
-Score = Clear ÷ (all categories − N/A). Partial is not counted in the numerator; a category that does not apply is recorded as N/A and removed from the denominator (definition: `${CLAUDE_PLUGIN_ROOT}/skills/clarify/references/nine_category_analysis.md`).
+Score: Clear items ÷ (all items − N/A items); definition in `${CLAUDE_PLUGIN_ROOT}/skills/clarify/references/nine_category_analysis.md`.
 
 | Score Range      | Rating       | Action                                                          |
 |:-----------------|:-------------|:----------------------------------------------------------------|
