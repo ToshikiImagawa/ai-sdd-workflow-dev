@@ -9,12 +9,17 @@ Analyze specifications across these categories to identify ambiguity and gaps.
 | **1. Functional Scope**            | What the feature does vs doesn't do  | Edge cases, boundary conditions         |
 | **2. Data Model**                  | Data structures, types, constraints  | Field nullability, validation rules     |
 | **3. Flow & Behavior**             | State transitions, error handling    | Rollback behavior, retry logic          |
-| **4. Non-Functional Requirements** | Performance, security, scalability   | Response time requirements, rate limits |
+| **4. Non-Functional Requirements** | The seven categories in `nfr_checklist.md` | Response time requirements, rate limits |
 | **5. Integrations**                | External system dependencies         | Authentication methods, API versions    |
 | **6. Edge Cases**                  | Boundary conditions, error scenarios | Empty states, network failures          |
 | **7. Constraints**                 | Technical limitations, trade-offs    | Browser support, data size limits       |
 | **8. Terminology**                 | Domain-specific terms                | Consistent naming, acronym definitions  |
 | **9. Completion Signals**          | "Done" criteria, success metrics     | Acceptance criteria, test coverage      |
+
+For category 4, use the seven categories of `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md` (Performance, Security,
+Reliability, Scalability, Usability, Maintainability, Compatibility) and its Level 0–3 vocabulary: Level 0 is Missing,
+Level 1 is Partial, Level 2 or higher is Clear (same mapping as `ambiguity_criteria.md` Section 3). Only categories the
+feature affects are judged.
 
 ## Clarity Level Classification
 

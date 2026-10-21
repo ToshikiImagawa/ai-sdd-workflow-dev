@@ -106,9 +106,10 @@ The following sections need to be added:
 Warning: Coverage is below 80% (displayed only when coverage is below 80%)
 
 **Criteria**:
-- 🟢 **Covered**: PRD requirement is clearly documented in spec with implementation approach defined
-- 🟡 **Partially Covered**: Related description exists in spec but doesn't fully cover the requirement
-- 🔴 **Not Covered**: No corresponding description found in spec
+Judged with `ambiguity_criteria.md` (Section 1; NFR: Section 3 / `nfr_checklist.md` Level):
+- 🟢 **Covered**: Every applicable item (target, inputs/outputs, error behavior, boundary conditions, completion criteria) is stated in spec. NFR: Level 2 or higher
+- 🟡 **Partially Covered**: Related description exists, but at least one applicable item is missing or vague. NFR: Level 1
+- 🔴 **Not Covered**: No corresponding description, or only the topic is named. NFR: Level 0
 
 ##### 🔴 Not Covered Requirements ({n} items)
 

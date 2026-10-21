@@ -125,7 +125,7 @@ Extract/infer the following from input:
 | **Technology Stack**            | Technologies/libraries to use                 | Yes      |
 | **Architecture Proposal**       | Module structure/layer design                 | Yes      |
 | **Design Decisions**            | Reasons for technology selection/alternatives |          |
-| **Non-Functional Requirements** | Performance/security requirements             |          |
+| **Non-Functional Requirements** | Quantified per the seven categories in `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md` |          |
 
 ### 3. Missing Information Confirmation
 

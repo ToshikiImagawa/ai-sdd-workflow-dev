@@ -76,7 +76,7 @@ Systematically analyze requirements from users across **9 categories**:
 | **1. Functional Scope**            | Boundaries of in/out scope, edge case coverage                         |
 | **2. Data Model**                  | Type definitions, required fields, constraints, data lifetime          |
 | **3. Flow**                        | State transitions, error handling, retry strategies                    |
-| **4. Non-Functional Requirements** | Performance targets, scalability, security                             |
+| **4. Non-Functional Requirements** | Seven categories of `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md` (Performance, Security, Reliability, Scalability, Usability, Maintainability, Compatibility) |
 | **5. Integration**                 | External system integration, API contracts, dependencies               |
 | **6. Edge Cases**                  | Exception handling, boundary values, behavior when data is missing     |
 | **7. Constraints**                 | Technical constraints, business constraints, regulatory requirements   |

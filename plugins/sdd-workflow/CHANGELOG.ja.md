@@ -21,6 +21,7 @@
 - スキル・エージェントが `AI-SDD-PRINCIPLES.md`（約43KB）の全文 Read を指示しないようにした。`prerequisites_principles.md` は
   `grep -n` で見出しを探し、各スキル/エージェントが指定する節（`§ <見出し>`）だけを読む手順に変更。各参照元
   （スキル18・エージェント5）が必要な節を個別に列挙する。`AI-SDD-PRINCIPLES.source.md` 本文は変更なし (Refs #7)
+- `spec-reviewer` の Covered / Partially Covered / Not Covered に具体的な判定基準を追加。基準は `ambiguity_criteria.md`（§1。NFR は §3）を参照し二重定義しない。80% の警告は変更なし。NFR の確認では定量化（`nfr_checklist.md` の Level 0–3）も報告する。`spec_review_output.md`（en/ja）と `check-spec` を同期。NFR カテゴリを `nfr_checklist.md` の 7 カテゴリに統一（`clarification-assistant` / `clarify` / `analyze-requirements` / `generate-prd` / `generate-spec`。PRD §4.2 と spec §3.2 のテンプレートにカテゴリの案内を追加）。PRD テンプレート §4.2 / `requirement-analyzer` / 出力例の ID を `PR_xxx` から `NFR_xxx` に統一（SysML の要素型 `performanceRequirement` は変更なし） (Refs #9, Refs #8)
 
 ## [5.2.0] - 2026-10-21
 

@@ -6,7 +6,7 @@ All ratios here are **guidance**, not fixed cut-offs. Marks are judged per requi
 
 ## 1. Per-Requirement Marks (○ / △ / ×)
 
-Judge each requirement (FR, NFR, or a stated request item) on its own. The marks correspond in meaning to the clarity scale of `/clarify` (○ = Clear, △ = Partial, × = Missing); the granularity differs, since `/clarify` scores per category item. △ is not the same as `spec-reviewer`'s 🟡 Partially Covered, which describes PRD→spec traceability.
+Judge each requirement (FR, NFR, or a stated request item) on its own. The marks correspond in meaning to the clarity scale of `/clarify` (○ = Clear, △ = Partial, × = Missing); the granularity differs, since `/clarify` scores per category item. The test is the same one `spec-reviewer` uses for 🟡 Partially Covered, but `spec-reviewer` applies it to PRD→spec traceability and aggregates the result as the Coverage Rate (which includes Partially); that rate is separate from the `/clarify` clarity score.
 
 | Mark | Meaning | Test |
 |:-----|:--------|:-----|

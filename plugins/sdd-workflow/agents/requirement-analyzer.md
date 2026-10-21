@@ -122,7 +122,7 @@ When new features or change requests occur, generate proposals for the following
 
 - Top-level requirements: `REQ_XXX` (3-digit zero-padded)
 - Functional requirements: `FR_XXX` (3-digit zero-padded)
-- Performance requirements: `PR_XXX` (3-digit zero-padded)
+- Non-functional requirements: `NFR_XXX` (3-digit zero-padded; category per `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md`)
 - Interface requirements: `IR_XXX` (3-digit zero-padded)
 - Design constraints: `DC_XXX` (3-digit zero-padded)
 - Hierarchical: `REQ_002_01` (add 2 digits after parent requirement ID)
