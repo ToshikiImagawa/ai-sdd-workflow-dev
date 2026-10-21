@@ -82,6 +82,9 @@ It receives user input context for analysis.
 | **Medium** | Specs exist + some ambiguity     | Clarify ambiguous points before implementation           |
 | **Low**    | Specs exist + clear requirements | Can start implementation                                 |
 
+To make "vague" and "some ambiguity" checkable (viewpoint checks, per-requirement ○/△/× marks, NFR levels), see
+`${CLAUDE_PLUGIN_ROOT}/shared/references/ambiguity_criteria.md`.
+
 ## Task Type Determination
 
 Independently of the ambiguity/risk assessment above, classify the request against the **Task Type

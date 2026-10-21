@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `shared/references/nfr_checklist.md`: NFR reference (7 categories, definition of "quantified" and a 4-level scale: not stated / mention only / target value / target + condition + measurement, good/bad examples, guidance ranges). Linked from `ambiguity_patterns.md`. Reference only; no skill or agent behavior changes (Refs #8)
+- `shared/references/ambiguity_criteria.md`: single home for ambiguity-judgment criteria: per-requirement ○/△/× marks with ratio guidance (not fixed thresholds), High/Medium/Low viewpoint checks for `vibe-detector` (works without a PRD/spec), and NFR handling that reuses the `nfr_checklist.md` levels with an aggregation rule for the 7 categories (lowest in-scope mark). Referenced from `vibe-detector` and `ambiguity_patterns.md`; the risk table wording is unchanged (Refs #9)
 
 ### Changed
 
