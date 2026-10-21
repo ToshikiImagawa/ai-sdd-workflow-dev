@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `### Index Fast Path` text duplicated in 6 agents and `doc-consistency-checker` now lives in `shared/references/index_fast_path.md` (read `index.md` once; fall back to a specific file only when full text is needed; Glob/Grep/Read flow when `SDD_INDEX` is unset/`off`). Each caller keeps only its table list and fall-back condition. Behavior with `SDD_INDEX=on` is unchanged (Refs #190)
 - Skills and agents no longer instruct a full read of `AI-SDD-PRINCIPLES.md` (~43KB). `prerequisites_principles.md` now tells the
   reader to look up headings with `grep -n` and read only the sections each skill / agent names (`§ <heading>`); every
   consumer (18 skills, 5 agents) lists its own sections. `AI-SDD-PRINCIPLES.source.md` itself is unchanged (Refs #7)

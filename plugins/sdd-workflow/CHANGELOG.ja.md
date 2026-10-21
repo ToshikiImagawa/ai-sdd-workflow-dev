@@ -11,6 +11,7 @@
 
 ### 変更
 
+- 6 agent と `doc-consistency-checker` に重複していた `### Index Fast Path` の記述を `shared/references/index_fast_path.md` に集約（`index.md` は 1 回だけ Read、全文が必要なときのみ個別ファイルへフォールバック、`SDD_INDEX` が未設定/`off` なら従来の Glob/Grep/Read）。各ファイルには使用テーブルとフォールバック条件のみ残す。`SDD_INDEX=on` 時の挙動は不変 (Refs #190)
 - スキル・エージェントが `AI-SDD-PRINCIPLES.md`（約43KB）の全文 Read を指示しないようにした。`prerequisites_principles.md` は
   `grep -n` で見出しを探し、各スキル/エージェントが指定する節（`§ <見出し>`）だけを読む手順に変更。各参照元
   （スキル18・エージェント5）が必要な節を個別に列挙する。`AI-SDD-PRINCIPLES.source.md` 本文は変更なし (Refs #7)

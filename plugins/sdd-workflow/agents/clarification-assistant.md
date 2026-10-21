@@ -186,11 +186,10 @@ This agent performs specification clarification support based on AI-SDD principl
 
 ### Index Fast Path
 
-When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
-Read it **once** and use its `Metadata`, `Requirement IDs`, and `Data Models` tables for ambiguity
-detection across the 9 analysis categories. Fall back to raw Read of a specific file only when full
-specification text is needed for detailed ambiguity assessment. When `SDD_INDEX` is unset or `off`,
-use the existing Glob/Grep/Read flow.
+Follow `${CLAUDE_PLUGIN_ROOT}/shared/references/index_fast_path.md`.
+Tables used: `Metadata`, `Requirement IDs`, `Data Models` (ambiguity detection across the 9 analysis
+categories). Raw Read of a specific file only when full specification text is needed for detailed
+ambiguity assessment.
 
 ## File Naming Convention (Important)
 

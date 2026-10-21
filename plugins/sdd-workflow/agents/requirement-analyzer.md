@@ -89,11 +89,10 @@ configuration file exists.
 
 ### Index Fast Path
 
-When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
-Read it **once** and use its `Requirement IDs`, `SysML Relationships`, and `Metadata` tables for
-requirement analysis, traceability verification, and gap detection. Fall back to raw Read of a specific file
-only when the index lacks a needed excerpt (e.g., full requirement text for gap analysis prose).
-When `SDD_INDEX` is unset or `off`, use the existing Glob/Grep/Read flow.
+Follow `${CLAUDE_PLUGIN_ROOT}/shared/references/index_fast_path.md`.
+Tables used: `Requirement IDs`, `SysML Relationships`, `Metadata` (requirement analysis, traceability
+verification, gap detection). Raw Read of a specific file only when the index lacks a needed excerpt
+(e.g., full requirement text for gap analysis prose).
 
 ## SysML Requirements Diagram Theory
 

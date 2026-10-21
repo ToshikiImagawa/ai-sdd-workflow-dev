@@ -71,11 +71,9 @@ configuration file exists.
 
 ### Index Fast Path
 
-When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
-Read it **once** and use its `Metadata`, `Requirement IDs`, and `SysML Relationships` tables for
-traceability and completeness checks. Fall back to raw Read of a specific file only when full section
-text is needed for completeness verification. When `SDD_INDEX` is unset or `off`, use the existing
-Glob/Grep/Read flow.
+Follow `${CLAUDE_PLUGIN_ROOT}/shared/references/index_fast_path.md`.
+Tables used: `Metadata`, `Requirement IDs`, `SysML Relationships` (traceability and completeness checks).
+Raw Read of a specific file only when full section text is needed for completeness verification.
 
 ## Role
 

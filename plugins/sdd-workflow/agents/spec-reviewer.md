@@ -75,11 +75,10 @@ when checking PRD ↔ spec traceability below.
 
 ### Index Fast Path
 
-When `SDD_INDEX` is `on`, a pre-built compressed index exists at `${SDD_ROOT}/.cache/index.md`.
-Read it **once** and use its `Metadata`, `Requirement IDs`, `Data Models`, and `API Signatures` tables
-for traceability and consistency checks between spec and design. Fall back to raw Read of a specific file
-only when full section text is needed for ambiguity analysis. When `SDD_INDEX` is unset or `off`, use the
-existing Glob/Grep/Read flow.
+Follow `${CLAUDE_PLUGIN_ROOT}/shared/references/index_fast_path.md`.
+Tables used: `Metadata`, `Requirement IDs`, `Data Models`, `API Signatures` (traceability and
+consistency checks between spec and design). Raw Read of a specific file only when full section text is
+needed for ambiguity analysis.
 
 ## Role
 
