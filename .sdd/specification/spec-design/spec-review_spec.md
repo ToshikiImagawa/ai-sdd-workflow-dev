@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-07-28"
+updated: "2026-10-21"
 depends-on: ["prd-spec-design-spec-review"]
 tags: ["spec-review", "constitution", "traceability", "quality-assurance"]
 category: "spec-design"
@@ -117,6 +117,7 @@ AI-SDD ワークフローでは、PRD から抽象仕様書（`*_spec.md`）・�
 | **曖昧表現**         | 実装可能性を減じる不明確な記述（「〜のような」「適切に」等）        |
 | **トレーサビリティ** | PRD ↔ spec ↔ design 間の要求カバレッジ関係                    |
 | **カバレッジ**       | 上流ドキュメントの要求 ID が下流でどれだけ扱われているかの割合     |
+| **カバレッジ率と明確度スコア** | カバレッジ率（Partially を含む）と `/clarify` の明確度スコア（Clear のみ）は別の指標 |
 | **修正提案**         | レビュー指摘に対する、意図を変えない範囲での具体的な修正方法の提示 |
 
 ---

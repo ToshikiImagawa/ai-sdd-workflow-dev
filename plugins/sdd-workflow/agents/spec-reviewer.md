@@ -213,7 +213,7 @@ Specification).
     - 🟡 **Partially Covered**: Related description exists in spec but doesn't fully cover the requirement
     - 🔴 **Not Covered**: No corresponding description found in spec
 
-5. **Calculate Coverage**: `(Covered + Partially Covered) / Total Requirements × 100%`
+5. **Calculate Coverage Rate** (PRD→spec traceability; distinct from the `/clarify` clarity score, which counts only Clear items): `(Covered + Partially Covered) / Total Requirements × 100%`
 
 6. **Threshold Check**: Issue warning if coverage is below 80%
 

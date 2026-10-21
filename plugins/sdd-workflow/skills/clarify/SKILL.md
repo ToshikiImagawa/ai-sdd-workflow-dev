@@ -194,11 +194,12 @@ The following verifications are automatically performed during clarification:
 
 ### Implementation Readiness Criteria
 
-| Clarity Score | Recommended Action                                   |
-|:--------------|:-----------------------------------------------------|
-| 80% or above  | Ready for implementation                             |
-| 60-79%        | Recommended to resolve Partial items                 |
-| Below 60%     | Further clarification required before implementation |
+| Clarity Score | Recommended Action                                     |
+|:--------------|:-------------------------------------------------------|
+| 80% or above  | Ready for implementation                               |
+| 60-79%        | Recommended to resolve Partial items                   |
+| 40-59%        | Significant specification revision needed              |
+| Below 40%     | Do not start implementation; rebuild the specification |
 
 ## Notes
 
