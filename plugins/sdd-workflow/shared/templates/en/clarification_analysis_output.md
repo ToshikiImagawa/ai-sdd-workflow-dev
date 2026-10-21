@@ -8,18 +8,21 @@
 
 ### Clarity Score
 
-| Category | Clear | Partial | Missing | Score |
-|:---|:---|:---|:---|:---|
-| Functional Scope | 3 | 1 | 0 | 75% |
-| Data Model | 2 | 2 | 1 | 40% |
-| Flow | 4 | 0 | 0 | 100% |
-| Non-Functional Requirements | 0 | 2 | 2 | 0% |
-| Integration | 1 | 0 | 1 | 50% |
-| Edge Cases | 1 | 2 | 1 | 25% |
-| Constraints | 2 | 0 | 0 | 100% |
-| Terminology | 3 | 1 | 0 | 75% |
-| Completion Signals | 0 | 1 | 2 | 0% |
-| **Total** | **16** | **9** | **7** | **50%** |
+| Category | Clear | Partial | Missing | N/A | Score |
+|:---|:---|:---|:---|:-----|:---|
+| Functional Scope | 3 | 1 | 0 | 0 | 75% |
+| Data Model | 2 | 2 | 1 | 0 | 40% |
+| Flow | 4 | 0 | 0 | 0 | 100% |
+| Non-Functional Requirements | 0 | 2 | 2 | 0 | 0% |
+| Integration | 1 | 0 | 1 | 0 | 50% |
+| Edge Cases | 1 | 2 | 1 | 0 | 25% |
+| Constraints | 2 | 0 | 0 | 0 | 100% |
+| Terminology | 3 | 1 | 0 | 0 | 75% |
+| Completion Signals | 0 | 1 | 2 | 0 | 0% |
+| **Total** | **16** | **9** | **7** | 0 | **50%** |
+
+
+**Clarity score** = Clear ÷ (all categories − N/A). Partial and Missing stay in the denominator but never enter the numerator. A category the feature does not apply to is recorded as **N/A** (still one of the 9 rows, with its basis) and removed from the denominator.
 
 ### 🔴 Missing (Undefined) Items
 

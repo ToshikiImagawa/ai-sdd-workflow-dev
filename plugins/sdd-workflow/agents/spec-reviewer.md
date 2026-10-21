@@ -204,7 +204,7 @@ Specification).
       CONSTITUTION compliance, completeness, clarity, spec ↔ design, spec ↔ adr) will be performed as usual.
 
 2. **Extract Requirement IDs**: Extract all requirement IDs (format resolved above, e.g. `UR_xxx`, `FR_xxx`,
-   `NFR_xxx`) from PRD
+   `NFR_xxx`, `IR_xxx`, `DC_xxx`) from PRD. All of them are the denominator (Total Requirements). If the PRD has no NFR of its own and refers to a parent PRD, judge NFR coverage against the parent PRD's NFRs
 
 3. **Search for Corresponding Sections in spec**: Search how each requirement ID is addressed in spec
 
@@ -222,11 +222,16 @@ Specification).
       (△). For an NFR: Level 1 (named, no target value)
     - 🔴 **Not Covered**: No corresponding description, or only the topic is named (×). For an NFR: Level 0
 
+    - **Weakened verification**: if the spec weakens the verification method or strength the PRD states (e.g., PRD
+      says test, spec says manual check), classify as 🟡 Partially Covered
+    - **Delegation by link**: an item delegated to a canonical document by link is 🟢 Covered when the link target
+      exists and satisfies the requirement; otherwise judge as above
+
     This is a traceability judgment on PRD→spec; it is not the `/clarify` clarity score.
 
-5. **Calculate Coverage Rate** (PRD→spec traceability; distinct from the `/clarify` clarity score, which counts only Clear items): `(Covered + Partially Covered) / Total Requirements × 100%`
+5. **Calculate Coverage Rate** (PRD→spec traceability; distinct from the `/clarify` clarity score, which counts only Clear items): `(Covered + Partially Covered) / Total Requirements × 100%`. The rate is a reference value only (it stays 100% when everything is at least Partially, so it does not discriminate). Always show it with the **Partially Covered count** and the **Covered-only rate** (`Covered / Total Requirements × 100%`)
 
-6. **Threshold Check**: Issue warning if coverage is below 80%
+6. **Threshold Check**: Issue warning if coverage is below 80%, or if the Not Covered or Partially Covered count is not zero (list the counts)
 
 #### Check Items
 
@@ -235,7 +240,7 @@ Specification).
 | **Requirement ID Mapping**                | Search all PRD requirement IDs (UR/FR/NFR) in spec and identify corresponding sections              | Are requirement IDs explicitly documented in spec?                         | High       |
 | **Functional Requirement Coverage**       | Are PRD functional requirements (e.g. `FR_xxx`) covered in spec's functional requirements/API definitions? | Is implementation approach for each PRD FR documented in spec?             | High       |
 | **Non-Functional Requirement Reflection** | Are PRD non-functional requirements (e.g. `NFR_xxx`) reflected in spec's constraints/quality requirements? Is each one **quantified** (`${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md` Level 0–3, seven categories)? | Are constraints/quality criteria for each PRD NFR documented in spec at Level 2 or higher? Report Level 1 or 0 as Partially/Not Covered; a missing measurement method (Level 2 vs 3) is a suggestion only | Medium     |
-| **Coverage Threshold Check**              | Verify that PRD requirement coverage in spec is 80% or higher                                       | Coverage = (Covered + Partially Covered) / Total Requirements × 100% ≥ 80% | High       |
+| **Coverage Threshold Check**              | Verify that PRD requirement coverage in spec is 80% or higher                                       | Coverage = (Covered + Partially Covered) / Total Requirements × 100% ≥ 80% (reference only; also report the Partially Covered count and the Covered-only rate) | High       |
 | **Terminology Consistency**               | Is same terminology used in PRD and spec?                                                           | Are key concepts and feature names used consistently?                      | Low        |
 
 ### spec ↔ design Traceability Check

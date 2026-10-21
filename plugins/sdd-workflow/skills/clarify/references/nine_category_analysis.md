@@ -41,9 +41,15 @@ question, classify the category as **Clear** and cite the implementation as the 
 re-asking something the codebase has already settled. Only when neither the spec nor the implementation
 fixes the value does it remain genuinely ambiguous.
 
+## Clarity Score Formula
+
+**Clarity score** = Clear ÷ (all categories − N/A). Partial and Missing stay in the denominator but never enter the numerator. A category the feature does not apply to is recorded as **N/A** (still one of the 9 rows, with its basis) and removed from the denominator.
+
+Example: 9 categories, 1 N/A, 5 Clear, 2 Partial, 1 Missing → 5 ÷ (9 − 1) = 62.5%. This is the canonical definition; other files summarize and link here.
+
 ## Category Analysis Summary (Required Output)
 
-Record the Clear / Partial / Missing classification for **all 9 categories**, not only the ones that
+Record the Clear / Partial / Missing / N/A classification for **all 9 categories**, not only the ones that
 become questions. A category that turns into no question still needs its classification and a one-line
 basis (the specific statement, or its absence, that the classification rests on) recorded in the output.
 Without this, the analysis's actual coverage — which categories were checked and how thoroughly — is
@@ -54,7 +60,7 @@ invisible to the reader, and detection granularity becomes unverifiable run to r
 
 | # | Category               | Classification | Basis                                    |
 |:--|:------------------------|:----------------|:------------------------------------------|
-| 1 | Functional Scope        | Clear/Partial/Missing | {statement, or "not mentioned"}     |
+| 1 | Functional Scope        | Clear/Partial/Missing/N/A | {statement, or "not mentioned"}     |
 | ... (all 9 rows) |
 ```
 

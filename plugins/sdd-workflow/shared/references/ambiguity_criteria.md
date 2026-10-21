@@ -47,9 +47,11 @@ For the request (and the specs, if any), mark each as ○ / △ / ×:
 | V3 | Error handling | Abnormal-case behavior is stated |
 | V4 | Boundary conditions | Limits and edge cases are stated |
 | V5 | Completion criteria | "Done" can be verified |
-| V6 | Non-functional targets | The NFR mark from Section 3. N/A when no NFR category is affected |
+| V6 | Non-functional targets | The NFR mark from Section 3. N/A when no NFR category is affected (requirement wording that fits none of the seven categories is outside V6; see "Mapping Requirements to the Seven Categories" in `nfr_checklist.md`) |
 
 ### Decision
+
+V1–V5 are also N/A when the spec explicitly states that the viewpoint does not apply (e.g., "no inputs: takes no arguments"). V3 and V4 marks: △ = some abnormal cases or boundaries are stated; × = none is stated at all.
 
 Every input falls in exactly one row. Only applicable viewpoints count (N/A is ignored).
 
@@ -64,7 +66,7 @@ This extends the 3-row risk table in `vibe-detector` (High / Medium / Low) so th
 
 ## 3. NFR: Using `nfr_checklist.md`
 
-Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklist.md` and map it to a mark:
+Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklist.md` (which also maps requirement wording to the seven categories) and map it to a mark:
 
 | NFR level | Mark |
 |:----------|:-----|
@@ -78,6 +80,7 @@ The "Mapping to Risk Tiers" in `nfr_checklist.md` is a guideline for a single ca
 
 The seven categories are Performance, Security, Reliability, Scalability, Usability, Maintainability, Compatibility.
 
+0. When the PRD has no NFR of its own and refers to a parent PRD, V6 is judged from the parent PRD's NFRs
 1. Select the **affected categories**: those the request or the spec affects. An affected category that is not mentioned is Level 0 (×)
 2. Mark each affected category
 3. The **NFR mark** (the V6 value) is the lowest mark among affected categories (any × → ×; else any △ → △; else ○)
