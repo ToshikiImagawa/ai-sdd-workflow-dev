@@ -119,7 +119,7 @@ Add a new principle to a constitution by running `/constitution add "Library-Fir
 
 1. Confirm principle details with the user
 2. Add to the appropriate category
-3. Bump version (usually minor, e.g., 1.0.0 -> 1.1.0; major if existing implementations would become violations)
+3. Bump version per the "Version Bump Rules" in §4
 4. Record in change history
 
 ### 3. Show Current Constitution (show)
@@ -141,15 +141,18 @@ Add a new principle to a constitution by running `/constitution add "Library-Fir
 
 **Version Bump Rules**:
 
-| Change Type                | Version Impact | Example        |
-|:---------------------------|:---------------|:---------------|
-| Add principle              | MINOR (x.Y.z); MAJOR if it makes existing implementations violations | 1.0.0 -> 1.1.0 |
-| Modify principle           | MAJOR (X.y.z) if existing implementations become violations; MINOR if a relaxation leaves them compliant | 1.0.0 -> 2.0.0 |
-| Remove principle           | MAJOR (X.y.z)  | 1.0.0 -> 2.0.0 |
-| Change principle priority  | MAJOR (X.y.z) if it makes existing implementations violations; otherwise MINOR | 1.0.0 -> 2.0.0 |
-| Update enforcement         | MINOR (x.Y.z)  | 1.0.0 -> 1.1.0 |
-| Clarify principle (meaning unchanged) | PATCH (x.y.Z) | 1.0.0 -> 1.0.1 |
-| Fix typo / wording / link  | PATCH (x.y.Z)  | 1.0.0 -> 1.0.1 |
+| Change Type                | Version Impact                           |
+|:---------------------------|:-----------------------------------------|
+| Add principle              | MINOR (x.Y.z) or MAJOR (X.y.z)           |
+| Modify principle           | MINOR (x.Y.z) or MAJOR (X.y.z)           |
+| Remove principle           | MINOR (x.Y.z) or MAJOR (X.y.z)           |
+| Change principle priority  | MINOR (x.Y.z) or MAJOR (X.y.z)           |
+| Update enforcement         | MINOR (x.Y.z)                            |
+| Clarify principle (meaning unchanged) | PATCH (x.y.Z)         |
+| Fix typo / wording / link  | PATCH (x.y.Z)                            |
+
+Where a row shows MINOR or MAJOR, it is MAJOR only if the change makes existing implementations violations;
+otherwise MINOR (see the rule below).
 
 This table enumerates the same change types as the "Semantic Versioning" table in §7 (Version Management),
 and the two must agree row for row. The split follows one rule: **does the change make existing
@@ -163,7 +166,7 @@ implementations violations?** Judge by impact, not by size of the wording change
   enforcement mechanism, or a relaxation that changes meaning but violates nothing.
 - **PATCH** — a fix that does not change meaning: typos, wording, link fixes.
 
-State the impact on existing implementations, and why, in the amendment PR so a reviewer can confirm the bump.
+State the impact on existing implementations, and why, in the amendment PR so a reviewer (or the team's agreed review mechanism) can confirm the bump.
 
 ### 5. Validate (validate)
 
@@ -329,7 +332,7 @@ constitution file -> bump version -> update affected documents -> verify with `/
 
 ### Conditions for Major Version Bump
 
-Major version bump required for any of the following:
+Major version bump is required only when the change makes existing implementations violations, for example:
 
 - Removal of an existing principle that makes existing implementations violations
 - Change to an existing principle's meaning or priority that makes existing implementations violations

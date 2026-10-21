@@ -379,7 +379,7 @@ When adding new principles, consider the following:
    ↓
 3. Add to constitution file
    ↓
-4. Decide the version bump (see "Semantic Versioning"; usually minor, e.g., 1.0.0 → 1.1.0, but major if existing implementations would become violations)
+4. Decide the version bump (see "Semantic Versioning")
    ↓
 5. Update affected documents
    ↓
@@ -554,7 +554,7 @@ Constitution versions follow these rules:
 | Minor        | Feature addition/update (new principle, broader or clearer scope, added process rules, relaxations that leave existing implementations compliant) | 1.0.0 → 1.1.0 |
 | Patch        | Fixes that do not change meaning (typos, wording, link fixes) | 1.0.0 → 1.0.1 |
 
-**How to decide**: the deciding question is whether existing implementations become violations, not how large the wording change is. In the amendment PR, describe the impact on existing implementations and its rationale, and have a reviewer confirm the bump.
+**How to decide**: the deciding question is whether existing implementations become violations, not how large the wording change is. In the amendment PR, describe the impact on existing implementations and its rationale, and have a reviewer (or the team's agreed review mechanism) confirm the bump.
 
 ---
 
