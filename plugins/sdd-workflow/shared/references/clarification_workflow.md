@@ -17,7 +17,7 @@
 3. Output integration proposals (target file, section, proposed content)
 4. Re-scan across 9 categories
 5. Recalculate clarity score
-6. Score 80% or above -> Ready for implementation; Score below 80% -> Generate additional questions
+6. Score 80% or above -> Ready for implementation; 60-79% -> Generate additional questions; 40-59% -> Significant specification revision needed; below 40% -> Do not start implementation, rebuild the specification
 
 ## Interactive Mode
 
