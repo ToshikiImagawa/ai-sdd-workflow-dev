@@ -11,6 +11,8 @@ tags: ["clarification", "ambiguity-analysis", "clarity-score"]
 category: "spec-design"
 priority: "high"
 risk: "high"
+laws: ["laws/spec-design/clarify"]
+laws-status: "drafted"
 ---
 
 # 仕様明確化

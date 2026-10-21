@@ -13,6 +13,8 @@ tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
+laws: ["laws/quality-guardrails/stale-doc-detection"]
+laws-status: "drafted"
 ---
 
 # ドキュメント更新漏れ検知

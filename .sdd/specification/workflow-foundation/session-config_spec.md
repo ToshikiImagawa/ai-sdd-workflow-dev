@@ -11,6 +11,8 @@ tags: ["session-config", "hooks", "environment", "index"]
 category: "workflow-foundation"
 priority: "high"
 risk: "high"
+laws: ["laws/workflow-foundation/session-config"]
+laws-status: "drafted"
 ---
 
 # セッション設定初期化

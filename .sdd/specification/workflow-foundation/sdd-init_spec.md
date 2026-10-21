@@ -11,6 +11,8 @@ tags: ["initialization", "template", "claude-md", "skill"]
 category: "workflow-foundation"
 priority: "high"
 risk: "medium"
+laws: ["laws/workflow-foundation/sdd-init"]
+laws-status: "drafted"
 ---
 
 # プロジェクト初期化
