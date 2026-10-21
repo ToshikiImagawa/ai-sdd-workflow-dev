@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Skills and agents no longer instruct a full read of `AI-SDD-PRINCIPLES.md` (~43KB). `prerequisites_principles.md` now tells the
   reader to look up headings with `grep -n` and read only the sections each skill / agent names (`§ <heading>`); every
   consumer (18 skills, 5 agents) lists its own sections. `AI-SDD-PRINCIPLES.source.md` itself is unchanged (Refs #7)
+- `spec-reviewer` Covered / Partially Covered / Not Covered now have concrete criteria that reuse `ambiguity_criteria.md` (Section 1; NFR: Section 3) instead of restating them; the 80% coverage warning is unchanged. The NFR check also reports quantification (`nfr_checklist.md` Level 0–3). `spec_review_output.md` (en/ja) and `check-spec` follow. NFR categories are unified to the seven in `nfr_checklist.md` across `clarification-assistant`, `clarify`, `analyze-requirements`, `generate-prd` and `generate-spec` (PRD §4.2 and spec §3.2 templates gain category guidance). PRD template §4.2 / `requirement-analyzer` / sample outputs use `NFR_xxx` instead of `PR_xxx` (SysML element type `performanceRequirement` is unchanged) (Refs #9, Refs #8)
 
 ## [5.2.0] - 2026-10-21
 

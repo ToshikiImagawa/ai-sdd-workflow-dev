@@ -183,7 +183,9 @@ below and in Step 6.
    - ID format: from above (`id_conventions.prd_functional`)
    - Include: ID, Requirement, Derived From (matching UR ID format above), Priority, Risk, Verification
 
-3. **Non-Functional Requirements (NFR)**: Quality attributes
+3. **Non-Functional Requirements (NFR)**: Quality attributes. Use the seven categories and quantification levels in
+   `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md` (Performance, Security, Reliability, Scalability,
+   Usability, Maintainability, Compatibility); state each target so a third party can judge pass/fail
    - ID format: from above (`id_conventions.prd_nonfunctional`)
    - Include: ID, Requirement, Category, Priority, Risk, Verification
 
