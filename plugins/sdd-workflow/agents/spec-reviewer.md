@@ -212,9 +212,12 @@ Specification).
     Judge each requirement with the same tests as `${CLAUDE_PLUGIN_ROOT}/shared/references/ambiguity_criteria.md`
     (Section 1 for FR/UR, Section 3 for NFR), applied to how the **spec** describes it. Apply only the items that
     apply to the requirement (target, inputs/outputs, error behavior, boundary conditions, completion criteria);
-    when unsure between two statuses, choose the lower one.
+    when unsure between two statuses, choose the lower one. Judge only the NFR items the PRD states; a category the
+    PRD does not mention is out of scope (list it as a suggestion if needed), so Covered never requires filling all
+    seven categories.
     - 🟢 **Covered**: Every applicable item is stated in spec (○). For an NFR: the affected category is at
-      `nfr_checklist.md` Level 2 or higher
+      `nfr_checklist.md` Level 2 or higher (if one NFR spans several categories, judge by the lowest level, as in
+      `ambiguity_criteria.md` Section 3)
     - 🟡 **Partially Covered**: Related description exists, but at least one applicable item is missing or vague
       (△). For an NFR: Level 1 (named, no target value)
     - 🔴 **Not Covered**: No corresponding description, or only the topic is named (×). For an NFR: Level 0
