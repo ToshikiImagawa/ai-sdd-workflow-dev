@@ -16,6 +16,7 @@
 
 ### 変更
 
+- `constitution` スキル（`SKILL.md`・`references/best_practices.md`）と `constitution_template.md`（en/ja）のバージョン区分を、リポジトリの `CONSTITUTION` v2.3.0 の定義に統一: メジャー＝既存の実装を違反にする破壊的変更、マイナー＝機能追加・更新（既存の実装が準拠のままとなる緩和を含む）、パッチ＝意味を変えない修正。改定 PR に既存実装への影響とその根拠を書き、レビュアーが確認する（Closes #200） 既存プロジェクトの CONSTITUTION は自動では更新されない。必要ならチームで区分の定義を手で更新する。
 - 6 agent と `doc-consistency-checker` に重複していた `### Index Fast Path` の記述を `shared/references/index_fast_path.md` に集約（`index.md` は 1 回だけ Read、全文が必要なときのみ個別ファイルへフォールバック、`SDD_INDEX` が未設定/`off` なら従来の Glob/Grep/Read）。各ファイルには使用テーブルとフォールバック条件のみ残す。`SDD_INDEX=on` 時の挙動は不変 (Refs #190)
 - 曖昧さ評価の記述の食い違いを解消 (Refs #9): `/clarify` の明確度スコアの段階の `skills/clarify/SKILL.md` を `clarification-assistant`（4 段階）に合わせた（agent は未変更）。clarify 出力テンプレート（スキル・shared、en/ja）のスコア表の計算ミスを修正（総合 50% = Clear 16 / 32、旧 61%。カテゴリ別も Clear / 総数で再計算）。`spec-reviewer` の PRD→spec の数値を「カバレッジ率」（Covered + Partially Covered）と明記し、明確度スコア（Clear のみ）とは別物であることを記載。`generate-spec` の High/Medium/Low を正典である `vibe-detector` と同じ文言に統一
 - スキル・エージェントが `AI-SDD-PRINCIPLES.md`（約43KB）の全文 Read を指示しないようにした。`prerequisites_principles.md` は
