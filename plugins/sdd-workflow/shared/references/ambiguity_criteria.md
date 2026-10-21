@@ -1,12 +1,12 @@
 # Ambiguity Assessment Criteria
 
-Single place for the criteria used to judge ambiguity. Consumers (`vibe-detector`, and the skills that follow its risk wording) reference this file instead of restating the criteria.
+Single place for the criteria used to judge ambiguity. Consumers (`vibe-detector`, and the skills that follow its risk wording) reference this file instead of restating the criteria. The risk table in `vibe-detector/SKILL.md` is a summary; this file is the canonical, detailed definition.
 
-All ratios and thresholds here are **guidance**, not fixed cut-offs. The judgment is made per requirement; the overall level is a reading of those judgments.
+All ratios here are **guidance**, not fixed cut-offs. Marks are judged per requirement; the overall High/Medium/Low is fixed by Section 2.
 
 ## 1. Per-Requirement Marks (○ / △ / ×)
 
-Judge each requirement (FR, NFR, or a stated request item) on its own. The marks correspond to the clarity scale used by `/clarify`: ○ = Clear, △ = Partial, × = Missing.
+Judge each requirement (FR, NFR, or a stated request item) on its own. The marks correspond in meaning to the clarity scale of `/clarify` (○ = Clear, △ = Partial, × = Missing); the granularity differs, since `/clarify` scores per category item. △ is not the same as `spec-reviewer`'s 🟡 Partially Covered, which describes PRD→spec traceability.
 
 | Mark | Meaning | Test |
 |:-----|:--------|:-----|
@@ -18,23 +18,23 @@ Rules:
 
 - Judge only items that apply to the requirement; mark an item N/A explicitly rather than counting it as missing
 - When unsure between two marks, choose the lower one and list the missing item as a clarification question
-- For an NFR, use the quantification levels in `nfr_checklist.md` (Section 3) instead of the test above
+- For an NFR, take the mark from Section 3
 
-### Ratio Guidance (when a PRD or spec exists)
+### Reading the Distribution (when a PRD or spec exists)
 
-Let n = number of judged requirements. Read the marks as a distribution, not a score to compute:
+A **core requirement** is one the PRD or spec itself positions as central (e.g., its main functional requirements); everything else is supporting. Read the marks as a distribution, not a score to compute. This reading is a lead-in: the level that is reported is fixed by Section 2 (Section 2 wins on any disagreement).
 
 | Reading | Guidance |
 |:--------|:---------|
-| Low-ambiguity | Almost all ○; no × |
-| Medium-ambiguity | ○ is the majority, with some △; × is rare and each is already listed as a question |
-| High-ambiguity | △ and × are the majority, or × appears on core requirements |
+| Mostly clear | Almost all ○; a × should rarely be tolerated, and a × normally rules out reporting Low |
+| Mixed | ○ is the majority with some △; each × is already listed as a question |
+| Mostly unclear | △ and × are the majority, or × appears on a core requirement |
 
 A single × on a core requirement outweighs a high ○ ratio. Report the counts (○ / △ / ×) with the judgment so the reader can disagree.
 
-## 2. Risk Level Viewpoints (for `vibe-detector`)
+## 2. Risk Level (for `vibe-detector`)
 
-`vibe-detector` also receives input with no PRD or spec (a one-line request), so a ratio cannot always be computed. Decide High / Medium / Low from the **viewpoint checks** below instead.
+`vibe-detector` also receives input with no PRD or spec (a one-line request), so a ratio cannot always be computed. The level is fixed by **viewpoint checks**.
 
 ### Viewpoints
 
@@ -47,21 +47,24 @@ For the request (and the specs, if any), mark each as ○ / △ / ×:
 | V3 | Error handling | Abnormal-case behavior is stated |
 | V4 | Boundary conditions | Limits and edge cases are stated |
 | V5 | Completion criteria | "Done" can be verified |
-| V6 | Non-functional targets | Performance/security/etc. targets that matter here are quantified (see Section 3). N/A when no NFR is relevant to the request |
+| V6 | Non-functional targets | The NFR mark from Section 3. N/A when no NFR category is affected |
 
 ### Decision
 
-| Level | Condition |
-|:------|:----------|
-| **High** | No specs exist and at least one of V1–V5 is × (vague instructions) |
-| **Medium** | Specs exist and at least one viewpoint is △ or ×; or no specs exist but V1–V5 are all stated in the request (a spec is still needed) |
-| **Low** | Specs exist and all applicable viewpoints are ○ |
+Every input falls in exactly one row. Only applicable viewpoints count (N/A is ignored).
 
-This is the same High/Medium/Low definition as the table in `vibe-detector`; this section only makes "vague" and "some ambiguity" checkable. Task type is determined separately.
+| Specs | Viewpoints | Level |
+|:------|:-----------|:------|
+| None | Any of V1–V5 is × | **High** |
+| None | No × in V1–V5 (△ allowed, or all ○) | **Medium** |
+| Exist | Any applicable viewpoint (V1–V6) is △ or × | **Medium** |
+| Exist | All applicable viewpoints are ○ | **Low** |
+
+This extends the 3-row risk table in `vibe-detector` (High / Medium / Low) so that "vague" and "some ambiguity" are checkable and so that "no specs but a clear request" has a defined level (Medium: a spec is still needed). Task type is determined separately.
 
 ## 3. NFR: Using `nfr_checklist.md`
 
-Do not invent a second scale for NFRs. Take the level (0–3) of each category from `nfr_checklist.md` and map it to a mark per its "Mapping to Risk Tiers" section:
+Do not invent a second scale for NFRs. Take the level (0–3) from `nfr_checklist.md` and map it to a mark:
 
 | NFR level | Mark |
 |:----------|:-----|
@@ -69,15 +72,18 @@ Do not invent a second scale for NFRs. Take the level (0–3) of each category f
 | 1 Mention only | △ |
 | 2 Target value, 3 Target + condition + measurement | ○ |
 
+The "Mapping to Risk Tiers" in `nfr_checklist.md` is a guideline for a single category. After aggregation below, the tier is fixed through V6 in Section 2.
+
 ### Aggregating the Seven Categories
 
 The seven categories are Performance, Security, Reliability, Scalability, Usability, Maintainability, Compatibility.
 
-1. Decide which categories are **in scope** for the product. A category left unmentioned is Level 0 (×), not out of scope. It is out of scope only when the PRD or spec says so explicitly
-2. Mark each in-scope category
-3. The **NFR mark** is the lowest mark among in-scope categories (any × → ×; else any △ → △; else ○)
-4. Report the per-category marks alongside the NFR mark, so one weak category is visible and the others are not hidden
+1. Select the **affected categories**: those the request or the spec affects. An affected category that is not mentioned is Level 0 (×)
+2. Mark each affected category
+3. The **NFR mark** (the V6 value) is the lowest mark among affected categories (any × → ×; else any △ → △; else ○)
+4. If no category is affected, V6 is N/A
+5. Categories that are not affected are only noted in the report; they do not enter any mark
 
-Use the NFR mark as the V6 value in Section 2, and as one requirement-level mark in the distribution in Section 1.
+Report the per-category marks with the NFR mark, so one weak category stays visible. The NFR mark also counts as one requirement-level mark in Section 1.
 
-Level 3 vs Level 2 does not change the mark; it is a quality note ("measurement method missing"), not a risk difference.
+Level 3 vs Level 2 does not change the mark. "Measurement method missing" is a quality note, written as a suggestion in the report's clarification items.
