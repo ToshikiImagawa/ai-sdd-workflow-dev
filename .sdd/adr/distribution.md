@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-10-21"
 sdd-version: "5.0.0"
 depends-on: ["spec-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
@@ -73,3 +73,13 @@ category: "distribution"
 - **Decision**: CHANGELOG.md / CHANGELOG.ja.md を Keep a Changelog 準拠のバージョン節構成で日英併記し、release.yml が該当バージョン節を抽出してリリースノートにする。
 - **Rationale**: リリースノートを機械抽出するにはバージョンごとの節構成が必要であり、多言語対応の一貫性（B-002）が日英併記を要求する。
 - **Rejected alternatives**: None considered
+
+## 2026-10-21 distribution_spec を法則化対象外とする
+
+- **Decision**: `distribution_spec.md` を `/draft-laws draft distribution` の対象外（`laws:` を追加しない）とする。
+- **Rationale**: `/draft-laws` が法則の出典にできるのは番号付きの決定表・集約規則・不変条件・数値目標の節のみで、FR 表の散文単独や IO・ファイルシステム・CI・性能計測・出力整形は対象外（laws-drafting_spec の抽出ルール）。本 spec の内容はこの除外区分に収まる。
+  - §3.1 / §3.2（FR / NFR 表）: 散文形式の要件表であり、決定表・不変条件として機械的に読める構造化節ではない。
+  - §4.1 入出力定義: バージョン一致・多言語ファイルセット同一性・CI マトリクス・配置規約はいずれもファイルシステム・CI 上の制約であり、親 issue #210 の既定どおり対象外区分（IO・ファイルシステム・CI 制約）に該当する。
+  - §8 制約事項: 番号付き見出しを持たない散文の箇条書きであり、出典にできない。
+  - 全節を確認した結果、計算可能な決定ロジック（優先度 1〜4 のいずれか）を持つ構造化節は存在しなかった。
+- **Rejected alternatives**: §4.1 の制約（バージョン一致判定・ファイルセット同一性判定）を法則化する — 単なる等価性チェックであり、ファイルシステム・CI の制約を出典にしないという抽出ルールの除外区分そのものに該当するため却下（Refs #208, #210）。
