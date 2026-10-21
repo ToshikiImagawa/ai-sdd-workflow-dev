@@ -150,6 +150,10 @@ flowchart TD
 - `generate-spec` / `implement` / `plan-refactor` の各テンプレート（Migration Plan・Migration Guide 欄
   等）への詳細ガイダンス追記は対象外（[task-type-determination.md](../../requirement/workflow-foundation/task-type-determination.md)
   の「スコープ外」を参照）
+- **法則化（laws）対象外**: 本仕様はドキュメント（原則・テンプレート）記述の追加のみであり、新規の
+  コード・スキーマ変更を含まない（本節冒頭を参照）。7 節の判定フローも人間が承認するポリシーの記述
+  であり、`draft-laws` が法則の出典とする決定表・集約規則・不変条件・数値目標に該当する計算可能な
+  ロジックを持たないため対象外と判断する
 
 # 9. 原則との整合性
 
