@@ -13,6 +13,8 @@ tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
 priority: "low"
 risk: "low"
+laws: ["laws/quality-guardrails/front-matter-validation"]
+laws-status: "drafted"
 ---
 
 # front matter 検証 抽象仕様書

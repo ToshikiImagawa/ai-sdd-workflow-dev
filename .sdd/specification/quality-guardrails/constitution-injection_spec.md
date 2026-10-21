@@ -11,6 +11,8 @@ tags: ["hooks", "constitution", "context-injection"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
+laws: ["laws/quality-guardrails/constitution-injection"]
+laws-status: "drafted"
 ---
 
 # CONSTITUTION 原則の自動注入

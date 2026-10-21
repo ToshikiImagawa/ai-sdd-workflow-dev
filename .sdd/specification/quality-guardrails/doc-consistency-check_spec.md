@@ -11,6 +11,8 @@ tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
 priority: "high"
 risk: "high"
+laws: ["laws/quality-guardrails/doc-consistency-check"]
+laws-status: "drafted"
 ---
 
 # ドキュメント間整合性チェック 抽象仕様書

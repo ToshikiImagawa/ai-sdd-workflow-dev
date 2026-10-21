@@ -11,6 +11,8 @@ tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
+laws: ["laws/quality-guardrails/naming-enforcement"]
+laws-status: "drafted"
 ---
 
 # ファイル命名規則の強制

@@ -11,6 +11,8 @@ tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
 category: "quality-guardrails"
 priority: "critical"
 risk: "high"
+laws: ["laws/quality-guardrails/vibe-detection"]
+laws-status: "drafted"
 ---
 
 # Vibe Coding 兆候検知

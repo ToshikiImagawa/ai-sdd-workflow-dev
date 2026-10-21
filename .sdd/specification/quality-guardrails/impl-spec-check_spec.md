@@ -12,6 +12,8 @@ tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
 priority: "high"
 risk: "high"
+laws: ["laws/quality-guardrails/impl-spec-check"]
+laws-status: "drafted"
 ---
 
 # 実装と仕様の整合性チェック
