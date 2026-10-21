@@ -17,20 +17,24 @@ Use these levels as the vocabulary for judging an NFR statement.
 | 2 | Target value | Number with unit, or standard with version/level | "p95 response time under 500 ms" |
 | 3 | Target + condition + measurement | Level 2 plus the load/environment conditions and how it is measured | "p95 under 500 ms at 1,000 concurrent users, measured by load test on staging" |
 
-Level 2 or higher satisfies the definition above. Level 3 is the most verifiable.
+Level 2 means the target is written in a form a third party can judge (the definition above). Level 3 goes further: conditions and measurement method are given, so the result can be verified reproducibly. Level 2 targets (e.g., a percentile without a load condition) are judgeable but may be measured differently by different people; that gap is what Level 3 closes.
+
+### Mapping to Risk Tiers (for #9)
+
+Guideline only: Level 0 maps to High risk, Level 1 to Medium, Level 2 or higher to Low. How the seven categories are aggregated into a single High/Medium/Low is decided on the consumer side (issue #9), not here.
 
 ## Ranges as Guidance
 
-The ranges below are rough starting points, not requirements. Choose values from the product's actual context.
+The ranges below are rough starting points, not requirements. All numbers in this document, including those in examples, are illustrative and not recommended values; choose targets from the product's actual context.
 
 ## Categories
 
-The seven categories map approximately to the product quality model of ISO/IEC 25010 (2023 edition). This document groups them for requirement writing, so the names do not match one-to-one.
+These seven categories are a grouping for requirement writing. They relate loosely to the product quality model of ISO/IEC 25010 (2023 edition); names are not guaranteed to match its characteristic names one-to-one.
 
 ### 1. Performance
 
 - **What to state**: response time (percentile), throughput, resource usage, batch duration
-- **Guidance range**: interactive operations: hundreds of ms to a few seconds at p95; batch: minutes to hours depending on volume
+- **Guidance range** (illustrative): interactive operations: hundreds of ms to a few seconds at p95; batch: minutes to hours depending on volume
 
 | Quality | Example | Level |
 |:--------|:--------|:------|
@@ -49,7 +53,7 @@ The seven categories map approximately to the product quality model of ISO/IEC 2
 |:--------|:--------|:------|
 | Bad | "Must be secure" | 1 |
 | Bad | "Data is encrypted" | 1 |
-| Good | "No unmitigated findings for OWASP Top 10:2025 categories" | 2 |
+| Good | "Broken Access Control (OWASP Top 10:2025) is covered by authorization tests on every endpoint, with zero open high-severity findings" | 2 |
 | Good | "TLS 1.2 or later for all external traffic; audit logs retained 12 months; verified by quarterly penetration test" | 3 |
 
 ### 3. Reliability
