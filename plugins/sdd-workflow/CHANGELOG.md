@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `shared/references/nfr_checklist.md`: NFR reference (7 categories, definition of "quantified" and a 4-level scale: not stated / mention only / target value / target + condition + measurement, good/bad examples, guidance ranges). Linked from `ambiguity_patterns.md`. Reference only; no skill or agent behavior changes (Refs #8)
+
 ### Changed
 
 - The `### Index Fast Path` text duplicated in 6 agents and `doc-consistency-checker` now lives in `shared/references/index_fast_path.md` (read `index.md` once; fall back to a specific file only when full text is needed; Glob/Grep/Read flow when `SDD_INDEX` is unset/`off`). Each caller keeps only its table list and fall-back condition. Behavior with `SDD_INDEX=on` is unchanged (Refs #190)

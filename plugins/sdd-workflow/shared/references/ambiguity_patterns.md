@@ -17,3 +17,7 @@
 - Non-functional requirement numeric targets
 - External system integration specifications
 - Data persistence and consistency
+
+## Related
+
+- NFR quantification levels and per-category guidance: `${CLAUDE_PLUGIN_ROOT}/shared/references/nfr_checklist.md`
