@@ -9,6 +9,10 @@
 
 ## [Unreleased]
 
+### 追加
+
+- `shared/references/nfr_checklist.md`: NFR 参照資料（7 カテゴリ、「定量化されている」の定義と 4 段階（未記述 / 言及のみ / 目標値あり / 目標値＋条件＋測定方法）、良い例・悪い例、目安の範囲）。`ambiguity_patterns.md` からリンク。参照資料のみで、スキル・エージェントの挙動は変更なし (Refs #8)
+
 ### 変更
 
 - 6 agent と `doc-consistency-checker` に重複していた `### Index Fast Path` の記述を `shared/references/index_fast_path.md` に集約（`index.md` は 1 回だけ Read、全文が必要なときのみ個別ファイルへフォールバック、`SDD_INDEX` が未設定/`off` なら従来の Glob/Grep/Read）。各ファイルには使用テーブルとフォールバック条件のみ残す。`SDD_INDEX=on` 時の挙動は不変 (Refs #190)

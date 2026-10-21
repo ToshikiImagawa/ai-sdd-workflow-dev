@@ -76,7 +76,7 @@ ai-sdd-workflow/
 │       │   └── vibe-detector/              # Vibe Coding検出
 │       │       └── templates/{en,ja}/
 │       ├── shared/                # スキル・エージェント共通のサポートファイル
-│       │   ├── references/        # 共通の参照資料（21ファイル）
+│       │   ├── references/        # 共通の参照資料（22ファイル）
 │       │   ├── examples/          # エージェント利用例（7ファイル）
 │       │   └── templates/{en,ja}/ # エージェント出力テンプレート（各8ファイル）
 │       ├── hooks/
@@ -127,7 +127,7 @@ ai-sdd-workflow/
   （CONSTITUTION T-002 v2.0.0）。`agents` はデフォルトの `agents/` スキャンを**置き換える**ため宣言が必須だが、
   `skills` は常にスキャンされるので宣言が冗長、`hooks` は標準パスを宣言すると二重ロードになる。
   新規エージェント追加時のみ `plugin.json` の更新が必要
-- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料（21ファイル）。エージェントの参照資料も
+- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料（22ファイル）。エージェントの参照資料も
   ここに集約している。`plugin-lint` の Check 2 でスキル配下のサポートファイルと同じ命名規則・拡張子規則が適用される
 - **`agents/` にはエージェント定義のみを置く**: `templates/` / `references/` / `examples/` などのサポートファイルは
   `shared/` 配下に置き、エージェント本文からは `${CLAUDE_PLUGIN_ROOT}/shared/...` 形式で参照する。
