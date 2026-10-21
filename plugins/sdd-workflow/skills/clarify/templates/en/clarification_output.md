@@ -21,15 +21,15 @@ Classification and basis for all 9 categories, including the ones that produced 
 | Category      | Clear  | Partial | Missing | Score   |
 |:--------------|:-------|:--------|:--------|:--------|
 | Scope         | 3      | 1       | 0       | 75%     |
-| Data Model    | 2      | 2       | 1       | 60%     |
+| Data Model    | 2      | 2       | 1       | 40%     |
 | Flow          | 4      | 0       | 0       | 100%    |
-| Non-func Reqs | 0      | 2       | 2       | 25%     |
+| Non-func Reqs | 0      | 2       | 2       | 0%     |
 | Integration   | 1      | 0       | 1       | 50%     |
-| Edge Cases    | 1      | 2       | 1       | 50%     |
+| Edge Cases    | 1      | 2       | 1       | 25%     |
 | Constraints   | 2      | 0       | 0       | 100%    |
 | Terminology   | 3      | 1       | 0       | 75%     |
-| Done Criteria | 0      | 1       | 2       | 17%     |
-| **Overall**   | **16** | **9**   | **7**   | **61%** |
+| Done Criteria | 0      | 1       | 2       | 0%     |
+| **Overall**   | **16** | **9**   | **7**   | **50%** |
 
 ### 🔴 Missing (Undefined) Items
 

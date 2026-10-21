@@ -11,15 +11,15 @@
 | Category | Clear | Partial | Missing | Score |
 |:---|:---|:---|:---|:---|
 | Functional Scope | 3 | 1 | 0 | 75% |
-| Data Model | 2 | 2 | 1 | 60% |
+| Data Model | 2 | 2 | 1 | 40% |
 | Flow | 4 | 0 | 0 | 100% |
-| Non-Functional Requirements | 0 | 2 | 2 | 25% |
+| Non-Functional Requirements | 0 | 2 | 2 | 0% |
 | Integration | 1 | 0 | 1 | 50% |
-| Edge Cases | 1 | 2 | 1 | 50% |
+| Edge Cases | 1 | 2 | 1 | 25% |
 | Constraints | 2 | 0 | 0 | 100% |
 | Terminology | 3 | 1 | 0 | 75% |
-| Completion Signals | 0 | 1 | 2 | 17% |
-| **Total** | **16** | **9** | **7** | **61%** |
+| Completion Signals | 0 | 1 | 2 | 0% |
+| **Total** | **16** | **9** | **7** | **50%** |
 
 ### 🔴 Missing (Undefined) Items
 

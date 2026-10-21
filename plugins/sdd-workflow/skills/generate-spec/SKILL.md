@@ -87,11 +87,13 @@ The Design Doc draft path is ticket-scoped, so the ticket number must be resolve
 
 Analyze input content and assess risk based on the following criteria:
 
-| Risk   | Condition                     | Response                                                |
-|:-------|:------------------------------|:--------------------------------------------------------|
-| High   | No specs + vague instructions | Confirm missing information with user before generating |
-| Medium | Some requirements unclear     | Clarify ambiguous points before generating              |
-| Low    | Requirements clear            | Can generate as-is                                      |
+| Risk       | Condition                        | Response                                                 |
+|:-----------|:---------------------------------|:---------------------------------------------------------|
+| **High**   | No specs + vague instructions    | **Require** specification creation before implementation |
+| **Medium** | Specs exist + some ambiguity     | Clarify ambiguous points before implementation           |
+| **Low**    | Specs exist + clear requirements | Can start implementation                                 |
+
+(Canonical definition: `vibe-detector` skill.)
 
 **Examples of Vague Input**:
 
