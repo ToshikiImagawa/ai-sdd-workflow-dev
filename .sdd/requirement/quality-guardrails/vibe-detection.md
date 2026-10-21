@@ -4,7 +4,7 @@ title: "Vibe Coding 兆候検知"
 type: "prd"
 status: "draft"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-10-21"
 depends-on: ["prd-quality-guardrails"]
 tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
 category: "quality-guardrails"
@@ -60,6 +60,7 @@ flowchart LR
     - プロンプト曖昧表現パターン検知（日英対応）
     - 非ブロッキングでの明確化促進コンテキスト注入
     - 実装前の指示曖昧性分析（自動実行スキル）
+    - 観点チェックに基づくリスクレベル判定（High / Medium / Low）
 
 ---
 
@@ -103,10 +104,18 @@ requirementDiagram
         verifymethod: demonstration
     }
 
+    functionalRequirement RiskLevelCriteria {
+        id: FR_001_05
+        text: "観点チェックでリスクレベルを High/Medium/Low のちょうど 1 つに判定する"
+        risk: medium
+        verifymethod: test
+    }
+
     VibeDetection - contains -> PatternDetection
     VibeDetection - contains -> NonBlockingInjection
     VibeDetection - contains -> PreImplAnalysis
     VibeDetection - contains -> StartingPhaseRecommendation
+    VibeDetection - contains -> RiskLevelCriteria
 ```
 
 本ファイルの FR_001 は [index.md](index.md) の UR_002（曖昧指示の実装前検知）から派生する
@@ -134,6 +143,28 @@ DC_004（クロスプラットフォーム対応）・DC_005（多言語対応�
 - FR_001_04: 曖昧さ×仕様書有無によるリスク評価とは別軸で、依頼内容を `AI-SDD-PRINCIPLES.md` の
   Task Type Determination 表に照らして分類し、対応する推奨開始フェーズ（Specify/Plan/Tasks/Implement）を
   リスク検出レポートに含める
+- FR_001_05: リスクレベル（High/Medium/Low）の判定基準（下記）
+
+**検証方法:** テストによる検証
+
+### FR_001_05: リスクレベル判定基準
+
+vibe-detector は、リスクレベルを観点チェック（対象と目的 / 入出力 / エラー処理 / 境界条件 / 完了条件 / 非機能目標）で判定し、
+仕様書の有無と観点の印から High / Medium / Low のちょうど 1 つに定める。
+
+- 仕様書なしで、対象と目的〜完了条件のいずれかに × があれば High、× がなければ Medium
+- 仕様書ありで、該当する観点のいずれかが △ か × なら Medium、該当観点がすべて ○ なら Low
+- 非機能目標は、依頼や仕様書が影響するカテゴリの最低の印とする（影響するカテゴリがなければ該当なし）
+- 判定基準の正典は `shared/references/ambiguity_criteria.md` とする。PRD / 仕様書がある場合は要求ごとの ○/△/× の件数を併記する
+
+**受け入れ基準:**
+
+1. 仕様書のない曖昧な依頼で High を返し、不足観点を列挙する
+2. 仕様書なしで観点に × がない依頼で Medium を返す
+3. 仕様書ありで該当観点がすべて ○ なら Low、△ か × が 1 つでもあれば Medium を返す
+4. 影響するカテゴリの非機能要求が未記述または言及のみなら、その印とカテゴリ名を報告に含める。影響するカテゴリがなければ非機能目標は該当なしとする
+5. 判定が vibe-detector のリスク表と矛盾しない
+6. 判定基準の記述が `ambiguity_criteria.md` の 1 ファイルだけにあり、他のスキルは参照のみである
 
 **検証方法:** テストによる検証
 
