@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-10-19"
-updated: "2026-10-22"
+updated: "2026-10-23"
 sdd-version: "5.1.0"
 depends-on: ["prd-task-implementation-proof-gate"]
 tags: ["laws", "bend", "proof", "drafting", "approval"]
@@ -366,7 +366,7 @@ sequenceDiagram
 - **`tests_dir` の配置はプロジェクト固有**: 既定 `tests/laws` はこのリポジトリの流儀で、スキルの `allowed-tools` は既定パスだけを事前承認する。配布先で `laws.tests_dir` を変えた場合は書き込み時に承認プロンプトが出る（ADR 2026-10-22）
 - **表現できる範囲**: 3.1.1 の「法則化しないもの」は対象外。IO・外部境界は法則にしない
 - **一方向派生**: 法則・抽出結果から spec・PRD を書き換えない。矛盾は報告し人が判断する。PRD の変更は人が決める（PRD 非自動化原則）
-- **任意依存**: `bend` は必須依存ではなく、スキルと静的チェックのテストは `bend` 無しで通る。配布先プロジェクトに bend や CI の変更を要求しない。本リポジトリ自身の CI は `bend` を **optional ジョブ**（`continue-on-error`、required にしない）で導入し、全法則ディレクトリの proof を実行する（[proof-gate_spec.md](proof-gate_spec.md) 8）
+- **任意依存**: `bend` は必須依存ではなく、スキルと静的チェックのテストは `bend` 無しで通る。配布先プロジェクトに bend や CI の変更を要求しない。本リポジトリ自身の CI は `bend` を **optional ジョブ**（`continue-on-error`、required にしない）で導入し、全法則ディレクトリの proof を実行する（[proof-gate_spec.md](proof-gate_spec.md) 8）。差分テストの `# source:` 照合（3.1.3-9、`check --tests`）は bend 不要なので、本リポジトリの CI では通常の `test` ジョブが全テストファイルに実行し、error があれば失敗にする（spec を変えたら該当テストの `# source:` を更新する運用）
 - **スコープ外**: 実装（スキル・スクリプト・フック・テンプレート）は別チケット。proof-gate 以外の spec への適用（dogfooding の拡大）は別チケットで提案する
 
 # 9. 原則との整合性
