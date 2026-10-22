@@ -11,6 +11,7 @@
 
 ### 追加
 
+- `evals/`: 実装が散文のため法則化しない spec（prd-generation / front-matter-validation / impl-spec-check / doc-consistency-check / vibe-detection / clarify）向けの `claude plugin eval` スイート。決定表 1 行または不変条件 1 件 = 1 ケース（32 ケース）で、各 `case.yaml` の `description` が検査する spec の節を示す。グレーダーは regex のみ。`claude plugin eval ./plugins/sdd-workflow --trust-plugin --scaffold --allow-tools Bash Write Edit` で実行
 - `draft-laws`: 点命題（`for` 量化を持たない法則＝判定表 1 行。`kind` が `empty` / `singleton` / `identity` のものを除く）を `LAWS.bend` に書かなくなった。`rank` は新しい `to_tests` 配列で返し、`draft` は実装に対する差分 pytest（`<laws.tests_dir>/test_<feature>.py`、既定 `tests/laws/`。新テンプレート `laws_tests.md` en/ja）として書く。各テストの直前には法則と同じ `# source:` 行を置く。新しい `check --tests <file> --spec <spec>` がその行を検査する（error `test_source_missing` / `test_source_drift`）。`.sdd-config.json` に `laws.tests_dir` を追加
 - `draft-laws`: spec が実装の所在を本文の `impl-of: <path>` 行（`model-api:` と同形式）で宣言する。`status` が `impl` として返し（宣言が無ければ既存 `main.bend` の `# model-of:`、どちらも無ければ warning `impl_undeclared`）、`model` 段階は `# model-of:` にそれを写す（パスを自分で選ばない）。実装が散文のみ（全パスが `.md`）の spec は法則化しない（`impl.lawifiable: false`、`reason: prose_implementation`。法則もテストも書かず、理由をレポートに残す）
 - `draft-laws migrate <feature>`: 既存 `LAWS.bend` を読み取り専用で keep / to_tests / prose_delete に分類し移行表を出す（新テンプレート `laws_migration_report.md` en/ja）。法則の削除・再承認・spec front matter の更新は人の作業のまま
@@ -20,6 +21,8 @@
 
 ### 変更
 
+- `user-prompt-submit` フック: Vibe Coding 兆候を検知したときに注入するコンテキストで、Skill ツールによる `sdd-workflow:vibe-detector` の呼び出しと、実装前にリスクレポートを出力することを明示するようにした。従来の「vibe-detector スキルのフローに従え」という文言ではスキルが読み込まれず、リスクレベルが出力されなかった
+- `vibe-detector` テンプレート: リスクレベル行を literal の `High / Medium / Low` からプレースホルダ（`{High | Medium | Low}`）に変更した。literal のままだとモデルが 1 つを選ばずそのまま写すことがあった
 - Bend 証明ゲート: `bend` は引き続き任意依存で、利用側プロジェクトの CI に `bend` は不要（無ければ結果は `SKIPPED` / `TOOL_NOT_FOUND`）。README と laws-drafting / proof-gate の spec から「CI では実行しない」という表現を改め、このプラグイン自身のリポジトリでは optional（required ではない）CI ジョブで実行するようにした
 - Bend 法則は全称的な性質（`for x: T`）に限定し、固定入力の命題は参照モデル（同じ表の写し）に対して証明するのではなく pytest で実装に対して検証するようにした。proof ゲート（`run-verification.py`・`CHK-205`・判定表・PASS の意味）は変更なし。差分テストはゲートとは独立。`main.bend` の `# model-of:` はソースコードを指すこととし、SKILL.md やエージェント定義は指さない
 - `draft-laws` のレポートテンプレート（en/ja）に「差分テストへ回した候補」節と実装の所在を追加

@@ -44,8 +44,13 @@
         {
           "text": "実装を強制的にブロックせず、最終判断をユーザーに委ねている（検出は警告であり強制ではない）",
           "checked_by": "independent grader (reads the run transcript and the produced files)"
+        },
+        {
+          "text": "リスクレベルをちょうど 1 つ報告している（High / Medium / Low のうち複数を併記していない、またはレベル自体を報告していないという状態ではない）",
+          "checked_by": "independent grader (reads the run transcript and the produced files)"
         }
       ]
     }
-  ]
+  ],
+  "assertion_revision": "v3.5 (2026-10-23): spec の決定表・不変条件に対応する assertion を 1 件追加した（vibe-detection_spec 3.1.1）。決定表の行そのものの機械判定は plugins/sdd-workflow/evals/ の `claude plugin eval` ケースが担い、ここには散文でしか表せない性質だけを置く（.claude/skill-evals/README.md「役割分担」参照）。既存 assertion は変更していない。"
 }

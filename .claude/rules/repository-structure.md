@@ -94,13 +94,15 @@ ai-sdd-workflow/
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
 │       │   └── env_export.py      # 共有: CLAUDE_ENV_FILE への export 書き出し
+│       ├── evals/             # claude plugin eval のケース（prose 実装 spec の決定表 1 行 = 1 ケース。6 feature / 32 ケース）
+│       │   └── {feature}/{property}/   # case.yaml（または prompt.md + graders/）・scaffold.sh
 │       ├── AI-SDD-PRINCIPLES.source.md
 │       ├── LICENSE
 │       ├── README.md
 │       ├── README.ja.md
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
-├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 8本）
+├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 9本）
 ├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
 │   └── laws/                       # 法則 vs 実装の差分テスト（.sdd/laws/** の点命題を実装に対して assert。/draft-laws が生成、# source: で spec の節に結ぶ）
 ├── dist/
