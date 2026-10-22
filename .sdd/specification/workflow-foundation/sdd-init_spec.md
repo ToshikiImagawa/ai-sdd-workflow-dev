@@ -12,7 +12,7 @@ category: "workflow-foundation"
 priority: "high"
 risk: "medium"
 laws: ["laws/workflow-foundation/sdd-init"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # プロジェクト初期化

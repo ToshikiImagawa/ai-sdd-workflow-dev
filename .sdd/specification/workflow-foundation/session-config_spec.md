@@ -12,7 +12,7 @@ category: "workflow-foundation"
 priority: "high"
 risk: "high"
 laws: ["laws/workflow-foundation/session-config"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # セッション設定初期化
