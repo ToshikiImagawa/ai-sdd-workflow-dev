@@ -57,14 +57,14 @@ Full argument string: $ARGUMENTS
 **When `feature-name` is missing**:
 
 - **Interactive**: ask for it with `AskUserQuestion` before loading any document
-- **`--ci` mode**: do not ask. Stop with an error naming the missing argument and the fix
+- **`--ci` mode**: do not ask. Abort with an error naming the missing argument and the fix
   (`/implement {feature-name} {ticket-number}`), and write no files
 
 | Argument | Required | Description |
 |:--|:--|:--|
 | `feature-name` | Yes | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
 | `ticket-number` | - | Task directory name, holding both `tasks.md` and `design-draft.md`. Uses feature-name if omitted |
-| `--ci` | - | CI/non-interactive mode. Exits with an error instead of prompting when a required argument is missing; proceeds through ambiguous points (see "When to Pause") instead of stopping |
+| `--ci` | - | CI/non-interactive mode. See "When to Pause" for behavior at ambiguous points |
 
 `ticket-number` may be passed positionally (`/implement {feature-name} {ticket-number}`) or as a flag; both
 flag spellings — `--ticket {number}` and `--ticket={number}` — are accepted and mean the same thing.

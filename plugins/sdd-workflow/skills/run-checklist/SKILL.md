@@ -46,7 +46,7 @@ Full argument string: $ARGUMENTS
 **When `feature-name` is missing**:
 
 - **Interactive**: ask for it before loading any document
-- **`--ci` mode**: do not ask. Stop with an error naming the missing argument and the fix
+- **`--ci` mode**: do not ask. Abort with an error naming the missing argument and the fix
   (`/run-checklist {feature-name} {ticket-number}`), and run no verifications
 
 | Argument        | Required | Description                                                          |
