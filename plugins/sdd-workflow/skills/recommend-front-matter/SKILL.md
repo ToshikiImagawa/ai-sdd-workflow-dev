@@ -1,7 +1,7 @@
 ---
 name: recommend-front-matter
 description: "Scan existing AI-SDD documents (including ADR decision logs) and recommend YAML front matter additions"
-argument-hint: "[--apply]"
+argument-hint: "[--apply] [--ci]"
 license: MIT
 user-invocable: true
 model: haiku
@@ -43,11 +43,14 @@ $ARGUMENTS
 - `--apply`: Automatically apply recommended front matter to documents (after user confirmation)
     - Without this option: Generate recommendation report only
     - With this option: Apply front matter to files and generate result report
+- `--ci`: CI/non-interactive mode. Skips the `AskUserQuestion` confirmation in Phase 4 Step 1 — has no
+  effect without `--apply`, since the report-only path never asks
 
 ### Input Examples
 
 - `/recommend-front-matter` — Generate recommendation report only
 - `/recommend-front-matter --apply` — Apply front matter after confirmation
+- `/recommend-front-matter --apply --ci` — Apply front matter without confirmation
 
 ## Processing Flow
 
@@ -202,7 +205,11 @@ For each document without front matter:
 
 #### 1. User Confirmation
 
-Use AskUserQuestion to confirm before modifying files:
+**`--ci` mode**: skip this confirmation entirely and proceed to step 2 as if the user had chosen "Yes, apply
+to all files." Note in the application result report (Phase 4 Step 3) that confirmation was skipped because
+of `--ci`.
+
+Otherwise, use AskUserQuestion to confirm before modifying files:
 
 **Question**: "以下の {count} 個のファイルに Front Matter を追加します。よろしいですか？" (en: "Add Front Matter to {count} files?")
 
