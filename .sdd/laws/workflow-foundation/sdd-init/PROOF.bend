@@ -8,9 +8,3 @@ import ./LAWS.bend as Laws
 
 def Laws.no_section_appends(v):
   {==}
-
-def Laws.same_version_skips():
-  {==}
-
-def Laws.version_mismatch_replaces():
-  {==}

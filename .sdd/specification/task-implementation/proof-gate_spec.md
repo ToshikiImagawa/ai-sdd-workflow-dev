@@ -124,6 +124,10 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 
 # 4. 提供コンポーネント
 
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/skills/run-checklist/scripts/run-verification.py
+
 本機能は新しいスキル・エージェントを追加せず、既存コンポーネントの拡張として提供する（T-002: `plugin.json` の変更なし）。
 
 | 種別       | 配置場所                                                              | 名前                        | 概要                                                                                         |

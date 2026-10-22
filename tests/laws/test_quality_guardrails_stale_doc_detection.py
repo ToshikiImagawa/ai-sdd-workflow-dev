@@ -1,7 +1,7 @@
 """spec-quality-guardrails-stale-doc-detection の点命題を実装に対して検証する差分テスト。
 
-.sdd/laws/quality-guardrails/stale-doc-detection/LAWS.bend の法則を実装 post-tool-use.py に対して assert する
-（laws-drafting_spec FR-014）。モデル API は category_for_path(path_kind) -> Nat
+stale-doc-detection_spec 3.1.1 の判定表（旧 .sdd/laws/quality-guardrails/stale-doc-detection/ の点命題）を
+実装 post-tool-use.py に対して assert する（laws-drafting_spec FR-014）。モデル API は category_for_path(path_kind) -> Nat
 （path_kind: 0=spec 1=spec+laws 2=PRD 3=adr 4=.bend 5=source+spec 6=source modeled 7=none、
 category: 0=FR-001 1=FR-009 2=FR-002 3=FR-006 4=FR-007 5=FR-003 6=FR-008 7=出力なし）。
 実装は多重該当で複数メッセージを出す（spec 3.1.1 も「多重該当しうる」）ため、モデルの単一値ではなく

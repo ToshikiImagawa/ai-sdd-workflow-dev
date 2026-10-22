@@ -5,14 +5,12 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-constitution-injection"]
 tags: ["hooks", "constitution", "context-injection"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
-laws: ["laws/quality-guardrails/constitution-injection"]
-laws-status: "proven"
 ---
 
 # CONSTITUTION 原則の自動注入
@@ -90,6 +88,10 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 | 4 | 上記 1〜3 のいずれにも該当しない（ソースコード かつ `CONSTITUTION.md` 存在 かつ未注入） | `additionalContext` を注入（非ブロッキング） | FR-001・FR-006 |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/pre-tool-use.py
 
 | 種別   | 配置場所                                        | 名前                | 概要                                                                        |
 |------|---------------------------------------------|-------------------|---------------------------------------------------------------------------|

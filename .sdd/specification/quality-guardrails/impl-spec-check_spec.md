@@ -6,14 +6,12 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
 priority: "high"
 risk: "high"
-laws: ["laws/quality-guardrails/impl-spec-check"]
-laws-status: "proven"
 ---
 
 # 実装と仕様の整合性チェック
@@ -119,6 +117,10 @@ spec ではなく設計ドラフトと同じ補助入力として扱う。
 | NFR-004 | 効率性   | 決定的なファイル走査を Claude のツール呼び出しではなくスクリプトに委譲し、トークン消費を抑制する（A-002） | 走査は Shell スクリプトの 1 回実行に集約 |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/check-spec/SKILL.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                       | 概要                                                            |
 |------------------------------|---------------------------------------------------------------|--------------------------|---------------------------------------------------------------|

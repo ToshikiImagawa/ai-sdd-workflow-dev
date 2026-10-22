@@ -13,8 +13,6 @@ tags: ["hooks", "consistency-check", "quality-gate"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
-laws: ["laws/quality-guardrails/stale-doc-detection"]
-laws-status: "proven"
 ---
 
 # ドキュメント更新漏れ検知
@@ -103,6 +101,10 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 `deny` は用いず `additionalContext` のみを注入する。
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/post-tool-use.py
 
 | 種別   | 配置場所                                        | 名前                | 概要                                                                                     |
 |------|---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|

@@ -5,14 +5,12 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-naming-enforcement"]
 tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
-laws: ["laws/quality-guardrails/naming-enforcement"]
-laws-status: "proven"
 ---
 
 # ファイル命名規則の強制
@@ -92,6 +90,10 @@ NFR-003 について、本機能は命名規則違反という明確な違反条
 何も出力せず exit code 0 で正常終了し、書き込みを許可する（親 PRD DC_001）。
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/naming.py
 
 | 種別   | 配置場所                                          | 名前                | 概要                                                                   |
 |------|-----------------------------------------------|-------------------|----------------------------------------------------------------------|

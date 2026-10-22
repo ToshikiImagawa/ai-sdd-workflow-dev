@@ -1,7 +1,7 @@
 """spec-quality-guardrails-naming-enforcement の点命題を実装に対して検証する差分テスト。
 
-.sdd/laws/quality-guardrails/naming-enforcement/LAWS.bend の法則を実装 naming.py に対して assert する
-（laws-drafting_spec FR-014）。モデル API は decide(is_md, ignore_match, is_requirement_dir, has_suffix) -> Nat
+naming-enforcement_spec 3.1.1 の判定表（旧 .sdd/laws/quality-guardrails/naming-enforcement/ の点命題）を
+実装 naming.py に対して assert する（laws-drafting_spec FR-014）。モデル API は decide(is_md, ignore_match, is_requirement_dir, has_suffix) -> Nat
 （0=allow(not .md) 1=allow(ignore) 2=deny 3=allow(fallthrough)）だが、実装は allow を空文字列、deny を
 非空文字列で返すため 0/1/3 は区別できない。allow / deny として検証する。bend は不要。
 """

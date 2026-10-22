@@ -5,14 +5,14 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-22"
 depends-on: ["prd-workflow-foundation-session-config"]
 tags: ["session-config", "hooks", "environment", "index"]
 category: "workflow-foundation"
 priority: "high"
 risk: "high"
 laws: ["laws/workflow-foundation/session-config"]
-laws-status: "proven"
+laws-status: "drafted"
 ---
 
 # セッション設定初期化
@@ -100,6 +100,11 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 | NFR-003 | 一貫性 | 環境変数エクスポートが再実行時に旧値を残さず最新値へ更新される                | 再実行で `SDD_*` の重複・陳腐化が起きない |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/session-start.py
+impl-of: plugins/sdd-workflow/scripts/hook_common.py
 
 | 種別     | 配置場所                              | 名前            | 概要                                                             |
 |--------|-------------------------------------|---------------|------------------------------------------------------------------|

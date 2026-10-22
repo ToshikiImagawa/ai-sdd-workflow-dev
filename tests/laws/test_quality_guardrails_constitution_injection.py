@@ -1,8 +1,8 @@
 """spec-quality-guardrails-constitution-injection の点命題を実装に対して検証する差分テスト。
 
-.sdd/laws/quality-guardrails/constitution-injection/LAWS.bend の法則（判定表 1 行ずつ）を、
-参照モデル main.bend ではなく実装 pre-tool-use.py に対して assert する（laws-drafting_spec FR-014）。
-テスト名は法則名に対応する。bend は不要。
+constitution-injection_spec 3.1.1 の判定表（1 行ずつの点命題）を、参照モデルではなく実装
+pre-tool-use.py に対して assert する（laws-drafting_spec FR-014）。旧 .sdd/laws/quality-guardrails/
+constitution-injection/ の法則を移したもので、テスト名は旧法則名に対応する。bend は不要。
 """
 # spec: spec-quality-guardrails-constitution-injection
 # impl-of: plugins/sdd-workflow/scripts/pre-tool-use.py
