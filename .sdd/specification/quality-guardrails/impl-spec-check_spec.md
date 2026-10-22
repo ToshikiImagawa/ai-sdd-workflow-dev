@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-10-22"
+updated: "2026-10-23"
 depends-on: ["prd-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
@@ -82,7 +82,7 @@ FR_001（実装コードと抽象仕様書の乖離を検出する）から派�
 | FR-005 | 検出した乖離を重大度（Critical / Warning / Info）で分類し、未実装機能・未文書化実装とともに報告する            | 必須  | PRD FR_001（乖離の報告）              |
 | FR-006 | front matter を持つ対象ドキュメントについて `front-matter-reviewer` エージェントで検証し、`impl-status` の指摘を統合する | 必須  | PRD FR_001（乖離の検出を補強する連携。親 PRD の front-matter-validation 機能を再利用） |
 | FR-007 | `--full` オプション指定時に `spec-reviewer` エージェントを呼び出し、ドキュメント間整合性・品質レビューを実施する      | 推奨  | PRD FR_001（乖離の報告を拡張する連携。親 PRD の doc-consistency 機能を再利用） |
-| FR-008 | 引数なし実行時は対象ファイル一覧を提示し、開発者に実行範囲を確認する                                          | 推奨  | PRD FR_001（誤操作防止）              |
+| FR-008 | 引数なし実行時は対象ファイル一覧を提示し、開発者に実行範囲を確認する。`--ci` 指定時は確認を省略し全 spec を対象とする | 推奨  | PRD FR_001（誤操作防止 / 非対話実行）  |
 | FR-009 | `task/{ticket-number}/design-draft.md` が存在する場合のみ補助入力として取り込み、モジュール構成・技術スタックの比較を追加する。不在時はエラー・警告を出さず正常終了する | 必須  | PRD FR_001（設計ドラフトの補助参照）      |
 | FR-010 | 仕様書に記載され実装が見つからない機能を、spec の `impl-status` に応じて分類する（`implemented` → Critical(退行)／`not-implemented`・`in-progress` → Info(意図した先行)／未設定 → Warning(判定不能、フィールド追加を推奨)） | 必須  | PRD FR_001（乖離の検出の精度向上。「未実装」と「乖離」の区別） |
 
@@ -138,6 +138,7 @@ impl-of: plugins/sdd-workflow/skills/check-spec/SKILL.md
 |--------------|------|------------------------------------------------------------------------------------------|
 | `feature-name` | 引数（任意） | 対象機能名またはパス（例: `user-auth`、`auth/user-login`）。省略時は全 spec 文書が対象             |
 | `--full`     | オプション | 整合性チェックに加えて `spec-reviewer` による品質レビューを実施する                              |
+| `--ci`       | オプション | CI / 非対話モード。引数なし実行時の範囲確認を省略する（本スキルは読み取り専用のため他に確認点はない）    |
 | `SDD_LANG`   | 環境変数 | 出力言語（`en` / `ja`）。既定値は `en`                                                        |
 | `SDD_SPECIFICATION_PATH` 等 | 環境変数 | ディレクトリパス解決（未設定時は `.sdd-config.json` → 既定値の順に解決）                        |
 
@@ -184,6 +185,7 @@ export CHECK_SPEC_MAPPING=".../file_mapping.json"                    # spec → 
 /check-spec task-management --full   # 整合性チェック + 品質レビュー
 /check-spec --full                   # 全仕様書を対象に包括チェック
 /check-spec                          # 引数なし: 全 spec を対象（実行前に範囲確認）
+/check-spec --ci                     # CI モード: 範囲確認なしで全 spec を対象
 ```
 
 # 7. 振る舞い図
@@ -200,7 +202,7 @@ sequenceDiagram
     Dev ->> Skill: /check-spec [feature-name] [--full]
     Skill ->> Script: Phase 1: spec 走査 + 設計ドラフト収集
     Script -->> Skill: 環境変数（SPEC_FILES / DESIGN_DRAFT_FILES / MAPPING）
-    Note over Skill,Claude: 引数なしの場合は範囲確認を挟む
+    Note over Skill,Claude: 引数なしの場合は範囲確認を挟む（--ci は省略）
     Skill ->> Claude: Phase 2: 整合性チェック開始
     Claude ->> Claude: spec から公開 API・データモデル・リテラル値を抽出
     Note over Claude: 設計ドラフトが存在する場合のみ詳細を補う
