@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-10-23
+
 ### 追加
 
 - `evals/`: 実装が散文のため法則化しない spec（prd-generation / front-matter-validation / impl-spec-check / doc-consistency-check / vibe-detection / clarify）向けの `claude plugin eval` スイート。決定表 1 行または不変条件 1 件 = 1 ケース（32 ケース）で、各 `case.yaml` の `description` が検査する spec の節を示す。グレーダーは regex のみ。`claude plugin eval ./plugins/sdd-workflow --trust-plugin --scaffold --allow-tools Bash Write Edit` で実行
@@ -34,6 +36,10 @@
   （スキル18・エージェント5）が必要な節を個別に列挙する。`AI-SDD-PRINCIPLES.source.md` 本文は変更なし (Refs #7)
 - `spec-reviewer` の Covered / Partially Covered / Not Covered に具体的な判定基準を追加。基準は `ambiguity_criteria.md`（§1。NFR は §3）を参照し二重定義しない。80% の警告は変更なし。NFR の確認では定量化（`nfr_checklist.md` の Level 0–3）も報告する。`spec_review_output.md`（en/ja）と `check-spec` を同期。NFR カテゴリを `nfr_checklist.md` の 7 カテゴリに統一（`clarification-assistant` / `clarify` / `analyze-requirements` / `generate-prd` / `generate-spec`。PRD §4.2 と spec §3.2 のテンプレートにカテゴリの案内を追加）。PRD テンプレート §4.2 / `requirement-analyzer` / 出力例の ID を `PR_xxx` から `NFR_xxx` に統一（SysML の要素型 `performanceRequirement` は変更なし） (Refs #9, Refs #8)
 - #9 の実例検証で見つかった基準のずれを補正（Refs #9）: `nfr_checklist.md` に Level 2 の「検査可能な二値条件」（例付き）、OS 名のみの Compatibility は Level 2（版・サポート期間は検証の記述が伴う場合のみ Level 3 の要素）、要求文言から 7 カテゴリへの対応表（どれにも当てはまらない文言は V6 の対象外）、Level 3 例の表記統一を追加。`ambiguity_criteria.md`: spec が適用外と明記した V1〜V5 は N/A、V3/V4 の △/× の線、PRD が NFR を持たない場合は親 PRD の NFR で V6 を判定。`spec-reviewer` と出力テンプレート（en/ja）: カバレッジ率（Covered + Partially）の定義はそのまま、参考表示として Partially の件数・Covered のみの率を併記し、警告は Not / Partially の件数でも出す。spec が PRD の検証方法を弱めた場合は Partially、既存の正典へのリンク委譲は Covered、分母は全要求 ID（UR/FR/NFR/IR/DC）。`clarify`: 明確度スコア = Clear の項目数 ÷（全項目数 − N/A の項目数）、項目単位、Partial は分子に入れず、定義は `nine_category_analysis.md` の 1 か所（SKILL.md・エージェント・テンプレートはリンク）。spec-reviewer の警告はカバレッジ 80% 未満または未カバー 1 件以上のときだけ。OS 名＋CI での検証（版なし）は Level 3
+
+### 修正
+
+- **5 スキルの `--ci` モード** - `checklist` / `implement` / `run-checklist` / `recommend-front-matter` が `--ci` 指定時も対話確認で停止していた。`generate-spec` / `plan-refactor` と同じ作法（引数不足はエラー終了、確認はスキップ）に揃えた。`task-breakdown` は本文では実装済みだったが `argument-hint` に `--ci` が抜けていたので追記
 
 ## [5.2.0] - 2026-10-21
 
