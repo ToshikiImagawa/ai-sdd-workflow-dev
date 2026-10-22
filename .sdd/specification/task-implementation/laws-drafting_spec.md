@@ -81,9 +81,9 @@ dogfooding 用の法則 5 件も手書きである。第 2 弾は、spec から�
 | FR-011 | spec の変更時に法則の見直しを非ブロッキングで促す。既存の `.bend` 編集時・`# model-of:` 編集時の促し（第 1 弾 FR-009）に加え、`laws:` を持つ spec の編集時に「`# source:` の節ハッシュが現在の spec と一致しない法則がある場合は `draft`（再抽出）を検討する」旨を促す。節ハッシュの計算は、フックから import できる共有モジュールに置く（A-002）。stale-doc-detection_spec FR-009（spec 編集時の再抽出の促し）と front-matter-validation_spec FR-009（`LAWS.draft.bend` の扱い）の追従は #173 で済み | 必須 | ADR 2026-10-19（Q5）・第 1 弾 FR-009 |
 | FR-012 | 抽出レポート（`${SDD_ROOT}/task/{ticket}/laws-draft-report.md` または標準出力）は、採用した法則、モデル API（FR-008）、未採用の候補、法則化しない理由、静的チェックの結果を `SDD_LANG` に従い en / ja で出力する | 必須 | 原則 B-002 |
 | FR-013 | proof ゲート（`CHK-205`）は、`# source:` を持つ法則について節ハッシュと現在の spec の該当節のずれを検出し、**warning** として結果に併記する。承認は失効させず、PASS も止めない（非ブロッキング）。`# source:` を持たない法則（第 1 弾の手書き法則）は対象外。判定表（第 1 弾 3.1.1）の判定・集約は変えない。条件: 有効な承認行を持つディレクトリ（#5 を通過したもの）のみで評価する（`drafted` で SKIPPED のものは対象外。生成直後の不一致は静的チェック #1 の error）。出力: `run-verification.py proof` の各ディレクトリの結果に任意の `warnings` 配列（要素は `{"code": "source_drift", "law": <法則名>, "source": <節>}`）を加える追加フィールド（既存フィールドは不変）。`CHK-205` の結果欄に件数と該当法則を `SDD_LANG` の文言で併記する。`source` は `§` を除いた節番号（例: `3.1.1`）。節が消えた・番号が変わった場合もずれに含め、`# source:` の書式が不正なものは warning として別コード（`source_invalid`）で報告する。`bend` 不在（判定表 #1 の TOOL_NOT_FOUND）の環境では検査器を起動しないため `warnings` は出さない（節ハッシュの検査は `draft` 側の静的チェックとフックが担う） | 必須 | オーナー判断（2026-10-19）・Q5 |
-| FR-014 | **点命題は Bend 法則にせず差分テストへ回す**。`for` 宣言を 1 つも持たず、`kind` が `empty` / `singleton` / `identity` のいずれでもない候補（判定表 1 行の転記。例: `{Model.severity(3n) == 0n : Nat}`）は、`rank` が `point_assertion` として `to_tests` に振り分ける（`adopted` にも `not_adopted` にも入れず、上限 `max_laws` の計算にも入れない）。`draft` は `to_tests` の候補を、**実装に対する** pytest（`${tests_dir}/test_<feature の `/` を `_` に置換>.py`。`tests_dir` は 4.1 の `laws.tests_dir`）としてテンプレート `laws_tests.md` から書く。各テスト関数の直前に `# source: <spec の id> §<節番号> sha256:<節ハッシュ>` を置く（FR-003 と同じ書式。`check --tests` が 3.1.3-9 で検査する）。テストの assert は参照モデルではなく、3.1.5 で固定した実装の所在（`impl-of:`）の関数を呼ぶ。既存のテストファイルは上書きせず、差分を抽出レポートに出す。空入力・単一要素・単位元（`kind` で明示）は `for` が無くても Bend に残す（集約規則の代数的性質であり、全称法則の基底になるため） | 必須 | ADR 2026-10-22（点命題の pytest 化） |
+| FR-014 | **点命題は Bend 法則にせず差分テストへ回す**。`for` 宣言を 1 つも持たず、`kind` が `empty` / `singleton` / `identity` のいずれでもない候補（判定表 1 行の転記。例: `{Model.severity(3n) == 0n : Nat}`）は、`rank` が `point_assertion` として `to_tests` に振り分ける（`adopted` にも `not_adopted` にも入れず、上限 `max_laws` の計算にも入れない）。`draft` は `to_tests` の候補を、**実装に対する** pytest（`${tests_dir}/test_<feature の `/` と `-` を `_` に置換>.py`。`tests_dir` は 4.1 の `laws.tests_dir`）としてテンプレート `laws_tests.md` から書く。各テスト関数の直前に `# source: <spec の id> §<節番号> sha256:<節ハッシュ>` を置く（FR-003 と同じ書式。`check --tests` が 3.1.3-9 で検査する）。テストの assert は参照モデルではなく、3.1.5 で固定した実装の所在（`impl-of:`）の関数を呼ぶ。既存のテストファイルは上書きせず、差分を抽出レポートに出す。空入力・単一要素・単位元（`kind` で明示）は `for` が無くても Bend に残す（集約規則の代数的性質であり、全称法則の基底になるため） | 必須 | ADR 2026-10-22（点命題の pytest 化） |
 | FR-015 | **実装の所在を spec が宣言する**。spec 本文の行頭 `impl-of: <プロジェクト相対パス>`（`model-api:` と同形式。`#` を付けない。1 行 1 パス、複数行可）で法則・テストが結ぶ実装ファイルを宣言する。`status` は 3.1.5 の優先順で所在を解決し `impl`（`paths` / `source` / `lawifiable` / `reason`）を返す。**宣言された全パスが `.md` を指す spec は法則化対象外**（`impl.lawifiable: false`、`reason: prose_implementation`）とし、`draft` / `model` は法則もテストも書かずに理由を抽出レポートに残して正常終了する（FR-005 と同じ扱い）。`model` 段階の `main.bend` の `# model-of:` は `impl.paths` を写し、LLM が選ばない（第 1 弾 FR-004 の `# model-of:` はソースコードに限る）。宣言が無く既存 `main.bend` の `# model-of:` も無ければ warning `impl_undeclared` を出すが、法則化は止めない | 必須 | ADR 2026-10-22（prose 実装の spec の除外） |
-| FR-016 | `/draft-laws migrate <feature>` は、既存の `LAWS.bend` を**読み取り専用**で走査し、各法則を「Bend に残す（`keep`）/ 差分テストへ（`to_tests`）/ prose 実装のため削除提案（`prose_delete`）」に分類した移行表を返す（`LAWS.bend`・spec の front matter・承認行には触れない）。分類は FR-014 の判定（`for` 宣言の有無。既存法則は `kind` を持たないため、空入力・単一要素・単位元に当たるものは法則名と本文から人が判断して `keep` に戻す）と FR-015 の `impl.lawifiable` で行う。移行表は `${SDD_ROOT}/task/{ticket}/laws-migration-report.md` にテンプレート `laws_migration_report.md` で書く。削除・再承認・`laws-status` の更新は人が行う | 必須 | ADR 2026-10-22（既存 proven 法則の移行） |
+| FR-016 | `/draft-laws migrate <feature>` は、既存の `LAWS.bend` を**読み取り専用**で走査し、各法則を「Bend に残す（`keep`）/ 差分テストへ（`to_tests`）/ prose 実装のため削除提案（`prose_delete`）」に分類した移行表を返す（`LAWS.bend`・spec の front matter・承認行には触れない）。分類は FR-014 の判定（`for` 宣言の有無。既存法則は `kind` を持たないため、空入力は本文の `Nil{}` / `[]` から `kind_guess: empty` と推定して `keep` に残し、単一要素・単位元に当たるものは法則名と本文から人が判断して `keep` に戻す）と FR-015 の `impl.lawifiable` で行う。移行表は `${SDD_ROOT}/task/{ticket}/laws-migration-report.md` にテンプレート `laws_migration_report.md` で書く。削除・再承認・`laws-status` の更新は人が行う | 必須 | ADR 2026-10-22（既存 proven 法則の移行） |
 
 ### 3.1.0. 状態別の挙動（FR-001・FR-007・FR-008）
 
@@ -272,7 +272,7 @@ def test_requirement_with_suffix_is_denied():
 ```
 
 - モジュール先頭に `# spec:` と `# impl-of:`（`impl.paths` の写し）を置く。実装の import はプロジェクトの既存テストの流儀に従う（本リポジトリでは `importlib.util.spec_from_file_location`）
-- `# source:` は各 `def test_*` の直前（間に空行・他のコメントを挟んでもよい。間にコード行があれば欠落とみなす）。書式は FR-003 と同じ
+- `# source:` は各 `def test_*` の直前（間に空行・他のコメント・デコレータ（`@pytest.mark.parametrize` 等。関数の一部とみなす）を挟んでもよい。間にそれ以外のコード行があれば欠落とみなす）。書式は FR-003 と同じ。クラス内のメソッド（`def test_*(self, ...)`）も対象
 - 符号化（`0n` = PASS など Bend 側の数値）は使わず、実装の実際の戻り値で書く。法則名との対応はテスト関数名（`test_<法則名>`）で残す
 
 ### `.sdd-config.json` 拡張（`laws.max_laws` / `laws.tests_dir` はスキルが読む）
@@ -285,7 +285,7 @@ def test_requirement_with_suffix_is_denied():
 
 `max_laws` は省略時 10。1 以上の整数のみ有効とし、0・負数・非整数・整数でない型は無効として既定値 10 にフォールバックし、抽出レポートに warning を残す。
 `tests_dir` は差分テストの出力先（プロジェクトルート相対）で省略時 `tests/laws`。空文字・文字列以外・絶対パス・`..` を含むものは無効として既定値にフォールバックし warning を残す。
-`status` は `tests_target`（`<tests_dir>/test_<feature の / を _ に置換>.py`）を返す。
+`status` は `tests_target`（`<tests_dir>/test_<feature の / と - を _ に置換>.py`）を返す。
 
 # 5. 用語集
 
@@ -411,7 +411,7 @@ PRD FR_006 の変更（本 spec で境界が確定したための 3 点）は、
 LLM の抽出は再現を保証しない（NFR-005）ため、検収は固定のプロンプト・入力で 1 回以上の再現を確認することで行う（既存ファイルは変更しない）。集約の 3 法則は、spec が明記する「最悪判定を採る」規則から導出した性質であり、spec が個別の文として述べているわけではない。
 
 **現状**: [#180](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/180) で合格（6 回目の独立再現。10 法則・内容ハッシュ 97d5dbf04b24。5 法則すべてが段 1 で一致し、段 2 の判定は不要）。
-FR-014（点命題の pytest 化）は本基準に影響しない: 5 法則のうち `for` を持たないのは `agg_empty_skipped`（`kind: empty`）と `agg_single_identity`（`kind: singleton`）で、いずれも例外に該当し Bend に残る。`migrate task-implementation/proof-gate` は 5 法則すべてを `keep` に分類すること（`kind` を持たない既存法則では、名前と本文から空入力・単一要素と判断して `keep` に戻す人の作業を含む）。
+FR-014（点命題の pytest 化）は本基準に影響しない: 5 法則のうち `for` を持たないのは `agg_empty_skipped`（`kind: empty`）と `agg_single_identity`（`kind: singleton`）で、いずれも例外に該当し Bend に残る。`migrate task-implementation/proof-gate` は 5 法則すべてを `keep` に分類すること（`agg_empty_skipped` は本文の `Nil{}` から `kind_guess: empty` と推定される。`agg_single_identity` は `for` を持つ）。
 
 | 法則 | 導出元（proof-gate_spec） | 抽出ルール |
 |:--|:--|:--|

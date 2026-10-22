@@ -474,3 +474,156 @@ def test_model_constants(tmp_path):
     main.write_text("def rank_pass() -> Nat:\n  0n\n\ndef rank_x() -> Nat:\n  return 7n\n\n"
                     "def f(a: Nat) -> Nat:\n  1n\n")
     assert ld.model_constants(main) == {"rank_pass": "0n", "rank_x": "7n"}
+
+
+# --- FR-014 / FR-015 / FR-016 (#218): point assertions, implementation location, migrate ---
+
+
+def test_rank_point_assertion_goes_to_tests():
+    cands = [
+        {"name": "row", "section": "3.1.1", "priority": 1, "body": "{Model.f(3n) == 0n : Nat}"},
+        {"name": "empty", "section": "3.1.1", "priority": 2, "kind": "empty",
+         "body": "{Model.g(Nil{}) == 1n : Nat}"},
+        {"name": "single", "section": "3.1.1", "priority": 2, "kind": "singleton",
+         "body": "{Model.g([2n]) == 2n : Nat}"},
+        {"name": "univ", "section": "3.1.1", "priority": 1,
+         "body": "for x: Nat {Model.f(x) == Model.h(x) : Nat}"},
+        {"name": "triv", "section": "3.1.1", "priority": 1, "trivial": True,
+         "body": "{Model.f(3n) == Model.f(3n) : Nat}"},
+    ]
+    out = dl.rank_candidates(cands, 10)
+    assert [c["name"] for c in out["adopted"]] == ["univ", "empty", "single"]
+    assert [(c["name"], c["reason"], c["suggested_test"]) for c in out["to_tests"]] == [
+        ("row", "point_assertion", "test_row")]
+    assert [c["reason"] for c in out["not_adopted"]] == ["trivial"]
+
+
+def test_rank_point_assertions_do_not_count_against_max_laws():
+    cands = [{"name": f"p{i}", "section": "1", "priority": 1, "body": f"{{Model.f({i}n) == 0n : Nat}}"}
+             for i in range(5)]
+    cands.append({"name": "u", "section": "1", "priority": 1, "body": "for x: Nat {Model.f(x) == 0n : Nat}"})
+    out = dl.rank_candidates(cands, 1)
+    assert [c["name"] for c in out["adopted"]] == ["u"] and len(out["to_tests"]) == 5
+    assert out["not_adopted"] == []
+
+
+@pytest.mark.parametrize("raw, expected, warns", [
+    ({}, "tests/laws", False),
+    ({"laws": {"tests_dir": "spec_tests"}}, "spec_tests", False),
+    ({"laws": {"tests_dir": "/abs"}}, "tests/laws", True),
+    ({"laws": {"tests_dir": "../up"}}, "tests/laws", True),
+    ({"laws": {"tests_dir": ""}}, "tests/laws", True),
+    ({"laws": {"tests_dir": 3}}, "tests/laws", True),
+])
+def test_load_tests_dir(raw, expected, warns):
+    value, warning = dl.load_tests_dir(raw)
+    assert value == expected and (warning is not None) == warns
+
+
+def test_tests_target_for():
+    assert dl.tests_target_for("tests/laws", "quality-guardrails/vibe-detection") == \
+        "tests/laws/test_quality_guardrails_vibe_detection.py"
+
+
+PROSE_SPEC = SPEC_TEXT + "\nimpl-of: plugins/x/skills/demo/SKILL.md\n"
+CODE_SPEC = SPEC_TEXT + "\nimpl-of: plugins/x/scripts/demo.py\nimpl-of: plugins/x/scripts/demo.py  # dup\n"
+
+
+def test_status_impl_of_prose_is_not_lawifiable(tmp_path):
+    spec = _project(tmp_path)
+    spec.write_text(PROSE_SPEC, encoding="utf-8")
+    _, out = run("status", "demo", "--project-root", str(tmp_path))
+    assert out["impl"] == {"paths": ["plugins/x/skills/demo/SKILL.md"], "source": "spec",
+                           "lawifiable": False, "reason": "prose_implementation"}
+    assert out["tests_target"] == "tests/laws/test_demo.py"
+
+
+def test_status_impl_of_code_is_lawifiable_and_deduplicated(tmp_path):
+    spec = _project(tmp_path)
+    spec.write_text(CODE_SPEC, encoding="utf-8")
+    _, out = run("status", "demo", "--project-root", str(tmp_path))
+    assert out["impl"]["paths"] == ["plugins/x/scripts/demo.py"] and out["impl"]["lawifiable"] is True
+    assert not any("impl_undeclared" in w for w in out["warnings"])
+
+
+def test_status_impl_falls_back_to_model_of_then_warns(tmp_path):
+    _project(tmp_path, laws_text="# spec: spec-demo\n\nimport Base\n")
+    main = tmp_path / ".sdd/laws/demo/main.bend"
+    main.write_text("# spec: spec-demo\n# model-of: src/demo.py\n\nimport Base\n", encoding="utf-8")
+    _, out = run("status", "demo", "--project-root", str(tmp_path))
+    assert out["impl"]["source"] == "main.bend" and out["impl"]["paths"] == ["src/demo.py"]
+    main.unlink()
+    _, out = run("status", "demo", "--project-root", str(tmp_path))
+    assert out["impl"]["source"] == "none" and out["impl"]["lawifiable"] is True
+    assert any("impl_undeclared" in w for w in out["warnings"])
+
+
+def test_check_tests_source_lines(tmp_path):
+    spec = _project(tmp_path)
+    _, h = run("hash", str(spec), "2.1")
+    tests = tmp_path / "test_demo.py"
+    tests.write_text(
+        "# spec: spec-demo\n\n"
+        f"# source: spec-demo §2.1 sha256:{h['hash']}\n"
+        "@pytest.mark.parametrize('x', [1])\n"
+        "def test_ok(x):\n    pass\n\n"
+        "class TestGroup:\n"
+        "    # source: spec-demo §2.1 sha256:000000000000\n"
+        "    def test_drift(self):\n        pass\n\n"
+        "    def test_missing(self):\n        pass\n", encoding="utf-8")
+    _, out = run("check", "--tests", str(tests), "--spec", str(spec))
+    assert out["tests_file"] == str(tests) and out["propose_drafted"] is False
+    assert {(f["code"], f["law"]) for f in out["findings"]} == {
+        ("test_source_drift", "test_drift"), ("test_source_missing", "test_missing")}
+    tests.write_text(f"# source: spec-demo §2.1 sha256:{h['hash']}\ndef test_ok():\n    pass\n", encoding="utf-8")
+    _, out = run("check", "--tests", str(tests), "--spec", str(spec))
+    assert out["errors"] == 0 and out["propose_drafted"] is True
+
+
+def test_check_laws_and_tests_together(tmp_path):
+    spec = _project(tmp_path)
+    _, h = run("hash", str(spec), "2.1")
+    laws = tmp_path / "LAWS.bend"
+    laws.write_text(f"# spec: spec-demo\n#\nimport Base\nimport ./main.bend as Model\n\n"
+                    f"# model-api: Model.f(x: Nat) -> Nat\n\n"
+                    f"# source: spec-demo §2.1 sha256:{h['hash']}\nlaw l:\n  for x: Nat\n  {{Model.f(x) == x : Nat}}\n",
+                    encoding="utf-8")
+    tests = tmp_path / "test_demo.py"
+    tests.write_text("def test_missing():\n    pass\n", encoding="utf-8")
+    _, out = run("check", str(laws), "--spec", str(spec), "--tests", str(tests))
+    assert out["laws_file"] == str(laws) and out["tests_file"] == str(tests)
+    assert [f["code"] for f in out["findings"]] == ["test_source_missing"]
+
+
+def test_migrate_classifies_proof_gate_laws():
+    """Acceptance (#218): the five first-round laws all stay in Bend; agg_empty_skipped is kept
+    through the empty-input guess."""
+    rc, out = run("migrate", "task-implementation/proof-gate", cwd=ROOT)
+    assert rc == 0 and out["ok"] and (out["keep"], out["to_tests"], out["prose_delete"]) == (5, 0, 0)
+    by_name = {l["law"]: l for l in out["laws"]}
+    assert by_name["agg_empty_skipped"]["kind_guess"] == "empty"
+    assert by_name["agg_empty_skipped"]["has_for"] is False
+    assert all(l["has_for"] for n, l in by_name.items() if n != "agg_empty_skipped")
+
+
+def test_migrate_prose_and_point_assertions(tmp_path):
+    spec = _project(tmp_path, laws_text=(
+        "# spec: spec-demo\n\nimport Base\nimport ./main.bend as Model\n\n"
+        "# model-api: Model.f(x: Nat) -> Nat\n\n"
+        "# source: spec-demo §2.1 sha256:000000000000\nlaw row:\n  {Model.f(3n) == 0n : Nat}\n\n"
+        "law univ:\n  for x: Nat\n  {Model.f(x) == Model.f(x) : Nat}\n\n"
+        "law empty:\n  {Model.f(Nil{}) == 0n : Nat}\n"))
+    _, out = run("migrate", "demo", "--project-root", str(tmp_path))
+    cls = {l["law"]: l["classification"] for l in out["laws"]}
+    assert cls == {"row": "to_tests", "univ": "keep", "empty": "keep"}
+    assert out["impl"]["source"] == "none" and out["tests_target"] == "tests/laws/test_demo.py"
+    assert [l for l in out["laws"] if l["law"] == "row"][0]["suggested_test"] == "test_row"
+    spec.write_text(PROSE_SPEC, encoding="utf-8")
+    _, out = run("migrate", "demo", "--project-root", str(tmp_path))
+    assert set(l["classification"] for l in out["laws"]) == {"prose_delete"} and out["prose_delete"] == 3
+
+
+def test_migrate_without_laws_file_fails(tmp_path):
+    _project(tmp_path)
+    rc, out = run("migrate", "demo", "--project-root", str(tmp_path))
+    assert rc == 1 and out["ok"] is False and "not found" in out["error"]
