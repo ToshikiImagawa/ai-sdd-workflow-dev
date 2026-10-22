@@ -63,7 +63,7 @@ UserPromptSubmit フックは発火し「vibe-detector スキルのフローに�
 - `prompt.md` の `description` に `spec <path> <節>:` 形式で出典を書き、`tags` に `<feature>` と `spec-<節>` を付ける（差分テストの `# source:` に相当。節ハッシュ照合は本 issue では行わない）
 - grader は決定表の「結果」列を regex で機械判定するものを必ず 1 件置き、LLM judge は補助に留める
 - 評価対象プロンプトは `SDD_LANG` 既定（en）で動く前提で書き、regex は英日両表記を許容する
-- 実行オプションは `--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0。CI には入れない（オーナー判断: 1 回 $4〜5 の課金が発生し `ANTHROPIC_API_KEY` secret の運用も要るため。手元で任意実行）
+- 実行オプションは `--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0。CI には入れない（オーナー判断: 1 回 $4〜5 の課金が発生し `ANTHROPIC_API_KEY` secret の運用も要るため）。実行経路は開発スキル `/plugin-evals`（`.claude/skills/plugin-evals/`。`scripts/` は CI ジョブと 1:1 の置き場なのでラッパーはそこに置かない）
 
 ## 全件実行（32 ケース、`--runs 1`）
 

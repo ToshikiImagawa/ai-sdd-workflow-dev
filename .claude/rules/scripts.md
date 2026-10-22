@@ -18,7 +18,10 @@ paths:
 | `test-skill-scripts.sh`   | skill ヘルパースクリプト（check-spec の `find-spec-docs.py` / constitution の `validate-files.py`）が custom root でキャッシュ・エクスポートを設定 root 配下に生成するか検証 | `test`        |
 | `check-laws-tests.sh`     | 差分テスト `tests/laws/test_*.py` の `# source:` 行を spec の節ハッシュと照合（`draft_laws.py check --tests --spec`。spec は各ファイル先頭の `# spec: <id>` から解決）。error が 1 件でもあれば exit 1。bend 不要 | `test`        |
 | `proof-gate.sh`           | Bend 証明ゲートのラッパー。`run-verification.py proof` を全法則ディレクトリ（`.sdd/laws/**`）に実行し、JSON の `status` が `PASS` 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）なら exit 1。要 `bend` | `proof`（optional、`continue-on-error`） |
-| `skill-evals.sh`          | `claude plugin eval` のラッパー。`plugins/sdd-workflow/evals/` のケース（prose 実装 spec の決定表 1 行 = 1 ケース）を `--trust-plugin --scaffold --runs 1` で実行し、結果 JSON を要約。終了コードは CLI のまま（閾値未満 1 / コスト上限 2）。要 `claude` と認証。モデル呼び出しに課金が発生するため CI には入れていない（手元で任意実行） | なし（ローカル手動） |
+
+CI に対応ジョブを持たない手動ツールはここに置かず、開発スキル（`.claude/skills/<name>/scripts/`）に置く。
+例: `claude plugin eval` のラッパー `.claude/skills/plugin-evals/scripts/run_evals.sh`（`/plugin-evals`。
+モデル呼び出しに課金が発生するため CI には入れない）。
 
 ## plugin-lint の2系統
 

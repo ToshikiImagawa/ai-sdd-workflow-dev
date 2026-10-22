@@ -2,7 +2,7 @@
 # `claude plugin eval` のラッパー。plugins/sdd-workflow/evals/ のケース（prose 実装 spec の決定表 1 行 = 1 ケース）を
 # 実行し、結果 JSON を要約する。モデル呼び出しに課金が発生するため CI では実行せず、手元で任意に実行する。
 #
-# 使い方: bash scripts/skill-evals.sh [--case <glob>] [--tag <tag>] [その他 claude plugin eval の引数]
+# 使い方: bash .claude/skills/plugin-evals/scripts/run_evals.sh [--case <glob>] [--tag <tag>] [その他 claude plugin eval の引数]
 # 環境変数:
 #   SKILL_EVALS_RUNS          ケースあたりの実行回数（既定 1。既定の 3 回はコストが 3 倍になる）
 #   SKILL_EVALS_MAX_COST_USD  コスト上限 USD（既定 5。超過で claude が exit 2）
@@ -15,10 +15,10 @@
 # 認証は実行者の claude ログイン（または API キー）を claude が読む。
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../../.."  # リポジトリルート
 
 if ! command -v claude >/dev/null 2>&1; then
-  echo "skill-evals: claude CLI が見つかりません（https://claude.ai/install.sh）" >&2
+  echo "plugin-evals: claude CLI が見つかりません（https://claude.ai/install.sh）" >&2
   exit 1
 fi
 
@@ -43,7 +43,7 @@ if [ -f "$out" ]; then
 import json, sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
 agg = d.get("aggregates", {})
-print(f"skill-evals: passed {agg.get('casesPassed', '?')}/{agg.get('casesTotal', '?')} cases, "
+print(f"plugin-evals: passed {agg.get('casesPassed', '?')}/{agg.get('casesTotal', '?')} cases, "
       f"cost ${float(d.get('costUsd', 0)):.2f}, {d.get('durationSeconds', '?')}s, partial={d.get('partial')}")
 for c in d.get("cases", []):
     for r in c.get("arms", {}).get("with", []):
@@ -53,7 +53,7 @@ for c in d.get("cases", []):
         print(f"  FAIL {c['name']}: {', '.join(failed) or r.get('error') or 'no grader result'}")
 EOF
 else
-  echo "skill-evals: 結果 JSON が書かれませんでした（${out}）" >&2
+  echo "plugin-evals: 結果 JSON が書かれませんでした（${out}）" >&2
 fi
 
 exit "$status"

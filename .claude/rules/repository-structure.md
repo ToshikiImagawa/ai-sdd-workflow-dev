@@ -7,7 +7,7 @@ ai-sdd-workflow/
 ├── .agents/skills/                # Codex向け開発スキル
 ├── .claude/
 │   ├── rules/                     # トピック別開発ルール（7ファイル。CLAUDE.md から参照）
-│   ├── skills/                    # Claude Code向け開発スキル
+│   ├── skills/                    # Claude Code向け開発スキル（plugin-evals は plugins/sdd-workflow/evals/ の手動実行）
 │   └── tests/                     # SDD有効/無効のA/B計測ハーネス
 │       ├── RUNBOOK.md             # 計測手順
 │       └── harness/               # run_ab.sh / verify_parity.sh / 集計Python / prompts/
@@ -102,7 +102,7 @@ ai-sdd-workflow/
 │       ├── README.ja.md
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
-├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 9本）
+├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 8本。CI ジョブと 1:1）
 ├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
 │   └── laws/                       # 法則 vs 実装の差分テスト（.sdd/laws/** の点命題を実装に対して assert。/draft-laws が生成、# source: で spec の節に結ぶ）
 ├── dist/
