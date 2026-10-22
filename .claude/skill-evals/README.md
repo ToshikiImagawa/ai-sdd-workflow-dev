@@ -3,6 +3,19 @@
 `plugins/sdd-workflow/skills/` 配下のスキルを評価・改善する際に使うテストケースと、その評価手法を保存するディレクトリ。
 
 `plugins/sdd-workflow/skills/<skill>/evals/` には置かない（`scripts/plugin-lint.sh` の Check 2 が `skills/*/` 配下の許可ディレクトリを `templates`/`examples`/`references`/`scripts` に限定しているため、`evals/` を置くとCIエラーになる）。
+プラグイン**直下**の `plugins/sdd-workflow/evals/` は別物で、Claude Code 公式の `claude plugin eval` が読むケース置き場（Check 2 の対象外）。
+
+## 役割分担: この基盤と `claude plugin eval`
+
+| | `.claude/skill-evals/`（この基盤） | `plugins/sdd-workflow/evals/`（`claude plugin eval`） |
+|:--|:--|:--|
+| 測るもの | main → develop の**リフト差**（スキルがどれだけ良くなったか） | spec の決定表 1 行 = 1 ケースの**合否**（spec どおりに振る舞うか） |
+| 判定 | 独立グレーダー agent が散文 assertion を判定 | regex グレーダーの機械判定（LLM judge は使わない） |
+| 実行 | `/evaluate-skills`（Workflow、手動、高コスト） | `/plugin-evals`（`.claude/skills/plugin-evals/`。CLI 1 コマンド。課金が発生するため CI には入れず手元で実行） |
+| 置くもの | 散文でしか表せない性質（根拠の整合・全順序・報告の形） | 入力条件 → 出力値の行 |
+
+散文実装の spec（Bend 法則化の対象外）の性質はこの 2 系統で検証する。assertion の書き方は
+[ASSERTION_DESIGN.md](ASSERTION_DESIGN.md) 末尾の節を参照。
 
 ## 構成
 

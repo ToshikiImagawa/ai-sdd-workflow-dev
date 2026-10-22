@@ -19,6 +19,10 @@ paths:
 | `check-laws-tests.sh`     | 差分テスト `tests/laws/test_*.py` の `# source:` 行を spec の節ハッシュと照合（`draft_laws.py check --tests --spec`。spec は各ファイル先頭の `# spec: <id>` から解決）。error が 1 件でもあれば exit 1。bend 不要 | `test`        |
 | `proof-gate.sh`           | Bend 証明ゲートのラッパー。`run-verification.py proof` を全法則ディレクトリ（`.sdd/laws/**`）に実行し、JSON の `status` が `PASS` 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）なら exit 1。要 `bend` | `proof`（optional、`continue-on-error`） |
 
+CI に対応ジョブを持たない手動ツールはここに置かず、開発スキル（`.claude/skills/<name>/scripts/`）に置く。
+例: `claude plugin eval` のラッパー `.claude/skills/plugin-evals/scripts/run_evals.sh`（`/plugin-evals`。
+モデル呼び出しに課金が発生するため CI には入れない）。
+
 ## plugin-lint の2系統
 
 `plugin-lint` ジョブは**2ステップ**で、独立した2つの Linter を順に実行する。両者は検査項目が重複せず、

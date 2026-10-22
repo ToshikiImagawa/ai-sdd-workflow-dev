@@ -15,6 +15,8 @@ Thumbs.db
 # evaluate-skills / skill-evals の実行成果物（HTMLレポート・ラン記録・フィクスチャ）。
 # 実行日ごとに数MB増えるうえ、評価定義（evals.json）と違って再生成できるため追跡しない。
 .claude/skill-evals/reports/
+# claude plugin eval の実行成果物（aggregate-result.json / report.html）。ケース定義（evals/**/prompt.md, graders/）は追跡する
+plugins/sdd-workflow/evals/results/
 
 # Python
 __pycache__/
