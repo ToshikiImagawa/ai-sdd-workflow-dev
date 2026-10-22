@@ -229,7 +229,7 @@ ${SDD_LAWS_PATH}/{feature}/          # 既定 .sdd/laws/{feature}/。階層 spec
 
 ```yaml
 laws: ["laws/task-implementation/proof-gate"]   # ${SDD_ROOT} 相対ディレクトリのリスト。省略可
-laws-status: "approved"                          # none / drafted / approved / proven。省略時は none 相当
+laws-status: "proven"                          # none / drafted / approved / proven。省略時は none 相当
 ```
 
 | 値          | 意味                                            | 遷移させる主体                         |

@@ -3,6 +3,7 @@
 # Laws derived from impl-spec-check_spec 3.1.1 (impl-status -> severity decision table).
 # Model API not fixed (no main.bend yet): proposed below, needs confirmation.
 # Unapproved: a human reviewer appends the approval line after review.
+# approved: 2026-10-21 @ToshikiImagawa sha256:321fe1a9bbd8
 
 import Base
 import ./main.bend as Model

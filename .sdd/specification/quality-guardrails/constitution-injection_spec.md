@@ -12,7 +12,7 @@ category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
 laws: ["laws/quality-guardrails/constitution-injection"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # CONSTITUTION 原則の自動注入

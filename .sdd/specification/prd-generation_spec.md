@@ -10,7 +10,7 @@ depends-on: ["prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
 laws: ["laws/prd-generation"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # PRD 生成パイプライン

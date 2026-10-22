@@ -12,7 +12,7 @@ category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
 laws: ["laws/quality-guardrails/naming-enforcement"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # ファイル命名規則の強制

@@ -3,6 +3,7 @@
 # Laws derived from stale-doc-detection_spec 3.1.1 (file category decision table).
 # Model API not fixed (no main.bend yet): proposed below, needs confirmation.
 # Unapproved: a human reviewer appends the approval line after review.
+# approved: 2026-10-21 @ToshikiImagawa sha256:568e042f05d2
 
 import Base
 import ./main.bend as Model

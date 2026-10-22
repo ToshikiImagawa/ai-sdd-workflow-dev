@@ -5,6 +5,7 @@
 # from lawification (laws-drafting_spec extraction rule).
 # Model API not fixed (no main.bend yet): proposed below, needs confirmation.
 # Unapproved: a human reviewer appends the approval line after review.
+# approved: 2026-10-21 @ToshikiImagawa sha256:6d89c8845e8a
 
 import Base
 import ./main.bend as Model

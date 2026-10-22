@@ -3,6 +3,7 @@
 # Laws derived from naming-enforcement_spec 3.1.1 (naming validation decision table).
 # Model API not fixed (no main.bend yet): proposed below, needs confirmation.
 # Unapproved: a human reviewer appends the approval line after review.
+# approved: 2026-10-21 @ToshikiImagawa sha256:34a684e9aeb7
 
 import Base
 import ./main.bend as Model
