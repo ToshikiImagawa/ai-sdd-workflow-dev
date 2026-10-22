@@ -347,7 +347,7 @@ stateDiagram-v2
   本ゲートの判定とは独立である
 - **表現できる範囲**: 法則にできるのは spec の制約・不変条件・事後条件（純粋な性質）に限る。PRD・ADR・CONSTITUTION・
   API の IO・外部境界は証明対象外（issue #148 の結論）
-- **任意依存**: Bend は必須依存ではなく、本リポジトリの CI にも導入しない。Windows は WSL 経由のみ
+- **任意依存**: Bend は必須依存ではなく、配布先のプロジェクトは bend 無しで動く（`SKIPPED` / `TOOL_NOT_FOUND`）。本リポジトリ自身の CI は optional ジョブ `proof`（ubuntu、`continue-on-error`、required にしない）で bend をバージョン固定の tarball から導入し、`run-verification.py proof` を全法則ディレクトリに実行する。PASS 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）は optional ジョブの失敗として Checks に出る。Windows は WSL 経由のみ
 - **承認は人のプロセス**: ゲートが検査するのは承認行の有無と内容ハッシュの一致までで、誰が書いたかは検証できない。
   承認行の追加はレビュー（PR）で確認する運用とし、AI は承認行を書かない。承認後に法則本文を変えると承認は失効する
 - **一方向派生**: 法則・検査結果から spec・PRD（本文・front matter とも）を書き換えない。spec と法則の矛盾は報告し人が判断する。

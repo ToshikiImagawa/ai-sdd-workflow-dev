@@ -562,7 +562,8 @@ reference.
 
 An optional quality gate that checks a spec's constraints, invariants and postconditions as [Bend](https://github.com/HigherOrderCO/Bend) laws.
 It is **off by default**: without a `laws:` entry in a spec, a `bend` CLI, or an approved law file, nothing runs and
-nothing fails (the result is `SKIPPED` / `TOOL_NOT_FOUND`). CI does not need `bend` installed.
+nothing fails (the result is `SKIPPED` / `TOOL_NOT_FOUND`). Your project's CI does not need `bend` installed
+(this plugin's own repository runs the gate in an optional CI job, but that is not required of users).
 
 ### What PASS means
 

@@ -20,6 +20,7 @@
 
 ### 変更
 
+- Bend 証明ゲート: `bend` は引き続き任意依存で、利用側プロジェクトの CI に `bend` は不要（無ければ結果は `SKIPPED` / `TOOL_NOT_FOUND`）。README と laws-drafting / proof-gate の spec から「CI では実行しない」という表現を改め、このプラグイン自身のリポジトリでは optional（required ではない）CI ジョブで実行するようにした
 - Bend 法則は全称的な性質（`for x: T`）に限定し、固定入力の命題は参照モデル（同じ表の写し）に対して証明するのではなく pytest で実装に対して検証するようにした。proof ゲート（`run-verification.py`・`CHK-205`・判定表・PASS の意味）は変更なし。差分テストはゲートとは独立。`main.bend` の `# model-of:` はソースコードを指すこととし、SKILL.md やエージェント定義は指さない
 - `draft-laws` のレポートテンプレート（en/ja）に「差分テストへ回した候補」節と実装の所在を追加
 - `constitution` スキル（`SKILL.md`・`references/best_practices.md`）と `constitution_template.md`（en/ja）のバージョン区分を、リポジトリの `CONSTITUTION` v2.3.0 の定義に統一: メジャー＝既存の実装を違反にする破壊的変更、マイナー＝機能追加・更新（既存の実装が準拠のままとなる緩和を含む）、パッチ＝意味を変えない修正。改定 PR に既存実装への影響とその根拠を書き、レビュアーが確認する（Closes #200） 既存プロジェクトの CONSTITUTION は自動では更新されない。必要ならチームで区分の定義を手で更新する。

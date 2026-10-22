@@ -16,6 +16,7 @@ paths:
 | `test-hook-scripts.sh`    | `plugins/sdd-workflow/scripts/` のフックスクリプト（pre-tool-use / post-tool-use / user-prompt-submit）の回帰テスト | `test`        |
 | `test-e2e-sdd-init.sh`    | 空プロジェクトでの sdd-init 通しE2E（session-start → init-structure → update-claude-md）。CLAUDE.md 最小化・`.claude/rules/` 生成・レガシー掃除・冪等性・en/ja テンプレート描画・custom root を検証 | `test`        |
 | `test-skill-scripts.sh`   | skill ヘルパースクリプト（check-spec の `find-spec-docs.py` / constitution の `validate-files.py`）が custom root でキャッシュ・エクスポートを設定 root 配下に生成するか検証 | `test`        |
+| `proof-gate.sh`           | Bend 証明ゲートのラッパー。`run-verification.py proof` を全法則ディレクトリ（`.sdd/laws/**`）に実行し、JSON の `status` が `PASS` 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）なら exit 1。要 `bend` | `proof`（optional、`continue-on-error`） |
 
 ## plugin-lint の2系統
 
