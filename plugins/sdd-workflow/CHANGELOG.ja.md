@@ -11,11 +11,17 @@
 
 ### 追加
 
+- `draft-laws`: 点命題（`for` 量化を持たない法則＝判定表 1 行。`kind` が `empty` / `singleton` / `identity` のものを除く）を `LAWS.bend` に書かなくなった。`rank` は新しい `to_tests` 配列で返し、`draft` は実装に対する差分 pytest（`<laws.tests_dir>/test_<feature>.py`、既定 `tests/laws/`。新テンプレート `laws_tests.md` en/ja）として書く。各テストの直前には法則と同じ `# source:` 行を置く。新しい `check --tests <file> --spec <spec>` がその行を検査する（error `test_source_missing` / `test_source_drift`）。`.sdd-config.json` に `laws.tests_dir` を追加
+- `draft-laws`: spec が実装の所在を本文の `impl-of: <path>` 行（`model-api:` と同形式）で宣言する。`status` が `impl` として返し（宣言が無ければ既存 `main.bend` の `# model-of:`、どちらも無ければ warning `impl_undeclared`）、`model` 段階は `# model-of:` にそれを写す（パスを自分で選ばない）。実装が散文のみ（全パスが `.md`）の spec は法則化しない（`impl.lawifiable: false`、`reason: prose_implementation`。法則もテストも書かず、理由をレポートに残す）
+- `draft-laws migrate <feature>`: 既存 `LAWS.bend` を読み取り専用で keep / to_tests / prose_delete に分類し移行表を出す（新テンプレート `laws_migration_report.md` en/ja）。法則の削除・再承認・spec front matter の更新は人の作業のまま
+
 - `shared/references/nfr_checklist.md`: NFR 参照資料（7 カテゴリ、「定量化されている」の定義と 4 段階（未記述 / 言及のみ / 目標値あり / 目標値＋条件＋測定方法）、良い例・悪い例、目安の範囲）。`ambiguity_patterns.md` からリンク。参照資料のみで、スキル・エージェントの挙動は変更なし (Refs #8)
 - `shared/references/ambiguity_criteria.md`: 曖昧さ判定基準の唯一の置き場。要求ごとの ○/△/× 判定と割合の目安（固定しきい値ではない）、`vibe-detector` 用の High/Medium/Low 観点チェック（PRD/spec がない入力でも使える）、`nfr_checklist.md` の段階を引く NFR の扱いと 7 カテゴリの集約規則（対象カテゴリの最低の印）。`vibe-detector` と `ambiguity_patterns.md` から参照。`vibe-detector` と `generate-spec` のリスク表に「spec なし＋明確な依頼 → Medium」の行を追加（従来の 3 行表の拡張。High / Low の行の文言は変更なし） (Refs #9)
 
 ### 変更
 
+- Bend 法則は全称的な性質（`for x: T`）に限定し、固定入力の命題は参照モデル（同じ表の写し）に対して証明するのではなく pytest で実装に対して検証するようにした。proof ゲート（`run-verification.py`・`CHK-205`・判定表・PASS の意味）は変更なし。差分テストはゲートとは独立。`main.bend` の `# model-of:` はソースコードを指すこととし、SKILL.md やエージェント定義は指さない
+- `draft-laws` のレポートテンプレート（en/ja）に「差分テストへ回した候補」節と実装の所在を追加
 - `constitution` スキル（`SKILL.md`・`references/best_practices.md`）と `constitution_template.md`（en/ja）のバージョン区分を、リポジトリの `CONSTITUTION` v2.3.0 の定義に統一: メジャー＝既存の実装を違反にする破壊的変更、マイナー＝機能追加・更新（既存の実装が準拠のままとなる緩和を含む）、パッチ＝意味を変えない修正。改定 PR に既存実装への影響とその根拠を書き、レビュアーが確認する（Closes #200） 既存プロジェクトの CONSTITUTION は自動では更新されない。必要ならチームで区分の定義を手で更新する。
 - 6 agent と `doc-consistency-checker` に重複していた `### Index Fast Path` の記述を `shared/references/index_fast_path.md` に集約（`index.md` は 1 回だけ Read、全文が必要なときのみ個別ファイルへフォールバック、`SDD_INDEX` が未設定/`off` なら従来の Glob/Grep/Read）。各ファイルには使用テーブルとフォールバック条件のみ残す。`SDD_INDEX=on` 時の挙動は不変 (Refs #190)
 - 曖昧さ評価の記述の食い違いを解消 (Refs #9): `/clarify` の明確度スコアの段階の `skills/clarify/SKILL.md` を `clarification-assistant`（4 段階）に合わせた（agent は未変更）。clarify 出力テンプレート（スキル・shared、en/ja）のスコア表の計算ミスを修正（総合 50% = Clear 16 / 32、旧 61%。カテゴリ別も Clear / 総数で再計算）。`spec-reviewer` の PRD→spec の数値を「カバレッジ率」（Covered + Partially Covered）と明記し、明確度スコア（Clear のみ）とは別物であることを記載。`generate-spec` の High/Medium/Low を正典である `vibe-detector` と同じ文言に統一
