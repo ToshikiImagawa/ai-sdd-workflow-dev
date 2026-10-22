@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-10-20"
+updated: "2026-10-22"
 sdd-version: "5.1.0"
 depends-on: ["prd-quality-guardrails-stale-doc-detection"]
 tags: ["hooks", "consistency-check", "quality-gate"]
@@ -65,13 +65,29 @@ risk: "medium"
 | FR-006 | `.sdd/` 決定ログディレクトリ（`adr/`）の編集後に、追記専用の原則と決定の spec への反映確認を促す        | 必須  | 子 PRD FR_001 / 親 PRD UR_003・FR_004    |
 | FR-007 | 法則ディレクトリ（`${SDD_LAWS_PATH}`、既定 `laws/`）配下の `.bend` ファイル（`LAWS.bend` / `LAWS.draft.bend` / `PROOF.bend` / `main.bend`）編集後に、`# spec:` が指す spec を示して proof ゲート（`/run-checklist {feature} {ticket} --category proof`）の再実行と、`LAWS.bend` 編集時は再承認の必要を促す | 必須  | 子 PRD FR_001（法則ファイル編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
 | FR-008 | ソースコード編集後に、いずれかの `${SDD_LAWS_PATH}/**/main.bend` の `# model-of:` が当該ファイルを指す場合、参照モデルと法則の見直しを促す（spec 同期の促し FR-003 とは独立に、両方を注入しうる） | 必須  | 子 PRD FR_001（参照モデル対象の実装編集後）/ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_005 / 親 PRD UR_003 |
-| FR-009 | `laws:` を front matter に持つ spec の編集後に、法則の再抽出（`/draft-laws`）と再承認の検討を促す。`laws:` が指す `LAWS.bend` の各 `# source:` の節ハッシュが現在の spec と一致しない法則（`source_drift`）・書式不正（`source_invalid`）を、安価に判定できる範囲で名前を挙げて示す。節ハッシュの計算は共有モジュール `laws_drafting.py` に置く（A-002）。ずれの判定ロジックは proof ゲートの `source_drift` warning（laws-drafting_spec FR-013）と同一で、`laws_drafting.source_drift` を共用する。`laws:` の無い spec では FR-001 の促しのみで、本促しは出さない（FR-001 と併せて注入しうる） | 必須  | [laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) FR-011 / 親 PRD UR_003 |
+| FR-009 | `laws:` を front matter に持つ spec の編集後に、法則の再抽出（`/draft-laws`）と再承認の検討を促す。`laws:` が指す `LAWS.bend` の各 `# source:` の節ハッシュが現在の spec と一致しない法則（`source_drift`）・書式不正（`source_invalid`）を、安価に判定できる範囲で名前を挙げて示す。節ハッシュの計算は共有モジュール `laws_drafting.py` に置く（A-002）。ずれの判定ロジックは proof ゲートの `source_drift` warning（laws-drafting_spec FR-013）と同一で、`laws_drafting.source_drift` を共用する。`laws:` の無い spec では FR-001 の促しのみで、本促しは出さない（FR-001 と併せて注入しうる）。促しの文言には、差分テスト（laws-drafting_spec FR-014。`tests/laws/` 等の `# source:` 付き pytest）の出典も同じ spec に結ばれているため見直し対象に含まれる旨を書く（テストファイル側の `source_drift` の検出は `draft_laws.py check --tests` が担い、本フックでは判定しない） | 必須  | [laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) FR-011 / 親 PRD UR_003 |
 
 FR-001〜FR-003・FR-006〜FR-009 は編集されたファイルの種別（仕様書 / 要求仕様 / 決定ログ / 法則ファイル / ソースコード）に応じて
 促す内容を切り替える。FR-007・FR-008 は Bend 証明ゲート（[proof-gate_spec.md](../task-implementation/proof-gate_spec.md) FR-009）の
 見直し促しを本機能が提供するもので、法則ディレクトリが存在しないプロジェクトでは何も出力しない（FR-005）。
 本機能はリマインドまでを責務とし、整合性の実際の検証は doc-consistency-checker スキル等の検証機能に委ねる
 （子 PRD スコープ外の記載に準拠）。
+
+### 3.1.1. ファイル種別判定の決定表
+
+編集対象パスを上から順に判定し、該当する条件のコンテキストをすべて注入する（排他ではなく多重該当しうる。
+§7 振る舞い図の分岐と同一の判定を表形式で構造化したもの）。
+
+| # | 編集対象パスの条件                                                         | 追加条件                                        | 発火する FR | 注入内容                         |
+|---|------------------------------------------------------------------|-----------------------------------------------|----------|-------------------------------|
+| 1 | `.sdd/specification/` 配下（spec）                                     | -                                              | FR-001   | PRD ↔ spec ↔ adr 整合性確認の促し    |
+| 2 | `.sdd/specification/` 配下（spec）                                     | front matter に `laws:` あり                     | FR-009   | 法則再抽出（`/draft-laws`）検討の促しを追加注入 |
+| 3 | `.sdd/requirement/` 配下（PRD）                                       | -                                              | FR-002   | 下流 spec への変更伝播確認の促し          |
+| 4 | `.sdd/adr/` 配下（決定ログ）                                              | -                                              | FR-006   | 追記専用の原則と spec への反映確認の促し      |
+| 5 | `${SDD_LAWS_PATH}` 配下の `.bend`（`LAWS.bend` / `LAWS.draft.bend` / `PROOF.bend` / `main.bend`） | -                                              | FR-007   | proof ゲート再実行の促し（`LAWS.bend` 編集時は再承認の促しも） |
+| 6 | ソースコード                                                           | 対応する spec（`{stem}.md` / `{stem}_spec.md`）が存在 | FR-003   | 仕様書の同期を促す                     |
+| 7 | ソースコード                                                           | いずれかの `main.bend` の `# model-of:` が当該ファイルを指す | FR-008   | 参照モデルと法則の見直しを促す               |
+| 8 | 上記 1〜7 のいずれにも該当しない                                                | -                                              | FR-005   | 出力なし（介入しない）                   |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -85,6 +101,10 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 `deny` は用いず `additionalContext` のみを注入する。
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/post-tool-use.py
 
 | 種別   | 配置場所                                        | 名前                | 概要                                                                                     |
 |------|---------------------------------------------|-------------------|----------------------------------------------------------------------------------------|

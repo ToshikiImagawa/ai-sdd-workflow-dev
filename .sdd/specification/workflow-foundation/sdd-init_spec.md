@@ -5,12 +5,14 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-22"
 depends-on: ["prd-workflow-foundation-sdd-init"]
 tags: ["initialization", "template", "claude-md", "skill"]
 category: "workflow-foundation"
 priority: "high"
 risk: "medium"
+laws: ["laws/workflow-foundation/sdd-init"]
+laws-status: "proven"
 ---
 
 # プロジェクト初期化
@@ -66,6 +68,16 @@ CLAUDE.md 更新ロジック）は [sdd-init.md](../../adr/workflow-foundation/s
 | FR-007 | テンプレートを `SDD_LANG`（en/ja）に応じて選択し、EN/JA で同等構成を維持する                             | 必須  | PRD 制約（B-002）                 |
 | FR-008 | `--ci` 指定時は確認を省略し上書き承認を自動化する（非対話モード）                                        | 任意  | PRD FR_001（トリガー方式）          |
 
+### 3.1.1. CLAUDE.md 更新判定表（FR-004）
+
+既存の `CLAUDE.md` に対する AI-SDD Instructions セクションの更新判定。上から順に評価し、最初に該当した行を採用する。
+
+| # | 条件                                                             | 動作                       |
+|:--|:----------------------------------------------------------------|:---------------------------|
+| 1 | `## AI-SDD Instructions` セクションが無い                         | 末尾に新規セクションを追記する  |
+| 2 | セクションがあり、記載バージョンがプラグインバージョンと一致する       | 変更しない（skip）           |
+| 3 | セクションがあり、記載バージョンがプラグインバージョンと不一致である     | 当該セクションのみ置換する      |
+
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
 | ID      | カテゴリ | 要件                                                             | 目標値                              |
@@ -75,6 +87,10 @@ CLAUDE.md 更新ロジック）は [sdd-init.md](../../adr/workflow-foundation/s
 | NFR-003 | 移植性 | 初期化スクリプトは OS 固有 CLI に依存せず Python 標準ライブラリで動作する      | 対応 OS の CI（E2E）で通過             |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/skills/sdd-init/scripts/update-claude-md.py
 
 | 種別     | 配置場所                                              | 名前              | 概要                                                             |
 |--------|-----------------------------------------------------|-----------------|------------------------------------------------------------------|

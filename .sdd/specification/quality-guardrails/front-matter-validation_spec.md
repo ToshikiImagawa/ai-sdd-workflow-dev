@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-10-20"
+updated: "2026-10-22"
 sdd-version: "5.1.0"
 depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
@@ -72,11 +72,31 @@ front matter はオプション（後方互換）であるため人手で記述�
 | FR-008 | `sdd-version` の semver 形式を検証する。値が現行プラグインの major バージョンより古い場合は世代警告として warning を報告し、フィールド自体が不在の場合は info（本フィールド導入前の文書として正常）とする | 必須 | PRD FR_001（`sdd-version` の semver 形式検証と世代警告） |
 | FR-009 | spec 固有フィールド `laws:`（`${SDD_ROOT}` 相対ディレクトリのリスト）と `laws-status:`（`none` / `drafted` / `approved` / `proven`）を検証する。`laws:` が spec 以外の種別にあれば warning、`laws-status` の許容値外は warning、`depends-on` にパス形式の値（`/` または `.bend` を含む）があれば error（法則ディレクトリは下流であり上流依存に書いてはならない）。`--cross-ref` 指定時は各 `laws:` 要素を `${SDD_ROOT}/` 配下で解決したディレクトリの実在（error）、`LAWS.bend` 先頭の `# spec:` が当該 spec の `id` と一致すること（error）、`laws-status` と法則ファイルの実態の整合（`approved` / `proven` なのに `# approved:` 行が無い、または承認行の形式（`YYYY-MM-DD <承認者> sha256:<12 桁 16 進>`）が不正、`proven` なのに `PROOF.bend` が無い → warning）を検証する。さらに `--cross-ref` 指定時は逆方向（laws → spec）も検査し（ここでの「ID レジストリ」は FR-006 の走査で得る id → ファイル対応を指す。ゲートは spec 側を全走査して `# spec:` を解決し、本検査は laws 側を走査して照合する）、`${SDD_LAWS_PATH}` 配下で `LAWS.bend` を持つ全ディレクトリについて、(a) 先頭に `# spec:` 行があり、その id が ID レジストリ上の実在する spec に解決できること（`# spec:` 行が無い場合も孤児）、(b) 解決先 spec の `laws:` が当該ディレクトリ（`${SDD_ROOT}` 相対）を含むこと、をいずれも error として検証する（孤児 laws の検出。Read / Glob / Grep で完結し、ハッシュ計算は伴わない）。`LAWS.draft.bend`（`/draft-laws` が承認済み `LAWS.bend` を温存したときの再生成案）は正本ではないため孤児検査・`# spec:` 照合の対象外とし、法則本文の `# source:` / `# model-api:` 行（laws-drafting_spec）も本機能は解釈しない（出典ハッシュのずれは proof ゲートの warning と post-tool-use フックが担う）。承認行の内容ハッシュが現在の法則本文と一致するかは本機能では検証せず、proof ゲート（`run-verification.py proof`。現在値は `--print-laws-hash`）に委ねる（本機能は読み取り専用で、ハッシュ計算を伴わない先頭数行の照合に留める） | 必須 | PRD FR_001（値の妥当性・依存方向）／ [proof-gate.md](../../requirement/task-implementation/proof-gate.md) FR_003 |
 
-**重大度ポリシー:** 各チェックの重大度は次の原則に従う（詳細は design §4.3 に対応）。
+**重大度ポリシー:** 各チェックの重大度は 3.1.1 の決定表に従う（詳細は design §4.3 に対応）。
 
-- **error**（トレーサビリティ・機械的整合を破壊する構造的不備）: 必須フィールド欠落、`type` とファイル配置の不一致、`depends-on` の依存方向逆転（法則ディレクトリのパスを `depends-on` に書く誤りを含む）、`--cross-ref` 時の ID 重複・`depends-on` 参照先の不在・`laws:` ディレクトリの不在・`LAWS.bend` の `# spec:` と spec `id` の不一致・孤児 laws（`LAWS.bend` の `# spec:` が実在する spec に解決できない、または解決先 spec の `laws:` に当該ディレクトリが無い）
-- **warning**（潜在的問題・非標準値）: `id` 形式不一致、`created`/`updated` の日付形式不正、`status`/`sdd-phase`/`priority`/`risk`/`laws-status` の許容値外、spec 以外の種別に置かれた `laws:`、`laws-status` と法則ファイル実態の不整合（承認行の有無・形式まで。ハッシュ一致は proof ゲートが判定）、status 整合性の齟齬、`sdd-version` の semver 形式不正または現行 major より古い
-- **info**（改善提案）: front matter の欠落（後方互換のため違反としない）、`impl-status` の実態一致（コード解析要）、status 伝播、`sdd-version` フィールド自体の不在
+### 3.1.1. 重大度決定表
+
+| # | 検出項目                                                             | 重大度   |
+|---|--------------------------------------------------------------------|-------|
+| 1 | 必須フィールド欠落                                                        | error |
+| 2 | `type` とファイル配置の不一致                                                | error |
+| 3 | `depends-on` の依存方向逆転（法則ディレクトリのパスを `depends-on` に書く誤りを含む）             | error |
+| 4 | `--cross-ref` 時の ID 重複                                             | error |
+| 5 | `--cross-ref` 時の `depends-on` 参照先の不在                                | error |
+| 6 | `--cross-ref` 時の `laws:` ディレクトリの不在                                 | error |
+| 7 | `--cross-ref` 時の `LAWS.bend` の `# spec:` と spec `id` の不一致            | error |
+| 8 | `--cross-ref` 時の孤児 laws（`# spec:` が実在 spec に未解決、または解決先 spec の `laws:` が当該ディレクトリを含まない） | error |
+| 9 | `id` 形式不一致                                                        | warning |
+| 10 | `created` / `updated` の日付形式不正                                     | warning |
+| 11 | `status` / `sdd-phase` / `priority` / `risk` / `laws-status` の許容値外 | warning |
+| 12 | spec 以外の種別に置かれた `laws:`                                           | warning |
+| 13 | `laws-status` と法則ファイル実態の不整合（承認行の有無・形式。ハッシュ一致は proof ゲートが判定）           | warning |
+| 14 | status 整合性の齟齬（上流 draft × 下流 approved）                              | warning |
+| 15 | `sdd-version` の semver 形式不正、または現行 major より古い                       | warning |
+| 16 | front matter の欠落（後方互換のため違反としない）                                    | info |
+| 17 | `impl-status` の実態一致（コード解析要、判定困難時）                                  | info |
+| 18 | status 伝播（上流 status 変更時の下流レビュー要否）                                  | info |
+| 19 | `sdd-version` フィールド自体の不在                                          | info |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -88,6 +108,10 @@ front matter はオプション（後方互換）であるため人手で記述�
 | NFR-004 | 応答性    | `--cross-ref` 非指定時はプロジェクト横断走査をスキップし検証を高速に保つ            | 親 NFR_001 の趣旨（軽量性の維持。500ms 定量基準はフックスクリプト向けで本エージェントに直接は適用されない） |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/agents/front-matter-reviewer.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                        | 名前                             | 概要                                                    |
 |------------------------------|-------------------------------------------------------------|--------------------------------|-------------------------------------------------------|

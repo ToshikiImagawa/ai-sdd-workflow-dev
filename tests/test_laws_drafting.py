@@ -486,3 +486,71 @@ def test_signature_mismatch_and_spec_duplicates(tmp_path):
     _write(tmp_path / "main.bend", "def other(x: Nat) -> Nat:\n  return x\n")
     assert ld.fixed_model_api(spec_text, tmp_path)[0] == "spec"
     assert set(ld.fixed_model_api(spec_text, tmp_path)[1]) == {"judge"}
+
+
+# --- FR-014 / FR-015 (#218) ---------------------------------------------------
+
+
+@pytest.mark.parametrize("body, expected", [
+    ("{Model.f(3n) == 0n : Nat}", True),
+    ("{Model.g(Nil{}) == 1n : Nat}", True),
+    ("for x: Nat {Model.f(x) == 0n : Nat}", False),
+    ("for a, b: Nat {Model.f(a) == Model.f(b) : Nat}", False),
+    ("", False),
+    ("Model.f(3n)", False),
+])
+def test_is_point_assertion(body, expected):
+    assert ld.is_point_assertion(body) is expected
+
+
+def test_impl_of_from_spec():
+    text = ("intro\nimpl-of: plugins/a.py\n- impl-of: plugins/b.md  # agent\n"
+            "impl-of: plugins/a.py\n# impl-of: not/this.py\n```\nimpl-of: plugins/c.py\n```\n")
+    assert ld.impl_of_from_spec(text) == ["plugins/a.py", "plugins/b.md", "plugins/c.py"]
+    assert ld.impl_of_from_spec("no declaration") == []
+
+
+def test_resolve_impl_priority_and_prose(tmp_path):
+    main = tmp_path / "main.bend"
+    main.write_text("# spec: s\n# model-of: src/x.py\n# model-of: docs/y.md\n\nimport Base\n", encoding="utf-8")
+    assert ld.resolve_impl("impl-of: a/SKILL.md\n", tmp_path) == {
+        "paths": ["a/SKILL.md"], "source": "spec", "lawifiable": False, "reason": "prose_implementation"}
+    assert ld.resolve_impl("", tmp_path) == {
+        "paths": ["src/x.py", "docs/y.md"], "source": "main.bend", "lawifiable": True, "reason": None}
+    main.unlink()
+    assert ld.resolve_impl(None, tmp_path) == {"paths": [], "source": "none", "lawifiable": True, "reason": None}
+
+
+def test_source_refs_of_py_file(tmp_path):
+    tests = tmp_path / "test_x.py"
+    tests.write_text(
+        "# spec: spec-demo\nimport pytest\n\n"
+        "# source: spec-demo §3.1.1 sha256:abcdefabcdef\n\n# a remark\n"
+        "@pytest.mark.parametrize('x', [1])\ndef test_a(x):\n    pass\n\n"
+        "x = 1\ndef test_b():\n    pass\n\n"
+        "class T:\n    # source: bad format\n    def test_c(self):\n        pass\n", encoding="utf-8")
+    refs = ld.source_refs_of_file(tests)
+    assert [(r.name, r.source_raw is not None, r.source is not None) for r in refs] == [
+        ("test_a", True, True), ("test_b", False, False), ("test_c", True, False)]
+    assert refs[0].source.section == "3.1.1"
+
+
+def test_check_test_sources_codes(tmp_path):
+    spec_path = tmp_path / "spec.md"
+    spec_path.write_text(SPEC, encoding="utf-8")
+    good = ld.section_hash(SPEC, "3.1.1")
+    tests = tmp_path / "test_x.py"
+    tests.write_text(
+        f"# source: spec-demo §3.1.1 sha256:{good}\ndef test_ok():\n    pass\n"
+        "# source: spec-demo §3.1.1 sha256:000000000000\ndef test_drift():\n    pass\n"
+        "# source: spec-demo §9.9 sha256:000000000000\ndef test_gone():\n    pass\n"
+        "# source: spec-other §3.1.1 sha256:000000000000\ndef test_other():\n    pass\n"
+        "# source: nonsense\ndef test_bad():\n    pass\n"
+        "def test_none():\n    pass\n", encoding="utf-8")
+    codes = {f.law: f.code for f in ld.check_test_sources(tests, spec_path)}
+    assert codes == {"test_drift": "test_source_drift", "test_gone": "source_section_missing",
+                     "test_other": "source_spec_mismatch", "test_bad": ld.SOURCE_INVALID,
+                     "test_none": "test_source_missing"}
+    assert all(f.severity == ld.ERROR for f in ld.check_test_sources(tests, spec_path))
+    assert [f.code for f in ld.check_test_sources(tests, None)] == ["test_source_missing"]
+    assert ld.check_test_sources(tmp_path / "nope.py", spec_path)[0].code == "tests_file_missing"

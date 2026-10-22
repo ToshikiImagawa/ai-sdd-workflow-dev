@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-07-07"
-updated: "2026-07-28"
+updated: "2026-10-21"
 sdd-version: "5.0.0"
 depends-on: ["spec-quality-guardrails-vibe-detection"]
 tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
@@ -43,3 +43,9 @@ category: "quality-guardrails"
 - **Decision**: フックの JSON 出力を `ensure_ascii=False`（UTF-8）で行う。
 - **Rationale**: 日本語の一致文字列を `additionalContext` に文字化けなく含める必要がある（T-003）。
 - **Rejected alternatives**: `ensure_ascii=True` — 日本語がエスケープされ可読性を失うため却下。
+
+## 2026-10-21 リスクレベルを観点チェックで判定し、仕様書なし×欠落なしを Medium とする（#9 ②）
+
+- **Decision**: リスクレベルは観点チェックと仕様書の有無から、ちょうど 1 段階に定める。仕様書なし＋明確な依頼（× なし）は Medium とする。非機能目標は、依頼や仕様書が影響するカテゴリの最低の印だけを採る。詳細な判定基準は `shared/references/ambiguity_criteria.md` にのみ定義し、ここには決定の要点だけを残す。
+- **Rationale**: vibe-detector は PRD や仕様書のない入力も扱うため、比率ではなく観点のチェックで決める必要がある。従来の 3 行表では「仕様書なし＋明確な依頼」の段階が未定義だったので、仕様書がまだ必要である点を理由に Medium とした。NFR を全 7 カテゴリで集約すると、依頼と無関係なカテゴリが常にリスクを押し上げるため、影響するカテゴリに限る。
+- **Rejected alternatives**: 要求の ○/△/× の比率で段階を決める — 入力に PRD/spec がない場合に計算できないため却下。仕様書なし＋明確な依頼を Low とする — 仕様書が存在しない状態で実装を開始させてしまうため却下。7 カテゴリすべてを集約対象とする — 無関係なカテゴリの未記述で過大評価になるため却下。

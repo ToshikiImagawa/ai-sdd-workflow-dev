@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-10-17"
-updated: "2026-10-20"
+updated: "2026-10-22"
 sdd-version: "5.1.0"
 depends-on: ["prd-task-implementation-proof-gate"]
 tags: ["checklist", "verification", "proof", "bend", "laws"]
@@ -68,7 +68,7 @@ Bend ファイルに置き換えることは不可能だが、**spec の制約�
 | FR-001 | 検証カテゴリ `proof` を受け付け、指定された法則ディレクトリ（複数可）について証明検査を実行し、ディレクトリごとの判定と集約判定を 1 回の呼び出しで返す                                   | 必須  | 子 PRD FR_001 / 親 PRD UR_003            |
 | FR-002 | 判定は「3.1.1 判定表」の順で最初に該当したものを採用する                                                                                                           | 必須  | 子 PRD FR_001・FR_004・NFR_001           |
 | FR-003 | 法則ディレクトリは `${SDD_LAWS_PATH}/{feature}/`（`SDD_LAWS_PATH` は `${SDD_ROOT}/` + `.sdd-config.json` の `directories.laws`、既定 `laws`）とし、`LAWS.bend` / `PROOF.bend` / `main.bend` の固定ファイル名で構成する。識別子はディレクトリ名に置く | 必須  | 子 PRD FR_002・IR_002                    |
-| FR-004 | 法則ファイル先頭のコメント行（`# spec:` / `# model-of:` / `# approved:`）を規約として解析する。`# spec:` は対象 spec の id、`# model-of:` は参照モデルが写す実装ファイルのプロジェクト相対パス、`# approved:` は承認日・承認者・承認時点の法則本文の内容ハッシュ。承認行は、内容ハッシュが現在の法則本文（先頭コメント部を除いた `LAWS.bend` の内容）のハッシュと一致するときのみ有効とする。`# spec:` の id が実在する spec に解決でき、かつその spec の `laws:` が当該ディレクトリを指すこと（双方向の結びつき）を法則ディレクトリの成立条件とし、満たさないものは孤児 laws として FAIL にする（3.1.1 #4） | 必須  | 子 PRD FR_002・FR_004                    |
+| FR-004 | 法則ファイル先頭のコメント行（`# spec:` / `# model-of:` / `# approved:`）を規約として解析する。`# spec:` は対象 spec の id、`# model-of:` は参照モデルが写す実装ファイルのプロジェクト相対パス（spec 本文の `impl-of:` 宣言の写し。ソースコードに限り、`.md` は指さない。[laws-drafting_spec.md](laws-drafting_spec.md) FR-015 / 3.1.5）、`# approved:` は承認日・承認者・承認時点の法則本文の内容ハッシュ。承認行は、内容ハッシュが現在の法則本文（先頭コメント部を除いた `LAWS.bend` の内容）のハッシュと一致するときのみ有効とする。`# spec:` の id が実在する spec に解決でき、かつその spec の `laws:` が当該ディレクトリを指すこと（双方向の結びつき）を法則ディレクトリの成立条件とし、満たさないものは孤児 laws として FAIL にする（3.1.1 #4） | 必須  | 子 PRD FR_002・FR_004                    |
 | FR-005 | 検査器の子プロセスには常に `BEND_NO_TELEMETRY=1` を付与する。法則ディレクトリ内の全 `.bend` ファイルの import 文を静的に検査し、「同じ法則ディレクトリ内に実在する `.bend` ファイルを相対パスで指す別名付き import（`import ./<file>.bend as <Name>`。`./` は任意、サブディレクトリ可、`.bend` 拡張子は必須。`<Name>` は英字または `_` で始まる英数字と `_`。Bend 2.0.37 は別名のないローカル import を構文エラーにする）」と「Bend 同梱の標準ライブラリ（`import Base`）」以外の import 文（hub import、URL、絶対パス、親ディレクトリ、ディレクトリ内に実在しないファイル名、別名のないローカル import、`.bend` 拡張子のない指定、末尾コメント付きの行、`from` 形式等の未知の形式）が 1 行でもあれば検査器を実行せず FAIL（規約違反）とする | 必須  | 子 PRD NFR_002                           |
 | FR-006 | Lean 形式化カーネルによる再検査（`--verdict`）は opt-in とする。再検査基盤の不備を検査器が示した場合は通常検査にフォールバックして判定を返し、再検査が未実施であること（`verdict: "unavailable"`）を結果に併記する | 任意  | 子 PRD FR_001（`--verdict` の opt-in）    |
 | FR-007 | 判定を仕様レビューカテゴリの固定項目 `CHK-205`（P2）としてチェックリストと検証レポートに記録し、PASS の意味（参照モデルが法則を満たす保証であり実装の正しさではない）を結果に併記する。`CHK-205` は `laws:` を持つ spec でのみ生成・検証する。`/run-checklist` の `--category` は CHK のカテゴリ名を取るため、`--category specification`（2xx）と無指定で `CHK-205` を検証し、加えて `--category proof` を「`CHK-205` のみを検証する別名」として受理する | 必須  | 子 PRD IR_001・NFR_003                   |
@@ -123,6 +123,10 @@ FR-007 の固定項目の生成は [checklist-generation_spec.md](checklist-gene
 | NFR-007 | 版の前提     | 判定表は Bend v2.0.37 の終了コード・出力で実測したものであり、それ未満の版の挙動は保証しない。再検査は Bend が要求する Lean v4.34.0 を前提とする | 子 PRD 前提条件                                  |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/skills/run-checklist/scripts/run-verification.py
 
 本機能は新しいスキル・エージェントを追加せず、既存コンポーネントの拡張として提供する（T-002: `plugin.json` の変更なし）。
 
@@ -215,7 +219,7 @@ ${SDD_LAWS_PATH}/{feature}/          # 既定 .sdd/laws/{feature}/。階層 spec
 |:--------------|:-------------------|:-------------------------------------------------|:--------------------------|
 | `# spec:`     | `LAWS.bend`（他は任意） | 対象 spec の front matter `id`（例: `spec-task-implementation-proof-gate`）。実在する spec に解決でき、その spec の `laws:` が当該ディレクトリを指していなければ孤児 laws（3.1.1 #4、FAIL） | 必須                        |
 | `# approved:` | `LAWS.bend`        | `YYYY-MM-DD <承認者> sha256:<内容ハッシュ先頭 12 桁>`（例: `2026-10-17 @reviewer sha256:3f9a1c0b7d2e`）。人がレビュー後に追記する。内容ハッシュは先頭コメント部を除いた `LAWS.bend` の内容から算出し、`--print-laws-hash` で得る | PASS の前提（無い・不一致なら SKIPPED） |
-| `# model-of:` | `main.bend`        | 参照モデルが写す実装ファイルのプロジェクト相対パス。1 行 1 パス、複数可           | 任意（あれば FR-009 の見直し促しの対象になる） |
+| `# model-of:` | `main.bend`        | 参照モデルが写す実装ファイルのプロジェクト相対パス。1 行 1 パス、複数可。生成スキルは spec 本文の `impl-of:` 宣言を写し、LLM が選ばない。ソースコードに限る（SKILL.md・エージェント定義などの `.md` は指さない。実装が散文の spec は法則化しない: laws-drafting_spec FR-015） | 任意（あれば FR-009 の見直し促しの対象になる） |
 
 承認行は追記式でよい。古い承認行を残したまま新しい承認行を足しても、いずれか 1 行の内容ハッシュが現在の法則本文と一致すれば有効とする。
 未承認（承認行なし・形式不正）または承認失効で SKIPPED にする際は、`reason` に現在の内容ハッシュ（`sha256:<12 桁>`）を含め、`--print-laws-hash` を別途実行せずに承認行を書き直せるようにする。
@@ -229,7 +233,7 @@ ${SDD_LAWS_PATH}/{feature}/          # 既定 .sdd/laws/{feature}/。階層 spec
 
 ```yaml
 laws: ["laws/task-implementation/proof-gate"]   # ${SDD_ROOT} 相対ディレクトリのリスト。省略可
-laws-status: "approved"                          # none / drafted / approved / proven。省略時は none 相当
+laws-status: "proven"                          # none / drafted / approved / proven。省略時は none 相当
 ```
 
 | 値          | 意味                                            | 遷移させる主体                         |
@@ -338,10 +342,12 @@ stateDiagram-v2
 # 8. 制約事項
 
 - **PASS の意味**: PASS は「参照モデル（`main.bend`）が承認済みの法則を満たす」ことの保証であり、対象プロジェクトの
-  実装の正しさを保証しない。参照モデルと実装の乖離は証明では検知できず、`# model-of:` に基づく見直し促し（FR-009）で緩和する
+  実装の正しさを保証しない。参照モデルと実装の乖離は証明では検知できず、`# model-of:` に基づく見直し促し（FR-009）で緩和する。
+  実装との一致は、法則を実装に対して直接 assert する差分テスト（laws-drafting_spec FR-014。bend 不要で CI が実行する）が担い、
+  本ゲートの判定とは独立である
 - **表現できる範囲**: 法則にできるのは spec の制約・不変条件・事後条件（純粋な性質）に限る。PRD・ADR・CONSTITUTION・
   API の IO・外部境界は証明対象外（issue #148 の結論）
-- **任意依存**: Bend は必須依存ではなく、本リポジトリの CI にも導入しない。Windows は WSL 経由のみ
+- **任意依存**: Bend は必須依存ではなく、配布先のプロジェクトは bend 無しで動く（`SKIPPED` / `TOOL_NOT_FOUND`）。本リポジトリ自身の CI は optional ジョブ `proof`（ubuntu、`continue-on-error`、required にしない）で bend をバージョン固定の tarball から導入し、`run-verification.py proof` を全法則ディレクトリに実行する。PASS 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）は optional ジョブの失敗として Checks に出る。Windows は WSL 経由のみ
 - **承認は人のプロセス**: ゲートが検査するのは承認行の有無と内容ハッシュの一致までで、誰が書いたかは検証できない。
   承認行の追加はレビュー（PR）で確認する運用とし、AI は承認行を書かない。承認後に法則本文を変えると承認は失効する
 - **一方向派生**: 法則・検査結果から spec・PRD（本文・front matter とも）を書き換えない。spec と法則の矛盾は報告し人が判断する。

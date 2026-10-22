@@ -7,7 +7,7 @@ ai-sdd-workflow/
 ├── .agents/skills/                # Codex向け開発スキル
 ├── .claude/
 │   ├── rules/                     # トピック別開発ルール（7ファイル。CLAUDE.md から参照）
-│   ├── skills/                    # Claude Code向け開発スキル
+│   ├── skills/                    # Claude Code向け開発スキル（plugin-evals は plugins/sdd-workflow/evals/ の手動実行）
 │   └── tests/                     # SDD有効/無効のA/B計測ハーネス
 │       ├── RUNBOOK.md             # 計測手順
 │       └── harness/               # run_ab.sh / verify_parity.sh / 集計Python / prompts/
@@ -76,7 +76,7 @@ ai-sdd-workflow/
 │       │   └── vibe-detector/              # Vibe Coding検出
 │       │       └── templates/{en,ja}/
 │       ├── shared/                # スキル・エージェント共通のサポートファイル
-│       │   ├── references/        # 共通の参照資料（20ファイル）
+│       │   ├── references/        # 共通の参照資料（23ファイル）
 │       │   ├── examples/          # エージェント利用例（7ファイル）
 │       │   └── templates/{en,ja}/ # エージェント出力テンプレート（各8ファイル）
 │       ├── hooks/
@@ -94,14 +94,17 @@ ai-sdd-workflow/
 │       │   ├── naming.py          # 共有: 命名規則検証・ドキュメント種別判定
 │       │   ├── doc_walker.py      # 共有: 対象ドキュメント走査・design doc探索
 │       │   └── env_export.py      # 共有: CLAUDE_ENV_FILE への export 書き出し
+│       ├── evals/             # claude plugin eval のケース（prose 実装 spec の決定表 1 行 = 1 ケース。6 feature / 32 ケース）
+│       │   └── {feature}/{property}/   # case.yaml（または prompt.md + graders/）・scaffold.sh
 │       ├── AI-SDD-PRINCIPLES.source.md
 │       ├── LICENSE
 │       ├── README.md
 │       ├── README.ja.md
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
-├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 6本）
+├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 8本。CI ジョブと 1:1）
 ├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
+│   └── laws/                       # 法則 vs 実装の差分テスト（.sdd/laws/** の点命題を実装に対して assert。/draft-laws が生成、# source: で spec の節に結ぶ）
 ├── dist/
 │   └── README.md                   # 配布リポジトリ用README
 ├── CLAUDE.md                       # 共通プロジェクト指示（正本）
@@ -127,7 +130,7 @@ ai-sdd-workflow/
   （CONSTITUTION T-002 v2.0.0）。`agents` はデフォルトの `agents/` スキャンを**置き換える**ため宣言が必須だが、
   `skills` は常にスキャンされるので宣言が冗長、`hooks` は標準パスを宣言すると二重ロードになる。
   新規エージェント追加時のみ `plugin.json` の更新が必要
-- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料（20ファイル）。エージェントの参照資料も
+- **`shared/references/`**: 複数のスキル・エージェントから参照される共通資料（23ファイル）。エージェントの参照資料も
   ここに集約している。`plugin-lint` の Check 2 でスキル配下のサポートファイルと同じ命名規則・拡張子規則が適用される
 - **`agents/` にはエージェント定義のみを置く**: `templates/` / `references/` / `examples/` などのサポートファイルは
   `shared/` 配下に置き、エージェント本文からは `${CLAUDE_PLUGIN_ROOT}/shared/...` 形式で参照する。

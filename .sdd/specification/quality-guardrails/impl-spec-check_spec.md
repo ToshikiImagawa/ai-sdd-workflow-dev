@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-07"
-updated: "2026-09-10"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-impl-spec-check"]
 tags: ["consistency-check", "design-sync", "quality-gate"]
 category: "quality-guardrails"
@@ -89,6 +89,20 @@ FR_001（実装コードと抽象仕様書の乖離を検出する）から派�
 FR-010 の分岐は「仕様書に記載され実装が見つからない」場合にのみ適用する。公開 API・データモデル・振る舞いの不一致は
 `impl-status` の値に関わらず常に Critical のままとする（意図した先行は免罪符にならない）。
 
+### 3.1.1. `impl-status` → 重大度の決定表（FR-010）
+
+「仕様書に記載され実装が見つからない」場合に限り、spec の `impl-status` の値から重大度を次の表のとおり決定する。
+
+| # | `impl-status` の値 | 重大度 | 意味                         |
+|---|-------------------|------|----------------------------|
+| 1 | `implemented`     | Critical | 退行（実装されているはずが見つからない） |
+| 2 | `not-implemented` | Info     | 意図した先行（未実装は仕様どおり）     |
+| 3 | `in-progress`     | Info     | 意図した先行（実装途中は仕様どおり）     |
+| 4 | 未設定（フィールド不在）   | Warning  | 判定不能（`impl-status` の付与を推奨） |
+
+**不変条件:** 公開 API シグネチャ・データモデル・振る舞いの不一致は、上表の `impl-status` の値に関わらず常に
+Critical とする（上表はあくまで「実装が見つからない」ケース専用であり、不一致検出には適用しない）。
+
 FR-002 の「サフィックスの有無を問わず」は、`specification/` が単一種別ディレクトリであり `_spec` サフィックス
 が任意になった命名規則に対応する。`{feature}_design.md`（v4.x 由来の永続 design）が残るプロジェクトでは、
 spec ではなく設計ドラフトと同じ補助入力として扱う。
@@ -103,6 +117,10 @@ spec ではなく設計ドラフトと同じ補助入力として扱う。
 | NFR-004 | 効率性   | 決定的なファイル走査を Claude のツール呼び出しではなくスクリプトに委譲し、トークン消費を抑制する（A-002） | 走査は Shell スクリプトの 1 回実行に集約 |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/check-spec/SKILL.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                       | 概要                                                            |
 |------------------------------|---------------------------------------------------------------|--------------------------|---------------------------------------------------------------|

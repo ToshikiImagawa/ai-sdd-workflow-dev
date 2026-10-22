@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-07"
-updated: "2026-07-07"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-vibe-detection"]
 tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
 category: "quality-guardrails"
@@ -58,11 +58,19 @@ AI 駆動開発では、ユーザーの曖昧な指示（「いい感じに」�
 | FR-004 | 実装前に指示の曖昧性を分析し明確化を促す（ユーザー呼び出し不可の自動実行スキル）      | 必須  | 子 PRD FR_001_03                                    |
 | FR-005 | 曖昧表現を検知しない場合は何も出力せず、開発フローに介入しない                     | 必須  | 親 PRD DC_001（ブロッキングの最小化）から派生            |
 | FR-006 | リスクレベル評価とは別軸で、依頼内容を Task Type Determination 表に照らして分類し推奨開始フェーズを出力する | 必須  | 子 PRD FR_001_04                                    |
+| FR-007 | リスクレベルを観点チェックで High / Medium / Low のちょうど 1 つに判定する（判定基準の正典は `shared/references/ambiguity_criteria.md`） | 必須  | 子 PRD FR_001_05                                    |
 
 曖昧表現のカテゴリは、主観的表現・程度の不明確さ・スコープ／暗黙の前提の曖昧さ・優先度の曖昧さの 4 分類とする
 （各分類の具体例は「5. 用語集」および Design Doc を参照）。この 4 分類はフック（FR-002）によるパターン検知の対象であり、
 実装前分析スキル（FR-004）はこれに加えて仕様欠落（要件・入出力・境界条件の未定義）やスコープの不明確性
 （対象・影響範囲・完了基準の欠落）も分析対象とする。
+
+### 3.1.1. リスクレベル判定の不変条件（FR-007）
+
+vibe-detector スキルが観点チェックの結果から出力するリスクレベルは、`{High, Medium, Low}` のうち
+**ちょうど 1 つ**に定まる（網羅的かつ排他的）。2 つ以上が同時に成立する、またはいずれにも該当しない
+という結果にはならない。判定基準そのもの（どの観点がどのレベルに対応するか）の正典は
+`shared/references/ambiguity_criteria.md` であり、本不変条件はその出力形式のみを規定する。
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
@@ -77,10 +85,14 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 
 # 4. 提供コンポーネント
 
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/vibe-detector/SKILL.md
+
 | 種別     | 配置場所                                             | 名前                    | 概要                                                                       |
 |--------|--------------------------------------------------|-----------------------|--------------------------------------------------------------------------|
 | hook   | `scripts/user-prompt-submit.py` + `hooks/hooks.json` | UserPromptSubmit フック | プロンプト送信時に曖昧表現パターンを検知し、明確化を促す `additionalContext` を注入する（FR-001/002/003/005） |
-| skill  | `skills/vibe-detector/SKILL.md`                  | vibe-detector         | 実装前に指示の曖昧性を分析しリスクレベルを判定・明確化を促す自動実行スキル（ユーザーが直接呼び出せない）（FR-004）。推奨開始フェーズも出力する（FR-006） |
+| skill  | `skills/vibe-detector/SKILL.md`                  | vibe-detector         | 実装前に指示の曖昧性を分析しリスクレベルを判定・明確化を促す自動実行スキル（ユーザーが直接呼び出せない）（FR-004）。推奨開始フェーズも出力する（FR-006）。リスクレベルの判定基準は `ambiguity_criteria.md` を参照する（FR-007） |
 
 ## 4.1. 入出力定義
 
@@ -181,7 +193,7 @@ sequenceDiagram
 
 | 確認項目             | 結果                                                                     |
 |--------------------|--------------------------------------------------------------------------|
-| 要求カバレッジ        | 子 PRD FR_001・FR_001_01〜04 をすべて FR-001〜FR-004・FR-006 でカバー（FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
+| 要求カバレッジ        | 子 PRD FR_001・FR_001_01〜05 をすべて FR-001〜FR-004・FR-006・FR-007 でカバー（FR-005 は親 PRD DC_001 から派生した spec 固有要求） |
 | 要求 ID 参照         | 各 FR に対応する子 PRD / 親 PRD の要求 ID を「根拠」列に明記                  |
 | 非機能要求の反映      | 親 PRD NFR_001・IR_001・DC_001・DC_004・DC_005 を NFR-001〜003 および制約事項に反映   |
 | 用語整合性           | 親 PRD 用語集の「Vibe Coding」「additionalContext」「自動実行スキル」定義に統一 |

@@ -47,6 +47,33 @@ jobs:
       - name: Run plugin-lint skill linter
         run: python3 .claude/skills/plugin-lint/scripts/plugin_lint.py
 
+  # Optional: proves the remaining universal laws (.sdd/laws/**) with bend.
+  # continue-on-error keeps it out of the required set; PASS means the reference
+  # model satisfies the approved laws (implementation parity is covered by
+  # tests/laws/ in the test job). Pinned to a release tarball for reproducibility.
+  proof:
+    name: Bend proof gate (optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      BEND_VERSION: "2.0.38"
+      BEND_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install bend (pinned release tarball)
+        run: |
+          curl -fsSL -o /tmp/bend.tgz "https://github.com/HigherOrderCO/Bend/releases/download/v${BEND_VERSION}/bend-${BEND_VERSION}-linux-x64.tar.gz"
+          mkdir -p "$HOME/.bend"
+          tar -xzf /tmp/bend.tgz -C "$HOME/.bend" --strip-components=1
+          echo "$HOME/.bend/bin" >> "$GITHUB_PATH"
+      - name: Show bend version
+        run: bend version
+      - name: Run proof gate on all laws directories
+        run: bash scripts/proof-gate.sh
+
   test:
     name: Test hook scripts (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -66,6 +93,8 @@ jobs:
         run: bash scripts/test-e2e-sdd-init.sh
       - name: Run skill helper scripts test
         run: bash scripts/test-skill-scripts.sh
+      - name: Check differential tests' '# source:' lines against spec section hashes
+        run: bash scripts/check-laws-tests.sh
       - name: Install pytest
         run: python3 -m pip install pytest
       - name: Run session-start unit tests

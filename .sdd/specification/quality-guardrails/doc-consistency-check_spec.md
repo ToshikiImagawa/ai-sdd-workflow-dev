@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-07"
-updated: "2026-09-02"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
@@ -76,6 +76,21 @@ AI-SDD ワークフローでは、PRD（要求仕様書）・抽象仕様書（`
 FR-004 の分類や「上流優先」の判断ロジックは適用しない。レポート上も別区分（世代の古いドキュメントの
 一覧）として扱う。
 
+### 3.1.1. 上流優先の順序不変条件（FR-004）
+
+不整合を検出した際に基準とする層の優先順位は、次の全順序で固定する: PRD > spec > design。
+矛盾（上流と下流で異なる内容）を検出した場合、常にこの順位が高い層の記述を正とし、順位が低い層側を
+更新対象として報告する（design が実装より進んでいる等の逆転が疑われる場合も、この全順序の適用自体は
+変えない。判断材料としての注記に留める）。
+
+### 3.1.2. `sdd-version` 対象判定表（FR-007）
+
+| # | ドキュメントの `sdd-version` フィールドの状態             | FR-007 の列挙対象 |
+|---|--------------------------------------------------|--------------|
+| 1 | フィールド自体が不在                                    | 対象外（導入前または後付け対象外と確定できないため） |
+| 2 | 存在し、major が現行プラグインの major より古い                | 対象（列挙する）    |
+| 3 | 存在し、major が現行プラグインの major 以上                  | 対象外          |
+
 **スコープ外（意図的な多重防御）:** design ↔ 実装間の整合性検出は
 [impl-spec-check_spec.md](impl-spec-check_spec.md) の FR-003 が専任で担う。本機能は advisory hook
 （`post-tool-use.py`）でベストエフォート起動されるのに対し、`impl-spec-check` は `/check-spec` の
@@ -91,6 +106,10 @@ FR-004 の分類や「上流優先」の判断ロジックは適用しない。�
 | NFR-003 | 応答性    | フック起動を含む処理が開発フローの応答性を阻害しない                          | 親 NFR_001（フック処理の軽量性）                  |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/doc-consistency-checker/SKILL.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                     | 概要                                                       |
 |------------------------------|---------------------------------------------------------------|------------------------|----------------------------------------------------------|

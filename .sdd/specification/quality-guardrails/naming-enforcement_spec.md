@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-09-01"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-naming-enforcement"]
 tags: ["hooks", "naming-convention", "quality-gate"]
 category: "quality-guardrails"
@@ -64,6 +64,20 @@ risk: "medium"
 ソースコード、`task/` 配下等）は本機能の検証対象外とし、ブロックしない（FR-003・FR-005）。
 `naming.ignore_patterns` に一致するファイルは、`requirement/` 配下であっても検証対象外として扱う（FR-006）。
 
+### 3.1.1. 検証の決定表
+
+書き込み・編集対象ファイルを、次の条件に上から順に照合し、最初に一致した行の結果を適用する
+（§7 振る舞い図の分岐と同一の判定を表形式で構造化したもの）。
+
+| # | 条件                                                                | 結果               | 根拠 FR |
+|---|--------------------------------------------------------------------|------------------|-------|
+| 1 | 拡張子が `.md` 以外                                                      | 許可（検証対象外）         | FR-005 |
+| 2 | `.sdd-config.json` の `naming.ignore_patterns` に basename が一致（FR-006） | 許可（検証スキップ）        | FR-006 |
+| 3 | `requirement/` 配下 かつ ファイル名に `_spec` / `_design` サフィックスがある            | 拒否（`deny`）        | FR-002・FR-004 |
+| 4 | 上記 1〜3 のいずれにも該当しない（`specification/` 配下・`requirement/` 配下のサフィックスなし・検証対象外パスを含む） | 許可（介入しない）         | FR-003・FR-005 |
+
+`naming.ignore_patterns` は basename のみに `fnmatch`（大文字小文字区別）で照合する（制約事項参照）。
+
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
 | ID      | カテゴリ         | 要件                                                       | 目標値                                     |
@@ -76,6 +90,10 @@ NFR-003 について、本機能は命名規則違反という明確な違反条
 何も出力せず exit code 0 で正常終了し、書き込みを許可する（親 PRD DC_001）。
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/naming.py
 
 | 種別   | 配置場所                                          | 名前                | 概要                                                                   |
 |------|-----------------------------------------------|-------------------|----------------------------------------------------------------------|

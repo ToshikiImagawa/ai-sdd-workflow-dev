@@ -5,12 +5,14 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-22"
 depends-on: ["prd-workflow-foundation-session-config"]
 tags: ["session-config", "hooks", "environment", "index"]
 category: "workflow-foundation"
 priority: "high"
 risk: "high"
+laws: ["laws/workflow-foundation/session-config"]
+laws-status: "proven"
 ---
 
 # セッション設定初期化
@@ -69,6 +71,26 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 | FR-007 | `SDD_LANG` により EN/JA を切り替える                                                              | 必須  | 親 PRD DC_003 / B-002            |
 | FR-008 | CLAUDE.md のバージョン不整合を検知し、必要時に `UPDATE_REQUIRED.md` で `/sdd-init` を案内する            | 任意  | PRD FR_001（一貫性維持の付随処理）    |
 
+### 3.1.1. `index` 設定値の正規化判定表（FR-006）
+
+`.sdd-config.json` の `index` フィールドを真偽値へ正規化する判定。上から順に評価し、最初に該当した行を採用する。
+
+| # | 条件                                   | 採用値                         |
+|:--|:---------------------------------------|:--------------------------------|
+| 1 | `index` キーが存在しない（欠落）            | 既定値 `true`                    |
+| 2 | `index` が真偽値（`true` / `false`）      | その値をそのまま採用する            |
+| 3 | `index` が真偽値以外の値（文字列等の不正値）  | 既定値 `true`（警告を出力して継続）  |
+
+### 3.1.2. 言語・ルートの解決優先順位（FR-007）
+
+`SDD_LANG` / `SDD_ROOT` は `.sdd-config.json` の値を環境変数より優先して解決する。`lang` と `root` の双方に同じ優先順位を適用する。
+
+| # | 条件                                              | 採用元                     |
+|:--|:--------------------------------------------------|:----------------------------|
+| 1 | `.sdd-config.json` に値が設定されている（truthy）       | `.sdd-config.json` の値      |
+| 2 | `.sdd-config.json` に値が無く、環境変数が設定されている  | 環境変数の値                 |
+| 3 | いずれにも値が無い                                    | 既定値（`lang`: `en` / `root`: `.sdd`） |
+
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
 | ID      | カテゴリ | 要件                                                             | 目標値                              |
@@ -78,6 +100,11 @@ AI-SDD ワークフローの各スキル・エージェント・フックは、`
 | NFR-003 | 一貫性 | 環境変数エクスポートが再実行時に旧値を残さず最新値へ更新される                | 再実行で `SDD_*` の重複・陳腐化が起きない |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/scripts/session-start.py
+impl-of: plugins/sdd-workflow/scripts/hook_common.py
 
 | 種別     | 配置場所                              | 名前            | 概要                                                             |
 |--------|-------------------------------------|---------------|------------------------------------------------------------------|
