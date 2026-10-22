@@ -5,9 +5,10 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-07-24"
-updated: "2026-09-02"
-sdd-version: "5.0.0"
+updated: "2026-10-23"
+sdd-version: "5.2.0"
 depends-on: ["spec-prd-generation"]
+ticket: "209"
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
 ---
