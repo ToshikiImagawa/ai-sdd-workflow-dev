@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # `claude plugin eval` のラッパー。plugins/sdd-workflow/evals/ のケース（prose 実装 spec の決定表 1 行 = 1 ケース）を
-# 実行し、結果 JSON を要約する。CI では optional の `skill-evals` ジョブが実行する（required ではない）。
+# 実行し、結果 JSON を要約する。モデル呼び出しに課金が発生するため CI では実行せず、手元で任意に実行する。
 #
 # 使い方: bash scripts/skill-evals.sh [--case <glob>] [--tag <tag>] [その他 claude plugin eval の引数]
 # 環境変数:
@@ -12,7 +12,7 @@
 # 終了コード は claude plugin eval のまま: 0 全ケースが閾値（既定 1.0）以上 / 1 閾値未満・読込エラー / 2 コスト上限。
 # scaffold_script（各ケースの fixture）は本リポジトリが作成したものなので --scaffold で有効化する。
 # Bash / Write / Edit はスキルが使う（check-spec のヘルパー、generate-prd --amend の編集）ため操作者権限で許可する。
-# 認証は実行者のクレデンシャル（ANTHROPIC_API_KEY など）を claude が読む。
+# 認証は実行者の claude ログイン（または API キー）を claude が読む。
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

@@ -11,7 +11,7 @@
 |:--|:--|:--|
 | 測るもの | main → develop の**リフト差**（スキルがどれだけ良くなったか） | spec の決定表 1 行 = 1 ケースの**合否**（spec どおりに振る舞うか） |
 | 判定 | 独立グレーダー agent が散文 assertion を判定 | regex グレーダーの機械判定（LLM judge は使わない） |
-| 実行 | `/evaluate-skills`（Workflow、手動、高コスト） | `bash scripts/skill-evals.sh`（CLI 1 コマンド。CI の optional ジョブ `skill-evals`） |
+| 実行 | `/evaluate-skills`（Workflow、手動、高コスト） | `bash scripts/skill-evals.sh`（CLI 1 コマンド。課金が発生するため CI には入れず手元で実行） |
 | 置くもの | 散文でしか表せない性質（根拠の整合・全順序・報告の形） | 入力条件 → 出力値の行 |
 
 散文実装の spec（Bend 法則化の対象外）の性質はこの 2 系統で検証する。assertion の書き方は

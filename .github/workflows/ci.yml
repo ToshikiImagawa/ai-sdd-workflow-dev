@@ -74,42 +74,6 @@ jobs:
       - name: Run proof gate on all laws directories
         run: bash scripts/proof-gate.sh
 
-  # Optional: runs the plugin eval suite (plugins/sdd-workflow/evals/, one case per
-  # decision-table row of the prose-implemented specs) with `claude plugin eval`.
-  # Needs the ANTHROPIC_API_KEY secret, so it is skipped on forks; continue-on-error
-  # keeps it out of the required set. The claude CLI is installed with the native
-  # installer (no node dependency).
-  skill-evals:
-    name: Plugin eval suite (optional)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      SKILL_EVALS_MAX_COST_USD: "12"
-      SKILL_EVALS_CONCURRENCY: "8"
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check for API credential
-        id: cred
-        run: |
-          if [ -n "${ANTHROPIC_API_KEY}" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "ANTHROPIC_API_KEY is not set; skipping the eval suite"; fi
-      - name: Install claude CLI (native installer)
-        if: steps.cred.outputs.present == 'true'
-        run: |
-          curl -fsSL https://claude.ai/install.sh | bash
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/claude" --version
-      - name: Run plugin eval suite
-        if: steps.cred.outputs.present == 'true'
-        run: bash scripts/skill-evals.sh
-      - name: Upload eval results
-        if: always() && steps.cred.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: skill-evals-results
-          path: plugins/sdd-workflow/evals/results/
-          if-no-files-found: ignore
-
   test:
     name: Test hook scripts (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

@@ -63,7 +63,7 @@ UserPromptSubmit フックは発火し「vibe-detector スキルのフローに�
 - `prompt.md` の `description` に `spec <path> <節>:` 形式で出典を書き、`tags` に `<feature>` と `spec-<節>` を付ける（差分テストの `# source:` に相当。節ハッシュ照合は本 issue では行わない）
 - grader は決定表の「結果」列を regex で機械判定するものを必ず 1 件置き、LLM judge は補助に留める
 - 評価対象プロンプトは `SDD_LANG` 既定（en）で動く前提で書き、regex は英日両表記を許容する
-- CI は optional ジョブ、`--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0
+- 実行オプションは `--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0。CI には入れない（オーナー判断: 1 回 $4〜5 の課金が発生し `ANTHROPIC_API_KEY` secret の運用も要るため。手元で任意実行）
 
 ## 全件実行（32 ケース、`--runs 1`）
 
@@ -94,7 +94,7 @@ UserPromptSubmit フックは発火し「vibe-detector スキルのフローに�
 | `front-matter-validation/status-propagation-is-info` | 不安定（2 回目 pass、3 回目 fail） | 上流 PRD の `updated` が下流 spec より新しい fixture でも、status 伝播を報告しない回がある。同上 |
 | `vibe-detection/risk-level-exactly-one` | 不安定（3 回目 2 試行中 1 pass） | スキルは起動しレベルも 1 つ出すが、ラベル行の形が毎回違う（`**リスクレベル: High**` / 文中）。テンプレート修正後は改善の見込み |
 
-残りはすべて pass。CI では `--runs 1` のため上の不安定ケースで optional ジョブが赤になることがある（required ではない）。
+残りはすべて pass。`--runs 1` では上の不安定ケースが赤になることがある。
 
 ### spec と実装のギャップ（本チケットでは直さず PR に記載）
 
