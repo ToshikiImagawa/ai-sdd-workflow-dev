@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.3.0] - 2026-10-23
+
 ### Added
 
 - `evals/`: a `claude plugin eval` suite for the specs whose implementation is prose and therefore not lawified (prd-generation, front-matter-validation, impl-spec-check, doc-consistency-check, vibe-detection, clarify). One case per decision-table row or invariant (32 cases), each `case.yaml` naming the spec section it checks, graded by regex only. Run with `claude plugin eval ./plugins/sdd-workflow --trust-plugin --scaffold --allow-tools Bash Write Edit`
@@ -34,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumer (18 skills, 5 agents) lists its own sections. `AI-SDD-PRINCIPLES.source.md` itself is unchanged (Refs #7)
 - `spec-reviewer` Covered / Partially Covered / Not Covered now have concrete criteria that reuse `ambiguity_criteria.md` (Section 1; NFR: Section 3) instead of restating them; the 80% coverage warning is unchanged. The NFR check also reports quantification (`nfr_checklist.md` Level 0–3). `spec_review_output.md` (en/ja) and `check-spec` follow. NFR categories are unified to the seven in `nfr_checklist.md` across `clarification-assistant`, `clarify`, `analyze-requirements`, `generate-prd` and `generate-spec` (PRD §4.2 and spec §3.2 templates gain category guidance). PRD template §4.2 / `requirement-analyzer` / sample outputs use `NFR_xxx` instead of `PR_xxx` (SysML element type `performanceRequirement` is unchanged) (Refs #9, Refs #8)
 - Criteria calibration from the #9 real-document check (Refs #9): `nfr_checklist.md` gains checkable binary conditions at Level 2 (with examples), OS-name-only Compatibility as Level 2 (versions/support window count toward Level 3 only with a stated verification), a requirement-to-seven-category mapping table (wording that fits no category is outside V6), and unified Level 3 example wording. `ambiguity_criteria.md`: V1–V5 are N/A when the spec says they do not apply, △/× lines for V3/V4, V6 from the parent PRD's NFRs when the PRD has none. `spec-reviewer` and its output templates (en/ja): coverage rate (Covered + Partially) kept as defined but shown as reference together with the Partially Covered count and the Covered-only rate, the warning also fires on Not/Partially items, spec weakening a PRD verification method is Partially, link delegation to an existing canonical document is Covered, denominator is all requirement IDs (UR/FR/NFR/IR/DC). `clarify`: clarity score = Clear items ÷ (all items − N/A items), counted per item, Partial not in the numerator, defined once in `nine_category_analysis.md` (SKILL.md, agent, templates link to it); the spec-reviewer warning fires on coverage < 80% or Not Covered ≥ 1 only; OS name plus CI verification (no version) is Level 3
+
+### Fixed
+
+- **`--ci` mode in 5 skills** - `checklist`, `implement`, `run-checklist` and `recommend-front-matter` stopped at interactive confirmations even with `--ci`; they now follow the same rule as `generate-spec` / `plan-refactor` (missing arguments abort with an error, confirmations are skipped). `task-breakdown` already implemented `--ci` but omitted it from its `argument-hint`
 
 ## [5.2.0] - 2026-10-21
 
