@@ -12,7 +12,7 @@
 # 終了コード は claude plugin eval のまま: 0 全ケースが閾値（既定 1.0）以上 / 1 閾値未満・読込エラー / 2 コスト上限。
 # scaffold_script（各ケースの fixture）は本リポジトリが作成したものなので --scaffold で有効化する。
 # Bash / Write / Edit はスキルが使う（check-spec のヘルパー、generate-prd --amend の編集）ため操作者権限で許可する。
-# 認証は実行者の claude ログイン（または API キー）を claude が読む。
+# 認証は実行者の Claude Code ログインを claude がそのまま使う。
 set -euo pipefail
 
 cd "$(dirname "$0")/../../../.."  # リポジトリルート

@@ -18,7 +18,7 @@
 | prompt.md | front matter: `name`, `description`, `tags`, `runs`（既定 3）, `max_turns`（既定 10）, `timeout_seconds`（既定 300）, `allowed_tools`, `disallowed_tools`, `model`, `append_system_prompt`, `env`（`EVAL_*` のみ）。本文がユーザープロンプト |
 | grader 種別 | `regex`（`target`: last_message 等、`pattern`、`flags`、`match`: contains / not_contains / count:N）、`tool_used`（`tool`、`input_match`、`min` / `max`）、`tool_order`、`file_exists`、`llm`（`criteria`、判定モデル既定 haiku）、`baseline` |
 | 実行 | 一時ワークスペース・独立 HOME・`dontAsk`。対象プラグインのみロード。フック（SessionStart / UserPromptSubmit）は実行される |
-| CI | `--trust-plugin` で非対話。実行者のクレデンシャル（API キー可）。`--json <file>` で v1 形式、`--threshold`（既定 1.0）未満は exit 1、`--max-cost-usd` 超過は exit 2 |
+| 非対話実行 | `--trust-plugin` で非対話。認証は実行者の Claude Code ログイン。`--json <file>` で v1 形式、`--threshold`（既定 1.0）未満は exit 1、`--max-cost-usd` 超過は exit 2 |
 | 導入版 | eval / init は 2.1.198、`--json` v1 と `--report` は 2.1.210、`--no-publish` は 2.1.224 以降 |
 
 ### パイロット実測
@@ -63,7 +63,7 @@ UserPromptSubmit フックは発火し「vibe-detector スキルのフローに�
 - `prompt.md` の `description` に `spec <path> <節>:` 形式で出典を書き、`tags` に `<feature>` と `spec-<節>` を付ける（差分テストの `# source:` に相当。節ハッシュ照合は本 issue では行わない）
 - grader は決定表の「結果」列を regex で機械判定するものを必ず 1 件置き、LLM judge は補助に留める
 - 評価対象プロンプトは `SDD_LANG` 既定（en）で動く前提で書き、regex は英日両表記を許容する
-- 実行オプションは `--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0。CI には入れない（オーナー判断: 1 回 $4〜5 の課金が発生し `ANTHROPIC_API_KEY` secret の運用も要るため）。実行経路は開発スキル `/plugin-evals`（`.claude/skills/plugin-evals/`。`scripts/` は CI ジョブと 1:1 の置き場なのでラッパーはそこに置かない）
+- 実行オプションは `--runs 1 --ablation none --no-publish --max-cost-usd <上限> --json`。閾値は既定 1.0。CI には入れない（オーナー判断: 1 回 $4〜5 のモデル課金が発生するため。手元の Claude Code ログインで実行する）。実行経路は開発スキル `/plugin-evals`（`.claude/skills/plugin-evals/`。`scripts/` は CI ジョブと 1:1 の置き場なのでラッパーはそこに置かない）
 
 ## 全件実行（32 ケース、`--runs 1`）
 
