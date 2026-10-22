@@ -1,7 +1,7 @@
 ---
 name: task-breakdown
 description: "Break down tasks from technical design document, generating a list of independently testable small tasks"
-argument-hint: "<feature-name> <ticket-number>"
+argument-hint: "<feature-name> <ticket-number> [--ci]"
 arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true

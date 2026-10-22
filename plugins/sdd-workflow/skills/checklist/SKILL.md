@@ -1,7 +1,7 @@
 ---
 name: checklist
 description: "Generate quality assurance checklists from specifications and plans with structured IDs and categories"
-argument-hint: "<feature-name> [ticket-number]"
+argument-hint: "<feature-name> [ticket-number] [--ci]"
 arguments: [feature-name, ticket-number]
 license: MIT
 user-invocable: true
@@ -37,10 +37,17 @@ Full argument string: $ARGUMENTS
 > (a flag captured positionally), treat that argument as omitted and interpret the full argument
 > string instead. Ask the user interactively when a required argument is missing.
 
+**When `feature-name` is missing**:
+
+- **Interactive**: ask for it before loading any document
+- **`--ci` mode**: do not ask. Abort with an error naming the missing argument and the fix
+  (`/checklist {feature-name} {ticket-number}`), and write no files
+
 | Argument        | Required | Description                                                        |
 |:----------------|:---------|:-------------------------------------------------------------------|
 | `feature-name`  | Yes      | Target feature name or path (e.g., `user-auth`, `auth/user-login`) |
 | `ticket-number` | -        | Used for the output directory name and to locate the design draft. Uses feature-name if omitted |
+| `--ci`          | -        | CI/non-interactive mode. Exits with an error instead of prompting when a required argument is missing |
 
 ### Input Format
 
