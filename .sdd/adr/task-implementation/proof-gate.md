@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-10-17"
-updated: "2026-10-21"
+updated: "2026-10-22"
 sdd-version: "5.1.0"
 depends-on: ["spec-task-implementation-proof-gate", "spec-task-implementation-laws-drafting"]
 ticket: "149"
@@ -180,3 +180,9 @@ category: "task-implementation"
 - **Decision**: オーナーが、2026-10-20 のエントリで判断待ちとした PRD FR_006 の変更提案（承認の有効性がモデル・証明の作成の前提である旨・検証方法への静的チェックの追加・抽出元を構造化された節へ改める、の 3 点）を採用し、PRD に反映した（#167 / PR #186）。あわせて #167 の 4 件を次のとおり決めた。(1) 用語集に「承認者」（法則の内容ハッシュを確かめ、承認行を手で書く人）を加える。(2) ユースケース図では第 1 弾と第 2 弾を区別しない。(3) RemindReview のアクターを FR_005 の主体に合わせ、他の PRD と同じ「フックランタイム」にする。(4) アクターを結ぶ実線へのラベル付けは proof-gate だけの書き方とし、PRD 全体の方針にしない。理由を PRD に一言残し、他の PRD には広げない。
 - **Rationale**: (1) 図に「承認者」というアクターが既にあり、承認は人にしかできないため、用語として定義するほうが読み手に伝わる。(2) 段階（第 1 弾・第 2 弾）は §3.1 の優先度・段階の表で足りる。図で分けると、ノード構造が段階の変更に引きずられる。(3) FR_005 の主体はファイル編集後のフックで、他の PRD は既にフックを「フックランタイム」と書き、「Claude Code」は別の役割として併存している。(4) 全 PRD の関連線 68 本のうちラベル付きは proof-gate の 5 本だけで、承認者・開発者・フックランタイムの役割の違いを示す必要がこの PRD にあった。全体方針にすると他の PRD の書き換えが要る。
 - **Rejected alternatives**: 図の subgraph 分割やスタイルで第 1 弾と第 2 弾を分ける — 段階の変更のたびに図を直すことになるため却下。RemindReview のアクターを「Claude Code」のままにする — FR_005 の主体とずれるため却下。ラベル付けを PRD 全体の方針にする — 他の PRD への横展開が大きく、今回は必要性が proof-gate に限られるため却下。
+
+## 2026-10-22 点命題を差分 pytest に回し、prose 実装の spec を法則化から外す
+
+- **Decision**: v5.2.0 の法則 61 件を調査した結果（[#218](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/issues/218)）、laws-drafting_spec に次を追加する。(1) `for` 宣言を持たず `kind` が `empty` / `singleton` / `identity` でない候補（点命題。判定表 1 行の転記）は Bend 法則にせず、`rank` が `to_tests` に振り分け、`draft` が実装に対する差分 pytest（既定 `tests/laws/test_<feature>.py`。各テスト直前に `# source:`）として書く（FR-014）。(2) 実装の所在は spec 本文の `impl-of:` 宣言で固定し、`main.bend` の `# model-of:` はその写しとする。全パスが `.md` の spec は `prose_implementation` として法則化対象外（FR-015）。(3) 既存法則は読み取り専用の `migrate` が `keep` / `to_tests` / `prose_delete` に分類した移行表を出し、削除・再承認・front matter の更新は人が行う（FR-016）。(4) `check --tests` がテストファイルの `# source:` の実在と節ハッシュ一致を検査する（3.1.3-9）。proof ゲート本体（`run-verification.py`）・判定表・PASS の意味は変えない。
+- **Rationale**: 61 法則のうち約 50 件が点命題で、spec の表 → `LAWS.bend` → `main.bend` → `PROOF.bend` と同じ表を 4 回書いて bend で「表 == 表」を証明していた。bend の PASS は参照モデルまでの保証で実装には届かず、CI で bend を走らせない方針のため手元でしか効かない。一方、同じ法則を Python 実装に直接 assert する差分テスト 73 件は全件一致し、bend 無しで CI が毎回実装への回帰を検出できた。点命題を捨てるのではなく検証先を pytest に移す（有限領域では行の列挙が完全な仕様であり、無駄なのは転記であって行の検証ではない）。29 法則は実装が SKILL.md / エージェント定義の散文で、証明しても実装に結べず、うち 2 件は `# model-of:` が実体でない Python ファイルを指していた（`# model-of:` を LLM が選んでいたため）。所在を spec の宣言に固定し、散文実装の spec を対象外にして承認・証明のコストを無くす。点命題の判定を `for` の有無という構文的事実にしたのは、LLM のタグ付けに依存すると再現性（NFR-005）が落ちるため。空入力・単一要素・単位元を例外にしたのは、集約規則の代数的性質で全称法則の基底になり、§11 の検収基準（`agg_empty_skipped` / `agg_single_identity`）を壊さないため。テスト本文はスクリプトで生成せず LLM がテンプレートから書く（`main.bend` と同じ位置づけ）。決定性が要るのは NFR-002 の「ハッシュ・順序・検査」だけで、スクリプトは `# source:` の検査だけを保証する。
+- **Rejected alternatives**: 点命題を全廃し全称法則だけ残す — 有限領域では決定表の行の列挙が完全な仕様で、差分テストでは回帰検出に効いたため却下。Markdown 決定表のパーサと pytest 生成器を作る — 表は spec ごとに列が違い（`条件|結果` / `検査|重大度`）方言ごとの保守になる上、差分テストの本質は「spec の値域 → 実装の呼び出し方」の写像とフィクスチャで表から機械導出できず、自動化できるのは assert 1 行だけのため却下。候補に LLM が `point: true` を付ける — 自由変数の有無は構文的事実で、タグ付けに頼ると付け忘れで判定がぶれるため却下。実装の所在を front matter の新キーにする — front-matter-validation_spec・front-matter-reviewer・テンプレートの改訂が波及するため、`model-api:` と同じ本文宣言にした。AI が承認済み `LAWS.bend` を編集・削除する — 承認行を持つ法則は AI が触らない第 1 弾の規約に反するため却下（移行表まで）。bend を CI で走らせる — 本改訂の論点（実装への到達）とは独立で、別 issue とする。散文実装の性質をスキル評価（skill-evals）の assertion に移す — 方向性として妥当だが本チケットの範囲外とし、ここに記録するに留める。`tests_dir` を可変にせず固定する — 配布先のテスト配置は様々なため `.sdd-config.json` の `laws.tests_dir` で変えられるようにした（`allowed-tools` は既定パスのみ事前承認。既定以外では承認プロンプトが出るトレードオフを受け入れる）。
