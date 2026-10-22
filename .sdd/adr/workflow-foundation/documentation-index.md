@@ -5,9 +5,10 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-07-14"
-updated: "2026-09-02"
-sdd-version: "5.0.0"
+updated: "2026-10-23"
+sdd-version: "5.2.0"
 depends-on: ["spec-workflow-foundation-documentation-index"]
+ticket: "95"
 tags: ["index", "hooks", "token-reduction", "session-config"]
 category: "workflow-foundation"
 ---
@@ -61,3 +62,9 @@ category: "workflow-foundation"
 - **Decision**: `sdd_version` 列の追加を `ALTER TABLE` ではなく `SCHEMA_VERSION` を `1` → `2` に bump して全再構築する方式で行う。
 - **Rationale**: 既存の `init_schema` が version 不一致時に `DROP TABLE` → 再作成する既存パターンを踏襲でき、列追加のたびに個別マイグレーションを書く複雑さを避けられる（FR-007）。
 - **Rejected alternatives**: `ALTER TABLE` で列追加する — 列追加ごとに個別マイグレーションが必要になり複雑さが増すため却下。
+
+## 2026-10-23 sdd-version の読み取りは index の Metadata 経由で行う
+
+- **Decision**: `sdd_version` を `.cache/index.md` の Metadata 表から読ませ、front-matter-reviewer は形式（semver）と major 比較を、doc-consistency-checker は古い世代の列挙を、この表だけで行う。両者とも文書を個別に Glob / Grep で読み直さない。
+- **Rationale**: 既存の Index Fast Path（index があれば 1 回の Read で足りる）を維持できる（#95）。形式検証と major 比較は文字列パターンと整数比較だけで済むため、軽量モデルの検査で足りる。
+- **Rejected alternatives**: 各検査スキルが文書ごとに `sdd-version` を読み直す — 文書数に比例して読み取りが増え、index を導入した目的（トークン削減）に反するため却下。`sdd-version` 欠如を `unknown` 値で埋める — 既存世代と新世代の区別を汚すため、推奨側で付与しない方針（2026-09-02 の front-matter-recommend 決定）を採った。
