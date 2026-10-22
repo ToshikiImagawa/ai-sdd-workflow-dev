@@ -93,6 +93,8 @@ jobs:
         run: bash scripts/test-e2e-sdd-init.sh
       - name: Run skill helper scripts test
         run: bash scripts/test-skill-scripts.sh
+      - name: Check differential tests' '# source:' lines against spec section hashes
+        run: bash scripts/check-laws-tests.sh
       - name: Install pytest
         run: python3 -m pip install pytest
       - name: Run session-start unit tests
