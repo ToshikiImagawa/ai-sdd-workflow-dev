@@ -5,14 +5,14 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-22"
 depends-on: ["prd-workflow-foundation-sdd-init"]
 tags: ["initialization", "template", "claude-md", "skill"]
 category: "workflow-foundation"
 priority: "high"
 risk: "medium"
 laws: ["laws/workflow-foundation/sdd-init"]
-laws-status: "proven"
+laws-status: "drafted"
 ---
 
 # プロジェクト初期化
@@ -87,6 +87,10 @@ CLAUDE.md 更新ロジック）は [sdd-init.md](../../adr/workflow-foundation/s
 | NFR-003 | 移植性 | 初期化スクリプトは OS 固有 CLI に依存せず Python 標準ライブラリで動作する      | 対応 OS の CI（E2E）で通過             |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装はソースコード）:
+
+impl-of: plugins/sdd-workflow/skills/sdd-init/scripts/update-claude-md.py
 
 | 種別     | 配置場所                                              | 名前              | 概要                                                             |
 |--------|-----------------------------------------------------|-----------------|------------------------------------------------------------------|

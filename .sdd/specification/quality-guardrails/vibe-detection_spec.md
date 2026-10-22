@@ -5,14 +5,12 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-07"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-vibe-detection"]
 tags: ["vibe-coding-prevention", "hooks", "ambiguity-detection"]
 category: "quality-guardrails"
 priority: "critical"
 risk: "high"
-laws: ["laws/quality-guardrails/vibe-detection"]
-laws-status: "proven"
 ---
 
 # Vibe Coding 兆候検知
@@ -86,6 +84,10 @@ NFR-003 について、本機能は JSON Decision Control 仕様に準拠しつ�
 `deny` は用いず `additionalContext` のみを注入する。
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/vibe-detector/SKILL.md
 
 | 種別     | 配置場所                                             | 名前                    | 概要                                                                       |
 |--------|--------------------------------------------------|-----------------------|--------------------------------------------------------------------------|

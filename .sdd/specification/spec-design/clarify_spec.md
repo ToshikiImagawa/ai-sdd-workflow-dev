@@ -5,14 +5,12 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-08"
-updated: "2026-09-02"
+updated: "2026-10-22"
 depends-on: ["prd-spec-design-clarify"]
 tags: ["clarification", "ambiguity-analysis", "clarity-score"]
 category: "spec-design"
 priority: "high"
 risk: "high"
-laws: ["laws/spec-design/clarify"]
-laws-status: "proven"
 ---
 
 # 仕様明確化
@@ -88,6 +86,10 @@ FR-001 の 9 カテゴリは、機能範囲・データモデル・フロー／�
 | NFR-003 | ユーザビリティ    | 1 回の分析で提示する質問数を制限し、ユーザーの回答負担を抑える              | 最大 5 問                            |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/clarify/SKILL.md
 
 | 種別    | 配置場所                                | 名前                     | 概要                                                                             |
 |-------|-------------------------------------|------------------------|--------------------------------------------------------------------------------|

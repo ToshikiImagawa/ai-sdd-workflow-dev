@@ -5,14 +5,12 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-07"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-quality-guardrails-doc-consistency-check"]
 tags: ["consistency-check", "quality-gate"]
 category: "quality-guardrails"
 priority: "high"
 risk: "high"
-laws: ["laws/quality-guardrails/doc-consistency-check"]
-laws-status: "drafted"
 ---
 
 # ドキュメント間整合性チェック 抽象仕様書
@@ -108,6 +106,10 @@ FR-004 の分類や「上流優先」の判断ロジックは適用しない。�
 | NFR-003 | 応答性    | フック起動を含む処理が開発フローの応答性を阻害しない                          | 親 NFR_001（フック処理の軽量性）                  |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/doc-consistency-checker/SKILL.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                          | 名前                     | 概要                                                       |
 |------------------------------|---------------------------------------------------------------|------------------------|----------------------------------------------------------|

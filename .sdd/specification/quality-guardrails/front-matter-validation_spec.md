@@ -6,15 +6,13 @@ status: "draft"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-07-08"
-updated: "2026-10-20"
+updated: "2026-10-22"
 sdd-version: "5.1.0"
 depends-on: ["prd-quality-guardrails-front-matter-validation"]
 tags: ["front-matter", "validation", "consistency-check"]
 category: "quality-guardrails"
 priority: "low"
 risk: "low"
-laws: ["laws/quality-guardrails/front-matter-validation"]
-laws-status: "proven"
 ---
 
 # front matter 検証 抽象仕様書
@@ -110,6 +108,10 @@ front matter はオプション（後方互換）であるため人手で記述�
 | NFR-004 | 応答性    | `--cross-ref` 非指定時はプロジェクト横断走査をスキップし検証を高速に保つ            | 親 NFR_001 の趣旨（軽量性の維持。500ms 定量基準はフックスクリプト向けで本エージェントに直接は適用されない） |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](../task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/agents/front-matter-reviewer.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                        | 名前                             | 概要                                                    |
 |------------------------------|-------------------------------------------------------------|--------------------------------|-------------------------------------------------------|

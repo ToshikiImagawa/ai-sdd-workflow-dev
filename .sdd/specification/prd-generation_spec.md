@@ -5,12 +5,10 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-10-21"
+updated: "2026-10-22"
 depends-on: ["prd-generation"]
 tags: ["prd-generation", "usecase-diagram", "requirements-analysis", "sysml", "traceability"]
 category: "prd-generation"
-laws: ["laws/prd-generation"]
-laws-status: "proven"
 ---
 
 # PRD 生成パイプライン
@@ -102,6 +100,10 @@ FR-010（PRD FR_001_05 / UR_005 / DC_004）が定める「既存の要求 ID・�
 | プレフィックス `P` の既存要求 ID 群の最大値が `P_{n}` | `P_{n+1}` から連番で採番する（既存 ID と衝突しない） |
 
 # 4. 提供コンポーネント
+
+実装の所在（[laws-drafting_spec.md](task-implementation/laws-drafting_spec.md) 3.1.5。行頭の `impl-of:` を `/draft-laws` が読む。実装は散文（SKILL.md / エージェント定義）のため法則化対象外（`prose_implementation`））:
+
+impl-of: plugins/sdd-workflow/skills/generate-prd/SKILL.md
 
 | 種別（skill/agent/hook/template） | 配置場所                                                  | 名前                      | 概要                                                                 |
 |------------------------------|-----------------------------------------------------------|-------------------------|----------------------------------------------------------------------|
