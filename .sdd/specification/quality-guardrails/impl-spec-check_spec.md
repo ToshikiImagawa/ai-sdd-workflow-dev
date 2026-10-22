@@ -13,7 +13,7 @@ category: "quality-guardrails"
 priority: "high"
 risk: "high"
 laws: ["laws/quality-guardrails/impl-spec-check"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # 実装と仕様の整合性チェック

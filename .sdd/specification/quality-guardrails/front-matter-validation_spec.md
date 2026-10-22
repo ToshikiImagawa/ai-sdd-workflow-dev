@@ -14,7 +14,7 @@ category: "quality-guardrails"
 priority: "low"
 risk: "low"
 laws: ["laws/quality-guardrails/front-matter-validation"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # front matter 検証 抽象仕様書

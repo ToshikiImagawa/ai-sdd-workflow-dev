@@ -12,7 +12,7 @@ category: "spec-design"
 priority: "high"
 risk: "high"
 laws: ["laws/spec-design/clarify"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # 仕様明確化

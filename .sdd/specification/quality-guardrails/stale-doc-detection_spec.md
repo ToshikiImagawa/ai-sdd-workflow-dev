@@ -14,7 +14,7 @@ category: "quality-guardrails"
 priority: "medium"
 risk: "medium"
 laws: ["laws/quality-guardrails/stale-doc-detection"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # ドキュメント更新漏れ検知

@@ -12,7 +12,7 @@ category: "quality-guardrails"
 priority: "critical"
 risk: "high"
 laws: ["laws/quality-guardrails/vibe-detection"]
-laws-status: "drafted"
+laws-status: "proven"
 ---
 
 # Vibe Coding 兆候検知
