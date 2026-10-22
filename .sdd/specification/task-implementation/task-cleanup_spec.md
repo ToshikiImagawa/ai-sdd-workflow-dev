@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-10-23"
 depends-on: ["prd-task-implementation-task-cleanup"]
 tags: ["task-cleanup", "knowledge-persistence"]
 category: "task-implementation"
@@ -42,6 +42,8 @@ task ディレクトリを削除し、設計知見が永続ドキュメントへ
 - **front matter の更新**: 統合に伴い adr の作成・更新、design doc の `updated`（存在する場合）、
   spec の `status`・`impl-status`（未更新時の安全網）を必要に応じて更新する
 - **範囲確認**: 引数なし実行時は対象ディレクトリ内容を提示しユーザー確認を得る
+- **CI モード**: `--ci` 指定時はスキル自身の確認（範囲確認・spec 更新提案）を省略する。`ticket-number` は必須
+  （task/ 全体の非対話削除は行わない）。シェルコマンドの権限プロンプトは CI 側の権限設定で事前承認する
 
 「何を統合し何を削除するか、どの順序で保証するか」を定義し、分類基準・統合先決定・削除手順の具体的な
 実行方式は [task-cleanup.md](../../adr/task-implementation/task-cleanup.md) に委ねる。
@@ -57,6 +59,7 @@ task ディレクトリを削除し、設計知見が永続ドキュメントへ
 | FR-003 | 統合完了後にのみ task ディレクトリ（ファイル）を削除する                          | 必須  | 親 PRD DC_002 / D-003               |
 | FR-004 | 統合に伴い関連文書の front matter（adr の作成・更新、design doc の `updated`、spec の `status`・`impl-status`）を更新する | 必須  | 親 PRD IR_001                        |
 | FR-005 | 引数なし実行時は対象内容を提示しユーザー確認を得てから処理する                       | 必須  | 子 PRD FR_001（安全性）             |
+| FR-006 | `--ci` 指定時はプロンプトせず、`ticket-number` 欠如はエラー終了、spec 更新提案は deferred として記録する | 推奨  | 子 PRD FR_001（安全性を保った非対話実行） |
 
 FR-002 で対象機能の ADR が存在しない場合は新規に `adr/{feature}.md` を作成する。統合すべき設計決定・
 却下した代替案が対象内に見つからない場合は統合をスキップする。
@@ -73,7 +76,7 @@ FR-002 で対象機能の ADR が存在しない場合は新規に `adr/{feature
 
 | 種別    | 配置場所                         | 名前         | 概要                                                                   |
 |-------|------------------------------|------------|----------------------------------------------------------------------|
-| skill | `skills/task-cleanup/SKILL.md` | task-cleanup | task ログを分析し設計決定を ADR へ統合後にディレクトリを削除するユーザー呼び出しスキル（FR-001〜005） |
+| skill | `skills/task-cleanup/SKILL.md` | task-cleanup | task ログを分析し設計決定を ADR へ統合後にディレクトリを削除するユーザー呼び出しスキル（FR-001〜006） |
 | template | `skills/task-cleanup/templates/{en,ja}/cleanup_output.md` | cleanup_output | クリーンアップ結果出力の基底テンプレート（日英）（NFR-002） |
 
 ## 4.1. 入出力定義
@@ -84,7 +87,8 @@ FR-002 で対象機能の ADR が存在しない場合は新規に `adr/{feature
 
 | 引数            | 必須 | 説明                                                          |
 |---------------|----|-------------------------------------------------------------|
-| `ticket-number` | 任意 | 対象チケット番号またはパス。省略時は `task/` 全体を対象とする             |
+| `ticket-number` | 任意（`--ci` 時は必須） | 対象チケット番号またはパス。省略時は `task/` 全体を対象とする             |
+| `--ci`          | 任意 | CI / 非対話モード。範囲確認と spec 更新提案を省略し、`ticket-number` 欠如はエラー終了する。シェルコマンドの事前承認は行わない |
 
 前提として対象チケットの実装が完了していること。統合先の ADR（`adr/{feature}.md`）が
 存在すること、または新規作成できること。
@@ -108,6 +112,7 @@ FR-002 で対象機能の ADR が存在しない場合は新規に `adr/{feature
 /task-cleanup TICKET-123               # 指定チケットの task ログを整理
 /task-cleanup feature/task-management  # パス指定で対象を整理
 /task-cleanup                          # 引数なし: task/ 全体を対象（範囲確認後に実行）
+/task-cleanup TICKET-123 --ci          # CI モード: スキル自身の確認なし（ticket-number 必須）
 ```
 
 # 7. 振る舞い図
@@ -121,7 +126,7 @@ sequenceDiagram
 
     User ->> Skill: /task-cleanup {ticket}
     alt 引数なし
-        Skill -->> User: 対象内容を提示し確認を要求
+        Skill -->> User: 対象内容を提示し確認を要求（--ci はエラー終了）
         User ->> Skill: 承認 / 範囲指定
     end
     Skill ->> Task: ファイル一覧・最終更新日を確認
