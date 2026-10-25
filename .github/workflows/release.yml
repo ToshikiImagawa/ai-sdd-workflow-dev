@@ -5,7 +5,8 @@ on:
     tags:
       - "v*"
 
-# dev リポ側は読み取りのみ。公開リポへの書き込みは PUBLIC_REPO_TOKEN が担う
+# 既定は読み取りのみ。dev リポへの Release 作成が必要な publish ジョブだけ contents: write に上げる。
+# 公開リポ（配布カタログ）への書き込みは PUBLIC_REPO_TOKEN が担う
 permissions:
   contents: read
 
@@ -16,9 +17,12 @@ jobs:
   publish:
     needs: ci
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       PUBLIC_REPO: ToshikiImagawa/ai-sdd-workflow
-      GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+      PLUGIN_NAME: sdd-workflow
+      PLUGIN_PATH: plugins/sdd-workflow
     steps:
       - uses: actions/checkout@v4
 
@@ -92,44 +96,99 @@ jobs:
             echo "flag=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Clone public repo
-        run: |
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${PUBLIC_REPO}.git" public
-
-      - name: Sync distribution files
-        run: |
-          # plugins/ を丸ごと同期（--delete で公開リポの旧 sdd-workflow-ja 等を除去）
-          rsync -a --delete \
-            --exclude '__pycache__' \
-            --exclude '*.pyc' \
-            plugins/ public/plugins/
-          cp -f .claude-plugin/marketplace.json public/.claude-plugin/marketplace.json
-          cp -f LICENSE public/LICENSE
-          cp -f dist/README.md public/README.md
-
-      - name: Commit and push distribution to public repo
-        working-directory: public
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No file changes to mirror."
-          else
-            git commit -m "[release] sync distribution from ai-sdd-workflow-dev@${GITHUB_SHA::7} (${GITHUB_REF_NAME})"
-            git push
-          fi
-
-      - name: Tag public repo
-        working-directory: public
-        run: |
-          git tag "$GITHUB_REF_NAME"
-          git push origin "$GITHUB_REF_NAME"
-
-      - name: Create GitHub Release on public repo
+      - name: Create GitHub Release on dev repo
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            --repo "$PUBLIC_REPO" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file /tmp/release-notes.md \
             ${{ steps.prerelease.outputs.flag }}
+
+      - name: Resolve tag commit SHA
+        id: sha
+        run: |
+          # 注釈付きタグでもコミットを指すよう ^{commit} で剥がす
+          SHA=$(git rev-parse "${GITHUB_REF_NAME}^{commit}")
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Failed to resolve a 40-char commit SHA for $GITHUB_REF_NAME (got: $SHA)"
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Clone public repo
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${PUBLIC_REPO}.git" public
+
+      - name: Update distribution catalog
+        working-directory: public
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA="${{ steps.sha.outputs.sha }}"
+          CATALOG=.claude-plugin/marketplace.json
+
+          CURRENT=$(jq -r --arg name "$PLUGIN_NAME" '.plugins[] | select(.name == $name) | .version' "$CATALOG")
+          if [ -z "$CURRENT" ]; then
+            echo "::error::Plugin entry \"$PLUGIN_NAME\" not found in $PUBLIC_REPO/$CATALOG"
+            exit 1
+          fi
+          if [ "$CURRENT" = "$VERSION" ]; then
+            echo "::error::$PUBLIC_REPO already points $PLUGIN_NAME at $VERSION. Refusing to open a duplicate catalog PR."
+            exit 1
+          fi
+
+          jq --arg version "$VERSION" \
+             --arg name "$PLUGIN_NAME" \
+             --arg url "$GITHUB_REPOSITORY" \
+             --arg path "$PLUGIN_PATH" \
+             --arg ref "$GITHUB_REF_NAME" \
+             --arg sha "$SHA" \
+             '.metadata.version = $version
+              | .plugins |= map(
+                  if .name == $name then
+                    .version = $version
+                    | .source = {source: "git-subdir", url: $url, path: $path, ref: $ref, sha: $sha}
+                  else . end)' \
+             "$CATALOG" > "$CATALOG.tmp"
+          mv "$CATALOG.tmp" "$CATALOG"
+          git --no-pager diff
+
+      - name: Open catalog PR on public repo
+        working-directory: public
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          BRANCH="release/${GITHUB_REF_NAME}"
+          SHA="${{ steps.sha.outputs.sha }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "::error::Branch $BRANCH already exists on $PUBLIC_REPO. Close the previous PR and delete the branch before re-running."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add .claude-plugin/marketplace.json
+          git commit -m "[release] ${PLUGIN_NAME} ${GITHUB_REF_NAME} を配布カタログに反映"
+          git push origin "$BRANCH"
+
+          cat > /tmp/catalog-pr-body.md <<EOF
+          \`${PLUGIN_NAME}\` を \`${GITHUB_REF_NAME}\` に更新します。
+
+          - source: \`git-subdir\` / \`${GITHUB_REPOSITORY}\` / \`${PLUGIN_PATH}\`
+          - ref: \`${GITHUB_REF_NAME}\`
+          - sha: \`${SHA}\`
+          - Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}
+
+          この PR は ${GITHUB_REPOSITORY} の release.yml が自動作成しました。
+          EOF
+          gh pr create \
+            --repo "$PUBLIC_REPO" \
+            --base main \
+            --head "$BRANCH" \
+            --title "[release] ${PLUGIN_NAME} ${GITHUB_REF_NAME}" \
+            --body-file /tmp/catalog-pr-body.md

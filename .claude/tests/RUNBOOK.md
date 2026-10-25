@@ -94,7 +94,7 @@ bash .claude/tests/harness/verify_parity.sh snapshot .claude/tests/fixtures/sdd-
 
 # 4. A/B 起動（マーケットプレイス版 vs 本実装版、N=5 × 2 群）
 SDD_AB_MODEL=claude-sonnet-5 \
-SDD_AB_PLUGIN_OFF="$HOME/.claude/plugins/marketplaces/ai-sdd-workflow/plugins/sdd-workflow" \
+SDD_AB_PLUGIN_OFF="$HOME/.claude/plugins/cache/ai-sdd-workflow/sdd-workflow/<version>" \
 SDD_AB_PLUGIN_ON="$(pwd)/plugins/sdd-workflow" \
   bash .claude/tests/harness/run_ab.sh small 5 doc_consistency
 

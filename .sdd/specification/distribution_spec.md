@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-07-24"
-updated: "2026-07-28"
+updated: "2026-10-25"
 depends-on: ["prd-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
 category: "distribution"
@@ -37,7 +37,9 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 定義する。主要な設計原則は以下のとおり。
 
 - **標準機構による配布**: Claude Code のマーケットプレイス機構（`marketplace.json` /
-  `plugin.json` マニフェスト）に準拠して配布し、利用者が標準手順で導入・更新できる（FR_001 / IR_001）
+  `plugin.json` マニフェスト）に準拠して配布し、利用者が標準手順で導入・更新できる（FR_001 / IR_001）。
+  利用者が追加するのは公開リポの**配布カタログ**で、プラグイン本体は dev リポのリリースタグを
+  `git-subdir` ソースで参照する。dev リポの `marketplace.json` は相対パス参照の**開発・検証カタログ**である
 - **バージョンの単一ソース**: バージョン番号をマニフェストに一元化し、分散した重複記載による
   不整合を防ぐ。変更履歴は日英併記で提供する（FR_002 / DC_001）
 - **日英の機能同等性**: 出力テンプレートを持つスキル・エージェントのテンプレートを `templates/{en,ja}/` の
@@ -55,11 +57,11 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 
 | ID     | 要件                                                                                   | 優先度 | 根拠（上流要求）        |
 |--------|----------------------------------------------------------------------------------------|-----|----------------------|
-| FR-001 | マーケットプレイスメタデータとプラグインマニフェストで配布し、エージェントを登録する（スキル・フックは標準パスの自動検出に委ねる） | 必須  | PRD FR_001 / UR_001   |
+| FR-001 | マーケットプレイスメタデータとプラグインマニフェストで配布し、エージェントを登録する（スキル・フックは標準パスの自動検出に委ねる）。公開リポの配布カタログは dev リポのリリースタグを `git-subdir` ソース（`ref` = タグ、`sha` = タグが指すコミット）で参照し、プラグイン本体のコピーを持たない | 必須  | PRD FR_001 / UR_001   |
 | FR-002 | バージョン番号を単一ソースで管理し、変更履歴（CHANGELOG）を日英併記で提供する                 | 必須  | PRD FR_002 / DC_001   |
 | FR-003 | 出力テンプレートを持つスキル・エージェントのテンプレートを日英二言語体系で提供する                 | 必須  | PRD FR_003 / UR_002   |
 | FR-004 | 構造検証・プロンプトリント・シェル静的解析・フック回帰テストを CI で自動実行する                | 必須  | PRD FR_004 / UR_003   |
-| FR-005 | マニフェスト（marketplace.json / plugin.json）を Claude Code プラグイン仕様に準拠させる      | 必須  | PRD IR_001            |
+| FR-005 | マニフェスト（配布カタログ・開発カタログの marketplace.json / plugin.json）を Claude Code プラグイン仕様に準拠させる | 必須  | PRD IR_001            |
 | FR-006 | プロンプト Markdown にコードブロックを含めず、EN/JA テンプレートのファイルセットを同一に保つ    | 必須  | PRD DC_002 / DC_003   |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
@@ -77,11 +79,12 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 
 | 種別（config/ci/script/template/docs） | 配置場所                                                          | 名前                          | 概要                                                                    |
 |------------------------------|-----------------------------------------------------------------|-----------------------------|-------------------------------------------------------------------------|
-| config                       | `.claude-plugin/marketplace.json`                              | マーケットプレイスメタデータ       | 登録プラグイン一覧・参照先・バージョンを定義する（FR-001 / FR-005）              |
+| config                       | `.claude-plugin/marketplace.json`（dev リポ）                     | 開発・検証カタログ               | 登録プラグイン一覧・相対パスの参照先・バージョンを定義する。構造検証とローカル検証に使う（FR-004 / FR-005） |
+| config                       | `.claude-plugin/marketplace.json`（公開リポ ToshikiImagawa/ai-sdd-workflow） | 配布カタログ                   | 利用者が追加するカタログ。`sdd-workflow` を dev リポの `plugins/sdd-workflow` に `git-subdir` + `ref` / `sha` で固定する。更新は release.yml が作る PR で行う（FR-001 / FR-005） |
 | config                       | `plugins/sdd-workflow/.claude-plugin/plugin.json`              | プラグインマニフェスト            | 名前・バージョンとエージェントを登録する。スキル・フックは標準パスの自動検出に委ねる（FR-001 / FR-005 / DC_001） |
 | ci                           | `.github/workflows/ci.yml`                                     | CI 検証ワークフロー             | 構造検証・plugin-lint を ubuntu で、shellcheck・回帰テストを ubuntu / macos の両 OS で実行する（FR-004 / NFR-001） |
 | ci                           | `.github/workflows/prepare-release.yml`                        | リリース準備ワークフロー          | develop → main の PR 作成・CI 待機・マージまでを自動化する（FR-002）             |
-| ci                           | `.github/workflows/release.yml`                                | リリース配布ワークフロー          | タグ契機でバージョン整合を検証し、公開リポへ配布・リリースを作成する（FR-002 / FR-005） |
+| ci                           | `.github/workflows/release.yml`                                | リリース配布ワークフロー          | タグ契機でバージョン整合を検証し、dev リポに GitHub Release を作成し、公開リポの配布カタログを新しいタグへ向ける PR を作成する（FR-002 / FR-005） |
 | script                       | `scripts/validate-marketplace.sh`                              | 構造・バージョン検証スクリプト     | JSON 構文・必須フィールド・バージョン整合を検証する（FR-004 / FR-005）             |
 | script                       | `scripts/plugin-lint.sh`                                       | プロンプト・構成リント           | コードブロック検出・EN/JA 同一性・パストークン検査・マニフェスト衛生検査（`agents/` レイアウト検査を含む）を行う（FR-006 / DC_002 / DC_003） |
 | script                       | `scripts/test-session-start.sh`                                | session-start 回帰テスト        | SessionStart フックの環境変数出力・言語判定の既存挙動を検証する（FR-004 / NFR-001） |
@@ -97,8 +100,10 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 
 ```
 # 配布・運用制約の観点
-- バージョン : marketplace.json の metadata.version / plugins[].version と plugin.json の version が一致する（単一ソース = DC_001）
+- バージョン : 開発カタログ marketplace.json の metadata.version / plugins[].version と plugin.json の version が tag と一致する（単一ソース = DC_001）
 - 配布契機   : tag（v*）push を契機にリリースワークフローが起動する
+- 配布参照   : 配布カタログの sdd-workflow エントリは source = git-subdir（url = dev リポ、path = plugins/sdd-workflow、ref = tag、sha = tag が指す 40 桁のコミット SHA）で、version は tag と一致する
+- 配布更新   : 配布カタログへの書き込みは PR のみで行い、既に同じ version を指している場合はリリースワークフローが失敗する
 - 検証       : CI（PR / push）で構造検証・shellcheck・plugin-lint・回帰テストが全て通過する
 - 多言語     : templates/en と templates/ja のファイルセット（ファイル名集合）が常に同一である
 - プロンプト : スキル・エージェントのプロンプト Markdown にコードブロックを含めない
@@ -111,6 +116,9 @@ quality-guardrails の各カテゴリ）とは別に、プロダクトとして�
 | 用語               | 説明                                                                       |
 |------------------|----------------------------------------------------------------------------|
 | marketplace.json | マーケットプレイスのメタデータ。登録プラグインの一覧と参照先・バージョンを定義する          |
+| 配布カタログ        | 公開リポの marketplace.json。利用者が追加し、プラグイン本体は dev リポを git-subdir で参照する |
+| 開発・検証カタログ    | dev リポの marketplace.json。相対パスでプラグインを参照し、構造検証・ローカル検証に使う       |
+| git-subdir       | Claude Code のプラグインソース種別。git リポジトリの 1 サブディレクトリを sparse checkout で取得し、ref / sha で固定できる |
 | plugin.json      | プラグインマニフェスト。名前・バージョンとエージェントを登録する。スキル・フックは標準パスが自動検出されるため宣言しない |
 | CHANGELOG        | バージョンごとの変更履歴。英語版（CHANGELOG.md）と日本語版（CHANGELOG.ja.md）を併記する |
 | plugin-lint      | プロンプト Markdown・テンプレート構成のリポジトリ規約を検証するリントスクリプト           |
@@ -135,8 +143,8 @@ claude plugin validate ./plugins/sdd-workflow --strict
 # リリース準備: develop から main への PR 作成・マージを自動化
 prepare-release.yml（workflow_dispatch, version 入力）
 
-# 配布: タグ push を契機に公開リポへ同期・リリース作成
-git tag v4.0.0 && git push origin v4.0.0 → release.yml
+# 配布: タグ push を契機に dev リポでリリース作成、公開リポの配布カタログ更新 PR を作成
+git tag v4.0.0 && git push origin v4.0.0 → release.yml → 公開リポの release/v4.0.0 PR をマージ
 ```
 
 # 7. 振る舞い図
@@ -146,7 +154,7 @@ sequenceDiagram
     participant Dev as メンテナー
     participant CI as CI マトリクス
     participant Rel as release.yml
-    participant Pub as 公開リポ
+    participant Pub as 公開リポ（配布カタログ）
     participant User as 利用者
 
     Dev ->> CI: PR / push
@@ -157,8 +165,11 @@ sequenceDiagram
         CI -->> Dev: 通過
         Dev ->> Rel: tag v* push
         Rel ->> Rel: バージョン整合チェック
-        Rel ->> Pub: plugins/ 同期・リリース作成
-        User ->> Pub: マーケットプレイスから導入・更新
+        Rel ->> Rel: dev リポに GitHub Release 作成
+        Rel ->> Pub: marketplace.json を tag / sha に向ける PR 作成
+        Dev ->> Pub: PR をマージ
+        User ->> Pub: マーケットプレイスを追加・更新
+        Pub -->> User: git-subdir で dev リポの plugins/sdd-workflow（tag / sha 固定）を取得
     end
 ```
 

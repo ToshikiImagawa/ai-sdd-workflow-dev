@@ -10,7 +10,7 @@ paths:
 
 | スクリプト                     | 役割                                                                 | CIジョブ      |
 |:--------------------------|:-------------------------------------------------------------------|:------------|
-| `validate-marketplace.sh` | `marketplace.json` / `plugin.json` のJSON構文・必須フィールド・バージョン整合性を検証     | `validate`    |
+| `validate-marketplace.sh` | 開発・検証カタログ（dev リポの `marketplace.json`）/ `plugin.json` のJSON構文・必須フィールド・バージョン整合性を検証。公開リポの配布カタログは公開リポ側の CI が検証する | `validate`    |
 | `plugin-lint.sh`          | プラグイン構造の Lint。プロンプトMD内のコードブロック検出（Check 1・警告のみ）、サポートファイル構造（Check 2）、`${SDD_*}` パストークン健全性（Check 3）、マニフェスト衛生と `agents/` レイアウト（Check 4 / 4.2）、front matter キー衛生と `allowed-tools` の事前承認スコープ（Check 5 / 5.4）を検証 | `plugin-lint`（1/2ステップ） |
 | `test-session-start.sh`   | `plugins/sdd-workflow/scripts/session-start.py` のゴールデンファイル回帰テスト     | `test`        |
 | `test-hook-scripts.sh`    | `plugins/sdd-workflow/scripts/` のフックスクリプト（pre-tool-use / post-tool-use / user-prompt-submit）の回帰テスト | `test`        |
