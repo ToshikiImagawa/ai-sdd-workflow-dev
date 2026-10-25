@@ -5,7 +5,7 @@ type: "adr"
 status: "approved"
 sdd-phase: "implement"
 created: "2026-07-24"
-updated: "2026-10-21"
+updated: "2026-10-25"
 sdd-version: "5.0.0"
 depends-on: ["spec-distribution"]
 tags: ["marketplace", "versioning", "i18n", "ci", "cross-platform"]
@@ -83,3 +83,10 @@ category: "distribution"
   - §8 制約事項: 番号付き見出しを持たない散文の箇条書きであり、出典にできない。
   - 全節を確認した結果、計算可能な決定ロジック（優先度 1〜4 のいずれか）を持つ構造化節は存在しなかった。
 - **Rejected alternatives**: §4.1 の制約（バージョン一致判定・ファイルセット同一性判定）を法則化する — 単なる等価性チェックであり、ファイルシステム・CI の制約を出典にしないという抽出ルールの除外区分そのものに該当するため却下（Refs #208, #210）。
+
+## 2026-10-25 公開リポを plugins のミラーではなく git-subdir カタログにする
+
+- **Decision**: 公開リポ（ToshikiImagawa/ai-sdd-workflow）は `.claude-plugin/marketplace.json`・README・LICENSE・検証 CI だけを持つ配布カタログとし、`plugins/` のコピーを持たない。`sdd-workflow` エントリの `source` は `git-subdir`（`url`: dev リポ、`path`: `plugins/sdd-workflow`、`ref`: リリースタグ、`sha`: タグが指すコミットの 40 桁 SHA）とする。release.yml はタグ契機で dev リポ自身に GitHub Release を作り、公開リポへは `marketplace.json` を更新する PR を作るだけにする（直接 push しない）。dev リポの `.claude-plugin/marketplace.json` は相対パス参照の開発・検証カタログとして残す。
+- **Rationale**: rsync ミラーは dev リポと公開リポに同じプラグイン本体を二重に持ち、同期漏れ・削除漏れの余地と、公開リポへの直接 push 権限を必要としていた。`git-subdir` は Claude Code 公式のプラグインソースで、モノレポの一部ディレクトリを sparse checkout で取得し `ref` / `sha` で固定できるため、配布物の実体を dev リポの 1 か所に置いたまま、公開リポは「どのタグのどのコミットを配るか」だけを宣言できる。`sha` 固定によりタグの付け替えで配布物が差し替わることもない。PR 経由にすることで公開リポ側の検証 CI とレビューを配布の関門にできる。開発カタログを残すのは、validate-marketplace.sh・prepare-release の版数更新・`--plugin-dir` によるローカル検証が相対パスのカタログを前提にしているため。
+- **Rejected alternatives**: `archive` ソース（zip を Release アセットにし GitHub App で配布）— 本プラグインはビルド工程を持たずリポジトリのディレクトリがそのまま配布物なので、zip 生成とアプリ管理は過剰。`github` ソース — リポジトリ直下がプラグインルートである必要があり（`path` を取れない）、プラグインを `plugins/sdd-workflow` に置く dev リポの構成に合わない。rsync ミラーの継続 — 上記の二重管理と直接 push 権限の問題が残る。
+- **Supersedes**: [2026-07-24 配布先を開発リポと公開リポに分離する](#2026-07-24-配布先を開発リポと公開リポに分離する) — 開発リポと公開リポを分ける点は維持し、公開リポが配布物のコピーを持つ方式から、dev リポのタグ付きサブディレクトリを参照するカタログを持つ方式に変えた。

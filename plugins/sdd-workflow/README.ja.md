@@ -57,13 +57,21 @@ Claude Code で以下を実行:
 /plugin install sdd-workflow@ToshikiImagawa/ai-sdd-workflow
 ```
 
-### 方法 2: GitHub からクローン
+マーケットプレイスのリポジトリ（[ToshikiImagawa/ai-sdd-workflow](https://github.com/ToshikiImagawa/ai-sdd-workflow)）は
+カタログのみを持ちます。プラグイン本体は
+[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev) で開発・リリースしており、
+カタログはリリースタグごとにその `plugins/sdd-workflow` ディレクトリを参照します。
+
+### 方法 2: ローカルのチェックアウトから読み込む
+
+プラグイン本体リポジトリのリリースタグ（`v{VERSION}` を取得したいタグに置き換える）を取得し、`plugins/sdd-workflow` ディレクトリを `--plugin-dir` で読み込みます:
 
 ```bash
-git clone https://github.com/ToshikiImagawa/ai-sdd-workflow.git ~/.claude/plugins/sdd-workflow
+git clone --depth 1 --branch v{VERSION} https://github.com/ToshikiImagawa/ai-sdd-workflow-dev.git
+claude --plugin-dir ./ai-sdd-workflow-dev/plugins/sdd-workflow
 ```
 
-インストール後、Claude Code を再起動してください。
+`--plugin-dir` はそのセッション限りの読み込みです。常用する場合は方法 1 を使ってください。
 
 ### 確認
 

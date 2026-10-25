@@ -58,13 +58,21 @@ Then install the plugin:
 /plugin install sdd-workflow@ToshikiImagawa/ai-sdd-workflow
 ```
 
-### Method 2: Clone from GitHub
+The marketplace repository ([ToshikiImagawa/ai-sdd-workflow](https://github.com/ToshikiImagawa/ai-sdd-workflow)) holds
+only the catalog. The plugin itself is developed and released from
+[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev), and the catalog points at
+its `plugins/sdd-workflow` directory for each release tag.
+
+### Method 2: Load from a Local Checkout
+
+Check out a release tag of the plugin repository (replace `v{VERSION}` with the tag you want) and load its `plugins/sdd-workflow` directory with `--plugin-dir`:
 
 ```bash
-git clone https://github.com/ToshikiImagawa/ai-sdd-workflow.git ~/.claude/plugins/sdd-workflow
+git clone --depth 1 --branch v{VERSION} https://github.com/ToshikiImagawa/ai-sdd-workflow-dev.git
+claude --plugin-dir ./ai-sdd-workflow-dev/plugins/sdd-workflow
 ```
 
-After installation, restart Claude Code.
+`--plugin-dir` loads the plugin for that session only. Use Method 1 for a persistent install.
 
 ### Verification
 
