@@ -33,3 +33,6 @@ __pycache__/
 # SSH deploy keys (絶対にコミットしない)
 mirror_key
 mirror_key.pub
+
+# build-plugin-archive.sh の出力先（release.yml と同じ）
+/dist/

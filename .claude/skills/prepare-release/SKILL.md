@@ -204,9 +204,9 @@ git diff <previous-tag>..HEAD --stat
 5. merge 済みの `main` にタグを打って push する（GITHUB_TOKEN で push したタグは
    Release ワークフローをトリガーしないため、この作業は人間が行う）:
    `git checkout main && git pull origin main && git tag v{VERSION} && git push origin v{VERSION}`
-6. GitHub Actions の Release ワークフローが自動実行され、dev リポに GitHub Release を作成し、
-   公開リポ（ToshikiImagawa/ai-sdd-workflow）に配布カタログ `marketplace.json` を新しいタグ・コミットへ
-   向ける PR（`release/v{VERSION}`）を作成する
+6. GitHub Actions の Release ワークフローが自動実行され、配布用 zip（`sdd-workflow-{VERSION}.zip`）を
+   添付した GitHub Release を dev リポに作成し、公開リポ（ToshikiImagawa/ai-sdd-workflow）に配布カタログ
+   `marketplace.json` をその zip の URL と sha256 へ向ける PR（`release/v{VERSION}`）を作成する
 7. 公開リポの PR で検証 CI が通ったことを確認して merge する（merge するまで利用者には配布されない）
 ```
 

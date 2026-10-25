@@ -59,18 +59,24 @@ Then install the plugin:
 ```
 
 The marketplace repository ([ToshikiImagawa/ai-sdd-workflow](https://github.com/ToshikiImagawa/ai-sdd-workflow)) holds
-only the catalog. The plugin itself is developed and released from
-[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev), and the catalog points at
-its `plugins/sdd-workflow` directory for each release tag.
+only the catalog. The plugin itself is developed in
+[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev), and each release attaches
+the plugin as `sdd-workflow-{VERSION}.zip` to its
+[GitHub Release](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases). The catalog points at that zip and
+pins its SHA-256.
 
-### Method 2: Load from a Local Checkout
+### Method 2: Load from a Release Archive
 
-Check out a release tag of the plugin repository (replace `v{VERSION}` with the tag you want) and load its `plugins/sdd-workflow` directory with `--plugin-dir`:
+Download the release zip (replace `{VERSION}` with the version you want, such as `5.3.1`), extract it, and load the
+extracted `sdd-workflow` directory with `--plugin-dir`:
 
 ```bash
-git clone --depth 1 --branch v{VERSION} https://github.com/ToshikiImagawa/ai-sdd-workflow-dev.git
-claude --plugin-dir ./ai-sdd-workflow-dev/plugins/sdd-workflow
+curl -fLO https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases/download/v{VERSION}/sdd-workflow-{VERSION}.zip
+unzip sdd-workflow-{VERSION}.zip
+claude --plugin-dir ./sdd-workflow
 ```
+
+Each release also has `sdd-workflow-{VERSION}.zip.sha256`, which you can compare with `shasum -a 256`.
 
 `--plugin-dir` loads the plugin for that session only. Use Method 1 for a persistent install.
 

@@ -26,8 +26,8 @@ REPO=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 SCALE=${1:-small}
 N=${2:-5}
 PROMPT_NAME=${3:-doc_consistency}
-# The marketplace catalog points at the plugin with a git-subdir source, so the
-# installed copy lives in the plugin cache, not in the marketplace clone:
+# The marketplace catalog points at the plugin with an archive source (release zip),
+# so the installed copy lives in the plugin cache, not in the marketplace clone:
 #   <plugins root>/cache/<marketplace>/<plugin>/<version>/
 # (https://code.claude.com/docs/en/plugins/loading.md "Find plugins on disk").
 # The plugins root is ~/.claude/plugins unless CLAUDE_CODE_PLUGIN_CACHE_DIR is set.
