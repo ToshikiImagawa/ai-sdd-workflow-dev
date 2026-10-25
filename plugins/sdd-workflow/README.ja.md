@@ -59,17 +59,23 @@ Claude Code で以下を実行:
 
 マーケットプレイスのリポジトリ（[ToshikiImagawa/ai-sdd-workflow](https://github.com/ToshikiImagawa/ai-sdd-workflow)）は
 カタログのみを持ちます。プラグイン本体は
-[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev) で開発・リリースしており、
-カタログはリリースタグごとにその `plugins/sdd-workflow` ディレクトリを参照します。
+[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev) で開発しており、
+リリースごとに `sdd-workflow-{VERSION}.zip` を
+[GitHub Release](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases) に添付しています。
+カタログはその zip を参照し、SHA-256 で固定します。
 
-### 方法 2: ローカルのチェックアウトから読み込む
+### 方法 2: リリースの zip から読み込む
 
-プラグイン本体リポジトリのリリースタグ（`v{VERSION}` を取得したいタグに置き換える）を取得し、`plugins/sdd-workflow` ディレクトリを `--plugin-dir` で読み込みます:
+リリースの zip（`{VERSION}` を `5.3.1` などの取得したいバージョンに置き換える）をダウンロードして展開し、
+展開された `sdd-workflow` ディレクトリを `--plugin-dir` で読み込みます:
 
 ```bash
-git clone --depth 1 --branch v{VERSION} https://github.com/ToshikiImagawa/ai-sdd-workflow-dev.git
-claude --plugin-dir ./ai-sdd-workflow-dev/plugins/sdd-workflow
+curl -fLO https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases/download/v{VERSION}/sdd-workflow-{VERSION}.zip
+unzip sdd-workflow-{VERSION}.zip
+claude --plugin-dir ./sdd-workflow
 ```
+
+各リリースには `sdd-workflow-{VERSION}.zip.sha256` もあり、`shasum -a 256` の結果と照合できます。
 
 `--plugin-dir` はそのセッション限りの読み込みです。常用する場合は方法 1 を使ってください。
 

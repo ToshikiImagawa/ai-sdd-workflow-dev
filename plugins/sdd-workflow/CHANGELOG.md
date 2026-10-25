@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Distribution** - The marketplace repository `ToshikiImagawa/ai-sdd-workflow` now holds only the catalog (`marketplace.json`). Its `sdd-workflow` entry fetches the plugin from the `plugins/sdd-workflow` directory of `ToshikiImagawa/ai-sdd-workflow-dev` (a `git-subdir` source pinned to the release tag and its commit), and GitHub Releases are published there. The install and update commands are unchanged
+- **Distribution** - The marketplace repository `ToshikiImagawa/ai-sdd-workflow` now holds only the catalog (`marketplace.json`). Its `sdd-workflow` entry downloads the plugin as a zip attached to the GitHub Release of `ToshikiImagawa/ai-sdd-workflow-dev` (an `archive` source pinned by SHA-256). The zip contains only the files the plugin needs at runtime. The install and update commands are unchanged
 
 ## [5.3.1] - 2026-10-23
 

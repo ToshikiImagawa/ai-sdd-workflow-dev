@@ -22,7 +22,6 @@ jobs:
     env:
       PUBLIC_REPO: ToshikiImagawa/ai-sdd-workflow
       PLUGIN_NAME: sdd-workflow
-      PLUGIN_PATH: plugins/sdd-workflow
     steps:
       - uses: actions/checkout@v4
 
@@ -96,27 +95,43 @@ jobs:
             echo "flag=" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build distribution archive
+        id: archive
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256=$(bash scripts/build-plugin-archive.sh "$VERSION" dist)
+          if ! [[ "$SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::build-plugin-archive.sh did not print a sha256 (got: $SHA256)"
+            exit 1
+          fi
+          {
+            echo "zip=dist/${PLUGIN_NAME}-${VERSION}.zip"
+            echo "sha256=$SHA256"
+            echo "url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${PLUGIN_NAME}-${VERSION}.zip"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release on dev repo
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ZIP="${{ steps.archive.outputs.zip }}"
           gh release create "$GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "$GITHUB_REF_NAME" \
             --notes-file /tmp/release-notes.md \
-            ${{ steps.prerelease.outputs.flag }}
+            ${{ steps.prerelease.outputs.flag }} \
+            "$ZIP" "$ZIP.sha256"
 
-      - name: Resolve tag commit SHA
-        id: sha
+      - name: Verify published archive
         run: |
-          # 注釈付きタグでもコミットを指すよう ^{commit} で剥がす
-          SHA=$(git rev-parse "${GITHUB_REF_NAME}^{commit}")
-          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::Failed to resolve a 40-char commit SHA for $GITHUB_REF_NAME (got: $SHA)"
+          # 公開リポのカタログが指す URL から実際に取得でき、sha256 が一致することを確かめる
+          EXPECTED="${{ steps.archive.outputs.sha256 }}"
+          ACTUAL=$(curl -fsSL --retry 5 --retry-delay 5 "${{ steps.archive.outputs.url }}" | sha256sum | cut -d' ' -f1)
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Downloaded archive sha256 $ACTUAL does not match $EXPECTED"
             exit 1
           fi
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Clone public repo
         env:
@@ -128,7 +143,6 @@ jobs:
         working-directory: public
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          SHA="${{ steps.sha.outputs.sha }}"
           CATALOG=.claude-plugin/marketplace.json
 
           CURRENT=$(jq -r --arg name "$PLUGIN_NAME" '.plugins[] | select(.name == $name) | .version' "$CATALOG")
@@ -143,15 +157,13 @@ jobs:
 
           jq --arg version "$VERSION" \
              --arg name "$PLUGIN_NAME" \
-             --arg url "$GITHUB_REPOSITORY" \
-             --arg path "$PLUGIN_PATH" \
-             --arg ref "$GITHUB_REF_NAME" \
-             --arg sha "$SHA" \
+             --arg url "${{ steps.archive.outputs.url }}" \
+             --arg sha256 "${{ steps.archive.outputs.sha256 }}" \
              '.metadata.version = $version
               | .plugins |= map(
                   if .name == $name then
                     .version = $version
-                    | .source = {source: "git-subdir", url: $url, path: $path, ref: $ref, sha: $sha}
+                    | .source = {source: "archive", url: $url, sha256: $sha256}
                   else . end)' \
              "$CATALOG" > "$CATALOG.tmp"
           mv "$CATALOG.tmp" "$CATALOG"
@@ -163,7 +175,8 @@ jobs:
           GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
         run: |
           BRANCH="release/${GITHUB_REF_NAME}"
-          SHA="${{ steps.sha.outputs.sha }}"
+          URL="${{ steps.archive.outputs.url }}"
+          SHA256="${{ steps.archive.outputs.sha256 }}"
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
             echo "::error::Branch $BRANCH already exists on $PUBLIC_REPO. Close the previous PR and delete the branch before re-running."
             exit 1
@@ -179,9 +192,9 @@ jobs:
           cat > /tmp/catalog-pr-body.md <<EOF
           \`${PLUGIN_NAME}\` を \`${GITHUB_REF_NAME}\` に更新します。
 
-          - source: \`git-subdir\` / \`${GITHUB_REPOSITORY}\` / \`${PLUGIN_PATH}\`
-          - ref: \`${GITHUB_REF_NAME}\`
-          - sha: \`${SHA}\`
+          - source: \`archive\`
+          - url: ${URL}
+          - sha256: \`${SHA256}\`
           - Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}
 
           この PR は ${GITHUB_REPOSITORY} の release.yml が自動作成しました。

@@ -90,3 +90,10 @@ category: "distribution"
 - **Rationale**: rsync ミラーは dev リポと公開リポに同じプラグイン本体を二重に持ち、同期漏れ・削除漏れの余地と、公開リポへの直接 push 権限を必要としていた。`git-subdir` は Claude Code 公式のプラグインソースで、モノレポの一部ディレクトリを sparse checkout で取得し `ref` / `sha` で固定できるため、配布物の実体を dev リポの 1 か所に置いたまま、公開リポは「どのタグのどのコミットを配るか」だけを宣言できる。`sha` 固定によりタグの付け替えで配布物が差し替わることもない。PR 経由にすることで公開リポ側の検証 CI とレビューを配布の関門にできる。開発カタログを残すのは、validate-marketplace.sh・prepare-release の版数更新・`--plugin-dir` によるローカル検証が相対パスのカタログを前提にしているため。
 - **Rejected alternatives**: `archive` ソース（zip を Release アセットにし GitHub App で配布）— 本プラグインはビルド工程を持たずリポジトリのディレクトリがそのまま配布物なので、zip 生成とアプリ管理は過剰。`github` ソース — リポジトリ直下がプラグインルートである必要があり（`path` を取れない）、プラグインを `plugins/sdd-workflow` に置く dev リポの構成に合わない。rsync ミラーの継続 — 上記の二重管理と直接 push 権限の問題が残る。
 - **Supersedes**: [2026-07-24 配布先を開発リポと公開リポに分離する](#2026-07-24-配布先を開発リポと公開リポに分離する) — 開発リポと公開リポを分ける点は維持し、公開リポが配布物のコピーを持つ方式から、dev リポのタグ付きサブディレクトリを参照するカタログを持つ方式に変えた。
+
+## 2026-10-25 配布カタログのソースを git-subdir から Release の archive に変える
+
+- **Decision**: 公開リポの配布カタログの `sdd-workflow` エントリの `source` を `archive`（`url`: dev リポの GitHub Release に添付した `sdd-workflow-<version>.zip`、`sha256`: その zip の digest）にする。zip は `scripts/build-plugin-archive.sh` で生成し、`evals/`・`__pycache__/`・`*.pyc`・`.DS_Store` を除き、シンボリックリンクを実体化し、ファイル順序・更新時刻・タイムゾーンを固定する。release.yml がこの zip と `.sha256` を Release に添付し、公開 URL から取得した digest の一致を確かめてから、カタログ更新 PR を作る。
+- **Rationale**: `git-subdir` はディレクトリをそのまま取得するため、`claude plugin eval` 用の `evals/` や `__pycache__` のような配布不要物を除外できない。archive なら配布物の中身をビルド時に決められ、その成果物が Release に残るので、どのバージョンで何を配ったかを後から取り出せる。`sha256` 固定により、同じ URL の中身が差し替わっても Claude Code が取得を拒否する。利用者の環境に git が無くても導入できる。両リポとも公開なので、認証ヘッダや GitHub App は要らない。シンボリックリンクを実体化するのは、Claude Code の zip 展開がリンクを保持する保証がないため。
+- **Rejected alternatives**: `git-subdir` の継続 — 配布不要物を除外できず、配布物が成果物として残らない。`github` ソース — リポジトリ直下がプラグインルートである必要があり dev リポの構成に合わないうえ、除外の問題も同じ。GitHub App や `headersHelper` による認証付き配布 — 両リポとも公開であり不要。
+- **Supersedes**: [2026-10-25 公開リポを plugins のミラーではなく git-subdir カタログにする](#2026-10-25-公開リポを-plugins-のミラーではなく-git-subdir-カタログにする) — 公開リポをカタログだけにする点と PR 経由で更新する点は維持し、参照先を dev リポのディレクトリから Release の zip に変えた。
