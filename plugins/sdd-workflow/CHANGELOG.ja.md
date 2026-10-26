@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [5.3.2] - 2026-10-26
+
 ### 変更
 
 - **配布方式** - マーケットプレイスのリポジトリ `ToshikiImagawa/ai-sdd-workflow` はカタログ（`marketplace.json`）のみを持つようになった。`sdd-workflow` エントリは `ToshikiImagawa/ai-sdd-workflow-dev` の GitHub Release に添付した zip からプラグインを取得する（SHA-256 で固定した `archive` ソース）。zip には実行時に必要なファイルだけを含める。インストール・更新のコマンドは変わらない
