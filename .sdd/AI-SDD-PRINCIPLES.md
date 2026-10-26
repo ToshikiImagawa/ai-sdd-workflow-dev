@@ -1,5 +1,5 @@
 ---
-version: "5.3.0"
+version: "5.3.1"
 ---
 
 # AI-SDD Development Principles

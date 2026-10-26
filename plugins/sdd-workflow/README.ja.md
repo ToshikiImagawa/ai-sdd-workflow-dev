@@ -57,13 +57,27 @@ Claude Code で以下を実行:
 /plugin install sdd-workflow@ToshikiImagawa/ai-sdd-workflow
 ```
 
-### 方法 2: GitHub からクローン
+マーケットプレイスのリポジトリ（[ToshikiImagawa/ai-sdd-workflow](https://github.com/ToshikiImagawa/ai-sdd-workflow)）は
+カタログのみを持ちます。プラグイン本体は
+[ToshikiImagawa/ai-sdd-workflow-dev](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev) で開発しており、
+リリースごとに `sdd-workflow-{VERSION}.zip` を
+[GitHub Release](https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases) に添付しています。
+カタログはその zip を参照し、SHA-256 で固定します。
+
+### 方法 2: リリースの zip から読み込む
+
+リリースの zip（`{VERSION}` を `5.3.1` などの取得したいバージョンに置き換える）をダウンロードして展開し、
+展開された `sdd-workflow` ディレクトリを `--plugin-dir` で読み込みます:
 
 ```bash
-git clone https://github.com/ToshikiImagawa/ai-sdd-workflow.git ~/.claude/plugins/sdd-workflow
+curl -fLO https://github.com/ToshikiImagawa/ai-sdd-workflow-dev/releases/download/v{VERSION}/sdd-workflow-{VERSION}.zip
+unzip sdd-workflow-{VERSION}.zip
+claude --plugin-dir ./sdd-workflow
 ```
 
-インストール後、Claude Code を再起動してください。
+各リリースには `sdd-workflow-{VERSION}.zip.sha256` もあり、`shasum -a 256` の結果と照合できます。
+
+`--plugin-dir` はそのセッション限りの読み込みです。常用する場合は方法 1 を使ってください。
 
 ### 確認
 

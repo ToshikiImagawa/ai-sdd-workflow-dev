@@ -14,7 +14,8 @@
 #
 # Env vars:
 #   SDD_AB_MODEL       model to use (default: claude-sonnet-5)
-#   SDD_AB_PLUGIN_OFF  plugin-dir for off group (default: marketplace install)
+#   SDD_AB_PLUGIN_OFF  plugin-dir for off group (default: newest cached version of
+#                      the marketplace install, see below)
 #   SDD_AB_PLUGIN_ON   plugin-dir for on group (default: repo local)
 #
 # Requires: claude CLI, jq, python3.
@@ -25,7 +26,22 @@ REPO=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 SCALE=${1:-small}
 N=${2:-5}
 PROMPT_NAME=${3:-doc_consistency}
-PLUGIN_OFF=${SDD_AB_PLUGIN_OFF:-"$HOME/.claude/plugins/marketplaces/ai-sdd-workflow/plugins/sdd-workflow"}
+# The marketplace catalog points at the plugin with an archive source (release zip),
+# so the installed copy lives in the plugin cache, not in the marketplace clone:
+#   <plugins root>/cache/<marketplace>/<plugin>/<version>/
+# (https://code.claude.com/docs/en/plugins/loading.md "Find plugins on disk").
+# The plugins root is ~/.claude/plugins unless CLAUDE_CODE_PLUGIN_CACHE_DIR is set.
+# Default to the highest cached version; set SDD_AB_PLUGIN_OFF to pin one.
+PLUGIN_CACHE=${CLAUDE_CODE_PLUGIN_CACHE_DIR:-"$HOME/.claude/plugins"}/cache/ai-sdd-workflow/sdd-workflow
+if [ -z "${SDD_AB_PLUGIN_OFF:-}" ]; then
+    latest=$(ls -1 "$PLUGIN_CACHE" 2>/dev/null | LC_ALL=C sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1)
+    if [ -z "$latest" ]; then
+        echo "no cached marketplace install under $PLUGIN_CACHE (install sdd-workflow@ai-sdd-workflow or set SDD_AB_PLUGIN_OFF)" >&2
+        exit 1
+    fi
+    SDD_AB_PLUGIN_OFF="$PLUGIN_CACHE/$latest"
+fi
+PLUGIN_OFF=$SDD_AB_PLUGIN_OFF
 PLUGIN_ON=${SDD_AB_PLUGIN_ON:-"$REPO/plugins/sdd-workflow"}
 MODEL=${SDD_AB_MODEL:-claude-sonnet-5}
 PROMPT_DIR="$SCRIPT_DIR/prompts"

@@ -10,13 +10,14 @@ paths:
 
 | スクリプト                     | 役割                                                                 | CIジョブ      |
 |:--------------------------|:-------------------------------------------------------------------|:------------|
-| `validate-marketplace.sh` | `marketplace.json` / `plugin.json` のJSON構文・必須フィールド・バージョン整合性を検証     | `validate`    |
+| `validate-marketplace.sh` | 開発・検証カタログ（dev リポの `marketplace.json`）/ `plugin.json` のJSON構文・必須フィールド・バージョン整合性を検証。公開リポの配布カタログは公開リポ側の CI が検証する | `validate`    |
 | `plugin-lint.sh`          | プラグイン構造の Lint。プロンプトMD内のコードブロック検出（Check 1・警告のみ）、サポートファイル構造（Check 2）、`${SDD_*}` パストークン健全性（Check 3）、マニフェスト衛生と `agents/` レイアウト（Check 4 / 4.2）、front matter キー衛生と `allowed-tools` の事前承認スコープ（Check 5 / 5.4）を検証 | `plugin-lint`（1/2ステップ） |
 | `test-session-start.sh`   | `plugins/sdd-workflow/scripts/session-start.py` のゴールデンファイル回帰テスト     | `test`        |
 | `test-hook-scripts.sh`    | `plugins/sdd-workflow/scripts/` のフックスクリプト（pre-tool-use / post-tool-use / user-prompt-submit）の回帰テスト | `test`        |
 | `test-e2e-sdd-init.sh`    | 空プロジェクトでの sdd-init 通しE2E（session-start → init-structure → update-claude-md）。CLAUDE.md 最小化・`.claude/rules/` 生成・レガシー掃除・冪等性・en/ja テンプレート描画・custom root を検証 | `test`        |
 | `test-skill-scripts.sh`   | skill ヘルパースクリプト（check-spec の `find-spec-docs.py` / constitution の `validate-files.py`）が custom root でキャッシュ・エクスポートを設定 root 配下に生成するか検証 | `test`        |
 | `check-laws-tests.sh`     | 差分テスト `tests/laws/test_*.py` の `# source:` 行を spec の節ハッシュと照合（`draft_laws.py check --tests --spec`。spec は各ファイル先頭の `# spec: <id>` から解決）。error が 1 件でもあれば exit 1。bend 不要 | `test`        |
+| `build-plugin-archive.sh` | 配布用 zip（`sdd-workflow-<version>.zip` と `.zip.sha256`）を生成し sha256 を stdout に出す。`evals/`・`__pycache__/`・`*.pyc`・`.DS_Store` を除外し、シンボリックリンクを実体化し、順序・更新時刻・タイムゾーンを固定して再現可能にする。zip 内 `plugin.json` の version を検証する。`release.yml` が Release 添付物の生成に使う | `test`（スモークテスト）/ `release.yml` |
 | `proof-gate.sh`           | Bend 証明ゲートのラッパー。`run-verification.py proof` を全法則ディレクトリ（`.sdd/laws/**`）に実行し、JSON の `status` が `PASS` 以外（FAIL / SKIPPED / TOOL_NOT_FOUND）なら exit 1。要 `bend` | `proof`（optional、`continue-on-error`） |
 
 CI に対応ジョブを持たない手動ツールはここに置かず、開発スキル（`.claude/skills/<name>/scripts/`）に置く。

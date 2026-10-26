@@ -197,7 +197,10 @@ git diff <previous-tag>..HEAD --stat
 2. コミットする: `git add -A && git commit -m "[add] v{VERSION} リリース準備"`
 3. タグを作成する: `git tag v{VERSION}`
 4. プッシュする: `git push origin main --tags`
-5. GitHub Actions の Release ワークフローが自動実行される
+5. GitHub Actions の Release ワークフローが自動実行され、配布用 zip（`sdd-workflow-{VERSION}.zip`）を
+   添付した GitHub Release を dev リポに作成し、公開リポ（ToshikiImagawa/ai-sdd-workflow）に配布カタログ
+   `marketplace.json` をその zip の URL と sha256 へ向ける PR（`release/v{VERSION}`）を作成する
+6. 公開リポの PR で検証 CI が通ったことを確認して merge する（merge するまで利用者には配布されない）
 ```
 
 ## Notes

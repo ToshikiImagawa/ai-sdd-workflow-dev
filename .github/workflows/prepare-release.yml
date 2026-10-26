@@ -241,4 +241,4 @@ jobs:
           echo "    git tag v$VERSION"
           echo "    git push origin v$VERSION"
           echo ""
-          echo "  タグ push により release.yml が起動し、公開リポへの配布とリリース作成が実行されます。"
+          echo "  タグ push により release.yml が起動し、dev リポでのリリース作成と公開リポの配布カタログ更新 PR の作成が実行されます。"

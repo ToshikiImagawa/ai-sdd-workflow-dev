@@ -102,11 +102,9 @@ ai-sdd-workflow/
 │       ├── README.ja.md
 │       ├── CHANGELOG.md
 │       └── CHANGELOG.ja.md
-├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 8本。CI ジョブと 1:1）
+├── scripts/                        # 検証・Lint・テスト用シェルスクリプト（`.sh` 9本。CI ジョブと 1:1）
 ├── tests/                          # Python ユニットテスト（pytest。fixtures/ を含む。fixtures/laws/fake-bend/ は proof ゲート用のダミー bend）
 │   └── laws/                       # 法則 vs 実装の差分テスト（.sdd/laws/** の点命題を実装に対して assert。/draft-laws が生成、# source: で spec の節に結ぶ）
-├── dist/
-│   └── README.md                   # 配布リポジトリ用README
 ├── CLAUDE.md                       # 共通プロジェクト指示（正本）
 ├── PLUGIN_AGENTS.md                # プラグインエージェント設計ガイド
 ├── PLUGIN.md
